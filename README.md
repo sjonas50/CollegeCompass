@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# College Compass: AI-Powered College Guidance Counselor
+
+College Compass is a web application that serves as an AI-powered guidance counselor for high school students. It assesses students' personalities, skills, and interests, then generates personalized educational and career path recommendations, along with a customized high school roadmap to reach their goals.
+
+## Core Objectives
+
+1. Provide accurate, personalized assessment of student aptitudes and interests
+2. Match students with appropriate fields of study and career paths
+3. Generate customized high school academic plans aligned with college admission requirements
+4. Recommend suitable colleges/universities based on student profile and aspirations
+5. Deliver actionable guidance throughout high school years
+
+## Technologies Used
+
+- **Frontend**: Next.js with TypeScript, Tailwind CSS, React
+- **Backend**: Next.js API routes
+- **Database**: MongoDB with Mongoose
+- **Authentication**: JWT with bcrypt
+- **AI Integration**: OpenAI API and Claude API
+- **Data Visualization**: Chart.js with react-chartjs-2
 
 ## Getting Started
 
-First, run the development server:
+First, install dependencies:
+
+```bash
+npm install
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/src/app` - Next.js application router
+- `/src/components` - Reusable UI components
+- `/src/lib` - Utility functions and shared code
+- `/src/models` - MongoDB models
+- `/src/app/api` - API routes
+- `/src/app/(auth)` - Authentication pages
+- `/src/app/dashboard` - User dashboard pages
+- `/src/app/assessment` - Assessment modules
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+Create a `.env.local` file with the following variables:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+MONGODB_URI=
+JWT_SECRET=
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## License
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
