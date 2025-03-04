@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
 import User from '@/models/User';
-import Anthropic from '@anthropic-ai/sdk';
 import connectToDatabase from '@/lib/mongodb';
 import { IAssessment } from '@/models/Assessment';
+import { callClaude } from '@/lib/ai-services';
 
 interface ChatRequest {
   message: string;
@@ -37,9 +37,6 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
-
-    // Initialize Anthropic client
-    const anthropic = new Anthropic();
 
     // Create system prompt based on user data and assessments
     let systemPrompt = `You are an AI educational and career counselor for College Compass, an application that helps high school students plan for college. 
@@ -93,27 +90,48 @@ Keep responses concise and focused on helping the student with their educational
 `;
 
     // Make API call to Claude
-    const response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1024,
-      temperature: 0.7,
-      system: systemPrompt,
-      messages: [
-        {
-          role: "user",
-          content: message
-        }
-      ]
-    });
+    try {
+      const response = await callClaude({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 1024,
+        temperature: 0.7,
+        system: systemPrompt,
+        messages: [
+          {
+            role: "user",
+            content: message
+          }
+        ]
+      });
 
-    // Return AI response
-    return NextResponse.json({
-      message: response.content[0].type === 'text' ? response.content[0].text : 'I cannot provide a response at this time.',
-    });
+      // Safely access content
+      let messageText = 'I cannot provide a response at this time.';
+      if (response && 'content' in response && Array.isArray(response.content) && response.content.length > 0) {
+        const content = response.content[0];
+        if (content && typeof content === 'object' && 'type' in content && content.type === 'text' && 'text' in content) {
+          messageText = content.text;
+        }
+      }
+
+      // Return AI response
+      return NextResponse.json({ message: messageText });
+    } catch (error) {
+      console.error('Error in chat API:', error);
+      return NextResponse.json(
+        { 
+          error: 'Failed to process chat request',
+          message: 'I apologize, but I\'m having trouble processing your request right now. Please try again in a moment.'
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('Error in chat API:', error);
     return NextResponse.json(
-      { error: 'Failed to process chat request' },
+      { 
+        error: 'Failed to process chat request',
+        message: 'I apologize, but I\'m having trouble processing your request right now. Please try again in a moment.'
+      },
       { status: 500 }
     );
   }

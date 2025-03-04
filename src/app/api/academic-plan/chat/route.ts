@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
 import connectToDatabase from '@/lib/mongodb';
 import AcademicPlan from '@/models/AcademicPlan';
-import Anthropic from '@anthropic-ai/sdk';
+import { callClaude } from '@/lib/ai-services';
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,8 +57,6 @@ export async function POST(req: NextRequest) {
 
 async function generateChatResponse(userMessage: string, academicPlanData: string): Promise<string> {
   try {
-    const anthropic = new Anthropic();
-    
     const prompt = `
 You are an expert academic advisor who specializes in helping high school students understand and optimize their academic plans for college readiness. You have access to the student's current academic plan, which is provided below in JSON format.
 
@@ -73,7 +71,7 @@ THE STUDENT'S QUESTION:
 ${userMessage}
 `;
 
-    const response = await anthropic.messages.create({
+    const response = await callClaude({
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 1024,
       temperature: 0.7,
@@ -86,7 +84,16 @@ ${userMessage}
       ]
     });
 
-    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    // Safely access content
+    let content = "I'm sorry, I'm having trouble processing your question right now. Please try again later.";
+    if (response && 'content' in response && Array.isArray(response.content) && response.content.length > 0) {
+      const firstContent = response.content[0];
+      if (firstContent && typeof firstContent === 'object' && 'type' in firstContent && 
+          firstContent.type === 'text' && 'text' in firstContent) {
+        content = firstContent.text;
+      }
+    }
+
     return content;
   } catch (error) {
     console.error('Error generating chat response:', error);

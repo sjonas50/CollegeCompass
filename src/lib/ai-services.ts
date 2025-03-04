@@ -215,7 +215,7 @@ export async function getAIAnalysis(assessmentData: Array<{
   }>;
 }>): Promise<AIAnalysisResult> {
   // Choose the AI service based on configuration or availability
-  let useOpenAI = process.env.AI_SERVICE === 'openai' || !process.env.ANTHROPIC_API_KEY;
+  const useOpenAI = process.env.AI_SERVICE === 'openai' || !process.env.ANTHROPIC_API_KEY;
   
   // Format the assessment data into a string for the prompt
   const formattedData = assessmentData.map(assessment => {
@@ -250,10 +250,11 @@ ${formattedData}
 `;
 
   try {
-    let analysisText = '';
-    
-    // Try OpenAI first if configured
+    // Initialize result with empty string to avoid "used before assigned" error
+    let result = '';
+      
     if (useOpenAI) {
+      // Use OpenAI (implement this part)
       try {
         const completion = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -272,69 +273,71 @@ ${formattedData}
         });
 
         if (completion.choices[0]?.message?.content) {
-          analysisText = completion.choices[0].message.content;
+          result = completion.choices[0].message.content;
+        } else {
+          throw new Error("Empty response from OpenAI");
         }
       } catch (error) {
         console.error("Error with OpenAI API:", error);
-        // Fall back to Anthropic if OpenAI fails
-        useOpenAI = false;
+        return getFallbackAnalysis();
       }
-    }
-    
-    // Use Anthropic if configured or as fallback
-    if (!useOpenAI) {
+    } else {
+      // Use Claude with our retry mechanism
       try {
-        const anthropicResponse = await anthropic.messages.create({
+        console.log('Using Claude for career analysis...');
+        const response = await callClaude({
           model: "claude-3-7-sonnet-20250219",
-          max_tokens: 3000,
-          temperature: 0.2,
-          system: "You are a comprehensive career and education advisor expert. Analyze the assessment data and provide specific, tailored advice.",
+          max_tokens: 2500,
+          temperature: 0.7,
+          system: "You are an educational guidance counselor helping a high school student understand their assessment results.",
           messages: [
             {
               role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: analysisPrompt
-                }
-              ]
+              content: analysisPrompt
             }
           ]
         });
-
-        // Extract text from the response
-        if (anthropicResponse.content && anthropicResponse.content.length > 0) {
-          analysisText = anthropicResponse.content
-            .map(block => {
-              if (block.type === 'text') {
-                return block.text;
-              }
-              return '';
-            })
-            .join('');
+        
+        // Safely extract the text response
+        let responseText = '';
+        if (response && 'content' in response && Array.isArray(response.content) && response.content.length > 0) {
+          const content = response.content[0];
+          if (content && typeof content === 'object' && 'type' in content && content.type === 'text' && 'text' in content) {
+            responseText = content.text;
+          }
         }
-      } catch (error) {
-        console.error("Error with Anthropic API:", error);
-        // If both APIs fail, use a fallback response
-        if (!analysisText) {
+        
+        if (!responseText) {
+          console.warn('Empty response from Claude, falling back to default analysis');
           return getFallbackAnalysis();
         }
+        
+        result = responseText;
+      } catch (error) {
+        console.error('Error using Claude for analysis, falling back to default:', error);
+        return getFallbackAnalysis();
       }
     }
-    
-    // If we have analysis text, extract structured data
-    if (analysisText) {
+      
+    // Process the result to extract structured data
+    try {
+      const careerPaths = extractCareerPaths(result);
+      const strengths = extractStrengths(result);
+      const improvementAreas = extractImprovementAreas(result);
+      const recommendedSteps = extractRecommendedSteps(result);
+        
       return {
-        careerPaths: extractCareerPaths(analysisText),
-        strengths: extractStrengths(analysisText),
-        improvementAreas: extractImprovementAreas(analysisText),
-        recommendedSteps: extractRecommendedSteps(analysisText)
+        careerPaths,
+        strengths,
+        improvementAreas,
+        recommendedSteps
       };
-    } else {
+    } catch (processingError) {
+      console.error('Error processing AI response:', processingError);
       return getFallbackAnalysis();
     }
   } catch (error) {
-    console.error("Error generating AI analysis:", error);
+    console.error('Error in AI analysis:', error);
     return getFallbackAnalysis();
   }
 }
@@ -595,4 +598,46 @@ export async function processAssessmentResponses(
       throw openaiError;
     }
   }
+}
+
+// Add retry utility for Claude API calls
+export async function callWithRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  initialDelay = 1000
+): Promise<T> {
+  let retries = 0;
+  while (true) {
+    try {
+      return await fn();
+    } catch (error: unknown) {
+      // Check if we've exceeded max retries
+      if (retries >= maxRetries) {
+        throw error;
+      }
+      
+      // Check if error is retryable (like rate limits or overloaded)
+      const err = error as Record<string, unknown>;
+      const isRetryable = 
+        err?.status === 429 || 
+        err?.status === 529 || 
+        (err?.error && typeof err.error === 'object' && (err.error as any)?.type === 'overloaded_error') ||
+        (typeof err.message === 'string' && err.message.includes('rate limit'));
+      
+      if (!isRetryable) {
+        throw error; // Don't retry if it's not a retryable error
+      }
+      
+      // Exponential backoff
+      const delay = initialDelay * Math.pow(2, retries);
+      console.log(`API request failed, retrying in ${delay}ms... (${retries + 1}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      retries++;
+    }
+  }
+}
+
+// Wrapper for Claude API calls with retry logic
+export async function callClaude(options: Parameters<typeof anthropic.messages.create>[0]) {
+  return callWithRetry(() => anthropic.messages.create(options));
 } 
