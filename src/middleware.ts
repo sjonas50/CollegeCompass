@@ -63,7 +63,6 @@ export function middleware(request: NextRequest) {
 
 // Configure the middleware to run on specific paths
 export const config = {
-  runtime: 'nodejs',
   matcher: [
     /*
      * Match all request paths except for the ones starting with:

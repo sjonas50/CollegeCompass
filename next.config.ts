@@ -5,7 +5,8 @@ const nextConfig = {
     domains: ['images.unsplash.com'],
   },
   experimental: {
-    serverComponentsExternalPackages: ['mongoose', 'jsonwebtoken'],
+    serverExternalPackages: ['mongoose', 'jsonwebtoken'],
+    nodeMiddleware: true
   },
   serverRuntimeConfig: {
     PROJECT_ROOT: __dirname
