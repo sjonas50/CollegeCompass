@@ -8,7 +8,7 @@ import { BIG_FIVE, RIASEC_INFO, type Riasec, WORK_VALUE_INFO } from "../assessme
 import { displayTrait } from "../assessments/descriptions";
 import { latestResult } from "../assessments/service";
 import { getAnthropic } from "../ai/client";
-import { modelFor } from "../ai/models";
+import { modelFor, supportsEffort } from "../ai/models";
 import { toAiContext } from "../ai/privacy";
 import { assertWithinBudget, recordUsage } from "../ai/usage";
 import { latestMatchRun, loadOccupationProfiles } from "./service";
@@ -29,7 +29,9 @@ Rules:
 - Frame careers as possibilities to explore "for now", not predictions. Interests change, and that's good.
 - Treat college-degree and career-training paths as equally worthwhile.
 - Connect each career to specific interests (and values or strengths, if given). Be specific, not generic.
-- Keep the overview under 70 words and each career's reason under 40 words. No emojis, no lists inside strings.`;
+- Never show the interest code letters (like "IAS") or the words "Realistic/Investigative/…" as labels; describe interests in plain words.
+- Vary how each reason starts and what it highlights; don't repeat the same phrasing across careers.
+- Keep the overview under 70 words and each career's reason under 35 words. No emojis, no lists inside strings.`;
 
 type Options = { client?: Pick<Anthropic, "beta">; now?: Date };
 
@@ -41,13 +43,6 @@ async function buildContext(db: Db, userId: string) {
     latestResult(db, userId, "values"),
   ]);
   return { ctx: toAiContext({ grade: student?.grade ?? null }), interests, personality, values };
-}
-
-/** The careers explained: the top four degree paths and top two training paths. */
-function featured<T extends { jobZone: number | null }>(matches: T[]) {
-  const degree = matches.filter((m) => pathwayFor(m.jobZone) === "degree").slice(0, 4);
-  const training = matches.filter((m) => pathwayFor(m.jobZone) === "training").slice(0, 2);
-  return [...degree, ...training];
 }
 
 const AREA_PHRASE: Record<Riasec, string> = {
@@ -96,7 +91,7 @@ export async function explainLatestMatches(db: Db, userId: string, opts: Options
 
   const { ctx, interests, personality, values } = await buildContext(db, userId);
   if (!interests) return null;
-  const careers = featured(run.matches);
+  const careers = run.matches;
   const profiles = new Map((await loadOccupationProfiles(db)).map((p) => [p.code, p.interests]));
   const fallback = templateExplanation(
     interests.scores.code,
@@ -128,10 +123,10 @@ export async function explainLatestMatches(db: Db, userId: string, opts: Options
 
     const message = await client.beta.messages.parse({
       model,
-      max_tokens: 2000,
+      max_tokens: 4000,
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
-      output_config: { effort: "low", format: betaZodOutputFormat(Explanation) },
+      output_config: { ...(supportsEffort(model) && { effort: "low" as const }), format: betaZodOutputFormat(Explanation) },
       system: SYSTEM,
       messages: [{ role: "user", content: `Explain these results to the student:\n${JSON.stringify(facts, null, 2)}` }],
     });
@@ -139,8 +134,7 @@ export async function explainLatestMatches(db: Db, userId: string, opts: Options
     const parsed = message.stop_reason === "refusal" ? null : message.parsed_output;
     if (!parsed) return fallback;
 
-    // AI reasons for the featured careers; template reasons for the rest. Anything the model
-    // invented for a career we didn't ask about is dropped.
+    // Keep only careers we asked about, in our order; fill any the model skipped from the template.
     const byCode = new Map(parsed.careers.map((c) => [c.code, c.why]));
     const explanation: MatchExplanation = {
       source: "ai",

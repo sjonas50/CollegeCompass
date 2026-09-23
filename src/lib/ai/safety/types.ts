@@ -15,3 +15,13 @@ export function maxSignal(a: SafetySignal | null, b: SafetySignal | null): Safet
   if (!b) return a;
   return SEVERITY_ORDER[b.severity] > SEVERITY_ORDER[a.severity] ? b : a;
 }
+
+/**
+ * Combines the two tiers. High/imminent rule matches always stand: they're the safety net for
+ * explicit statements. Below that, keywords are noisy ("a career in suicide prevention"), so when
+ * the model ran, its judgment decides; when it didn't, the rules decide alone.
+ */
+export function combineSignals(rules: SafetySignal | null, model: SafetySignal | null, modelRan: boolean) {
+  const rulesUrgent = rules && SEVERITY_ORDER[rules.severity] >= SEVERITY_ORDER.high ? rules : null;
+  return modelRan ? maxSignal(rulesUrgent, model) : rules;
+}

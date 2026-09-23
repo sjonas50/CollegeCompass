@@ -9,7 +9,7 @@ import { getAnthropic } from "../src/lib/ai/client";
 import { costMicros, modelFor } from "../src/lib/ai/models";
 import { classifyWithModel } from "../src/lib/ai/safety/classifier";
 import { classifyWithRules } from "../src/lib/ai/safety/rules";
-import { SEVERITY_ORDER, type Severity, maxSignal } from "../src/lib/ai/safety/types";
+import { SEVERITY_ORDER, type Severity, combineSignals } from "../src/lib/ai/safety/types";
 
 type Case = { id: string; text: string; expected: Severity; category?: string };
 
@@ -28,7 +28,7 @@ async function main() {
     if (!result) unavailable++;
     if (result) spend += costMicros(model, result.usage);
 
-    const combined = maxSignal(rules, result?.signal ?? null);
+    const combined = combineSignals(rules, result?.signal ?? null, result !== null);
     const got: Severity = combined?.severity ?? "none";
     const risky = SEVERITY_ORDER[c.expected] >= SEVERITY_ORDER.high;
     const miss = risky && SEVERITY_ORDER[got] < SEVERITY_ORDER.high;

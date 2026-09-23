@@ -1,7 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import * as z from "zod";
-import type { TokenUsage } from "../models";
+import { type TokenUsage, supportsEffort } from "../models";
 import type { SafetySignal } from "./types";
 
 const ModelVerdict = z.object({
@@ -44,7 +44,7 @@ export async function classifyWithModel(
     max_tokens: 1024,
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
-    output_config: { effort: "low", format: betaZodOutputFormat(ModelVerdict) },
+    output_config: { ...(supportsEffort(model) && { effort: "low" as const }), format: betaZodOutputFormat(ModelVerdict) },
     system: SYSTEM,
     messages: [{ role: "user", content: `<student_message>\n${text}\n</student_message>` }],
   });

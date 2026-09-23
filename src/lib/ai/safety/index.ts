@@ -8,7 +8,7 @@ import { recordUsage } from "../usage";
 import { classifyWithModel } from "./classifier";
 import { supportResponse } from "./responses";
 import { classifyWithRules } from "./rules";
-import { SEVERITY_ORDER, type SafetySignal, type Severity, maxSignal } from "./types";
+import { SEVERITY_ORDER, type SafetySignal, type Severity, combineSignals } from "./types";
 
 export type SafetyAssessment = {
   severity: Severity;
@@ -57,9 +57,9 @@ export async function assessMessage(
     console.error("[safety] model tier unavailable", error instanceof Error ? error.name : "unknown");
   }
 
-  const signal = maxSignal(rules, model);
+  const signal = combineSignals(rules, model, !degraded);
   const sources: SafetyAssessment["sources"] = [];
-  if (rules) sources.push("rules");
+  if (rules && (degraded || SEVERITY_ORDER[rules.severity] >= SEVERITY_ORDER.high)) sources.push("rules");
   if (model) sources.push("model");
 
   if (signal && SEVERITY_ORDER[signal.severity] >= SEVERITY_ORDER.medium) {

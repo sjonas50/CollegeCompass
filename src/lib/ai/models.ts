@@ -36,3 +36,8 @@ export function costMicros(model: string, usage: TokenUsage): number {
     0.1 * (usage.cache_read_input_tokens ?? 0);
   return Math.ceil(inputEquivalent * price.input + usage.output_tokens * price.output);
 }
+
+/** Haiku 4.5 rejects `output_config.effort`; newer models accept it. */
+export function supportsEffort(model: string): boolean {
+  return !model.startsWith("claude-haiku-4");
+}

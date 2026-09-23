@@ -59,6 +59,17 @@ describe("assessMessage", () => {
     expect(event.sources).toEqual(["rules", "model_unavailable"]);
   });
 
+  it("lets the model overrule noisy keyword matches below high severity", async () => {
+    const text = "I'm interested in working in suicide prevention. What should I major in?";
+    const result = await assessMessage(db, userId, text, { client: fakeClient({ category: "none", severity: "none" }) });
+    expect(result).toMatchObject({ severity: "none", sources: [] });
+    expect(await db.select().from(schema.safetyEvents)).toHaveLength(0);
+
+    // Without the model, the keyword rule still flags it for human review.
+    const degraded = await assessMessage(db, userId, text, { client: fakeClient(null) });
+    expect(degraded).toMatchObject({ severity: "medium", sources: ["rules"], degraded: true });
+  });
+
   it("doesn't queue ordinary messages", async () => {
     const result = await assessMessage(db, userId, "what classes help with engineering?", {
       client: fakeClient({ category: "none", severity: "none" }),
