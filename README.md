@@ -31,6 +31,7 @@ change settings.
 | `npm run db:generate` | Create a migration after editing `src/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations to `DATABASE_URL` (run in the deploy step) |
 | `npm run data:load` | Download and load public reference data |
+| `npm run check:matching` | Checks career matches for test students of every interest type against the real data |
 | `npm run eval:safety` | Live eval of the safety classifier (calls the Anthropic API; costs money) |
 
 ## How it fits together
@@ -45,6 +46,11 @@ change settings.
 - `src/lib/ai/` — model config, cost tracking with a per-student monthly budget, PII scrubbing,
   and the two-tier safety classifier (`safety/`), with its eval set in `evals/safety/`.
 - `src/lib/reference/` — parsers for O*NET, the NCES CIP–SOC crosswalk and College Scorecard.
+- `src/lib/assessments/` — the three instruments (O*NET Interest Profiler Short Form, Mini-IPIP,
+  a work-values ranking), deterministic scoring, and attempts with autosave and 90-day retakes.
+- `src/lib/matching/` — career matching (interest-profile correlation, lightly adjusted by values,
+  degree and training paths ranked separately) and the AI explanation with a template fallback.
+  Attribution required by the O*NET licenses is in `src/components/attribution.tsx` and `/about/data`.
 
 ## Before real students use this
 

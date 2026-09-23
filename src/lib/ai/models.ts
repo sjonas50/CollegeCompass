@@ -1,10 +1,11 @@
 import { env } from "@/env";
 
-export type AiFeature = "safety" | "counselor";
+export type AiFeature = "safety" | "counselor" | "explain";
 
 /** Model per feature, overridable by env so evals can compare models without code changes. */
 export function modelFor(feature: AiFeature): string {
   const e = env();
+  // Match explanations are counselor-voiced, so they share its model.
   return feature === "safety" ? e.AI_MODEL_SAFETY : e.AI_MODEL_COUNSELOR;
 }
 

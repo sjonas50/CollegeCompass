@@ -32,9 +32,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
         <footer className="border-t border-border px-4 py-6 text-center text-sm text-muted">
-          <Link href="/privacy" className="underline underline-offset-2">
-            Privacy
-          </Link>
+          <nav className="flex justify-center gap-4">
+            <Link href="/careers" className="underline underline-offset-2">
+              Explore careers
+            </Link>
+            <Link href="/about/data" className="underline underline-offset-2">
+              Data sources
+            </Link>
+            <Link href="/privacy" className="underline underline-offset-2">
+              Privacy
+            </Link>
+          </nav>
         </footer>
       </body>
     </html>

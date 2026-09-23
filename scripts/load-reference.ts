@@ -1,6 +1,7 @@
 /**
  * Downloads and loads public reference data: O*NET occupations and interest profiles, the
- * NCES CIP–SOC crosswalk (majors ↔ careers), and College Scorecard institutions.
+ * O*NET 30.0 work values (dropped from 31.0), the NCES CIP–SOC crosswalk (majors ↔ careers),
+ * and College Scorecard institutions.
  *
  *   npm run data:load            # downloads into .data/reference (cached) and loads
  *
@@ -15,13 +16,21 @@ import { promisify } from "node:util";
 import { parse } from "csv-parse";
 import { readSheet } from "read-excel-file/node";
 import { getDb, migrateDb } from "../src/db";
-import { cipSocLinks, colleges, majors, occupationInterests, occupations } from "../src/db/schema";
+import {
+  cipSocLinks,
+  colleges,
+  majors,
+  occupationInterests,
+  occupationValues,
+  occupations,
+} from "../src/db/schema";
 import {
   parseCipSoc,
   parseCollege,
   parseJobZone,
   parseOccupation,
   parseOccupationInterest,
+  parseOccupationValue,
 } from "../src/lib/reference/parsers";
 
 const DIR = ".data/reference";
@@ -30,6 +39,7 @@ const SOURCES = {
   occupations: `${ONET}/occupation_data.csv`,
   jobZones: `${ONET}/job_zones.csv`,
   interests: `${ONET}/career_interest_types.csv`,
+  workValues: "https://www.onetcenter.org/dl_files/database/db_30_0_text/Work%20Values.txt",
   crosswalk: "https://nces.ed.gov/ipeds/cipcode/Files/CIP2020_SOC2018_Crosswalk.xlsx",
   scorecard: "https://ed-public-download.scorecard.network/downloads/Most-Recent-Cohorts-Institution_06102026.zip",
 };
@@ -45,15 +55,15 @@ async function download(url: string): Promise<string> {
   return file;
 }
 
-async function* csvRows(input: Readable) {
-  yield* input.pipe(parse({ columns: true, bom: true, relax_column_count: true })) as AsyncIterable<
+async function* csvRows(input: Readable, delimiter = ",") {
+  yield* input.pipe(parse({ columns: true, bom: true, relax_column_count: true, delimiter, quote: delimiter === "\t" ? false : '"' })) as AsyncIterable<
     Record<string, string>
   >;
 }
 
-async function collect<T>(input: Readable, map: (row: Record<string, string>) => T | null) {
+async function collect<T>(input: Readable, map: (row: Record<string, string>) => T | null, delimiter = ",") {
   const out: T[] = [];
-  for await (const row of csvRows(input)) {
+  for await (const row of csvRows(input, delimiter)) {
     const value = map(row);
     if (value !== null) out.push(value);
   }
@@ -88,6 +98,10 @@ async function main() {
     codes.has(r.occupationCode),
   );
 
+  const valueRows = (await collect(createReadStream(files.workValues), parseOccupationValue, "\t")).filter((r) =>
+    codes.has(r.occupationCode),
+  );
+
   const sheet = await readSheet(files.crosswalk, "CIP-SOC");
   const [header, ...body] = sheet;
   const crosswalk = body
@@ -102,19 +116,21 @@ async function main() {
   const db = await getDb();
   await db.transaction(async (tx) => {
     await tx.delete(occupationInterests);
+    await tx.delete(occupationValues);
     await tx.delete(occupations);
     await tx.delete(cipSocLinks);
     await tx.delete(majors);
     await tx.delete(colleges);
     for (const batch of chunks(occupationRows)) await tx.insert(occupations).values(batch);
     for (const batch of chunks(interestRows)) await tx.insert(occupationInterests).values(batch);
+    for (const batch of chunks(valueRows)) await tx.insert(occupationValues).values(batch);
     for (const batch of chunks(majorRows)) await tx.insert(majors).values(batch);
     for (const batch of chunks(linkRows)) await tx.insert(cipSocLinks).values(batch);
     for (const batch of chunks(collegeRows, 500)) await tx.insert(colleges).values(batch);
   });
 
   console.log(
-    `Loaded ${occupationRows.length} occupations, ${interestRows.length} interest scores, ` +
+    `Loaded ${occupationRows.length} occupations, ${interestRows.length} interest scores, ${valueRows.length} work value scores, ` +
       `${majorRows.length} majors, ${linkRows.length} major–career links, ${collegeRows.length} colleges.`,
   );
   process.exit(0);

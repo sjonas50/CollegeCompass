@@ -290,3 +290,119 @@ export const colleges = pgTable(
   },
   (t) => [index("colleges_state_idx").on(t.state)],
 );
+
+/** O*NET work values extent scores (1–7), from O*NET 30.0 (the last release that includes them). */
+export const occupationValues = pgTable(
+  "occupation_values",
+  {
+    occupationCode: text("occupation_code")
+      .notNull()
+      .references(() => occupations.code, { onDelete: "cascade" }),
+    value: text("value").notNull(),
+    score: real("score").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.occupationCode, t.value] })],
+);
+
+// ---------------------------------------------------------------------------
+// Assessments and career matching (student data — deleted with the student)
+//
+// Student tables store occupation codes without foreign keys to reference tables, so reloading
+// reference data never deletes a student's matches or goals.
+// ---------------------------------------------------------------------------
+
+export const assessmentAttempts = pgTable(
+  "assessment_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    instrument: text("instrument").notNull(),
+    instrumentVersion: text("instrument_version").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (t) => [index("assessment_attempts_user_idx").on(t.userId, t.instrument, t.startedAt)],
+);
+
+export const assessmentResponses = pgTable(
+  "assessment_responses",
+  {
+    attemptId: uuid("attempt_id")
+      .notNull()
+      .references(() => assessmentAttempts.id, { onDelete: "cascade" }),
+    itemId: text("item_id").notNull(),
+    value: smallint("value").notNull(),
+    answeredAt: timestamp("answered_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.attemptId, t.itemId] })],
+);
+
+export const assessmentResults = pgTable("assessment_results", {
+  attemptId: uuid("attempt_id")
+    .primaryKey()
+    .references(() => assessmentAttempts.id, { onDelete: "cascade" }),
+  scores: jsonb("scores").$type<Record<string, unknown>>().notNull(),
+  scoringVersion: text("scoring_version").notNull(),
+  createdAt: createdAt(),
+});
+
+export type MatchExplanation = {
+  overview: string;
+  careers: { code: string; why: string }[];
+  /** "ai" when written by the model, "template" when generated without it. */
+  source: "ai" | "template";
+};
+
+export const matchRuns = pgTable(
+  "match_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    interestsAttemptId: uuid("interests_attempt_id")
+      .notNull()
+      .references(() => assessmentAttempts.id, { onDelete: "cascade" }),
+    valuesAttemptId: uuid("values_attempt_id").references(() => assessmentAttempts.id, { onDelete: "set null" }),
+    personalityAttemptId: uuid("personality_attempt_id").references(() => assessmentAttempts.id, { onDelete: "set null" }),
+    scoringVersion: text("scoring_version").notNull(),
+    explanation: jsonb("explanation").$type<MatchExplanation>(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("match_runs_user_idx").on(t.userId, t.createdAt)],
+);
+
+export const careerMatches = pgTable(
+  "career_matches",
+  {
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => matchRuns.id, { onDelete: "cascade" }),
+    rank: smallint("rank").notNull(),
+    occupationCode: text("occupation_code").notNull(),
+    title: text("title").notNull(),
+    jobZone: smallint("job_zone"),
+    // 0–100.
+    score: smallint("score").notNull(),
+    interestFit: smallint("interest_fit").notNull(),
+    valuesFit: smallint("values_fit"),
+  },
+  (t) => [primaryKey({ columns: [t.runId, t.rank] })],
+);
+
+/** A student's chosen target careers ("for now"). At most two at a time. */
+export const northStarGoals = pgTable(
+  "north_star_goals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    occupationCode: text("occupation_code").notNull(),
+    title: text("title").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("north_star_user_occupation_uq").on(t.userId, t.occupationCode)],
+);

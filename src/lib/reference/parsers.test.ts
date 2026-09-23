@@ -5,6 +5,7 @@ import {
   parseJobZone,
   parseOccupation,
   parseOccupationInterest,
+  parseOccupationValue,
   socFromOnetCode,
 } from "./parsers";
 
@@ -25,6 +26,13 @@ describe("reference parsers", () => {
     expect(
       parseOccupationInterest({ ...base, "Element ID": "1.B.1.g", "Element Name": "First Interest High-Point", "Scale ID": "IH", "Data Value": "5.00" }),
     ).toBeNull();
+  });
+
+  it("keeps only work value extent scores", () => {
+    const base = { "O*NET-SOC Code": "11-1011.00", Date: "06/2008" };
+    expect(parseOccupationValue({ ...base, "Element Name": "Working Conditions", "Scale ID": "EX", "Data Value": "6.33" }))
+      .toEqual({ occupationCode: "11-1011.00", value: "working_conditions", score: 6.33 });
+    expect(parseOccupationValue({ ...base, "Element Name": "First Work Value High-Point", "Scale ID": "VH", "Data Value": "3.00" })).toBeNull();
   });
 
   it("parses the CIP–SOC crosswalk and skips unmatched rows", () => {

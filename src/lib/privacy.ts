@@ -2,7 +2,13 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { Db } from "@/db";
 import {
   aiUsage,
+  assessmentAttempts,
+  assessmentResponses,
+  assessmentResults,
+  careerMatches,
   consentRecords,
+  matchRuns,
+  northStarGoals,
   parentStudentLinks,
   safetyEvents,
   users,
@@ -33,7 +39,7 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
     .where(and(eq(users.id, studentId), eq(users.role, "student")));
   if (!profile) return null;
 
-  const [consents, usage, safety] = await Promise.all([
+  const [consents, usage, safety, attempts, responses, results, runs, matches, goals] = await Promise.all([
     db
       .select({
         method: consentRecords.method,
@@ -62,6 +68,39 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
       })
       .from(safetyEvents)
       .where(eq(safetyEvents.userId, studentId)),
+    db
+      .select({
+        id: assessmentAttempts.id,
+        instrument: assessmentAttempts.instrument,
+        instrumentVersion: assessmentAttempts.instrumentVersion,
+        startedAt: assessmentAttempts.startedAt,
+        completedAt: assessmentAttempts.completedAt,
+      })
+      .from(assessmentAttempts)
+      .where(eq(assessmentAttempts.userId, studentId)),
+    db
+      .select({ attemptId: assessmentResponses.attemptId, itemId: assessmentResponses.itemId, value: assessmentResponses.value })
+      .from(assessmentResponses)
+      .innerJoin(assessmentAttempts, eq(assessmentAttempts.id, assessmentResponses.attemptId))
+      .where(eq(assessmentAttempts.userId, studentId)),
+    db
+      .select({ attemptId: assessmentResults.attemptId, scores: assessmentResults.scores, createdAt: assessmentResults.createdAt })
+      .from(assessmentResults)
+      .innerJoin(assessmentAttempts, eq(assessmentAttempts.id, assessmentResults.attemptId))
+      .where(eq(assessmentAttempts.userId, studentId)),
+    db
+      .select({ id: matchRuns.id, explanation: matchRuns.explanation, createdAt: matchRuns.createdAt })
+      .from(matchRuns)
+      .where(eq(matchRuns.userId, studentId)),
+    db
+      .select({ runId: careerMatches.runId, rank: careerMatches.rank, title: careerMatches.title, score: careerMatches.score })
+      .from(careerMatches)
+      .innerJoin(matchRuns, eq(matchRuns.id, careerMatches.runId))
+      .where(eq(matchRuns.userId, studentId)),
+    db
+      .select({ title: northStarGoals.title, createdAt: northStarGoals.createdAt })
+      .from(northStarGoals)
+      .where(eq(northStarGoals.userId, studentId)),
   ]);
 
   await audit(db, "student.exported", { actorUserId: requesterId, subjectUserId: studentId });
@@ -71,6 +110,13 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
     consentRecords: consents,
     aiUsage: usage,
     safetyEvents: safety,
+    assessments: attempts.map((a) => ({
+      ...a,
+      responses: Object.fromEntries(responses.filter((r) => r.attemptId === a.id).map((r) => [r.itemId, r.value])),
+      scores: results.find((r) => r.attemptId === a.id)?.scores ?? null,
+    })),
+    careerMatches: runs.map((r) => ({ ...r, matches: matches.filter((m) => m.runId === r.id) })),
+    northStars: goals,
   };
 }
 

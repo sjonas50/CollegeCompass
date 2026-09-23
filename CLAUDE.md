@@ -18,3 +18,8 @@
 - AI calls: structured outputs via `betaZodOutputFormat`; record usage with `recordUsage`;
   check `assertWithinBudget` before non-safety calls. Safety checks are never budget-blocked.
 - After changing `src/db/schema.ts`, run `npm run db:generate` and commit the migration.
+- Assessment items are licensed: O*NET Interest Profiler items are CC BY-ND (use verbatim, keep the
+  attribution); Mini-IPIP items are public domain. Scoring is code, never the model.
+- Student tables store occupation codes without foreign keys to reference tables, so
+  `npm run data:load` (which replaces reference tables) never deletes student data.
+- After changing matching, run `npm run check:matching` (needs `npm run data:load` first).

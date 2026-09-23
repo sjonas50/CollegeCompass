@@ -42,6 +42,25 @@ export function parseOccupationInterest(row: Row) {
   return { occupationCode, interest, score };
 }
 
+const WORK_VALUE_BY_NAME = {
+  Achievement: "achievement",
+  Independence: "independence",
+  Recognition: "recognition",
+  Relationships: "relationships",
+  Support: "support",
+  "Working Conditions": "working_conditions",
+} as const;
+
+/** O*NET 30.0 "Work Values.txt". Keeps the six extent scores (scale EX, 1–7). */
+export function parseOccupationValue(row: Row) {
+  if (row["Scale ID"] !== "EX") return null;
+  const value = WORK_VALUE_BY_NAME[row["Element Name"] as keyof typeof WORK_VALUE_BY_NAME];
+  const occupationCode = row["O*NET-SOC Code"]?.trim();
+  const score = Number(row["Data Value"]);
+  if (!value || !occupationCode || !Number.isFinite(score)) return null;
+  return { occupationCode, value, score };
+}
+
 /** NCES CIP2020–SOC2018 crosswalk, "CIP-SOC" sheet. */
 export function parseCipSoc(row: Row) {
   const cipCode = row.CIP2020Code?.trim();
