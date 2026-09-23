@@ -1,62 +1,59 @@
-# College Compass: AI-Powered College Guidance Counselor
+# College Compass
 
-College Compass is a web application that serves as an AI-powered guidance counselor for high school students. It assesses students' personalities, skills, and interests, then generates personalized educational and career path recommendations, along with a customized high school roadmap to reach their goals.
+A low-cost, AI-assisted guidance counselor for students in grades 7–12 who can't pay for private
+counseling or whose school counselor can't give them personal attention. See the
+[v2 product spec](https://claude.ai/code/artifact/2baea690-7a5a-46c8-8265-f9d1f448aabd).
 
-## Core Objectives
+This is the v2 rebuild. The v1 prototype lives in `main`'s history.
 
-1. Provide accurate, personalized assessment of student aptitudes and interests
-2. Match students with appropriate fields of study and career paths
-3. Generate customized high school academic plans aligned with college admission requirements
-4. Recommend suitable colleges/universities based on student profile and aspirations
-5. Deliver actionable guidance throughout high school years
+## Getting started
 
-## Technologies Used
-
-- **Frontend**: Next.js with TypeScript, Tailwind CSS, React
-- **Backend**: Next.js API routes
-- **Database**: MongoDB with Mongoose
-- **Authentication**: JWT with bcrypt
-- **AI Integration**: OpenAI API and Claude API
-- **Data Visualization**: Chart.js with react-chartjs-2
-
-## Getting Started
-
-First, install dependencies:
+Requires Node 24+.
 
 ```bash
 npm install
-```
-
-Then, run the development server:
-
-```bash
+npm run data:load   # optional: O*NET careers, CIP–SOC majors, College Scorecard colleges (~30 MB download)
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+No database setup is needed locally: without `DATABASE_URL` the app uses an embedded Postgres
+(PGlite) in `.data/pglite` and applies migrations on first request. Emails (like the parent
+consent link) are printed to the dev server console. Copy `.env.example` to `.env.local` to
+change settings.
 
-## Project Structure
+## Scripts
 
-- `/src/app` - Next.js application router
-- `/src/components` - Reusable UI components
-- `/src/lib` - Utility functions and shared code
-- `/src/models` - MongoDB models
-- `/src/app/api` - API routes
-- `/src/app/(auth)` - Authentication pages
-- `/src/app/dashboard` - User dashboard pages
-- `/src/app/assessment` - Assessment modules
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Dev server |
+| `npm test` | Unit and integration tests (each test gets a fresh in-memory Postgres) |
+| `npm run lint` / `npm run typecheck` | ESLint / TypeScript |
+| `npm run db:generate` | Create a migration after editing `src/db/schema.ts` |
+| `npm run db:migrate` | Apply migrations to `DATABASE_URL` (run in the deploy step) |
+| `npm run data:load` | Download and load public reference data |
+| `npm run eval:safety` | Live eval of the safety classifier (calls the Anthropic API; costs money) |
 
-## Environment Variables
+## How it fits together
 
-Create a `.env.local` file with the following variables:
+- `src/db/schema.ts` — all tables. Student data hangs off `users`/`households`; reference data
+  (occupations, majors, colleges) is separate and read-only.
+- `src/lib/accounts.ts`, `src/lib/consent/`, `src/lib/privacy.ts` — accounts, COPPA parental
+  consent, and parent export/deletion. Written as plain functions taking a `Db`, so they're
+  tested without a browser (`test/coppa-flow.test.ts`).
+- `src/lib/auth/` — argon2id passwords, database sessions (hashed tokens, 14-day sliding), and
+  the data-access layer (`requireUser`). `src/proxy.ts` only does optimistic redirects.
+- `src/lib/ai/` — model config, cost tracking with a per-student monthly budget, PII scrubbing,
+  and the two-tier safety classifier (`safety/`), with its eval set in `evals/safety/`.
+- `src/lib/reference/` — parsers for O*NET, the NCES CIP–SOC crosswalk and College Scorecard.
 
-```
-MONGODB_URI=
-JWT_SECRET=
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
-```
+## Before real students use this
 
-## License
+These are deliberately unfinished and block production (`src/env.ts` refuses to start in
+production until they're configured):
 
-MIT
+- **Verifiable parental consent.** `CONSENT_VERIFIER=dev_attestation` is a click-through
+  stand-in, not COPPA-compliant consent. Choose a real method with counsel.
+- **Email provider.** Only the console "log" transport exists.
+- **Privacy policy.** `/privacy` is a plain-language draft pending legal review.
+- **Anthropic usage policy.** Confirm the product meets Anthropic's requirements for
+  minor-facing apps before shipping AI features to students.
