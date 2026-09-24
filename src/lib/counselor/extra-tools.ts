@@ -1,6 +1,7 @@
 import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import * as z from "zod";
 import type { Db } from "@/db";
+import { listSummary, upcomingDeadlines } from "../applications/service";
 import { planSummary } from "../courses/service";
 import { roadmapSummary } from "../roadmap";
 import type { ToolContext } from "./tools";
@@ -28,5 +29,17 @@ export async function counselorExtraTools(
     inputSchema: z.object({}),
     run: async () => JSON.stringify(await roadmapSummary(db, student.id, student.grade, opts.now)),
   });
-  return [plan, roadmap];
+  const list = betaZodTool({
+    name: "get_my_college_list",
+    description:
+      "Get the student's own list of colleges and programs: each one's status (considering, applying, applied, got in...), deadline, application checklist progress, and any financial aid offer they entered, with gift aid, net price and loans worked out. Also the deadlines in the next 30 days.",
+    inputSchema: z.object({}),
+    run: async () =>
+      JSON.stringify({
+        list: await listSummary(db, student.id),
+        upcoming: await upcomingDeadlines(db, student.id, opts.now, 30),
+        page: "/applications",
+      }),
+  });
+  return [plan, roadmap, list];
 }

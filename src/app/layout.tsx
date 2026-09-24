@@ -9,6 +9,8 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  // Makes links in page metadata (like the aid guide's other-language versions) absolute.
+  metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
   title: { default: "College Compass", template: "%s · College Compass" },
   description:
     "Discover careers that fit you and build a grade-by-grade plan for college — for students in grades 7–12.",
@@ -31,16 +33,22 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 College Compass
               </Link>
             </div>
-            {user?.role === "student" && <StudentNav />}
+            {user?.role === "student" && <StudentNav grade={user.grade} />}
           </div>
         </header>
         <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
           {children}
         </main>
         <footer className="border-t border-border px-4 py-6 text-center text-sm text-muted">
-          <nav className="flex justify-center gap-4">
+          <nav aria-label="Footer" className="flex flex-wrap justify-center gap-x-4 gap-y-2">
             <Link href="/careers" className="underline underline-offset-2">
               Explore careers
+            </Link>
+            <Link href="/colleges" className="underline underline-offset-2">
+              Colleges
+            </Link>
+            <Link href="/aid" className="underline underline-offset-2">
+              Financial aid guide
             </Link>
             <Link href="/about/data" className="underline underline-offset-2">
               Data sources

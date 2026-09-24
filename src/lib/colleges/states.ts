@@ -67,6 +67,12 @@ export function normalizeState(value: string | null | undefined): string | null 
   return code && US_STATES.some((s) => s.code === code) ? code : null;
 }
 
+/** A postal code from a code or a full name ("tx", "Texas", "new york"), or null. */
+export function stateFromCodeOrName(value: string | null | undefined): string | null {
+  const name = value?.trim().toLowerCase();
+  return normalizeState(value) ?? US_STATES.find((s) => s.name.toLowerCase() === name)?.code ?? null;
+}
+
 export function stateName(code: string | null | undefined): string | null {
   return US_STATES.find((s) => s.code === code)?.name ?? null;
 }

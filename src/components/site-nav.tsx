@@ -9,15 +9,22 @@ const STUDENT_LINKS = [
   { href: "/plan", label: "Plan" },
   { href: "/counselor", label: "Counselor" },
   { href: "/careers", label: "Careers" },
+  { href: "/colleges", label: "Colleges" },
+];
+// Applications and financial aid are front and center in 11th and 12th grade.
+const LAUNCH_LINKS = [
+  { href: "/applications", label: "My list" },
+  { href: "/aid", label: "Paying for it" },
 ];
 
 /** Primary navigation for signed-in students. Scrolls horizontally on narrow screens. */
-export function StudentNav() {
+export function StudentNav({ grade }: { grade: number | null }) {
   const pathname = usePathname();
+  const links = grade !== null && grade >= 11 ? [...STUDENT_LINKS, ...LAUNCH_LINKS] : STUDENT_LINKS;
   return (
     <nav aria-label="Main" className="-mx-4 overflow-x-auto px-4">
       <ul className="flex gap-1 text-sm">
-        {STUDENT_LINKS.map((l) => {
+        {links.map((l) => {
           const active = pathname === l.href || pathname.startsWith(`${l.href}/`) || (l.href === "/dashboard" && pathname.startsWith("/discover"));
           return (
             <li key={l.href}>

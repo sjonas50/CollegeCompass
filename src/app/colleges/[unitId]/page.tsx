@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache, type ReactNode } from "react";
+import { AddToListButton } from "@/components/add-to-list";
 import { Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
 import { FOR_PROFIT_NOTE, MEANINGS, admissionContext, sizeText } from "@/lib/colleges/describe";
@@ -75,13 +76,7 @@ export default async function CollegePage({ params, searchParams }: PageProps<"/
       <div className="space-y-3">
         <PageHeading title={college.name} lead={facts.join(" · ") || undefined} />
         <MissionBadges missions={college.missions} onlineOnly={college.onlineOnly} />
-        {/*
-          PLACEHOLDER: "Add to my list" control (Phase 3 application tracker).
-          Another builder provides <AddToListButton unitId name /> in src/components/add-to-list.tsx.
-          Once it exists, import it and render it right here, under the heading:
-            import { AddToListButton } from "@/components/add-to-list";
-            <AddToListButton unitId={college.unitId} name={college.name} />
-        */}
+        <AddToListButton unitId={college.unitId} name={college.name} />
       </div>
 
       {college.control === 3 && <p className="rounded-lg bg-accent-soft px-4 py-3 text-sm">{FOR_PROFIT_NOTE}</p>}

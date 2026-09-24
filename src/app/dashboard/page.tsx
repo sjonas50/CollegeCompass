@@ -15,6 +15,8 @@ import { listCourses } from "@/lib/courses/service";
 import { listNorthStars } from "@/lib/goals";
 import { buildRoadmap, getMilestoneProgress } from "@/lib/roadmap";
 import { MILESTONES } from "@/lib/roadmap/milestones";
+import { listEntries, upcomingDeadlines } from "@/lib/applications/service";
+import { formatDate, relativeDays } from "@/lib/applications/dates";
 import { reminderSettingFor } from "@/lib/reminders";
 
 export const metadata: Metadata = { title: "Your dashboard" };
@@ -38,12 +40,14 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const { settings } = await searchParams;
   const db = await getDb();
   const grade = user.grade ?? 9;
-  const [statuses, stars, progress, courses, reminders] = await Promise.all([
+  const [statuses, stars, progress, courses, reminders, list, deadlines] = await Promise.all([
     instrumentStatuses(db, user.id),
     listNorthStars(db, user.id),
     getMilestoneProgress(db, user.id),
     listCourses(db, user.id),
     reminderSettingFor(db, user.id),
+    listEntries(db, user.id),
+    upcomingDeadlines(db, user.id, new Date(), 14),
   ]);
   const roadmap = buildRoadmap(MILESTONES, grade, new Date(), progress);
   const timely = [...roadmap.now, ...roadmap.catchUp].slice(0, 3);
@@ -51,6 +55,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const next = ORDER.find((i) => statuses[i].state !== "done");
   const hasResults = statuses.interests.state === "done";
   const graduated = grade > 12;
+  const launching = grade >= 11;
 
   return (
     <div className="space-y-8">
@@ -148,6 +153,37 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           )}
         </div>
       </section>
+
+      {grade >= 9 && (
+        <section>
+          <h2 className="text-lg font-medium">{launching ? "Colleges and applications" : "Colleges and training"}</h2>
+          {launching && deadlines.length > 0 ? (
+            <ul className="mt-3 space-y-2">
+              {deadlines.map((d) => (
+                <li key={`${d.name}-${d.deadline}`}>
+                  <Link href="/applications" className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl border border-border bg-surface p-4 hover:border-accent">
+                    <span className="font-medium">{d.name}</span>
+                    <span className="text-sm text-muted">
+                      {formatDate(d.deadline)} · {relativeDays(d.daysLeft)}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-sm text-muted">
+              {list.length
+                ? `${list.length} on your list${launching ? ". No deadlines in the next two weeks." : "."}`
+                : "Look up colleges and programs by major, place and price, and see what students really pay after grants."}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <ButtonLink href="/colleges" variant="secondary">Explore colleges</ButtonLink>
+            {(list.length > 0 || launching) && <ButtonLink href="/applications" variant="secondary">My list</ButtonLink>}
+            {launching && <ButtonLink href="/aid" variant="secondary">Paying for college</ButtonLink>}
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>

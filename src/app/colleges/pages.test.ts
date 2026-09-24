@@ -14,6 +14,9 @@ const state = vi.hoisted(() => ({ db: null as Db | null }));
 
 vi.mock("@/db", async (original) => ({ ...(await original<typeof import("@/db")>()), getDb: async () => state.db }));
 vi.mock("@/lib/auth/dal", () => ({ getCurrentUser: async () => null, requireUser: async () => null }));
+// An async server component with its own tests (src/app/applications/pages.test.ts); these pages
+// are rendered synchronously here.
+vi.mock("@/components/add-to-list", () => ({ AddToListButton: () => null }));
 
 const text = (html: string) =>
   html

@@ -1,6 +1,8 @@
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lt } from "drizzle-orm";
 import type { Db } from "@/db";
 import { parentStudentLinks, reminderSends, studentMilestones, users, weeklySteps } from "@/db/schema";
+import { formatDate, relativeDays } from "./applications/dates";
+import { upcomingDeadlinesFor } from "./applications/service";
 import { currentGrade, isUnder13 } from "./auth/age";
 import { hashToken } from "./auth/tokens";
 import type { Email } from "./email";
@@ -129,7 +131,7 @@ export async function* weeklyReminderBatches(
     afterId = students[students.length - 1].id;
     const ids = students.map((s) => s.id);
 
-    const [steps, progress, parentLinks] = await Promise.all([
+    const [steps, progress, parentLinks, deadlinesBy] = await Promise.all([
       db
         .select({ userId: weeklySteps.userId, weekStart: weeklySteps.weekStart, text: weeklySteps.text, status: weeklySteps.status })
         .from(weeklySteps)
@@ -143,6 +145,7 @@ export async function* weeklyReminderBatches(
         .from(parentStudentLinks)
         .innerJoin(users, eq(users.id, parentStudentLinks.parentUserId))
         .where(inArray(parentStudentLinks.studentUserId, ids)),
+      upcomingDeadlinesFor(db, ids, now, 14),
     ]);
     const stepsBy = group(steps);
     const progressBy = group(progress);
@@ -158,7 +161,8 @@ export async function* weeklyReminderBatches(
       const finished = mine.filter((st) => st.weekStart === lastWeek && st.status === "done");
       const carryOver = mine.filter((st) => st.weekStart === lastWeek && st.status === "open");
       const thisWeek = mine.filter((st) => st.weekStart === weekStart);
-      if (!finished.length && !carryOver.length && !thisWeek.length && !timely.length) continue;
+      const deadlines = deadlinesBy.get(s.id) ?? [];
+      if (!finished.length && !carryOver.length && !thisWeek.length && !timely.length && !deadlines.length) continue;
 
       const toParent = reminderGoesToParent(s, now);
       const recipients = toParent
@@ -184,6 +188,11 @@ export async function* weeklyReminderBatches(
       if (thisWeek.length) {
         lines.push(toParent ? "Their steps this week:" : "Your steps this week:");
         for (const st of thisWeek) lines.push(`- ${st.status === "done" ? "[done] " : ""}${st.text}`);
+        lines.push("");
+      }
+      if (deadlines.length) {
+        lines.push(toParent ? "Deadlines on their college list in the next two weeks:" : "Deadlines on your college list in the next two weeks:");
+        for (const d of deadlines) lines.push(`- ${d.name}: ${formatDate(d.deadline)} (${relativeDays(d.daysLeft)})`);
         lines.push("");
       }
       if (timely.length) {

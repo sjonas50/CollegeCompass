@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui";
 import { type ChatMessage, type ServerEvent, type Turn, announcement as announce, applyEvent, finishTurn, httpFailure, startTurn } from "./chat-events";
+import { chatLinks } from "./chat-links";
 import { supportActions } from "./support-actions";
 
 export type { ChatMessage };
@@ -17,6 +19,27 @@ const STARTERS = [
 
 const MAX_CHARS = 2000;
 
+/** Text with our page paths and https addresses as links. */
+function Linked({ text }: { text: string }) {
+  return (
+    <>
+      {chatLinks(text).map((s, i) =>
+        s.type === "text" ? (
+          s.text
+        ) : s.external ? (
+          <a key={i} href={s.href} target="_blank" rel="noopener noreferrer" className="break-words underline underline-offset-2">
+            {s.text}
+          </a>
+        ) : (
+          <Link key={i} href={s.href} className="break-words underline underline-offset-2">
+            {s.text}
+          </Link>
+        ),
+      )}
+    </>
+  );
+}
+
 /** Renders model text as plain paragraphs and "- " lists. Never as HTML. */
 function RichText({ text }: { text: string }) {
   const blocks = text.split(/\n{2,}/);
@@ -28,14 +51,16 @@ function RichText({ text }: { text: string }) {
           return (
             <ul key={i} className="my-2 list-disc space-y-1 pl-5">
               {lines.map((l, j) => (
-                <li key={j}>{l.replace(/^\s*[-•]\s+/, "")}</li>
+                <li key={j}>
+                  <Linked text={l.replace(/^\s*[-•]\s+/, "")} />
+                </li>
               ))}
             </ul>
           );
         }
         return (
           <p key={i} className="my-2 whitespace-pre-wrap first:mt-0 last:mb-0">
-            {block}
+            <Linked text={block} />
           </p>
         );
       })}

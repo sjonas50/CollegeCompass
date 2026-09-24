@@ -503,7 +503,7 @@ describe("counselor tools", () => {
     await db.insert(schema.studentCourses).values({ userId: student.id, name: "Maya's Biology", subject: "science", gradeLevel: 10, status: "completed", finalGrade: "A" });
     await db.insert(schema.weeklySteps).values({ userId: student.id, weekStart: "2026-09-21", text: "Ask Maya's counselor about AP Bio" });
     const tools = await counselorExtraTools(db, student, { now });
-    expect(tools.map((t) => t.name)).toEqual(["get_my_plan", "get_my_roadmap"]);
+    expect(tools.map((t) => t.name)).toEqual(["get_my_plan", "get_my_roadmap", "get_my_college_list"]);
     const plan = String(await tools[0].run({}));
     expect(plan).toContain("Biology");
     expect(plan).not.toContain("Maya");

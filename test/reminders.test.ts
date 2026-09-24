@@ -70,6 +70,20 @@ describe("weekly reminders (Monday 13:00 UTC)", () => {
     expect(r.weekStart).toBe(thisWeek);
   });
 
+  it("lists unsent college-list deadlines in the next two weeks", async () => {
+    const id = await teen(12);
+    await db.insert(schema.collegeList).values([
+      { userId: id, name: "State University", deadline: "2026-10-15" },
+      { userId: id, name: "Sent Already College", deadline: "2026-10-10", status: "applied" },
+      { userId: id, name: "Far Away College", deadline: "2026-11-30" },
+    ]);
+    const [reminder] = await buildWeeklyReminders(db, APP, now);
+    expect(reminder.email.text).toContain("Deadlines on your college list in the next two weeks:");
+    expect(reminder.email.text).toContain("- State University: ");
+    expect(reminder.email.text).not.toContain("Sent Already College");
+    expect(reminder.email.text).not.toContain("Far Away College");
+  });
+
   it("claims each send so a re-run never double-sends, and a released claim is retried", async () => {
     const id = await teen();
     await db.insert(schema.weeklySteps).values({ userId: id, weekStart: lastWeek, text: "Make an FSA ID" });

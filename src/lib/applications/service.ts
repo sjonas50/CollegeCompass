@@ -1,4 +1,4 @@
-import { and, asc, count, eq, getTableColumns, sql } from "drizzle-orm";
+import { and, asc, count, eq, getTableColumns, gte, inArray, lte, sql } from "drizzle-orm";
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import * as z from "zod";
 import type { Db } from "@/db";
@@ -333,4 +333,31 @@ export async function upcomingDeadlines(db: Db, userId: string, now = new Date()
       deadline: e.deadline,
       daysLeft: daysBetween(today, e.deadline),
     }));
+}
+
+/**
+ * Upcoming unsent deadlines for many students in one query, for the weekly reminder emails. Names
+ * are the student's own list entries (no AI provider involved), so they're used as entered.
+ */
+export async function upcomingDeadlinesFor(
+  db: Db,
+  userIds: string[],
+  now = new Date(),
+  days = 14,
+): Promise<Map<string, { name: string; deadline: string; daysLeft: number }[]>> {
+  const out = new Map<string, { name: string; deadline: string; daysLeft: number }[]>();
+  if (!userIds.length) return out;
+  const today = usToday(now);
+  const rows = await db
+    .select()
+    .from(collegeList)
+    .where(and(inArray(collegeList.userId, userIds), gte(collegeList.deadline, today), lte(collegeList.deadline, addDays(today, days))))
+    .orderBy(asc(collegeList.deadline), asc(collegeList.name));
+  for (const row of rows) {
+    if (row.deadline === null || isSubmitted(row)) continue;
+    const list = out.get(row.userId) ?? [];
+    list.push({ name: row.name, deadline: row.deadline, daysLeft: daysBetween(today, row.deadline) });
+    out.set(row.userId, list);
+  }
+  return out;
 }

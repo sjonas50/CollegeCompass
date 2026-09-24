@@ -4,6 +4,7 @@ import * as z from "zod";
 import type { Db } from "@/db";
 import { RIASEC_INFO } from "../assessments/instruments";
 import { JOB_ZONE_INFO, getCareer, searchCareers } from "../careers";
+import { collegeTools } from "./college-tools";
 
 /**
  * Read-only tools, each bound to one student. Tools never take a user id from the model, so the
@@ -49,5 +50,5 @@ export function counselorTools(ctx: ToolContext): BetaRunnableTool[] {
     },
   });
 
-  return [search, career, ...(ctx.extra ?? [])];
+  return [search, career, ...collegeTools(ctx.db), ...(ctx.extra ?? [])];
 }
