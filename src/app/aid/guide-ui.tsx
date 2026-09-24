@@ -9,7 +9,7 @@ import {
   aidGuideHref,
 } from "@/lib/aid-guide";
 import { LANGUAGE_NAMES, aidText, formatGuideDate, otherLanguages } from "@/lib/aid-guide/dictionary";
-import { linkify } from "@/lib/aid-guide/linkify";
+import { guideTextSegments } from "@/lib/aid-guide/links";
 import { ExternalIcon, GlobeIcon, InfoIcon, TipIcon, WarningIcon } from "./icons";
 
 // Building blocks for the financial aid guide pages. Content is always rendered as React text
@@ -37,11 +37,14 @@ function ExternalLink({ href, lang, children }: { href: string; lang: AidLanguag
   );
 }
 
-/** Guide text with its bare https addresses turned into links. Everything else stays plain text. */
-export function LinkedText({ text, lang }: { text: string; lang: AidLanguage }) {
+/**
+ * Guide text with its bare https addresses turned into links, when they go to an official (.gov,
+ * .edu) site or one of the section's `sources` (see guideTextSegments). Everything else stays text.
+ */
+export function LinkedText({ text, lang, sources }: { text: string; lang: AidLanguage; sources: readonly AidGuideSource[] }) {
   return (
     <>
-      {linkify(text).map((segment, i) =>
+      {guideTextSegments(text, sources).map((segment, i) =>
         segment.type === "link" ? (
           <ExternalLink key={i} href={segment.href} lang={lang}>
             {segment.text}
@@ -174,8 +177,21 @@ function BlockHeading({ id, children }: { id?: string; children: ReactNode }) {
   );
 }
 
-/** One block of a guide section. `anchor` is the id for its heading, if it has one. */
-export function GuideBlock({ block, lang, anchor }: { block: AidGuideBlock; lang: AidLanguage; anchor?: string }) {
+/**
+ * One block of a guide section. `anchor` is the id for its heading, if it has one; `sources` are
+ * the section's sources, whose sites the block's text may link to.
+ */
+export function GuideBlock({
+  block,
+  lang,
+  anchor,
+  sources,
+}: {
+  block: AidGuideBlock;
+  lang: AidLanguage;
+  anchor?: string;
+  sources: readonly AidGuideSource[];
+}) {
   const heading = block.heading ? <BlockHeading id={anchor}>{block.heading}</BlockHeading> : null;
   switch (block.kind) {
     case "paragraph":
@@ -183,7 +199,7 @@ export function GuideBlock({ block, lang, anchor }: { block: AidGuideBlock; lang
         <div className="space-y-2">
           {heading}
           <p>
-            <LinkedText text={block.text} lang={lang} />
+            <LinkedText text={block.text} lang={lang} sources={sources} />
           </p>
         </div>
       );
@@ -196,7 +212,7 @@ export function GuideBlock({ block, lang, anchor }: { block: AidGuideBlock; lang
           <List className={`space-y-2 pl-6 ${block.kind === "steps" ? "list-decimal marker:font-semibold" : "list-disc"}`}>
             {block.items.map((item, i) => (
               <li key={i} className="pl-1 break-inside-avoid">
-                <LinkedText text={item} lang={lang} />
+                <LinkedText text={item} lang={lang} sources={sources} />
               </li>
             ))}
           </List>
@@ -214,7 +230,7 @@ export function GuideBlock({ block, lang, anchor }: { block: AidGuideBlock; lang
           </p>
           {heading && <div className="mt-1">{heading}</div>}
           <p className="mt-1">
-            <LinkedText text={block.text} lang={lang} />
+            <LinkedText text={block.text} lang={lang} sources={sources} />
           </p>
         </div>
       );

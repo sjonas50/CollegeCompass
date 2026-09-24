@@ -2,7 +2,8 @@ import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { BetaRunnableTool } from "@anthropic-ai/sdk/lib/tools/BetaRunnableTool";
 import * as z from "zod";
 import type { Db } from "@/db";
-import { AID_GUIDE_SECTION_IDS, aidGuideHref, getSection, listSections } from "../aid-guide";
+import { AID_GUIDE_SECTION_IDS, loadGuide } from "../aid-guide";
+import { aidGuideToolResult } from "../aid-guide/counselor";
 import {
   CONTROL_LABELS,
   CREDENTIAL_LABELS,
@@ -198,27 +199,12 @@ export function collegeTools(db: Db): BetaRunnableTool[] {
   const aid = betaZodTool({
     name: "get_aid_guide",
     description:
-      "Read College Compass's financial aid guide, a fact-checked, plain-language guide in English and Spanish: how aid works, the FAFSA step by step, special situations (undocumented parents, foster youth, divorced parents), Pell and Workforce Pell, state aid, the CSS Profile and fee waivers, scholarships and scams, loans, comparing aid offers, and paying for career training. Call it with no section to see what's there. Answer aid questions from it and link the student to the section.",
+      "Read College Compass's plain-language financial aid guide, in English and Spanish: how aid works, the FAFSA step by step, special situations (undocumented parents, foster youth, divorced parents), Pell and Workforce Pell, state aid, the CSS Profile and fee waivers, scholarships and scams, loans, comparing aid offers, and paying for career training. Call it with no section to see what's there. Answer aid questions from it and link the student to the section. Each result says whether a counselor has reviewed the guide yet; while it's a draft, say so and have the student confirm dates and amounts at studentaid.gov.",
     inputSchema: z.object({
       section: z.enum(AID_GUIDE_SECTION_IDS).optional(),
       language: z.enum(["en", "es"]).optional().describe("Spanish for families who prefer it"),
     }),
-    run: async ({ section, language = "en" }) => {
-      if (!section) return JSON.stringify({ sections: listSections(language) });
-      const s = getSection(language, section);
-      if (!s) return JSON.stringify({ note: "That section isn't published yet.", sections: listSections(language) });
-      return JSON.stringify({
-        title: s.title,
-        page: aidGuideHref(language, s.id),
-        text: s.blocks
-          .map((b) => {
-            const body = "items" in b ? b.items.map((item, i) => (b.kind === "steps" ? `${i + 1}. ${item}` : `- ${item}`)).join("\n") : b.text;
-            return b.heading ? `${b.heading}\n${body}` : body;
-          })
-          .join("\n\n"),
-        sources: s.sources,
-      });
-    },
+    run: async ({ section, language = "en" }) => JSON.stringify(aidGuideToolResult(loadGuide(language), section)),
   });
 
   return [search, detail, aid];

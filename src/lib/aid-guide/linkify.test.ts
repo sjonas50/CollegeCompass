@@ -130,11 +130,33 @@ describe("toSafeHref", () => {
 });
 
 describe("findAddresses", () => {
-  it("finds every written address, linkable or not", () => {
+  it("finds every written address, linkable or not, and where it starts", () => {
     expect(findAddresses("a https://studentaid.gov b http://x c javascript:https://evil.example")).toEqual([
-      "https://studentaid.gov",
-      "http://x",
-      "https://evil.example",
+      { index: 2, address: "https://studentaid.gov" },
+      { index: 27, address: "http://x" },
+      { index: 49, address: "https://evil.example" },
     ]);
+  });
+
+  it("leaves off trailing punctuation and stops where linkify stops", () => {
+    expect(findAddresses("(see https://studentaid.gov/fafsa). Or “https://fafsa.gov”—free.").map((a) => a.address)).toEqual([
+      "https://studentaid.gov/fafsa",
+      "https://fafsa.gov",
+    ]);
+    expect(findAddresses("Go to https://www.example.gov/parent's-guide.")).toEqual([{ index: 6, address: "https://www.example.gov/parent" }]);
+  });
+
+  it("doesn't count writing about the https:// prefix as an address", () => {
+    for (const text of [
+      "Check that the address starts with https:// and ends in .gov.",
+      'Real sites start with "https://" and a lock.',
+      "Look for https://…",
+      "Look for https://...",
+      "(https://)",
+      "HTTP:// is not safe.",
+    ]) {
+      expect(findAddresses(text), text).toEqual([]);
+      expect(links(text), text).toEqual([]);
+    }
   });
 });

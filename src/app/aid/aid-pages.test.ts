@@ -1,71 +1,39 @@
-import { type ReactNode, createElement } from "react";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
-import { AID_GUIDE_LANGUAGES, listSections, loadGuide } from "@/lib/aid-guide";
+import { describe, expect, it, vi } from "vitest";
+import { AID_GUIDE_LANGUAGES, getSection, listSections, loadGuide } from "@/lib/aid-guide";
 import { sectionFixture } from "@/lib/aid-guide/fixtures";
-import AidGuideSectionPage, {
-  generateMetadata as sectionMetadata,
-  generateStaticParams as sectionParams,
-} from "./[lang]/[section]/page";
+import { generateMetadata as sectionMetadata, generateStaticParams as sectionParams } from "./[lang]/[section]/page";
 import AidGuideLayout, { generateStaticParams as languageParams } from "./[lang]/layout";
-import AidGuideIndexPage, { generateMetadata as indexMetadata } from "./[lang]/page";
+import { generateMetadata as indexMetadata } from "./[lang]/page";
 import { GuideBlock, LinkedText, SourcesList } from "./guide-ui";
 import AidGuideNotFound from "./not-found";
 import AidGuideRedirect from "./page";
+import { QUERY_SOURCE_URL } from "./page-fixtures";
+import {
+  escapeHtml,
+  expectHeadingsInOrder,
+  expectLanguageLink,
+  indexPage,
+  indexProps,
+  linkTo,
+  linksTo,
+  render,
+  rejection,
+  sectionPage,
+  sectionProps,
+  text,
+} from "./page-test-utils";
 
-// Server-rendered checks for the financial aid guide pages, using the content files as they are.
+// Server-rendered checks for the financial aid guide pages. The content files are swapped for a
+// small draft guide (./page-fixtures.ts), so these don't depend on what the real content says.
+// aid-pages-full-guide.test.ts covers a finished, reviewed guide; aid-pages-content.test.ts
+// renders the real content.
 
-const render = async (node: Promise<ReactNode> | ReactNode) => renderToStaticMarkup(await node);
-const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
-const decode = (s: string) => s.replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+vi.mock("@/content/aid-guide/en.json", async () => ({ default: (await import("./page-fixtures")).draftPageGuide("en") }));
+vi.mock("@/content/aid-guide/es.json", async () => ({ default: (await import("./page-fixtures")).draftPageGuide("es") }));
 
-const indexProps = (lang: string) => ({ params: Promise.resolve({ lang }), searchParams: Promise.resolve({}) });
-const sectionProps = (lang: string, section: string) => ({
-  params: Promise.resolve({ lang, section }),
-  searchParams: Promise.resolve({}),
-});
-const indexPage = (lang: string) => render(AidGuideIndexPage(indexProps(lang) as PageProps<"/aid/[lang]">));
-const sectionPage = (lang: string, section: string) =>
-  render(AidGuideSectionPage(sectionProps(lang, section) as PageProps<"/aid/[lang]/[section]">));
-
-const ids = listSections("en").map((s) => s.id);
-const [firstId, secondId] = ids;
-
-/** Every <a>…</a> in the html that points exactly at `href`, whatever order its attributes are in. */
-const linksTo = (html: string, href: string) =>
-  [...html.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]).filter((a) => a.includes(` href="${href}"`) || a.startsWith(`<a href="${href}"`));
-/** The one link to `href`; fails the test if there isn't exactly one. */
-function linkTo(html: string, href: string) {
-  const found = linksTo(html, href);
-  expect(found, href).toHaveLength(1);
-  return found[0];
-}
-/** Checks a language-switch link: right address, hreflang and lang, labeled with the language's own name. */
-function expectLanguageLink(html: string, href: string, lang: string, label: string) {
-  const a = linkTo(html, href);
-  expect(a).toContain(`hrefLang="${lang}"`);
-  expect(a).toContain(` lang="${lang}"`);
-  expect(a).toMatch(/class="[^"]*min-h-11/);
-  expect(text(a).trim()).toBe(label);
-}
-
-/** Heading levels in order, e.g. [1, 2, 2]. */
-const headingLevels = (html: string) => [...html.matchAll(/<h([1-6])\b/g)].map((m) => Number(m[1]));
-function expectHeadingsInOrder(html: string) {
-  const levels = headingLevels(html);
-  expect(levels.filter((l) => l === 1)).toHaveLength(1);
-  expect(levels[0]).toBe(1);
-  levels.forEach((level, i) => i > 0 && expect(level - levels[i - 1]).toBeLessThanOrEqual(1));
-}
-
-async function rejection(promise: Promise<unknown>) {
-  try {
-    await promise;
-  } catch (error) {
-    return error as { digest?: string };
-  }
-  throw new Error("expected the page to throw");
-}
+const [firstId, secondId] = ["how-aid-works", "special-situations"];
 
 describe("/aid", () => {
   it("sends visitors to the English guide", async () => {
@@ -78,7 +46,7 @@ describe("/aid", () => {
 describe("a guide page that doesn't exist", () => {
   it("says so in both languages and links to each guide", async () => {
     const html = await render(createElement(AidGuideNotFound));
-    const words = decode(text(html));
+    const words = text(html);
     expect(words).toContain("We couldn't find that page");
     expect(words).toContain("No encontramos esa página");
     expect(html).toContain('<div lang="es">');
@@ -111,34 +79,34 @@ describe("guide layout", () => {
 describe("guide index", () => {
   it("welcomes students and families and lists every section with its summary", async () => {
     const html = await indexPage("en");
-    const words = decode(text(html));
+    const words = text(html);
     expect(html).toContain("<h1");
     expect(words).toContain("Financial aid guide");
     expect(words).toContain("11th and 12th graders and their parents or guardians");
     expect(words).toContain("four-year college, a community college or a career training program");
     for (const section of listSections("en")) {
-      expect(html).toContain(`href="${section.href}"`);
-      expect(decode(html)).toContain(section.title);
-      expect(decode(html)).toContain(section.summary);
+      expect(linkTo(html, section.href)).toContain(escapeHtml(section.title));
+      expect(words).toContain(section.summary);
     }
+    expect(words).toContain("Part 3 of 3");
     expectHeadingsInOrder(html);
   });
 
   it("shows the draft notice and the last updated date", async () => {
-    expect(loadGuide("en").review.status).toBe("draft");
     const html = await indexPage("en");
     expect(html).toContain('role="note"');
     expect(text(html)).toContain("An experienced counselor is reviewing this guide. Double-check dates with official sites.");
-    expect(html).toContain(`<time dateTime="${loadGuide("en").updated}">`);
+    expect(html).toContain('<time dateTime="2026-09-01">September 1, 2026</time>');
     expect(text(html)).toContain("Last updated:");
+    expect(text(html)).not.toContain("Reviewed by");
   });
 
   it("is in Spanish at /aid/es, with a switch back to English", async () => {
     const html = await indexPage("es");
-    const words = decode(text(html));
+    const words = text(html);
     expect(words).toContain("Guía de ayuda financiera");
     expect(words).toContain("Un consejero con experiencia está revisando esta guía.");
-    expect(words).toContain("Última actualización:");
+    expect(words).toContain("Última actualización: 1 de septiembre de 2026");
     expectLanguageLink(html, "/aid/en", "en", "English");
   });
 
@@ -147,7 +115,7 @@ describe("guide index", () => {
   });
 
   it("has titles and alternate-language links", async () => {
-    const meta = await indexMetadata(indexProps("es") as PageProps<"/aid/[lang]">);
+    const meta = await indexMetadata(indexProps("es"));
     expect(meta.title).toBe("Guía de ayuda financiera");
     expect(meta.alternates?.languages).toEqual({ en: "/aid/en", es: "/aid/es" });
   });
@@ -165,21 +133,34 @@ describe("guide section", () => {
     expect(sectionParams({ params: { lang: "fr" } })).toEqual([]);
   });
 
-  it("renders the section's title, summary, blocks and sources", async () => {
-    const section = loadGuide("en").sections[0];
-    const html = await sectionPage("en", section.id);
-    const words = decode(text(html));
-    expect(decode(html)).toContain(section.title);
-    expect(decode(html)).toContain(section.summary);
-    for (const block of section.blocks) {
-      for (const line of "text" in block ? [block.text] : block.items) {
-        for (const part of line.split(/https?:\/\/\S+/)) expect(words).toContain(part.trim());
-      }
-    }
+  it("renders the section's title, summary, blocks and sources, with the characters HTML escapes", async () => {
+    const html = await sectionPage("en", firstId);
+    const words = text(html);
+    expect(words).toContain("Section how-aid-works");
+    expect(words).toContain("One sentence that sums up the section.");
+    expect(words).toContain("Most Pell Grant students have family incomes <$60,000 and pay >$0 after grants & scholarships. Apply at https://studentaid.gov");
+    expect(words).toContain('and read "Paying for college" at https://www.consumerfinance.gov/paying-for-college/');
+    expect(words).toContain("Your parents' tax return");
+    expect(html).toContain("&lt;$60,000 and pay &gt;$0 after grants &amp; scholarships.");
+    expect(html).not.toContain("<$60,000");
+    for (const id of ["who-gets-a-pell-grant", "what-you-ll-need", "scam-sites"]) expect(html).toContain(`<h2 id="${id}"`);
     expect(html).toContain('<h2 id="sources"');
     expect(words).toContain("Where this information comes from");
-    for (const source of section.sources) expect(decode(html)).toContain(source.title);
+    expect(words).toContain("College Navigator: colleges in California & nearby");
     expectHeadingsInOrder(html);
+  });
+
+  it("links official sites and the section's sources, but not a scam example or the word https://", async () => {
+    const html = await sectionPage("en", firstId);
+    const main = html.slice(0, html.indexOf('<h2 id="sources"'));
+    const hrefs = [...main.matchAll(/<a\b[^>]*href="(https:[^"]*)"/g)].map((m) => m[1]);
+    expect(hrefs).toEqual([
+      "https://studentaid.gov/",
+      "https://www.consumerfinance.gov/paying-for-college/",
+      "https://www.careeronestop.org/toolkit/training/find-scholarships.aspx",
+    ]);
+    expect(text(html)).toContain('Fake sites copy real names, like studentaid-gov.help. A real address starts with "https://" and ends in .gov.');
+    expect(linkTo(main, "https://studentaid.gov/")).toMatch(/target="_blank" rel="noopener noreferrer"/);
   });
 
   it("links to the next and previous sections and back to the list", async () => {
@@ -187,11 +168,16 @@ describe("guide section", () => {
     expect(first).not.toContain('rel="prev"');
     expect(linkTo(first, `/aid/en/${secondId}`)).toContain('rel="next"');
     expect(text(first)).toContain("Next");
+    expect(text(first)).toContain("Part 1 of 3");
     expect(first).toContain('href="/aid/en"');
 
     const second = await sectionPage("es", secondId);
     expect(linkTo(second, `/aid/es/${firstId}`)).toContain('rel="prev"');
+    expect(linkTo(second, "/aid/es/comparing-aid-offers")).toContain('rel="next"');
     expect(text(second)).toContain("Anterior");
+    expect(text(second)).toContain("Parte 2 de 3");
+
+    expect(await sectionPage("en", "comparing-aid-offers")).not.toContain('rel="next"');
   });
 
   it("switches language to the same section", async () => {
@@ -207,34 +193,38 @@ describe("guide section", () => {
     // The top bar (way back + language switch) comes first and hides itself when printed.
     expect(html).toMatch(/^<div class="[^"]*print:hidden[^"]*"><a [^>]*href="\/aid\/en">[\s\S]*?<nav aria-label="Language"/);
     expect(html).toMatch(/<nav aria-label="More of the guide" class="[^"]*print:hidden/);
-    const source = loadGuide("en").sections[0].sources[0];
-    expect(html).toContain(`<span class="hidden break-all print:inline"> (${source.url})</span>`);
+    // The address is printed as written; its & is escaped in the HTML, like any text.
+    expect(html).toContain('<span class="hidden break-all print:inline"> (https://nces.ed.gov/collegenavigator/?s=CA&amp;l=93)</span>');
+    expect(linkTo(html, escapeHtml(QUERY_SOURCE_URL))).toMatch(/target="_blank"/);
   });
 
   it("has no Print button outside the FAFSA steps", async () => {
     expect(text(await sectionPage("en", firstId))).not.toContain("Print");
   });
 
-  it("has a title, a description and alternate-language links", async () => {
-    const meta = await sectionMetadata(sectionProps("en", firstId) as PageProps<"/aid/[lang]/[section]">);
-    expect(meta.title).toBe(listSections("en")[0].title);
-    expect(meta.description).toBe(listSections("en")[0].summary);
-    expect(meta.alternates?.languages).toEqual({ en: `/aid/en/${firstId}`, es: `/aid/es/${firstId}` });
-    expect(await sectionMetadata(sectionProps("en", "nope") as PageProps<"/aid/[lang]/[section]">)).toEqual({});
+  it("shows the draft notice on every section", async () => {
+    expect(text(await sectionPage("es", secondId))).toContain("Un consejero con experiencia está revisando esta guía.");
   });
 
-  it("is a 404 for an unknown section or language", async () => {
+  it("has a title, a description and alternate-language links", async () => {
+    const meta = await sectionMetadata(sectionProps("es", firstId));
+    expect(meta.title).toBe(getSection("es", firstId)?.title);
+    expect(meta.description).toBe("Una oración que resume la sección.");
+    expect(meta.alternates?.languages).toEqual({ en: `/aid/en/${firstId}`, es: `/aid/es/${firstId}` });
+    expect(await sectionMetadata(sectionProps("en", "nope"))).toEqual({});
+  });
+
+  it("is a 404 for an unknown section or language, and for a planned section that isn't written yet", async () => {
     expect((await rejection(sectionPage("en", "not-a-section"))).digest).toContain("404");
     expect((await rejection(sectionPage("fr", firstId))).digest).toContain("404");
-    // A planned section the content doesn't have yet.
-    const missing = ["training-programs-and-apprenticeships", "fafsa-step-by-step"].find((id) => !ids.includes(id as never));
-    if (missing) expect((await rejection(sectionPage("en", missing))).digest).toContain("404");
+    expect(loadGuide("en").sections.map((s) => s.id)).not.toContain("fafsa-step-by-step");
+    expect((await rejection(sectionPage("en", "fafsa-step-by-step"))).digest).toContain("404");
   });
 });
 
 describe("guide blocks", () => {
   const block = (b: Parameters<typeof GuideBlock>[0]["block"], lang: "en" | "es" = "en", anchor?: string) =>
-    renderToStaticMarkup(createElement(GuideBlock, { block: b, lang, anchor }));
+    renderToStaticMarkup(createElement(GuideBlock, { block: b, lang, anchor, sources: [] }));
 
   it("shows steps as a numbered list and other lists as bullets", () => {
     expect(block({ kind: "steps", items: ["One", "Two"] })).toMatch(/^<div[^>]*><ol class="[^"]*list-decimal[^"]*"><li[^>]*>One<\/li><li[^>]*>Two<\/li><\/ol>/);
@@ -257,9 +247,8 @@ describe("guide blocks", () => {
   });
 
   it("puts every block kind of a full section on the page", () => {
-    const html = renderToStaticMarkup(
-      createElement("div", null, ...sectionFixture("how-aid-works").blocks.map((b, i) => createElement(GuideBlock, { key: i, block: b, lang: "en" }))),
-    );
+    const { blocks, sources } = sectionFixture("how-aid-works");
+    const html = renderToStaticMarkup(createElement("div", null, ...blocks.map((b, i) => createElement(GuideBlock, { key: i, block: b, lang: "en", sources }))));
     expect(html).toContain("<ol");
     expect(html).toContain("<ul");
     expect(html.match(/role="note"/g)).toHaveLength(2);
@@ -267,7 +256,8 @@ describe("guide blocks", () => {
 });
 
 describe("links in guide text", () => {
-  const linked = (value: string, lang: "en" | "es" = "en") => renderToStaticMarkup(createElement(LinkedText, { text: value, lang }));
+  const sources = [{ title: "CareerOneStop", url: "https://www.careeronestop.org/" }];
+  const linked = (value: string, lang: "en" | "es" = "en") => renderToStaticMarkup(createElement(LinkedText, { text: value, lang, sources }));
 
   it("opens addresses in a new tab without handing that page a way back in", () => {
     const html = linked("Apply at https://studentaid.gov today.");
@@ -275,6 +265,14 @@ describe("links in guide text", () => {
       'Apply at <a href="https://studentaid.gov/" target="_blank" rel="noopener noreferrer" class="break-words underline underline-offset-2 hover:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">https://studentaid.gov<span class="sr-only"> (opens in a new tab)</span></a> today.',
     );
     expect(linked("Vea https://studentaid.gov/es", "es")).toContain("(se abre en una pestaña nueva)");
+  });
+
+  it("links .gov and .edu sites and the section's sources, and nothing else", () => {
+    expect(linksTo(linked("https://www.careeronestop.org/toolkit and https://finaid.ucla.edu"), "https://www.careeronestop.org/toolkit")).toHaveLength(1);
+    expect(linked("https://finaid.ucla.edu")).toContain('<a href="https://finaid.ucla.edu/"');
+    for (const value of ["Scam sites look like https://studentaid-gov.help.", "https://www.fastweb.com", "http://studentaid.gov"]) {
+      expect(linked(value), value).toBe(escapeHtml(value));
+    }
   });
 
   it("never renders HTML from content", () => {
@@ -287,7 +285,7 @@ describe("links in guide text", () => {
   });
 
   it("doesn't link look-alikes", () => {
-    for (const value of ["javascript:https://studentaid.gov", "data:text/html,https://studentaid.gov", "https://studentaid.gov@evil.example", "hxxps://studentaid.gov"]) {
+    for (const value of ["javascript:https://studentaid.gov", "data:text/html,https://studentaid.gov", "https://studentaid.gov@evil.example", "hxxps://studentaid.gov", "https://studentaid.gov.help"]) {
       expect(linked(value), value).not.toContain("<a ");
     }
   });

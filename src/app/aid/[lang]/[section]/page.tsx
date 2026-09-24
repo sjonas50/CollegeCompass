@@ -71,7 +71,7 @@ export default async function AidGuideSectionPage({ params }: PageProps<"/aid/[l
 
       <div className="mt-8 space-y-6">
         {section.blocks.map((block, i) => (
-          <GuideBlock key={i} block={block} lang={lang} anchor={anchors[i]} />
+          <GuideBlock key={i} block={block} lang={lang} anchor={anchors[i]} sources={section.sources} />
         ))}
       </div>
 

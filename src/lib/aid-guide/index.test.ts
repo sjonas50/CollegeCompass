@@ -43,7 +43,7 @@ describe("aid guide loader", () => {
   it("finds a section by id in either language", () => {
     const [firstId] = loadGuide("en").sections.map((s) => s.id);
     expect(getSection("en", firstId)?.id).toBe(firstId);
-    expect(getSection("es", firstId)?.title).not.toBe(getSection("en", firstId)?.title);
+    expect(getSection("es", firstId)).toBe(loadGuide("es").sections[0]);
     expect(getSection("en", "not-a-section")).toBeUndefined();
     expect(getSection("en", "__proto__")).toBeUndefined();
   });
@@ -62,10 +62,10 @@ describe("aid guide loader", () => {
     const sections = listSections("en");
     const first = getNeighbors("en", sections[0].id);
     expect(first?.prev).toBeNull();
-    expect(first?.next?.id).toBe(sections[1]?.id);
+    expect(first?.next?.id ?? null).toBe(sections[1]?.id ?? null);
     const last = getNeighbors("en", sections.at(-1)!.id);
     expect(last?.next).toBeNull();
-    expect(last?.prev?.id).toBe(sections.at(-2)?.id);
+    expect(last?.prev?.id ?? null).toBe(sections.at(-2)?.id ?? null);
     expect(getNeighbors("en", "not-a-section")).toBeNull();
   });
 

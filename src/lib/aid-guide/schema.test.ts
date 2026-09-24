@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { guideFixture, sectionFixture } from "./fixtures";
-import { AID_GUIDE_SECTION_IDS, parseGuide } from "./schema";
+import { finishedSectionFixture, guideFixture, sectionFixture, wordsOf } from "./fixtures";
+import { AID_GUIDE_LANGUAGES, AID_GUIDE_SECTION_IDS, type AidLanguage, LENGTH_LIMITS, parseGuide } from "./schema";
 
 const good = guideFixture();
 const [first, second] = good.sections;
@@ -11,29 +11,29 @@ const withSection = (patch: object) => ({ ...good, sections: [{ ...first, ...pat
 const withBlock = (block: object) => withSection({ blocks: [block] });
 
 function issuesFor(raw: unknown): string[] {
-  const result = parseGuide(raw, "en.json");
+  const result = parseGuide(raw, "en");
   return result.ok ? [] : result.issues;
 }
 
 describe("aid guide content format", () => {
   it("accepts a well-formed guide with every kind of block", () => {
-    const result = parseGuide(good, "en.json");
+    const result = parseGuide(good, "en");
     expect(result.ok).toBe(true);
     expect(new Set(first.blocks.map((b) => b.kind))).toEqual(new Set(["paragraph", "list", "steps", "tip", "warning"]));
   });
 
   it("accepts any subset of the planned sections, in order, while the guide is being written", () => {
-    expect(parseGuide(guideFixture("en", ["fafsa-step-by-step"]), "en.json").ok).toBe(true);
-    expect(parseGuide(guideFixture("en", [...AID_GUIDE_SECTION_IDS]), "en.json").ok).toBe(true);
+    expect(parseGuide(guideFixture("en", ["fafsa-step-by-step"]), "en").ok).toBe(true);
+    expect(parseGuide(guideFixture("en", [...AID_GUIDE_SECTION_IDS]), "en").ok).toBe(true);
   });
 
   it("accepts a counselor-reviewed guide that says who reviewed it and when", () => {
     const reviewed = { ...good, review: { status: "counselor-reviewed", reviewedBy: "A. Counselor", reviewedOn: "2026-10-01" } };
-    expect(parseGuide(reviewed, "en.json").ok).toBe(true);
+    expect(parseGuide(reviewed, "en").ok).toBe(true);
   });
 
   it("trims text", () => {
-    const result = parseGuide(withSection({ title: "  How aid works  " }), "en.json");
+    const result = parseGuide(withSection({ title: "  How aid works  " }), "en");
     expect(result.ok && result.guide.sections[0].title).toBe("How aid works");
   });
 
@@ -46,6 +46,11 @@ describe("aid guide content format", () => {
     ["an unknown review status", { ...good, review: { status: "approved" } }, "review.status"],
     ["a reviewed guide with no reviewer", { ...good, review: { status: "counselor-reviewed", reviewedOn: "2026-10-01" } }, "review.reviewedBy: Say who"],
     ["a reviewed guide with no date", { ...good, review: { status: "counselor-reviewed", reviewedBy: "A. Counselor" } }, "review.reviewedOn: Say when"],
+    [
+      "a content fingerprint that was mistyped",
+      { ...good, review: { status: "counselor-reviewed", reviewedBy: "A. Counselor", reviewedOn: "2026-09-10", contentFingerprint: "3f9a0c" } },
+      "review.contentFingerprint: Copy the fingerprint exactly as the check gives it",
+    ],
     ["no sections", { ...good, sections: [] }, "en.json sections: The guide needs at least one section."],
     ["an unknown section id", withSection({ id: "win-the-lottery" }), 'sections.0.id: Unknown section id "win-the-lottery"'],
     ["a section id that isn't kebab-case", withSection({ id: "How-Aid-Works" }), "sections.0.id: Unknown section id"],
@@ -53,7 +58,7 @@ describe("aid guide content format", () => {
     ["sections out of order", { ...good, sections: [second, first] }, 'sections.1.id: Section "how-aid-works" is out of order.'],
     ["an empty title", withSection({ title: "   " }), "sections.0.title: Can't be empty."],
     ["a missing summary", withSection({ summary: undefined }), "sections.0.summary"],
-    ["a very long summary", withSection({ summary: "word ".repeat(100) }), "sections.0.summary: Keep this under 240 characters."],
+    ["a very long summary", withSection({ summary: "word ".repeat(100) }), "sections.0.summary: Keep this to 240 characters or fewer. It has 499."],
     ["a section with no blocks", withSection({ blocks: [] }), "sections.0.blocks: A section needs at least one block."],
     ["an unknown block kind", withBlock({ kind: "video", text: "Watch this." }), "sections.0.blocks.0"],
     ["a paragraph without text", withBlock({ kind: "paragraph" }), "sections.0.blocks.0.text"],
@@ -92,5 +97,79 @@ describe("aid guide content format", () => {
         expect.stringMatching(/^en\.json sections\.0\.sources: /),
       ]),
     );
+  });
+});
+
+describe("line breaks", () => {
+  // A browser shows a line break inside a paragraph as a space, so these would run together.
+  const withBreaks = [
+    "First paragraph about grants.\n\nSecond paragraph about loans.",
+    "Grants are free money.\r\nLoans must be paid back.",
+    "What you need:\n- a tax return\n- a Social Security number",
+    "One line and another",
+  ];
+  const everywhere = (value: string) => [
+    withBlock({ kind: "paragraph", text: value }),
+    withBlock({ kind: "warning", text: value }),
+    withBlock({ kind: "steps", items: ["ok", value] }),
+    withBlock({ kind: "tip", heading: value, text: "Hi." }),
+    withSection({ title: value }),
+    withSection({ summary: value }),
+    withSection({ sources: [{ title: value, url: "https://studentaid.gov" }] }),
+    { ...good, review: { status: "counselor-reviewed", reviewedBy: value, reviewedOn: "2026-09-01" } },
+  ];
+
+  it.each(withBreaks)("are rejected in every kind of text: %j", (value) => {
+    for (const raw of everywhere(value)) {
+      expect(issuesFor(raw).join("\n")).toContain(
+        "No line breaks: they don't show on the page, so the words would run together. Put each paragraph in its own block, and each list item in its own item.",
+      );
+    }
+    expect(issuesFor(withBlock({ kind: "paragraph", text: value }))).toHaveLength(1);
+  });
+
+  it("are fine before or after the text, which is trimmed", () => {
+    const result = parseGuide(withBlock({ kind: "paragraph", text: "\nGrants are free money.\n" }), "en");
+    expect(result.ok && result.guide.sections[0].blocks[0]).toEqual({ kind: "paragraph", text: "Grants are free money." });
+  });
+});
+
+describe("length limits", () => {
+  const fields = Object.keys(LENGTH_LIMITS.en) as (keyof (typeof LENGTH_LIMITS)["en"])[];
+  /** The guide with a summary of exactly `length` characters. */
+  const summaryOf = (length: number, lang: AidLanguage = "en") =>
+    ({ ...withSection({ summary: "palabra ".repeat(length).slice(0, length - 1) + "." }), language: lang });
+
+  it("give Spanish at least a third more room than English, and half again for titles and summaries", () => {
+    for (const field of fields) expect(LENGTH_LIMITS.es[field], field).toBeGreaterThanOrEqual(LENGTH_LIMITS.en[field] * 1.3);
+    expect(LENGTH_LIMITS.es.title).toBeGreaterThanOrEqual(LENGTH_LIMITS.en.title * 1.5);
+    expect(LENGTH_LIMITS.es.summary).toBeGreaterThanOrEqual(LENGTH_LIMITS.en.summary * 1.5);
+  });
+
+  it("accept a Spanish translation that runs longer than its English original", () => {
+    // A 153-character English summary whose faithful Spanish translation has 242 characters.
+    expect(parseGuide(summaryOf(153), "en").ok).toBe(true);
+    expect(parseGuide(summaryOf(242, "es"), "es").ok).toBe(true);
+    // An English summary right at the limit still has room to grow by half in Spanish.
+    expect(parseGuide(summaryOf(LENGTH_LIMITS.en.summary), "en").ok).toBe(true);
+    expect(parseGuide(summaryOf(LENGTH_LIMITS.en.summary * 1.5, "es"), "es").ok).toBe(true);
+  });
+
+  it("are counted per language, and the message says how long the text is", () => {
+    expect(parseGuide(summaryOf(300, "es"), "es").ok).toBe(true);
+    expect(issuesFor(summaryOf(300))).toEqual(["en.json sections.0.summary: Keep this to 240 characters or fewer. It has 300."]);
+    expect(parseGuide(summaryOf(361, "es"), "es")).toEqual({
+      ok: false,
+      issues: ["es.json sections.0.summary: Keep this to 360 characters or fewer. It has 361."],
+    });
+  });
+
+  it("fit a finished guide: ten long sections of 12 blocks and 8 sources, with a 400-word paragraph", () => {
+    for (const lang of AID_GUIDE_LANGUAGES) {
+      const guide = { ...guideFixture(lang), sections: AID_GUIDE_SECTION_IDS.map((id) => finishedSectionFixture(id, lang)) };
+      guide.sections[0].blocks[0] = { kind: "paragraph", text: wordsOf(lang, 400) };
+      const result = parseGuide(guide, lang);
+      expect(result.ok ? [] : result.issues, lang).toEqual([]);
+    }
   });
 });

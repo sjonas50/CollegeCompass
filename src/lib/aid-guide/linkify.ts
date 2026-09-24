@@ -7,7 +7,10 @@ export type TextSegment = { type: "text"; text: string } | { type: "link"; text:
 
 // A candidate starts with http:// or https:// and runs until whitespace, a quote, an angle bracket
 // or typographic punctuation (so "https://studentaid.gov—y" and "“https://…”" split cleanly).
-const CANDIDATE = /https?:\/\/[^\s<>"'`“”‘’«»—–…]+/giu;
+const ADDRESS_CHAR = "[^\\s<>\"'`“”‘’«»—–…]";
+const CANDIDATE = new RegExp(`https?://${ADDRESS_CHAR}+`, "giu");
+// The same, but also a bare scheme, for finding everything written that looks like an address.
+const WRITTEN = new RegExp(`https?://${ADDRESS_CHAR}*`, "giu");
 // What may come right before an address. Anything else ("javascript:https://…", "xhttps://…")
 // means the address is glued to other text, and it stays plain text.
 const ALLOWED_BEFORE = /[\s([{"'“‘«¿¡—–]/u;
@@ -81,7 +84,14 @@ export function linkify(text: string): TextSegment[] {
   return segments;
 }
 
-/** Every web address written in the text (linkable or not), for content checks. */
-export function findAddresses(text: string): string[] {
-  return [...text.matchAll(/https?:\/\/\S*/giu)].map((m) => m[0]);
+/**
+ * Every web address written in the text, linkable or not, with where it starts, for content checks.
+ * Trailing punctuation is left off, as `linkify` does. A bare scheme ("starts with https://") is
+ * text about addresses, not an address, so it isn't listed.
+ */
+export function findAddresses(text: string): { index: number; address: string }[] {
+  return [...text.matchAll(WRITTEN)].flatMap((m) => {
+    const address = trimTrailing(m[0]);
+    return /^https?:\/\/$/i.test(address) ? [] : [{ index: m.index, address }];
+  });
 }
