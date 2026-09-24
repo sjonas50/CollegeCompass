@@ -28,3 +28,14 @@
 - Student tables store occupation codes without foreign keys to reference tables, so
   `npm run data:load` (which replaces reference tables) never deletes student data.
 - After changing matching, run `npm run check:matching` (needs `npm run data:load` first).
+- College data comes from the College Scorecard files named in `scripts/load-reference.ts`. After
+  changing the parsers or moving to a new release, run `npm run data:load` then
+  `npm run data:check-scorecard` (compares our values with the live API for test schools; optional
+  `SCORECARD_API_KEY`), and update `SCORECARD_RELEASE` in `src/lib/colleges/describe.ts`.
+- Family income is never collected: the income band for net prices lives only in the browser.
+- The financial aid guide is content in `src/content/aid-guide/{en,es}.json`, validated at load
+  (schema, en/es parity, safe links). Dates and amounts change every year: re-verify them against
+  studentaid.gov before each FAFSA season, and set `review` only after a counselor has reviewed the
+  exact content. The long fact-checked originals are kept outside git in `.data/aid-guide-verified/`.
+- Key dates on /applications come from `VERIFIED_FAFSA`/`VERIFIED_CSS` in
+  `src/lib/applications/key-dates.ts`; add each cycle's confirmed dates there.

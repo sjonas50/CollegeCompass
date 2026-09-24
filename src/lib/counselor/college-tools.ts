@@ -4,6 +4,7 @@ import * as z from "zod";
 import type { Db } from "@/db";
 import { AID_GUIDE_SECTION_IDS, loadGuide } from "../aid-guide";
 import { aidGuideToolResult } from "../aid-guide/counselor";
+import { isGraduateProgram } from "../colleges/graduate";
 import {
   CONTROL_LABELS,
   CREDENTIAL_LABELS,
@@ -12,7 +13,7 @@ import {
   PUBLIC_IN_STATE_NOTE,
   TRANSFER_NOTE,
   collegeSearchHref,
-  findPrograms,
+  findStrongPrograms,
   getCollege,
   majorsForCip6,
   outOfStateCost,
@@ -38,6 +39,9 @@ const pct = (n: number | null) => (n === null ? null : Math.round(n * 100));
 
 /** A 4-digit CIP family ("51.38") or a 6-digit major ("51.3801", as in get_career) → its family. */
 const cipFamily = (text: string) => majorsForCip6(text.trim());
+
+const GRADUATE_NOTE =
+  "This is studied after college, in graduate or professional school, so undergraduate programs don't train for it. Search a related undergraduate major instead (like a pre-professional, biology or health sciences major), and tell the student how the path usually goes.";
 
 const COMPLETION_NOTE =
   "completionRatePercent counts students who transfer to another college before finishing as not completing, so community college rates look low.";
@@ -74,6 +78,7 @@ export function collegeTools(db: Db): BetaRunnableTool[] {
       if (input.size) filters.size = input.size;
       let major: { cip4: string; title: string | null; includes?: string } | null = null;
       if (input.major) {
+        if (isGraduateProgram(input.major.trim())) return JSON.stringify({ note: GRADUATE_NOTE });
         const cip4 = cipFamily(input.major);
         if (cip4) {
           major = { cip4, title: await programTitle(db, cip4) };
@@ -139,8 +144,9 @@ export function collegeTools(db: Db): BetaRunnableTool[] {
       // counts, not just the top one ("computer science" is 11.07 at some colleges, 11.01 at others).
       let matched: object[] | null = null;
       if (major) {
+        if (isGraduateProgram(major.trim())) return JSON.stringify({ unitId: c.unitId, name: c.name, note: GRADUATE_NOTE, page: `/colleges/${c.unitId}` });
         const family = cipFamily(major);
-        const families = new Set(family ? [family] : (await findPrograms(db, major, 50)).map((m) => m.cip4));
+        const families = new Set(family ? [family] : (await findStrongPrograms(db, major, 50)).map((m) => m.cip4));
         matched = c.programs.flatMap((g) =>
           g.programs
             .filter((p) => families.has(p.cip4))
@@ -180,7 +186,8 @@ export function collegeTools(db: Db): BetaRunnableTool[] {
         medianDebtOfBorrowers: c.medianDebt,
         pellGrantPercent: pct(c.pellShare),
         admissionRatePercent: pct(c.admissionRate),
-        netPriceCalculator: c.netPriceCalculatorUrl,
+        // Calculators are often on vendors' sites the chat won't link, so point to our page, which does.
+        netPriceCalculator: c.netPriceCalculatorUrl ? "Linked on this college's page (see page)" : null,
         page: `/colleges/${c.unitId}`,
         notes: [
           ...(inState ? [PUBLIC_IN_STATE_NOTE] : []),

@@ -15,7 +15,8 @@ function isPageLang(value: string | null | undefined): value is PageLang {
 
 /** The language of the page at this path: "/aid/es/…" is Spanish, everything else English. */
 export function pageLangForPath(pathname: string): PageLang {
-  const lang = /^\/aid\/([^/]+)(?:\/|$)/.exec(pathname)?.[1];
+  // Only real guide addresses (/aid/es or /aid/es/<section>); anything deeper is a 404 in English.
+  const lang = /^\/aid\/([^/]+)(?:\/[a-z0-9-]+)?\/?$/.exec(pathname)?.[1];
   return isPageLang(lang) ? lang : SITE_LANG;
 }
 

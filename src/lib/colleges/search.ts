@@ -22,6 +22,7 @@ import * as z from "zod";
 import type { Db } from "@/db";
 import { type NetPriceByIncome, collegePrograms, colleges, majors } from "@/db/schema";
 import { cleanTitle } from "./format";
+import { isGraduateProgram } from "./graduate";
 import {
   type CollegeSize,
   type Control,
@@ -267,6 +268,8 @@ const SYNONYMS: Record<string, string[]> = {
   cna: ["nursing assistant"],
   "nurse practitioner": ["registered nursing", "nursing practice"],
   theater: ["theatre", "theater"],
+  bio: ["biology", "biological"],
+  chem: ["chemistry"],
   auto: ["automotive", "automobile", "autobody"],
   automotive: ["automotive", "automobile", "autobody"],
   car: ["automotive", "automobile", "autobody"],
@@ -290,7 +293,14 @@ const SYNONYMS: Record<string, string[]> = {
   prelaw: ["pre law"],
   lawyer: ["pre law", "legal"],
   attorney: ["pre law", "legal"],
-  pharmacist: ["pharmacy", "pharmaceutical"],
+  // Graduate professions: the pre-professional track first, then related undergraduate programs.
+  pharmacist: ["pre pharmacy", "pharmacy", "pharmaceutical"],
+  "physical therapist": ["pre physical therapy", "physical therapy"],
+  "occupational therapist": ["pre occupational therapy", "occupational therapy"],
+  dentist: ["pre dentistry", "dental"],
+  veterinarian: ["pre veterinary", "veterinary"],
+  vet: ["pre veterinary", "veterinary"],
+  psychologist: ["psychology"],
   firefighter: ["fire science", "fire fighting"],
   "police officer": ["police"],
   cdl: ["truck"],
@@ -367,9 +377,11 @@ function simplify(title: string): string {
  * phrase may be separated by spaces or punctuation ("fire fighting" matches "Fire-fighting").
  */
 function termPattern(term: string): string {
-  const whole = term.endsWith("$");
   const words = term.replace(/\$$/, "").split(" ");
-  return `\\m${words.join("\\W+")}${whole ? "\\M" : ""}`;
+  // A short typed word is a whole word (plural allowed): "art" is Art or Arts, not Artificial
+  // Intelligence, and "pa" isn't the start of every word beginning with those letters.
+  if (!term.endsWith("$") && words.length === 1 && words[0].length <= 3) return `\\m${words[0]}s?\\M`;
+  return `\\m${words.join("\\W+")}${term.endsWith("$") ? "\\M" : ""}`;
 }
 
 function titleMatches(column: SQLWrapper, alternatives: string[][]): SQL {
@@ -422,7 +434,9 @@ async function rankPrograms(db: Db, text: string): Promise<RankedMatch[]> {
     .where(titleMatches(majors.title, alternatives))
     .orderBy(asc(majors.cipCode));
   const byFamily = new Map<string, string[]>();
-  for (const m of specific) {
+  // A graduate program ("Physician Assistant", "Physical Therapy/Therapist") doesn't make its
+  // undergraduate family a match: those colleges don't train PAs or therapists.
+  for (const m of specific.filter((m) => !isGraduateProgram(m.cipCode))) {
     const cip4 = majorsForCip6(m.cipCode);
     if (cip4) byFamily.set(cip4, [...(byFamily.get(cip4) ?? []), cleanTitle(m.title)]);
   }
@@ -463,6 +477,16 @@ const toMatch = ({ exact: _exact, strong: _strong, ...match }: RankedMatch): Pro
  */
 export async function findPrograms(db: Db, text: string, limit = 10): Promise<ProgramMatch[]> {
   return (await rankPrograms(db, text)).slice(0, limit).map(toMatch);
+}
+
+/**
+ * Like findPrograms, but only the strong matches (the family's own title matches, or a major's title
+ * starts with a synonym) when there are any, for checking whether one college offers a major.
+ */
+export async function findStrongPrograms(db: Db, text: string, limit = 10): Promise<ProgramMatch[]> {
+  const ranked = await rankPrograms(db, text);
+  const strong = ranked.filter((m) => m.strong);
+  return (strong.length ? strong : ranked).slice(0, limit).map(toMatch);
 }
 
 export type MajorQueryResult =

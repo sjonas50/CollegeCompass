@@ -2,6 +2,7 @@ import { and, asc, eq, ilike, not, notLike } from "drizzle-orm";
 import type { Db } from "@/db";
 import { cipSocLinks, majors, occupationInterests, occupations } from "@/db/schema";
 import { RIASEC, type Riasec } from "./assessments/instruments";
+import { isGraduateProgram } from "./colleges/graduate";
 import { majorsForCip6, offeredFamilies } from "./colleges/search";
 import { type Pathway, pathwayFor } from "./matching/match";
 import { socFromOnetCode } from "./reference/parsers";
@@ -42,19 +43,7 @@ export type CareerDetail = {
 /** How many related majors a career shows. */
 export const CAREER_MAJOR_LIMIT = 15;
 
-/**
- * CIP codes (or code prefixes) of graduate and professional programs that students start after
- * college: doctors, dentists, vets, lawyers, pharmacists, optometrists, chiropractors, physician
- * assistants, physical and occupational therapists, audiologists and speech-language pathologists.
- */
-const GRADUATE_PROGRAMS = [
-  "01.80", "01.81", "22.01", "22.02", "51.01", "51.0202", "51.0203", "51.04", "51.05", "51.0912", "51.12", "51.14",
-  "51.17", "51.2001", "51.2008", "51.2306", "51.2308",
-];
-
-export function isGraduateProgram(cipCode: string): boolean {
-  return GRADUATE_PROGRAMS.some((prefix) => cipCode.startsWith(prefix));
-}
+export { isGraduateProgram };
 
 export async function getCareer(db: Db, code: string): Promise<CareerDetail | null> {
   const [occ] = await db.select().from(occupations).where(eq(occupations.code, code));

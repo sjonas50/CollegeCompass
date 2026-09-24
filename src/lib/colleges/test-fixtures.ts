@@ -100,6 +100,8 @@ export const MAJOR_TITLES: Record<string, string> = {
   "51.0602": "Dental Hygiene/Hygienist",
   "51.0707": "Health Information/Medical Records Technology/Technician",
   "51.0912": "Physician Assistant",
+  "51.1109": "Pre-Physician Assistant",
+  "11.0102": "Artificial Intelligence",
   "51.0921": "Hyperbaric Medicine Technology/Technician",
   "51.1102": "Pre-Medicine/Pre-Medical Studies",
   "51.1201": "Medicine",

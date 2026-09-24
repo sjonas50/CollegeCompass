@@ -50,7 +50,7 @@
         {
           "kind": "warning",
           "heading": "Préstamos Parent PLUS para padres",
-          "text": "Un préstamo Parent PLUS es un préstamo federal que el padre o la madre saca para su hijo o hija estudiante. Está a nombre del padre o la madre, y después no se puede pasar al estudiante. Los abuelos y los tutores legales no pueden sacarlo. Cuesta más que los préstamos para estudiantes: 9.07% de interés para préstamos entregados por primera vez en 2026–27, más un cargo de alrededor del 4% que se descuenta antes de entregar el dinero. La tasa para el otoño de 2027 todavía no se ha fijado. La mayoría de quienes lo piden por primera vez pueden pedir hasta $20,000 al año y $65,000 en total por estudiante. La revisión de crédito solo busca problemas graves, como deudas enviadas a cobranza o una bancarrota reciente, así que la aprobación no significa que los pagos vayan a ser fáciles. Los préstamos Parent PLUS hechos el 1 de julio de 2026 o después no se pueden pagar con planes de pago según los ingresos. ¿Su familia ya tiene préstamos Parent PLUS por un hijo o hija mayor? Un préstamo nuevo puede hacer que los préstamos anteriores tengan que quedarse en el plan de pagos fijos, así que el padre o la madre debe llamar primero a su administrador de préstamos (loan servicer, la compañía que maneja las facturas del préstamo). Si el padre o la madre no puede obtener este préstamo, es posible que el estudiante pueda pedir más dinero con sus propios préstamos federales. Hay más información en la sección \"Pedir prestado con prudencia: los préstamos estudiantiles explicados\"."
+          "text": "Un préstamo Parent PLUS es un préstamo federal que el padre o la madre saca para su hijo o hija estudiante. Está a nombre del padre o la madre, y después no se puede pasar al estudiante. Los abuelos y los tutores legales no pueden sacarlo. Cuesta más que los préstamos para estudiantes: 9.07% de interés para préstamos entregados por primera vez en 2026–27, más un cargo de alrededor del 4% que se descuenta antes de entregar el dinero. La tasa para el otoño de 2027 todavía no se ha fijado. La mayoría de quienes lo piden por primera vez pueden pedir hasta $20,000 al año y $65,000 en total por estudiante. La revisión de crédito solo busca problemas graves, como deudas enviadas a cobranza o una bancarrota reciente, así que la aprobación no significa que los pagos vayan a ser fáciles. Los préstamos Parent PLUS hechos el 1 de julio de 2026 o después no se pueden pagar con planes de pago según los ingresos. ¿Su familia ya tiene préstamos Parent PLUS por un hijo o hija mayor? Un préstamo nuevo puede hacer que los préstamos anteriores tengan que quedarse en el plan de pagos fijos, así que el padre o la madre debe llamar primero a su administrador de préstamos (loan servicer, la compañía que maneja las facturas del préstamo). Si el padre o la madre no puede obtener este préstamo, es posible que el estudiante pueda pedir más dinero con sus propios préstamos federales. Hay más información en la sección \"Pedir prestado con cuidado: así funcionan los préstamos estudiantiles\"."
         },
         {
           "kind": "tip",
@@ -75,7 +75,7 @@
         {
           "kind": "paragraph",
           "heading": "Ayuda para la formación técnica",
-          "text": "La ayuda federal también sirve en colegios comunitarios, escuelas técnicas y escuelas de oficios que la aceptan, así que pregunta. Desde el 1 de julio de 2026, las Workforce Pell Grants (becas Pell para capacitación laboral) pueden ayudar a pagar programas aprobados de capacitación laboral que duran de 8 a poco menos de 15 semanas. En estos programas no puedes recibir préstamos federales ni work-study. Algunos estados pagan la matrícula de colegios comunitarios o técnicos a los estudiantes que califican; un ejemplo es el Tennessee Promise. Estos programas tienen sus propias reglas y fechas límite, y algunos piden la FAFSA. Los programas de aprendizaje registrados (registered apprenticeships) te dan un trabajo pagado desde el primer día mientras te capacitas, y algunos empiezan a los 16 años. Consulta la sección \"Cómo pagar la formación técnica\"."
+          "text": "La ayuda federal también sirve en colegios comunitarios, escuelas técnicas y escuelas de oficios que la aceptan, así que pregunta. Desde el 1 de julio de 2026, las Workforce Pell Grants (becas Pell para capacitación laboral) pueden ayudar a pagar programas aprobados de capacitación laboral que duran de 8 a poco menos de 15 semanas. En estos programas no puedes recibir préstamos federales ni work-study. Algunos estados pagan la matrícula de colegios comunitarios o técnicos a los estudiantes que califican; un ejemplo es el Tennessee Promise. Estos programas tienen sus propias reglas y fechas límite, y algunos piden la FAFSA. Los programas de aprendizaje registrados (registered apprenticeships) te dan un trabajo pagado desde el primer día mientras te capacitas, y algunos empiezan a los 16 años. Consulta la sección \"Cómo pagar la capacitación técnica\"."
         },
         {
           "kind": "list",
@@ -116,51 +116,51 @@
       ],
       "sources": [
         {
-          "title": "Tipos de ayuda financiera: becas, work-study y préstamos – Federal Student Aid",
+          "title": "Types of Financial Aid: Grants, Work-Study, and Loans — tipos de ayuda financiera (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types"
         },
         {
-          "title": "Becas federales para la universidad o una escuela técnica o de oficios (incluye cuándo podrías tener que devolver una beca) – Federal Student Aid",
+          "title": "Federal Grants for College or Career/Trade School: becas federales (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/grants"
         },
         {
-          "title": "Becas federales Pell (Pell Grants) – Federal Student Aid",
+          "title": "Federal Pell Grants: becas federales Pell (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/grants/pell"
         },
         {
-          "title": "Becas TEACH (TEACH Grants) – Federal Student Aid",
+          "title": "TEACH Grants: becas TEACH para futuros maestros (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/grants/teach"
         },
         {
-          "title": "Cómo encontrar y solicitar becas (scholarships) – Federal Student Aid",
+          "title": "Finding and Applying for Scholarships: cómo encontrar y solicitar becas (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/scholarships"
         },
         {
-          "title": "Trabajos de work-study (programa de estudio y trabajo) – Federal Student Aid",
+          "title": "Work-Study Jobs: empleos del programa de estudio y trabajo (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/work-study"
         },
         {
-          "title": "Préstamos federales para estudiantes – Federal Student Aid",
+          "title": "Federal Student Loans: préstamos federales para estudiantes (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/loans"
         },
         {
-          "title": "Préstamos federales y préstamos privados: diferencias – Federal Student Aid",
+          "title": "Federal Versus Private Loans: préstamos federales y privados (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/loans/federal-vs-private"
         },
         {
-          "title": "Tasas de interés y cargos federales – Federal Student Aid",
+          "title": "Federal Interest Rates and Fees: tasas de interés y cargos (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/loans/interest-rates"
         },
         {
-          "title": "Centro de calculadoras de precio neto – Departamento de Educación de EE. UU.",
+          "title": "Net Price Calculator Center: calculadoras de precio neto (Departamento de Educación de EE. UU., en inglés)",
           "url": "https://collegecost.ed.gov/net-price"
         },
         {
-          "title": "Fechas límite de la FAFSA (fechas límite estatales y federales de 2027–28) – Federal Student Aid",
+          "title": "FAFSA Application Deadlines: fechas límite de la FAFSA (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"
         },
         {
-          "title": "Recursos en español – Federal Student Aid",
+          "title": "Recursos en español (StudentAid.gov)",
           "url": "https://studentaid.gov/es/resources"
         }
       ]
@@ -242,7 +242,7 @@
             "Entra a fafsa.gov, inicia sesión y elige \"Start New Form\" (empezar un formulario nuevo). Escoge 2027–28, no 2026–27. Cuando el formulario te pregunte quién empieza, elige \"Student\" (estudiante). Así es más rápido y hay menos errores.",
             "Den su consentimiento. Cada persona en el formulario debe permitir que el IRS envíe su información de impuestos, aunque no haya declarado impuestos o no tenga SSN. Sin consentimiento, no puedes recibir ayuda federal. Dar el consentimiento no obliga a tu padre o madre a pagar tus gastos.",
             "Pon hasta 20 escuelas en línea, aunque todavía no hayas solicitado admisión en ellas. La FAFSA sirve para universidades de cuatro años, colegios comunitarios (community colleges) y escuelas técnicas y de oficios.",
-            "¿Te interesa una capacitación laboral corta? Las Pell Grants (becas federales que por lo general no se devuelven) ahora pueden ayudar a pagar algunos programas cortos aprobados. Pregúntale a la escuela si el programa está aprobado para Workforce Pell. ¿No encuentras una escuela de capacitación en el buscador de escuelas de la FAFSA? Pregúntale a la escuela si acepta ayuda federal para estudiantes. Lee \"Pell Grants y Workforce Pell\".",
+            "¿Te interesa una capacitación laboral corta? Las Pell Grants (becas federales que por lo general no se devuelven) ahora pueden ayudar a pagar algunos programas cortos aprobados. Pregúntale a la escuela si el programa está aprobado para Workforce Pell. ¿No encuentras una escuela de capacitación en el buscador de escuelas de la FAFSA? Pregúntale a la escuela si acepta ayuda federal para estudiantes. Lee \"Pell Grants (becas federales Pell) y Workforce Pell\".",
             "Los programas de aprendizaje registrados (registered apprenticeships) por lo general te pagan mientras aprendes. Si el tuyo incluye clases universitarias, pregunta si Workforce Pell puede ayudarte a pagarlas.",
             "Invita a tu padre o madre con el correo electrónico de su cuenta de StudentAid.gov. También recibirás un enlace y un código para compartir. Si hace falta el otro padre o madre, o un padrastro o madrastra, el formulario le pedirá a tu padre o madre que lo invite.",
             "Tu padre o madre entra con su propia cuenta, nunca con la tuya, llena su parte y firma. Tú también firmas.",
@@ -268,7 +268,7 @@
         {
           "kind": "tip",
           "heading": "Si en tu familia hay inmigrantes",
-          "text": "Si eres ciudadano de EE. UU. o extranjero con derecho a participar, la situación migratoria de tus padres no afecta tu ayuda federal, y la FAFSA no pregunta por ella. ¿A ti o a tu familia les preocupa compartir información? Lean \"Privacidad e inmigración\" en Situaciones especiales en la FAFSA y, antes de decidir, hablen con un abogado de inmigración con licencia o con un representante acreditado por el DOJ (una persona capacitada de una organización sin fines de lucro aprobada por el Departamento de Justicia de EE. UU.). La página \"Legal services\" de USCIS (la agencia de inmigración de EE. UU.) explica cómo encontrarlos. Ojo: en EE. UU., un notario no es abogado y no puede dar ayuda legal de inmigración. Los estudiantes indocumentados, incluidos los que tienen DACA (Acción Diferida para los Llegados en la Infancia), y los que tienen TPS (Estatus de Protección Temporal) no pueden recibir ayuda federal, pero sí podrían recibir ayuda estatal, de la universidad o privada. Lee \"Si eres indocumentado o tienes DACA\" en Situaciones especiales en la FAFSA para saber qué formulario usar."
+          "text": "Si eres ciudadano de EE. UU. o extranjero con derecho a participar, la situación migratoria de tus padres no afecta tu ayuda federal, y la FAFSA no pregunta por ella. ¿A ti o a tu familia les preocupa compartir información? Lean \"Privacidad e inmigración\" en Situaciones especiales en la FAFSA y, antes de decidir, hablen con un abogado de inmigración con licencia o con un representante acreditado por el DOJ (una persona capacitada de una organización sin fines de lucro aprobada por el Departamento de Justicia de EE. UU.). La página \"Legal services\" de USCIS (la agencia de inmigración de EE. UU.) explica cómo encontrarlos. Ojo: en EE. UU., un notario no es abogado y no puede dar ayuda legal de inmigración. Los estudiantes indocumentados, incluidos los que tienen DACA (Acción Diferida para los Llegados en la Infancia), y los que tienen TPS (Estatus de Protección Temporal) no pueden recibir ayuda federal, pero sí podrían recibir ayuda estatal, de la universidad o privada. Lee \"Si no eres ciudadano de EE. UU.\" en Situaciones especiales en la FAFSA para saber qué formulario usar."
         },
         {
           "kind": "list",
@@ -307,51 +307,51 @@
       ],
       "sources": [
         {
-          "title": "Fechas límite de la FAFSA 2027–28 (StudentAid.gov, en inglés)",
+          "title": "FAFSA Application Deadlines: fechas límite de la FAFSA (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"
         },
         {
-          "title": "Formulario FAFSA 2027–28 (StudentAid.gov, en inglés)",
+          "title": "2027–28 FAFSA Form: formulario FAFSA 2027–28 (StudentAid.gov, PDF en inglés)",
           "url": "https://studentaid.gov/sites/default/files/2027-28-fafsa-form.pdf"
         },
         {
-          "title": "Página de la FAFSA (StudentAid.gov, en inglés)",
+          "title": "FAFSA Application: página de la solicitud FAFSA (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/h/apply-for-aid/fafsa"
         },
         {
-          "title": "Plan de pruebas beta de la FAFSA 2027–28 (FSA Partner Connect, en inglés)",
+          "title": "2027–28 FAFSA Beta Testing Plan, Updated Sept. 23, 2026: plan de pruebas beta de la FAFSA (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-21/2027-28-fafsa-beta-testing-plan-updated-sept-23-2026"
         },
         {
-          "title": "Guía de especificaciones de la FAFSA 2027–28, vol. 1 (en inglés)",
+          "title": "2027–28 FAFSA Specifications Guide, Vol. 1: guía técnica de la FAFSA (Federal Student Aid, PDF en inglés)",
           "url": "https://fsapartners.ed.gov/sites/default/files/2026-07/2728FSGVol1.pdf"
         },
         {
-          "title": "Guía de especificaciones de la FAFSA 2027–28, vol. 2 (en inglés)",
+          "title": "2027–28 FAFSA Specifications Guide, Vol. 2: FPS Schedule and Getting Help — calendario y ayuda (Federal Student Aid, PDF en inglés)",
           "url": "https://fsapartners.ed.gov/sites/default/files/2026-07/2728FSGVol2FPSScheduleGettingHelp.pdf"
         },
         {
-          "title": "Datos clave sobre tu cuenta de StudentAid.gov (StudentAid.gov, en inglés)",
+          "title": "Key Facts About Your StudentAid.gov Account: datos clave sobre tu cuenta (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/articles/key-facts-accounts/"
         },
         {
-          "title": "¿Cómo verifico mi identidad si no tengo SSN?",
+          "title": "How do I verify my identity if I don't have an SSN? — cómo verificar tu identidad sin SSN (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/help-center/answers/article/verify-identity-create-account-dont-have-ssn"
         },
         {
-          "title": "Pasos para estudiantes que llenan la FAFSA (StudentAid.gov, en inglés)",
+          "title": "Steps for Students Filling Out the FAFSA Form: pasos para estudiantes (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/articles/fafsa-student-steps/"
         },
         {
-          "title": "Cómo llenar la FAFSA, pasos para los padres (StudentAid.gov, en inglés)",
+          "title": "Completing the FAFSA Form: Steps for Parents — pasos para los padres (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/articles/fafsa-for-parents/"
         },
         {
-          "title": "7 cosas que hacer después de enviar tu FAFSA (StudentAid.gov, en inglés)",
+          "title": "7 Things to Do After Submitting Your FAFSA Form: qué hacer después de enviar la FAFSA (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/articles/things-after-fafsa/"
         },
         {
-          "title": "Información de los padres (StudentAid.gov, en inglés)",
+          "title": "Reporting Parent Information: cómo reportar la información de los padres (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out/parent-info"
         }
       ]
@@ -374,7 +374,7 @@
         },
         {
           "kind": "paragraph",
-          "text": "Revisamos estas reglas para la FAFSA 2027–28 (Free Application for Federal Student Aid) en septiembre de 2026. Las reglas pueden cambiar, así que confírmalas en StudentAid.gov o con la oficina de ayuda financiera de una escuela."
+          "text": "Estas reglas son para la FAFSA 2027–28 (Free Application for Federal Student Aid). Las reglas pueden cambiar, así que confírmalas en StudentAid.gov o con la oficina de ayuda financiera de una escuela."
         },
         {
           "kind": "list",
@@ -485,51 +485,51 @@
       ],
       "sources": [
         {
-          "title": "Formulario FAFSA 2027–28",
+          "title": "2027–28 FAFSA Form: formulario FAFSA 2027–28 (StudentAid.gov, PDF en inglés)",
           "url": "https://studentaid.gov/sites/default/files/2027-28-fafsa-form.pdf"
         },
         {
-          "title": "FSA Handbook 2026–27, Application and Verification Guide, cap. 1 (marca el 7)",
+          "title": "Application and Verification Guide 2026–27, Ch. 1: The Application Process — el proceso de solicitud (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch1-application-process-fafsa-isir"
         },
         {
-          "title": "FSA Handbook 2026–27, Application and Verification Guide, cap. 2",
+          "title": "Application and Verification Guide 2026–27, Ch. 2: Filling Out the FAFSA Form — cómo llenar la FAFSA (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch2-filling-out-fafsa-form"
         },
         {
-          "title": "FSA Handbook 2023–24, Application and Verification Guide, cap. 2: la regla anterior para padres divorciados (el padre o la madre con quien vivías)",
+          "title": "Application and Verification Guide 2023–24, Ch. 2: Filling Out the FAFSA Form — cómo llenar la FAFSA (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2023-2024/application-and-verification-guide/ch2-filling-out-fafsa"
         },
         {
-          "title": "FSA Handbook 2026–27, Application and Verification Guide, cap. 5: circunstancias inusuales, padres que se niegan, jóvenes sin hogar",
+          "title": "Application and Verification Guide 2026–27, Ch. 5: Special Cases — casos especiales (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch5-special-cases"
         },
         {
-          "title": "FSA Handbook 2026–27, vol. 1, cap. 2: extranjeros con derecho a participar, DACA, requisito de ciudadanía para Parent PLUS",
+          "title": "FSA Handbook 2026–27, Vol. 1, Ch. 2: U.S. Citizenship and Eligible Noncitizens — requisitos de ciudadanía (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol1/ch2-us-citizenship-eligible-noncitizens"
         },
         {
-          "title": "StudentAid.gov: ¿Cómo verifico mi identidad si creo una cuenta sin SSN?",
+          "title": "How do I verify my identity if I don't have an SSN? — cómo verificar tu identidad sin SSN (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/help-center/answers/article/verify-identity-create-account-dont-have-ssn"
         },
         {
-          "title": "2027–28 Student Aid Index (SAI) and Pell Grant Eligibility Guide (PDF): cantidad máxima de Pell Grant para quienes no declaran impuestos",
+          "title": "2027–28 Student Aid Index (SAI) and Pell Grant Eligibility Guide: guía del SAI y la beca Pell (Federal Student Aid, PDF en inglés)",
           "url": "https://fsapartners.ed.gov/sites/default/files/2026-06/2728StudentAidIndexSAIandPellGrantEligibilityGuide.pdf"
         },
         {
-          "title": "FSA Handbook 2025–26, vol. 8, cap. 4: límites anuales de préstamos ($5,500 para estudiantes dependientes de primer año)",
+          "title": "FSA Handbook 2025–26, Vol. 8, Ch. 4: Annual and Aggregate Loan Limits — límites de préstamos (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2025-2026/vol8/ch4-annual-and-aggregate-loan-limits"
         },
         {
-          "title": "StudentAid.gov: ayuda con la FAFSA en otros idiomas",
+          "title": "FAFSA Support in Other Languages: ayuda con la FAFSA en otros idiomas (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out/other-languages"
         },
         {
-          "title": "USCIS: servicios legales (quién puede dar asesoría de inmigración, ayuda gratis o de bajo costo, advertencia sobre los notarios)",
+          "title": "Avoid Scams: Legal Services — servicios legales de inmigración (USCIS, en inglés)",
           "url": "https://www.uscis.gov/scams-fraud-and-misconduct/avoid-scams/legal-services"
         },
         {
-          "title": "IRS: preparación gratis de declaraciones de impuestos (VITA), con ayuda para el ITIN en algunos sitios",
+          "title": "Free Tax Return Preparation for Qualifying Taxpayers: preparación gratis de impuestos (IRS, en inglés)",
           "url": "https://www.irs.gov/individuals/free-tax-return-preparation-for-qualifying-taxpayers"
         }
       ]
@@ -633,51 +633,51 @@
       ],
       "sources": [
         {
-          "title": "Becas federales Pell (StudentAid.gov)",
+          "title": "Federal Pell Grants: becas federales Pell (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/grants/pell"
         },
         {
-          "title": "Cantidades máxima y mínima de la beca federal Pell 2026-27 (GEN-26-01, actualizado el 18 de febrero de 2026)",
+          "title": "GEN-26-01: 2026–27 Federal Pell Grant Maximum and Minimum Award Amounts — montos de la beca Pell (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/library/dear-colleague-letters/2026-01-30/2026-27-federal-pell-grant-maximum-and-minimum-award-amounts"
         },
         {
-          "title": "Manual de FSA 2026-27, Vol. 7, Cap. 2: Cálculo de las becas Pell (Pell calculada, máxima y mínima; inelegibilidad por el SAI)",
+          "title": "FSA Handbook 2026–27, Vol. 7, Ch. 2: Calculating Pell Grants — cálculo de la beca Pell (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol7/ch2-calculating-pell-grants"
         },
         {
-          "title": "Manual de FSA 2026-27, Guía de Solicitud y Verificación, Cap. 3: El SAI y la elegibilidad para la beca Pell (SAI de hasta -1,500)",
+          "title": "Application and Verification Guide 2026–27, Ch. 3: SAI and Pell Grant Eligibility — el SAI y la beca Pell (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch3-student-aid-index-sai-and-pell-grant-eligibility"
         },
         {
-          "title": "Cómo se calcula la ayuda financiera (StudentAid.gov: el SAI no es una cantidad en dólares; costo de asistencia)",
+          "title": "How Financial Aid Is Calculated: cómo se calcula la ayuda financiera (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/complete-aid-process/how-calculated"
         },
         {
-          "title": "Manual de FSA 2026-27, Vol. 7, Cap. 3: Intensidad de inscripción para Pell y costo de asistencia (tiempo completo es al menos 12 horas de crédito)",
+          "title": "FSA Handbook 2026–27, Vol. 7, Ch. 3: Pell Enrollment Intensity and Cost of Attendance — inscripción y costo (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol7/ch3-pell-grant-enrollment-intensity-and-cost-attendance"
         },
         {
-          "title": "Manual de FSA 2026-27, Vol. 7, Cap. 7: Recálculos (cambios de inscripción; becas no federales que cubren el costo de asistencia)",
+          "title": "FSA Handbook 2026–27, Vol. 7, Ch. 7: Initial Calculations, Recalculations and Overawards — recálculos (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol7/ch7-initial-calculations-recalculations-and-overawards"
         },
         {
-          "title": "Regla final: Workforce Pell Grants y exclusión de la beca Pell por otras becas (91 FR 29254, 19 de mayo de 2026), resumen de FSA",
+          "title": "Final Rule: Workforce Pell Grants and Pell Grant Exclusion, 91 FR 29254 — resumen de la regla final (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/library/federal-registers/2026-05-19/final-accountability-higher-education-and-access-through-demand-driven-workforce-pell-pell-grant-exclusion-relating-other-grant-aid-and-workforce-pell-grants"
         },
         {
-          "title": "Regla final 91 FR 29254, texto completo",
+          "title": "Final Rule: Workforce Pell Grants and Pell Grant Exclusion, 91 FR 29254 — texto completo de la regla final (GovInfo, en inglés)",
           "url": "https://www.govinfo.gov/content/pkg/FR-2026-05-19/html/2026-10013.htm"
         },
         {
-          "title": "Fechas de vigencia de Workforce Pell y de las reglas de inelegibilidad para la beca federal Pell (GENERAL-26-32)",
+          "title": "GENERAL-26-32: Effective Dates for Workforce Pell and Pell Ineligibility Provisions — fechas de vigencia (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-06-04/effective-dates-workforce-pell-and-federal-pell-grant-ineligibility-provisions"
         },
         {
-          "title": "Programas de capacitación laboral elegibles: ya está disponible el formulario estatal de certificación de Workforce Pell (GENERAL-26-44)",
+          "title": "GENERAL-26-44: State Workforce Pell Certification Form Available — formulario estatal de certificación (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-01/eligible-workforce-programs-state-workforce-pell-certification-form-available"
         },
         {
-          "title": "Buscador de American Job Centers (CareerOneStop, Departamento de Trabajo de EE. UU.)",
+          "title": "American Job Center Finder: buscador de centros de empleo (CareerOneStop, Departamento de Trabajo de EE. UU., en inglés)",
           "url": "https://www.careeronestop.org/LocalHelp/AmericanJobCenters/find-american-job-centers.aspx"
         }
       ]
@@ -782,51 +782,51 @@
       ],
       "sources": [
         {
-          "title": "StudentAid.gov",
+          "title": "FAFSA Application Deadlines: fechas límite de la FAFSA (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"
         },
         {
-          "title": "Formulario FAFSA 2027-28 (StudentAid.gov)",
+          "title": "2027–28 FAFSA Form: formulario FAFSA 2027–28 (StudentAid.gov, PDF en inglés)",
           "url": "https://studentaid.gov/sites/default/files/2027-28-fafsa-form.pdf"
         },
         {
-          "title": "StudentAid.gov: Solicitud FAFSA (revisa la fecha límite de tu estado; perder una fecha límite estatal no afecta tu derecho a ayuda federal)",
+          "title": "FAFSA Application: página de la solicitud FAFSA (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/h/apply-for-aid/fafsa"
         },
         {
-          "title": "FSA Partners",
+          "title": "2027–28 FAFSA Beta Testing Plan, Updated Sept. 23, 2026: plan de pruebas beta de la FAFSA (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-21/2027-28-fafsa-beta-testing-plan-updated-sept-23-2026"
         },
         {
-          "title": "34 CFR 600.2: El año de ayuda va del 1 de julio al 30 de junio",
+          "title": "34 CFR 600.2: Definitions — definiciones oficiales (eCFR, en inglés)",
           "url": "https://www.ecfr.gov/current/title-34/subtitle-B/chapter-VI/part-600/subpart-A/section-600.2"
         },
         {
-          "title": "StudentAid.gov",
+          "title": "Types of Financial Aid: Grants, Work-Study, and Loans — tipos de ayuda financiera (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types"
         },
         {
-          "title": "StudentAid.gov: Subvenciones (cuándo podrías tener que devolver una subvención; obligación de servicio de la TEACH Grant)",
+          "title": "Federal Grants for College or Career/Trade School: becas federales (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/grants"
         },
         {
-          "title": "StudentAid.gov: Ayuda con la FAFSA (formulario disponible en inglés y en español; Federal Student Aid Information Center)",
+          "title": "FAFSA Help: ayuda con la FAFSA (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out/help"
         },
         {
-          "title": "FTC: Cómo evitar estafas de becas y de ayuda financiera (la FAFSA siempre es gratis; nunca compartas tu FSA ID)",
+          "title": "How to Avoid Scholarship and Financial Aid Scams: cómo evitar estafas de becas (FTC, en inglés)",
           "url": "https://consumer.ftc.gov/articles/how-avoid-scholarship-and-financial-aid-scams"
         },
         {
-          "title": "StudentAid.gov",
+          "title": "Undocumented Students and the FAFSA Form: estudiantes indocumentados (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out/undocumented-students"
         },
         {
-          "title": "StudentAid.gov: No ciudadanos elegibles (residentes permanentes, refugiados, asilados)",
+          "title": "Eligibility for Non-U.S. Citizens: requisitos para quienes no son ciudadanos (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/eligibility/requirements/non-us-citizens"
         },
         {
-          "title": "USCIS: Servicios legales (abogados con licencia y representantes acreditados por el DOJ)",
+          "title": "Avoid Scams: Legal Services — servicios legales de inmigración (USCIS, en inglés)",
           "url": "https://www.uscis.gov/scams-fraud-and-misconduct/avoid-scams/legal-services"
         }
       ]
@@ -968,51 +968,51 @@
       ],
       "sources": [
         {
-          "title": "College Board: Acerca del CSS Profile",
+          "title": "About CSS Profile: información sobre el CSS Profile (College Board, en inglés)",
           "url": "https://cssprofile.collegeboard.org/about"
         },
         {
-          "title": "College Board: ¿Por qué necesito llenar el CSS Profile?",
+          "title": "Why do I need to complete the CSS Profile? — por qué llenar el CSS Profile (College Board, en inglés)",
           "url": "https://cssprofile.collegeboard.org/help-center/why-do-i-need-complete-css-profile"
         },
         {
-          "title": "College Board: Instituciones que usan el CSS Profile (2027-28)",
+          "title": "2027–28 CSS Profile Participating Institutions: instituciones que usan el CSS Profile (College Board, en inglés)",
           "url": "https://profile.collegeboard.org/PPI/participatingInstitutions.aspx"
         },
         {
-          "title": "College Board: ¿Cómo sé si mi escuela pide el CSS Profile?",
+          "title": "How do I know if my school requires the CSS Profile? — cómo saber si tu escuela lo pide (College Board, en inglés)",
           "url": "https://cssprofile.collegeboard.org/help-center/how-do-i-know-if-my-school-requires-css-profile"
         },
         {
-          "title": "College Board: Cómo empezar el CSS Profile",
+          "title": "CSS Profile: Getting Started — cómo empezar (College Board, en inglés)",
           "url": "https://cssprofile.collegeboard.org/getting-started"
         },
         {
-          "title": "College Board: Cómo completar la solicitud del CSS Profile",
+          "title": "Complete the CSS Profile Application: cómo completar la solicitud (College Board, en inglés)",
           "url": "https://cssprofile.collegeboard.org/complete-application"
         },
         {
-          "title": "College Board: ¿Cómo agrego más escuelas al CSS Profile?",
+          "title": "How do I add additional schools to the CSS Profile? — cómo agregar más escuelas (College Board, en inglés)",
           "url": "https://cssprofile.collegeboard.org/help-center/how-do-i-add-additional-schools-css-profile"
         },
         {
-          "title": "College Board: ¿Qué documentos necesito para llenar el CSS Profile?",
+          "title": "What documents do I need to complete the CSS Profile? — documentos que necesitas (College Board, en inglés)",
           "url": "https://cssprofile.collegeboard.org/help-center/what-documents-do-i-need-complete-css-profile"
         },
         {
-          "title": "Federal Student Aid: Requisitos para quienes no son ciudadanos de EE. UU. (el estatus de los padres no afecta la elegibilidad)",
+          "title": "Eligibility for Non-U.S. Citizens: requisitos para quienes no son ciudadanos (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/eligibility/requirements/non-us-citizens"
         },
         {
-          "title": "Federal Student Aid: Federal Pell Grants (becas federales Pell)",
+          "title": "Federal Pell Grants: becas federales Pell (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/grants/pell"
         },
         {
-          "title": "USDA, Servicio de Alimentos y Nutrición: Límites de ingresos 2026-2027 (el límite para precio reducido es el 185% de la guía federal de pobreza)",
+          "title": "Child Nutrition Programs: Income Eligibility Guidelines, 2026–27 — límites de ingresos para comidas escolares (USDA, en inglés)",
           "url": "https://www.fns.usda.gov/schoolmeals/fr-040926"
         },
         {
-          "title": "HHS ASPE: Guías federales de pobreza 2026 (familia de cuatro: $33,000 en los 48 estados contiguos y D.C.)",
+          "title": "Poverty Guidelines: guías federales de pobreza (Departamento de Salud y Servicios Humanos de EE. UU., en inglés)",
           "url": "https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines"
         }
       ]
@@ -1035,7 +1035,7 @@
         {
           "kind": "tip",
           "heading": "Empieza con la FAFSA",
-          "text": "La FAFSA (Solicitud Gratuita de Ayuda Federal para Estudiantes) es el formulario gratuito para solicitar las Pell Grants (Becas Federales Pell), que pueden ayudarte a pagar la universidad o una escuela técnica (lee «Pell Grants y Workforce Pell»). Las subvenciones (grants), como las Pell Grants, son dinero que no tienes que devolver. Los estados y las universidades también usan la FAFSA para dar sus propias subvenciones y becas. La FAFSA 2027–28 es para estudiantes que empiezan a estudiar en el otoño de 2027, y StudentAid.gov dice que ya está disponible. En algunos estados, la fecha límite es muy temprano, en enero de 2027 (Texas: 15 de enero), así que si estás en 12.º grado, envíala a principios del otoño. Revisa las fechas límite en StudentAid.gov."
+          "text": "La FAFSA (Solicitud Gratuita de Ayuda Federal para Estudiantes) es el formulario gratuito para solicitar las Pell Grants (Becas Federales Pell), que pueden ayudarte a pagar la universidad o una escuela técnica (lee «Pell Grants (becas federales Pell) y Workforce Pell»). Las subvenciones (grants), como las Pell Grants, son dinero que no tienes que devolver. Los estados y las universidades también usan la FAFSA para dar sus propias subvenciones y becas. La FAFSA 2027–28 es para estudiantes que empiezan a estudiar en el otoño de 2027, y StudentAid.gov dice que ya está disponible. Algunas fechas límite estatales y de universidades son desde el 1 de octubre de 2026, y la fecha de prioridad de Texas es el 15 de enero de 2027, así que si estás en 12.º grado, envíala a principios del otoño. Revisa las fechas límite en StudentAid.gov."
         },
         {
           "kind": "list",
@@ -1134,51 +1134,51 @@
       ],
       "sources": [
         {
-          "title": "Finding and Applying for Scholarships: cómo encontrar y solicitar becas (Federal Student Aid, en inglés)",
+          "title": "Finding and Applying for Scholarships: cómo encontrar y solicitar becas (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/scholarships"
         },
         {
-          "title": "Avoiding Student Aid Scams: cómo evitar estafas de ayuda para estudiantes (Federal Student Aid, en inglés)",
+          "title": "Avoiding Student Aid Scams: cómo evitar estafas (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/resources/scams"
         },
         {
-          "title": "Cómo evitar estafas relacionadas con la ayuda para estudiantes (Federal Student Aid, en español)",
+          "title": "Cómo evitar estafas relacionadas con la ayuda para estudiantes (StudentAid.gov)",
           "url": "https://studentaid.gov/es/resources/scams"
         },
         {
-          "title": "Avoiding Fake Schools: cómo evitar escuelas falsas (Federal Student Aid, en inglés)",
+          "title": "Avoiding Fake Schools: cómo evitar escuelas falsas (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/resources/scams/avoiding-fake-schools"
         },
         {
-          "title": "FAFSA Application Deadlines, 2027–28: fechas límite de la FAFSA (Federal Student Aid, en inglés)",
+          "title": "FAFSA Application Deadlines: fechas límite de la FAFSA (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"
         },
         {
-          "title": "Formulario FAFSA 2027–28 (Federal Student Aid)",
+          "title": "2027–28 FAFSA Form: formulario FAFSA 2027–28 (StudentAid.gov, PDF en inglés)",
           "url": "https://studentaid.gov/sites/default/files/2027-28-fafsa-form.pdf"
         },
         {
-          "title": "Filling Out the FAFSA Form: cómo llenar el formulario FAFSA (Federal Student Aid, en inglés)",
+          "title": "Filling Out the FAFSA Form: cómo llenar el formulario FAFSA (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out"
         },
         {
-          "title": "Key Facts About StudentAid.gov Accounts: datos clave sobre las cuentas (Federal Student Aid, en inglés)",
+          "title": "Key Facts About Your StudentAid.gov Account: datos clave sobre tu cuenta (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/articles/key-facts-accounts/"
         },
         {
-          "title": "Grants: subvenciones (Federal Student Aid, en inglés)",
+          "title": "Federal Grants for College or Career/Trade School: becas federales (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/grants"
         },
         {
-          "title": "Federal Pell Grants: Becas Federales Pell (Federal Student Aid, en inglés)",
+          "title": "Federal Pell Grants: becas federales Pell (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/grants/pell"
         },
         {
-          "title": "Ley Pública 119-21, sección 83004 (GovInfo, en inglés)",
+          "title": "Public Law 119-21, sec. 83004: texto de la ley (GovInfo, en inglés)",
           "url": "https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm"
         },
         {
-          "title": "Eligibility for Non-U.S. Citizens: requisitos para quienes no son ciudadanos de EE. UU. (Federal Student Aid, en inglés)",
+          "title": "Eligibility for Non-U.S. Citizens: requisitos para quienes no son ciudadanos (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/eligibility/requirements/non-us-citizens"
         }
       ]
@@ -1285,51 +1285,51 @@
       ],
       "sources": [
         {
-          "title": "Préstamos Direct Subsidized y Direct Unsubsidized (StudentAid.gov)",
+          "title": "Direct Subsidized and Direct Unsubsidized Loans: préstamos subsidiados y no subsidiados (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/loans/subsidized-unsubsidized"
         },
         {
-          "title": "Tasas de interés y cargos federales (StudentAid.gov)",
+          "title": "Federal Interest Rates and Fees: tasas de interés y cargos (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/loans/interest-rates"
         },
         {
-          "title": "Préstamos Direct PLUS para padres: requisitos, crédito adverso, límites y pago (StudentAid.gov)",
+          "title": "Direct PLUS Loans for Parents: préstamos PLUS para padres (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/loans/plus/parent"
         },
         {
-          "title": "One Big Beautiful Bill Act (StudentAid.gov)",
+          "title": "One Big Beautiful Bill Act: Important Definitions — definiciones importantes (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/announcements-events/big-updates/definitions"
         },
         {
-          "title": "Cómo aceptar la ayuda financiera: orden de los préstamos, rechazar préstamos, planes de pago de matrícula (StudentAid.gov)",
+          "title": "Accepting Financial Aid: cómo aceptar la ayuda financiera (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/complete-aid-process/accept-aid"
         },
         {
-          "title": "Cómo recibir la ayuda financiera: dinero sobrante, cancelación dentro de 120 días (StudentAid.gov)",
+          "title": "Receiving Financial Aid: cómo recibir la ayuda financiera (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/complete-aid-process/receive-aid"
         },
         {
-          "title": "Entrance Counseling: orientación inicial sobre préstamos (StudentAid.gov)",
+          "title": "Entrance Counseling: orientación inicial sobre préstamos (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/entrance-counseling"
         },
         {
-          "title": "Master Promissory Note: pagaré maestro (StudentAid.gov)",
+          "title": "Master Promissory Note: pagaré maestro (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/mpn"
         },
         {
-          "title": "Suspensión temporal de pagos (forbearance): límites para préstamos otorgados el 1 de julio de 2027 o después (StudentAid.gov)",
+          "title": "Student Loan Forbearance: suspensión temporal de pagos (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/manage-loans/lower-payments/get-temporary-relief/forbearance"
         },
         {
-          "title": "Atrasos e incumplimiento de pago (default) de préstamos estudiantiles (StudentAid.gov)",
+          "title": "Student Loan Delinquency and Default: atrasos e incumplimiento de pago (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/manage-loans/default"
         },
         {
-          "title": "Cancelación y condonación de préstamos estudiantiles: fallecimiento, discapacidad, PSLF, menores de edad (StudentAid.gov)",
+          "title": "Student Loan Discharge and Forgiveness: cancelación y condonación de préstamos (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/manage-loans/forgiveness-cancellation"
         },
         {
-          "title": "Cómo evitar estafas de ayuda estudiantil (StudentAid.gov)",
+          "title": "Avoiding Student Aid Scams: cómo evitar estafas (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/resources/scams"
         }
       ]
@@ -1498,51 +1498,51 @@
       ],
       "sources": [
         {
-          "title": "Federal Student Aid",
+          "title": "Do You Need Money for College or Career School? — folleto sobre la ayuda federal (StudentAid.gov, PDF en inglés)",
           "url": "https://studentaid.gov/sites/default/files/do-you-need-money.pdf"
         },
         {
-          "title": "StudentAid.gov: Cómo revisar y corregir tu formulario FAFSA (verificación, cómo agregar escuelas, opción de solo préstamos no subsidiados)",
+          "title": "How to Review and Correct Your FAFSA Form: cómo revisar y corregir tu FAFSA (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/apply-for-aid/fafsa/review-and-correct"
         },
         {
-          "title": "StudentAid.gov: Cómo aceptar la ayuda financiera (en qué orden aceptar la ayuda, cómo rechazar o reducir préstamos, planes de pago de la matrícula)",
+          "title": "Accepting Financial Aid: cómo aceptar la ayuda financiera (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/complete-aid-process/accept-aid"
         },
         {
-          "title": "StudentAid.gov",
+          "title": "Receiving Financial Aid: cómo recibir la ayuda financiera (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/complete-aid-process/receive-aid"
         },
         {
-          "title": "StudentAid.gov: Préstamos Directos Subsidiados y No Subsidiados (Direct Subsidized and Unsubsidized Loans)",
+          "title": "Direct Subsidized and Direct Unsubsidized Loans: préstamos subsidiados y no subsidiados (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/loans/subsidized-unsubsidized"
         },
         {
-          "title": "StudentAid.gov",
+          "title": "Direct PLUS Loans for Parents: préstamos PLUS para padres (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/loans/plus/parent"
         },
         {
-          "title": "StudentAid.gov: Becas Federales Pell (renovar la FAFSA cada año, montos para tiempo parcial, programas de formación laboral)",
+          "title": "Federal Pell Grants: becas federales Pell (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/types/grants/pell"
         },
         {
-          "title": "Ley Pública 119-21",
+          "title": "Public Law 119-21: texto de la ley (GovInfo, en inglés)",
           "url": "https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm"
         },
         {
-          "title": "Manual de FSA 2026-27 (FSA Handbook), vol. 6, cap. 2: Programa Federal de Estudio y Trabajo (Federal Work-Study)",
+          "title": "FSA Handbook 2026–27, Vol. 6, Ch. 2: Federal Work-Study Program — programa federal de estudio y trabajo (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol6/ch2-federal-work-study-program"
         },
         {
-          "title": "Manual de FSA 2026-27, Guía de Solicitud y Verificación (Application and Verification Guide), cap. 4: Verificación, actualizaciones y correcciones",
+          "title": "Application and Verification Guide 2026–27, Ch. 4: Verification, Updates and Corrections — verificación (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch4-verification-updates-and-corrections"
         },
         {
-          "title": "Manual de FSA 2026-27, Guía de Solicitud y Verificación, cap. 5: Casos especiales (criterio profesional, circunstancias inusuales, jóvenes sin hogar)",
+          "title": "Application and Verification Guide 2026–27, Ch. 5: Special Cases — casos especiales (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch5-special-cases"
         },
         {
-          "title": "StudentAid.gov: Requisitos para quienes no son ciudadanos de EE. UU. (estudiantes indocumentados y con DACA; estatus migratorio de los padres)",
+          "title": "Eligibility for Non-U.S. Citizens: requisitos para quienes no son ciudadanos (StudentAid.gov, en inglés)",
           "url": "https://studentaid.gov/understand-aid/eligibility/requirements/non-us-citizens"
         }
       ]
@@ -1597,7 +1597,7 @@
         {
           "kind": "paragraph",
           "heading": "Workforce Pell para programas cortos",
-          "text": "Desde el 1 de julio de 2026, las becas Workforce Pell (becas Pell para capacitación laboral corta) pueden ayudar a pagar programas aprobados de 8 a poco menos de 15 semanas (de 150 a 599 horas reloj). Puede que todavía haya pocos programas aprobados, y quienes estudian en ellos no pueden recibir préstamos federales. Se espera que la beca promedio sea de unos $1,710. No cuentes con ella hasta que la escuela te lo confirme por escrito. Consulta “Becas Pell y Workforce Pell”."
+          "text": "Desde el 1 de julio de 2026, las becas Workforce Pell (becas Pell para capacitación laboral corta) pueden ayudar a pagar programas aprobados de 8 a poco menos de 15 semanas (de 150 a 599 horas reloj). Puede que todavía haya pocos programas aprobados, y quienes estudian en ellos no pueden recibir préstamos federales. Se espera que la beca promedio sea de unos $1,710. No cuentes con ella hasta que la escuela te lo confirme por escrito. Consulta “Pell Grants (becas federales Pell) y Workforce Pell”."
         },
         {
           "kind": "steps",
@@ -1651,7 +1651,7 @@
             "Si eres ciudadano de EE. UU. o no ciudadano elegible (eligible noncitizen), el estatus migratorio de tus padres no afecta tu ayuda federal, y la FAFSA no pregunta por él. Tu papá o tu mamá puede llenar su parte aunque no tenga número de Seguro Social.",
             "Los residentes permanentes (con green card), los refugiados, los asilados y algunos otros no ciudadanos pueden recibir ayuda federal. Los beneficiarios de DACA (Acción Diferida para los Llegados en la Infancia) no pueden, pero la FAFSA podría ayudarles a conseguir ayuda del estado o de la escuela.",
             "Si no tienes número de Seguro Social, no puedes llenar la FAFSA, pero algunos estados tienen su propio formulario de ayuda. Pregúntale a tu consejero escolar.",
-            "¿Te preocupa compartir información? Lee “Privacidad e inmigración” en la sección “Situaciones especiales” de esta guía, y habla con un abogado de inmigración con licencia o con un representante acreditado por el DOJ (una persona capacitada y aprobada por el Departamento de Justicia) antes de decidir.",
+            "¿Te preocupa compartir información? Lee “Privacidad e inmigración” en la sección “Situaciones especiales en la FAFSA” de esta guía, y habla con un abogado de inmigración con licencia o con un representante acreditado por el DOJ (una persona capacitada y aprobada por el Departamento de Justicia) antes de decidir.",
             "Los centros de empleo no pueden discriminarte por tu estatus de ciudadanía si eres ciudadano o un inmigrante con permiso para trabajar en EE. UU. Las reglas para inmigrantes en algunos programas de educación y empleo han estado cambiando, así que pregunta en cada programa qué requisitos tiene ahora."
           ]
         },
@@ -1678,55 +1678,55 @@
       ],
       "sources": [
         {
-          "title": "Apprenticeship.gov",
+          "title": "Career Seekers: aprendizajes para quienes buscan empleo (Apprenticeship.gov, en inglés)",
           "url": "https://www.apprenticeship.gov/career-seekers"
         },
         {
-          "title": "Apprenticeship.gov",
+          "title": "Apprenticeship Requirements Reference Guide: requisitos de los programas de aprendizaje (Apprenticeship.gov, PDF en inglés)",
           "url": "https://www.apprenticeship.gov/sites/default/files/apprenticeship-requirements-reference-guide.pdf"
         },
         {
-          "title": "Apprenticeship.gov",
+          "title": "Apprenticeship for Young People: aprendizajes para jóvenes (Apprenticeship.gov, en inglés)",
           "url": "https://www.apprenticeship.gov/educators/apprenticeship-for-young-people"
         },
         {
-          "title": "Apprenticeship.gov: Buscador de empleos de aprendizaje (Apprenticeship Job Finder)",
+          "title": "Apprenticeship Job Finder: buscador de empleos de aprendizaje (Apprenticeship.gov, en inglés)",
           "url": "https://www.apprenticeship.gov/apprenticeship-job-finder"
         },
         {
-          "title": "eCFR 34 CFR 668.8",
+          "title": "34 CFR 668.8: Eligible Program — programas que califican para ayuda federal (eCFR, en inglés)",
           "url": "https://www.ecfr.gov/current/title-34/section-668.8"
         },
         {
-          "title": "FSA Partners: (GEN-26-01) Montos máximos y mínimos de la Federal Pell Grant 2026-27 ($7,395)",
+          "title": "GEN-26-01: 2026–27 Federal Pell Grant Maximum and Minimum Award Amounts — montos de la beca Pell (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/library/dear-colleague-letters/2026-01-30/2026-27-federal-pell-grant-maximum-and-minimum-award-amounts"
         },
         {
-          "title": "Federal Register",
+          "title": "Final Rule: Workforce Pell Grants and Pell Grant Exclusion, 91 FR 29254 — regla final (Federal Register, en inglés)",
           "url": "https://www.federalregister.gov/documents/2026/05/19/2026-10013/accountability-in-higher-education-and-access-through-demand-driven-workforce-pell-pell-grant"
         },
         {
-          "title": "FSA Partners: Plan de pruebas beta de la FAFSA 2027-28 (actualización del 23 de septiembre de 2026: el formulario ya está abierto al público)",
+          "title": "2027–28 FAFSA Beta Testing Plan, Updated Sept. 23, 2026: plan de pruebas beta de la FAFSA (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-21/2027-28-fafsa-beta-testing-plan-updated-sept-23-2026"
         },
         {
-          "title": "Manual de FSA 2026-27, Guía de solicitud y verificación, cap. 1",
+          "title": "Application and Verification Guide 2026–27, Ch. 1: The Application Process — el proceso de solicitud (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch1-application-process-fafsa-isir"
         },
         {
-          "title": "Manual de FSA 2026-27, Guía de solicitud y verificación, cap. 2",
+          "title": "Application and Verification Guide 2026–27, Ch. 2: Filling Out the FAFSA Form — cómo llenar la FAFSA (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch2-filling-out-fafsa-form"
         },
         {
-          "title": "Manual de FSA 2026-27, vol. 1, cap. 1",
+          "title": "FSA Handbook 2026–27, Vol. 1, Ch. 1: School-Determined Requirements — requisitos que determina la escuela (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol1/ch1-school-determined-requirements"
         },
         {
-          "title": "Manual de FSA 2026-27, vol. 1, cap. 2",
+          "title": "FSA Handbook 2026–27, Vol. 1, Ch. 2: U.S. Citizenship and Eligible Noncitizens — requisitos de ciudadanía (Federal Student Aid, en inglés)",
           "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol1/ch2-us-citizenship-eligible-noncitizens"
         },
         {
-          "title": "CareerOneStop: busca un American Job Center (centro de empleo)",
+          "title": "American Job Center Finder: buscador de centros de empleo (CareerOneStop, Departamento de Trabajo de EE. UU., en inglés)",
           "url": "https://www.careeronestop.org/LocalHelp/AmericanJobCenters/find-american-job-centers.aspx"
         }
       ]

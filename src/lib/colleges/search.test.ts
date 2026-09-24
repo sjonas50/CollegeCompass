@@ -228,6 +228,18 @@ describe("majors", () => {
     await insertMajorSearchData(db, OFFERED_BY);
   });
 
+  it("never sends a graduate profession to an undergraduate family that merely lists it", async () => {
+    // 51.0912 Physician Assistant is a master's program; family 51.09 is EMT, radiology and the like.
+    const pa = await resolveMajorQuery(db, "physician assistant");
+    expect(cip4s(pa)).toEqual(["51.11"]);
+    expect(pa).toMatchObject({ kind: "match", major: { includes: "Pre-Physician Assistant" } });
+  });
+
+  it("treats short words as whole words", async () => {
+    // "ai" is a synonym; a plain short word like "art" must not match "Artificial Intelligence".
+    expect(cip4s(await resolveMajorQuery(db, "art"))).not.toContain("11.01");
+  });
+
   it("finds trades by their everyday names through the 6-digit majors colleges file them under", async () => {
     expect(await resolveMajorQuery(db, "welding")).toEqual({
       kind: "choices",

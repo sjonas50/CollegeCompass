@@ -1,4 +1,3 @@
-import { isLinkableSite } from "@/lib/aid-guide/links";
 import { linkify } from "@/lib/aid-guide/linkify";
 import type { AidGuideSectionId } from "@/lib/aid-guide/schema";
 
@@ -100,19 +99,20 @@ export function appPage(path: string): AppPage | null {
 
 type Placed = { start: number; end: number; segment: ChatSegment };
 
-/** Besides any .gov or .edu site. */
-const TRUSTED_SITES = [
-  "collegeboard.org",
-  "bigfuture.collegeboard.org",
-  "cssprofile.collegeboard.org",
-  "satsuite.collegeboard.org",
-  "apstudents.collegeboard.org",
-  "act.org",
-  "commonapp.org",
-  "careeronestop.org",
-  "988lifeline.org",
-  "crisistextline.org",
-].map((site) => ({ url: `https://${site}/` }));
+/** Besides any .gov or .edu site. Subdomains count too (npc.collegeboard.org, apply.commonapp.org). */
+const TRUSTED_SITES = ["collegeboard.org", "act.org", "commonapp.org", "careeronestop.org", "988lifeline.org", "crisistextline.org"];
+
+/** Https links to government, college and trusted sites. */
+function trustedLink(href: string): boolean {
+  if (!href.startsWith("https://")) return false;
+  let host: string;
+  try {
+    host = new URL(href).hostname;
+  } catch {
+    return false;
+  }
+  return /\.(gov|edu)$/.test(host) || TRUSTED_SITES.some((site) => host === site || host.endsWith(`.${site}`));
+}
 
 export function chatLinks(text: string): ChatSegment[] {
   const links: Placed[] = [];
@@ -120,7 +120,7 @@ export function chatLinks(text: string): ChatSegment[] {
   for (const segment of linkify(text)) {
     // Other websites only over https, and only government, college and a few trusted sites, so a
     // look-alike address (even one the counselor quotes as a warning) stays plain text.
-    if (segment.type === "link" && isLinkableSite(segment.href, TRUSTED_SITES)) {
+    if (segment.type === "link" && trustedLink(segment.href)) {
       const link: ChatSegment = { type: "link", text: segment.text, href: segment.href, source: segment.text, external: true };
       links.push({ start: offset, end: offset + segment.text.length, segment: link });
     }

@@ -128,5 +128,7 @@ describe("chat link rendering", () => {
     const external = (text: string) => chatLinks(text).filter((s) => s.type === "link" && s.external).map((s) => (s.type === "link" ? s.href : ""));
     expect(external("See https://studentaid.gov/h/apply-for-aid/fafsa and https://www.collegeboard.org/ and https://www.ucla.edu")).toHaveLength(3);
     expect(external("Watch out for https://studentaid-gov.help/free-money and https://fafsa-help.com")).toEqual([]);
+    expect(external("Try https://npc.collegeboard.org/app/umich or https://apply.commonapp.org")).toHaveLength(2);
+    expect(external("Not https://collegeboard.org.evil.com or https://evilcollegeboard.org")).toEqual([]);
   });
 });
