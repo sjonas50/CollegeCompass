@@ -3,7 +3,8 @@ import type { KeyDateStatus, KeyDatesYear } from "@/lib/applications/key-dates";
 
 const STATUS_BADGES: Partial<Record<KeyDateStatus, { text: string; className: string }>> = {
   open_now: { text: "Open now", className: "bg-success-soft" },
-  passed: { text: "Passed", className: "border border-border text-muted" },
+  usually_open: { text: "Usually open by now", className: "bg-accent-soft" },
+  passed:{ text: "Passed", className: "border border-border text-muted" },
 };
 
 /**

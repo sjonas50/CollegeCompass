@@ -58,14 +58,30 @@ export function customEntryFormInput(formData: FormData): Record<string, unknown
 // ---------------------------------------------------------------------------
 
 const MONEY_ERROR = `Enter whole dollars from 0 to ${MAX_AID_AMOUNT.toLocaleString("en-US")}, like 12500.`;
+const PERIOD_THOUSANDS_ERROR = "Use a comma for thousands, not a period, like 12,000.";
+const COMMAS_ERROR = "Check the commas. Write it like 12,500 or 12500.";
 
-/** A whole-dollar amount typed as "12500", "12,500" or "$12,500". Blank means "not on the offer". */
+/** Whole dollars with commas between each group of three digits (or none), and cents only if zero. */
+const MONEY_FORMAT = /^(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?$/;
+
+/**
+ * A whole-dollar amount typed as "12500", "12,500", "$12,500" or "12500.00". Blank means "not on
+ * the offer". Anything that could be read two ways is sent back rather than guessed at: in many
+ * countries "12.000" means twelve thousand, so it's never saved as $12, and "1,2,3" isn't $123.
+ */
 const money = z.preprocess(
-  (v) => {
+  (v, ctx) => {
     if (typeof v !== "string") return v ?? null;
-    const s = v.replace(/[$,\s]/g, "");
+    const s = v.replace(/[$\s]/g, "");
     if (s === "") return null;
-    return /^\d+(\.0+)?$/.test(s) ? Number(s) : Number.NaN;
+    const match = MONEY_FORMAT.exec(s);
+    if (!match) {
+      const message = /^\d{1,3}(\.\d{3})+$/.test(s) ? PERIOD_THOUSANDS_ERROR : /^[\d,]+$/.test(s) ? COMMAS_ERROR : MONEY_ERROR;
+      ctx.addIssue({ code: "custom", message });
+      return v;
+    }
+    const [, dollars, cents = ""] = match;
+    return /^0*$/.test(cents) ? Number(dollars.replaceAll(",", "")) : Number.NaN;
   },
   z.number({ error: MONEY_ERROR }).int(MONEY_ERROR).min(0, MONEY_ERROR).max(MAX_AID_AMOUNT, MONEY_ERROR).nullable(),
 );
@@ -121,7 +137,9 @@ export function entryPatchSchema(today: string, keepDeadline?: string | null) {
         .optional(),
       notes: z
         .preprocess(
-          (v) => (typeof v === "string" ? blankToNull(v.trim()) : blankToNull(v)),
+          // Forms send each line break as "\r\n", but the notes box's limit counts it as one
+          // character, so line breaks are stored as "\n" and counted the same way.
+          (v) => (typeof v === "string" ? blankToNull(v.replace(/\r\n?/g, "\n").trim()) : blankToNull(v)),
           z
             .string({ error: "Notes should be text." })
             .max(NOTES_MAX, `Keep notes to ${NOTES_MAX.toLocaleString("en-US")} characters or fewer.`)

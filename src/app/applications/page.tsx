@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ButtonLink, Card, Notice, PageHeading } from "@/components/ui";
+import { ButtonLink, Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
 import { hasAidOffer } from "@/lib/applications/aid";
 import { usToday } from "@/lib/applications/dates";
 import { listMode, plural } from "@/lib/applications/display";
-import { keyDatesFor } from "@/lib/applications/key-dates";
+import { keyDatesForStudent } from "@/lib/applications/key-dates";
 import { MAX_LIST_ENTRIES, listEntriesWithScorecard } from "@/lib/applications/service";
 import { buildTimeline } from "@/lib/applications/timeline";
 import { requireUser } from "@/lib/auth/dal";
@@ -13,6 +13,7 @@ import { AddCustomForm } from "./add-custom-form";
 import { DeadlineTimeline } from "./deadline-timeline";
 import { EntryCard } from "./entry-card";
 import { KeyDatesCard } from "./key-dates-card";
+import { RemovedNotice } from "./removed-notice";
 
 export const metadata: Metadata = { title: "My college list" };
 
@@ -29,6 +30,7 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/app
   const hasDeadlines = timeline.pastDue.length + timeline.soon.length + timeline.later.length > 0;
   const offers = entries.filter((e) => hasAidOffer(e.aidOffer)).length;
   const full = entries.length >= MAX_LIST_ENTRIES;
+  const keyDates = mode.showKeyDates ? keyDatesForStudent(student.grade, now) : null;
 
   return (
     <div className="space-y-8">
@@ -43,7 +45,7 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/app
           lead="Save colleges, training programs and apprenticeships you'd like to learn more about. This is a place to collect ideas, not to decide anything. Your list can change as often as you like."
         />
       )}
-      {removed && <Notice>Removed from your list.</Notice>}
+      {removed && <RemovedNotice />}
 
       {(mode.applying || hasDeadlines) && <DeadlineTimeline timeline={timeline} />}
 
@@ -98,7 +100,7 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/app
         )}
       </section>
 
-      {mode.showKeyDates && <KeyDatesCard year={keyDatesFor(now)} senior={student.grade === 12} />}
+      {keyDates && <KeyDatesCard year={keyDates.year} senior={keyDates.senior} />}
 
       {mode.applying && (
         <Card>

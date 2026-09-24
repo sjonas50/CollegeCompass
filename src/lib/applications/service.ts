@@ -7,7 +7,7 @@ import { scrubPii } from "../ai/privacy";
 import { type AidComparison, compareAidOffer, hasAidOffer } from "./aid";
 import { addDays, daysBetween, usToday } from "./dates";
 import type { AidField } from "./labels";
-import { checklistProgress, isSubmitted } from "./timeline";
+import { checklistProgress, dueWithin, isSubmitted } from "./timeline";
 import { CustomEntrySchema, type FieldErrors, UnitIdSchema, entryPatchSchema, issueErrors } from "./validation";
 
 // A student's college list: colleges from the Scorecard plus custom colleges and programs
@@ -48,24 +48,35 @@ export type ScorecardContext = { found: boolean; avgNetPrice: number | null; cit
 
 export type ListEntryWithScorecard = ListEntry & { scorecard: ScorecardContext | null };
 
+// Student entries keep their unitId even after a college drops out of the reference data (there's
+// no foreign key), so the join is a left join and a missing college shows as `found: false`.
+const withScorecardColumns = {
+  ...entryColumns,
+  collegeUnitId: colleges.unitId,
+  avgNetPrice: colleges.avgNetPrice,
+  city: colleges.city,
+  state: colleges.state,
+};
+
+function withScorecard({
+  collegeUnitId,
+  avgNetPrice,
+  city,
+  state,
+  ...entry
+}: ListEntry & { collegeUnitId: number | null; avgNetPrice: number | null; city: string | null; state: string | null }): ListEntryWithScorecard {
+  return { ...entry, scorecard: entry.unitId === null ? null : { found: collegeUnitId !== null, avgNetPrice, city, state } };
+}
+
 /** The list with Scorecard context for each college (null for custom entries). */
 export async function listEntriesWithScorecard(db: Db, userId: string): Promise<ListEntryWithScorecard[]> {
   const rows = await db
-    .select({
-      ...entryColumns,
-      collegeUnitId: colleges.unitId,
-      avgNetPrice: colleges.avgNetPrice,
-      city: colleges.city,
-      state: colleges.state,
-    })
+    .select(withScorecardColumns)
     .from(collegeList)
     .leftJoin(colleges, eq(colleges.unitId, collegeList.unitId))
     .where(eq(collegeList.userId, userId))
     .orderBy(asc(collegeList.createdAt), asc(collegeList.id));
-  return rows.map(({ collegeUnitId, avgNetPrice, city, state, ...entry }) => ({
-    ...entry,
-    scorecard: entry.unitId === null ? null : { found: collegeUnitId !== null, avgNetPrice, city, state },
-  }));
+  return rows.map(withScorecard);
 }
 
 /** One entry, only if it belongs to `userId`. */
@@ -76,6 +87,17 @@ export async function getEntry(db: Db, userId: string, entryId: string): Promise
     .from(collegeList)
     .where(and(eq(collegeList.id, entryId), eq(collegeList.userId, userId)));
   return row ?? null;
+}
+
+/** One entry with its Scorecard context, only if it belongs to `userId`. */
+export async function getEntryWithScorecard(db: Db, userId: string, entryId: string): Promise<ListEntryWithScorecard | null> {
+  if (!isUuid(entryId)) return null;
+  const [row] = await db
+    .select(withScorecardColumns)
+    .from(collegeList)
+    .leftJoin(colleges, eq(colleges.unitId, collegeList.unitId))
+    .where(and(eq(collegeList.id, entryId), eq(collegeList.userId, userId)));
+  return row ? withScorecard(row) : null;
 }
 
 /** Whether a college is on the student's list, and whether the list has room for more. */
@@ -267,6 +289,10 @@ export type ListSummaryEntry = {
   submitted: boolean;
   deadlineType: ListEntry["deadlineType"];
   deadline: string | null;
+  /** Days from today to the deadline: 0 is today, below zero once it has passed. Null without a deadline. */
+  daysLeft: number | null;
+  /** The deadline passed and the application isn't marked as sent. */
+  pastDue: boolean;
   checklist: { done: number; total: number };
   aid: AidSummary | null;
 };
@@ -298,41 +324,70 @@ function aidSummary(entry: Pick<ListEntry, "aidOffer">): AidSummary | null {
   return { ...numbers, notEntered: missing };
 }
 
-/** The whole list, for the counselor. */
-export async function listSummary(db: Db, userId: string): Promise<ListSummaryEntry[]> {
+/**
+ * The whole list, for the counselor. Each deadline comes with `daysLeft` and `pastDue`, worked out
+ * here, so the model never has to guess whether a date has passed.
+ */
+export async function listSummary(db: Db, userId: string, now = new Date()): Promise<ListSummaryEntry[]> {
   const [entries, names] = await Promise.all([listEntries(db, userId), knownNames(db, userId)]);
-  return entries.map((e) => ({
-    name: summaryName(e, names),
-    kind: e.kind,
-    unitId: e.unitId,
-    status: e.status,
-    submitted: isSubmitted(e),
-    deadlineType: e.deadlineType,
-    deadline: e.deadline,
-    checklist: checklistProgress(e.checklist),
-    aid: aidSummary(e),
-  }));
+  return summarize(entries, names, usToday(now));
 }
 
-/** Deadlines from today through `days` from now whose applications aren't marked as sent, soonest first. */
-export async function upcomingDeadlines(db: Db, userId: string, now = new Date(), days = 14): Promise<UpcomingDeadline[]> {
-  const window = Math.max(0, Math.min(366, Math.floor(Number.isFinite(days) ? days : 14)));
-  const today = usToday(now);
-  const last = addDays(today, window);
-  const [entries, names] = await Promise.all([listEntries(db, userId), knownNames(db, userId)]);
-  return entries
-    .filter((e): e is ListEntry & { deadline: string } => e.deadline !== null && e.deadline >= today && e.deadline <= last)
-    .filter((e) => !isSubmitted(e))
-    .sort((a, b) => a.deadline.localeCompare(b.deadline) || a.name.localeCompare(b.name))
-    .map((e) => ({
+function summarize(entries: ListEntry[], names: string[], today: string): ListSummaryEntry[] {
+  return entries.map((e) => {
+    const submitted = isSubmitted(e);
+    const daysLeft = e.deadline === null ? null : daysBetween(today, e.deadline);
+    return {
       name: summaryName(e, names),
       kind: e.kind,
       unitId: e.unitId,
       status: e.status,
+      submitted,
       deadlineType: e.deadlineType,
       deadline: e.deadline,
-      daysLeft: daysBetween(today, e.deadline),
-    }));
+      daysLeft,
+      pastDue: daysLeft !== null && daysLeft < 0 && !submitted,
+      checklist: checklistProgress(e.checklist),
+      aid: aidSummary(e),
+    };
+  });
+}
+
+/**
+ * Deadlines from today through `days` from now whose applications aren't marked as sent, soonest
+ * first, for the counselor (custom names are scrubbed). Pages showing the student their own list
+ * use `dueWithin` on the entries instead, with names as the student typed them.
+ */
+export async function upcomingDeadlines(db: Db, userId: string, now = new Date(), days = 14): Promise<UpcomingDeadline[]> {
+  const [entries, names] = await Promise.all([listEntries(db, userId), knownNames(db, userId)]);
+  return upcoming(entries, names, usToday(now), days);
+}
+
+function upcoming(entries: ListEntry[], names: string[], today: string, days: number): UpcomingDeadline[] {
+  const window = Math.max(0, Math.min(366, Math.floor(Number.isFinite(days) ? days : 14)));
+  return dueWithin(entries, today, window).map(({ entry: e, deadline, daysLeft }) => ({
+    name: summaryName(e, names),
+    kind: e.kind,
+    unitId: e.unitId,
+    status: e.status,
+    deadlineType: e.deadlineType,
+    deadline,
+    daysLeft,
+  }));
+}
+
+/**
+ * Everything the counselor's college-list tool returns: today's date (so the model can place
+ * deadlines in the right year), the whole list, and unsent deadlines in the next 30 days.
+ */
+export async function collegeListForCounselor(
+  db: Db,
+  userId: string,
+  now = new Date(),
+): Promise<{ today: string; list: ListSummaryEntry[]; upcoming: UpcomingDeadline[] }> {
+  const today = usToday(now);
+  const [entries, names] = await Promise.all([listEntries(db, userId), knownNames(db, userId)]);
+  return { today, list: summarize(entries, names, today), upcoming: upcoming(entries, names, today, 30) };
 }
 
 /**

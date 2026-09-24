@@ -3,7 +3,7 @@ import type { Db } from "@/db";
 import { parentStudentLinks, reminderSends, studentMilestones, users, weeklySteps } from "@/db/schema";
 import { formatDate, relativeDays } from "./applications/dates";
 import { upcomingDeadlinesFor } from "./applications/service";
-import { currentGrade, isUnder13 } from "./auth/age";
+import { MAX_GRADE, currentGrade, isUnder13 } from "./auth/age";
 import { hashToken } from "./auth/tokens";
 import type { Email } from "./email";
 import { MILESTONES } from "./roadmap/milestones";
@@ -153,11 +153,17 @@ export async function* weeklyReminderBatches(
 
     for (const s of students) {
       const grade = currentGrade(s, now);
-      if (grade === null || grade > 12) continue;
+      if (grade === null) continue;
 
+      // After high school the weekly roundup stops, except for deadlines on the college list:
+      // graduates keep the full application tools (a gap-year applicant, say), so they still hear
+      // about applications due soon.
+      const graduated = grade > MAX_GRADE;
       const handled = new Set((progressBy.get(s.id) ?? []).map((p) => p.milestoneId));
-      const timely = MILESTONES.filter((m) => m.grade === grade && m.months.includes(month) && !handled.has(m.id)).slice(0, 3);
-      const mine = stepsBy.get(s.id) ?? [];
+      const timely = graduated
+        ? []
+        : MILESTONES.filter((m) => m.grade === grade && m.months.includes(month) && !handled.has(m.id)).slice(0, 3);
+      const mine = graduated ? [] : (stepsBy.get(s.id) ?? []);
       const finished = mine.filter((st) => st.weekStart === lastWeek && st.status === "done");
       const carryOver = mine.filter((st) => st.weekStart === lastWeek && st.status === "open");
       const thisWeek = mine.filter((st) => st.weekStart === weekStart);

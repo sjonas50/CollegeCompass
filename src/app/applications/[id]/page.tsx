@@ -5,9 +5,9 @@ import { Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
 import { compareAidOffer, hasAidOffer } from "@/lib/applications/aid";
 import { deadlineWindow, usToday } from "@/lib/applications/dates";
-import { listMode } from "@/lib/applications/display";
+import { listMode, scorecardPrice } from "@/lib/applications/display";
 import { KIND_LABELS } from "@/lib/applications/labels";
-import { getEntry } from "@/lib/applications/service";
+import { getEntryWithScorecard } from "@/lib/applications/service";
 import { requireUser } from "@/lib/auth/dal";
 import { AidOfferLinesList, AidWarnings } from "../aid-offer-card";
 import { EntryForm } from "./entry-form";
@@ -21,7 +21,7 @@ export default async function EntryPage({ params }: PageProps<"/applications/[id
   const student = await requireUser(["student"]);
   const { id } = await params;
   // Only the signed-in student's own entries; anyone else's id is simply "not found".
-  const entry = await getEntry(await getDb(), student.id, id);
+  const entry = await getEntryWithScorecard(await getDb(), student.id, id);
   if (!entry) notFound();
 
   const mode = listMode(student.grade);
@@ -39,13 +39,15 @@ export default async function EntryPage({ params }: PageProps<"/applications/[id
         </Link>
       </p>
       <PageHeading title={entry.name} lead={KIND_LABELS[entry.kind]} />
-      {entry.unitId !== null && (
+      {/* A college can drop out of the College Scorecard data after it was saved; its page is gone then. */}
+      {entry.unitId !== null && entry.scorecard?.found && (
         <p className="-mt-4 text-sm">
           <Link href={`/colleges/${entry.unitId}`} className={linkClass}>
             About this college
           </Link>
         </p>
       )}
+      {entry.scorecard && !entry.scorecard.found && <p className="-mt-4 text-sm text-muted">{scorecardPrice(entry.scorecard).note}</p>}
 
       {offer && (
         <section aria-labelledby="offer-heading" className="rounded-xl border border-border bg-surface p-5">

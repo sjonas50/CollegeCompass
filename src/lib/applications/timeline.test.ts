@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ApplicationChecklist, CollegeListStatus } from "@/db/schema";
-import { buildTimeline, checklistProgress, isSubmitted } from "./timeline";
+import { buildTimeline, checklistProgress, dueWithin, isSubmitted } from "./timeline";
 
 const entry = (name: string, deadline: string | null, status: CollegeListStatus = "applying", checklist: ApplicationChecklist = {}) => ({
   name,
@@ -61,5 +61,27 @@ describe("buildTimeline", () => {
     expect(t.pastDue).toEqual([]);
     expect(t.soon).toHaveLength(1);
     expect(t.soon[0]).toMatchObject({ submitted: true, daysLeft: 7 });
+  });
+});
+
+describe("dueWithin", () => {
+  it("keeps unsent applications due from today through the window, soonest first", () => {
+    const items = dueWithin(
+      [
+        entry("Later", "2026-10-09"),
+        entry("Day 14", "2026-10-08"),
+        entry("Yesterday", "2026-09-23"),
+        entry("Today", "2026-09-24"),
+        entry("Sent", "2026-09-30", "applied"),
+        entry("Checked off", "2026-10-01", "applying", { applicationSubmitted: true }),
+        entry("No date", null),
+      ],
+      "2026-09-24",
+      14,
+    );
+    expect(items.map((i) => [i.entry.name, i.daysLeft])).toEqual([
+      ["Today", 0],
+      ["Day 14", 14],
+    ]);
   });
 });

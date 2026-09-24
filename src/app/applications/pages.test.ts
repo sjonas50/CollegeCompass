@@ -1,9 +1,14 @@
-import type { ReactNode } from "react";
+import { eq } from "drizzle-orm";
+import { type ReactNode, createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import EntryPage from "@/app/applications/[id]/page";
+import { RemoveConfirm } from "@/app/applications/[id]/remove-entry";
+import { AddToListForm } from "@/app/applications/add-to-list-form";
 import ComparePage from "@/app/applications/compare/page";
+import ListEntryNotFound from "@/app/applications/not-found";
 import ApplicationsPage from "@/app/applications/page";
+import DashboardPage from "@/app/dashboard/page";
 import { AddToListButton } from "@/components/add-to-list";
 import { type Db, createTestDb, schema } from "@/db";
 import { MAX_LIST_ENTRIES, addCollege, addCustom, updateEntry } from "@/lib/applications/service";
@@ -11,10 +16,20 @@ import type { SessionUser } from "@/lib/auth/sessions";
 
 // Server-rendered checks for the list pages and the add button, with the session and database mocked.
 
-const state = vi.hoisted(() => ({ db: null as Db | null, user: null as SessionUser | null }));
+const state = vi.hoisted(() => ({ db: null as Db | null, user: null as SessionUser | null, formResult: undefined as unknown }));
 
 vi.mock("@/db", async (original) => ({ ...(await original<typeof import("@/db")>()), getDb: async () => state.db }));
+// Lets a test render a form as it looks after its action returned `state.formResult`.
+vi.mock("@/components/use-form-action", async (original) => {
+  const real = await original<typeof import("@/components/use-form-action")>();
+  return {
+    useFormAction: ((action, initial) =>
+      state.formResult === undefined ? real.useFormAction(action, initial) : [state.formResult, () => {}, false, {}]) as typeof real.useFormAction,
+  };
+});
 vi.mock("@/lib/auth/dal", () => ({ requireUser: async () => state.user, getCurrentUser: async () => state.user }));
+// The dashboard's weekly steps card loads its own data (an async component) and has its own tests.
+vi.mock("@/components/weekly-steps", () => ({ WeeklyStepsCard: () => null }));
 
 const NOW = new Date("2026-09-24T18:00:00Z");
 
@@ -27,6 +42,7 @@ afterEach(() => {
   vi.useRealTimers();
   state.db = null;
   state.user = null;
+  state.formResult = undefined;
 });
 
 async function signIn(grade: number | null, role: SessionUser["role"] = "student") {
@@ -115,6 +131,19 @@ describe("list page", () => {
     expect(text(await listPage())).toContain("Open now");
   });
 
+  it("in June, gives key dates to the rising senior and not to the student who just graduated", async () => {
+    // Grades move up in August, so in June the student still in 11th grade applies next.
+    vi.setSystemTime(new Date("2027-06-15T18:00:00Z"));
+    await signIn(11);
+    const rising = text(await listPage());
+    expect(rising).toContain("How the 2027–28 school year usually goes for students starting college or training in fall 2028");
+    expect(rising).not.toContain("Next fall it's your turn");
+
+    state.db = null;
+    await signIn(12);
+    expect(text(await listPage())).not.toContain("Key dates this year");
+  });
+
   it("keeps the tools but not this year's key dates after graduation", async () => {
     await signIn(13);
     const t = text(await listPage());
@@ -161,6 +190,45 @@ describe("entry page", () => {
     expect(html).not.toContain("Your saved aid offer");
   });
 
+  it("links to the college's page only while the college is still in our data", async () => {
+    const { db, id } = await signIn(12);
+    const north = await addCollege(db, id, 100001);
+    if (!north.ok) throw new Error();
+    expect(await entryPage(north.value.id)).toContain('href="/colleges/100001"');
+
+    await db.insert(schema.colleges).values({ unitId: 424242, name: "Gone College" });
+    const gone = await addCollege(db, id, 424242);
+    if (!gone.ok) throw new Error();
+    await db.delete(schema.colleges).where(eq(schema.colleges.unitId, 424242));
+    const html = await entryPage(gone.value.id);
+    expect(html).not.toContain('href="/colleges/424242"');
+    expect(text(html)).toContain("We don't have College Scorecard numbers for this college right now.");
+    expect(text(html)).toContain("Gone College");
+  });
+
+  it("reads out what removing deletes, along with the button that gets focus", () => {
+    const html = renderToStaticMarkup(
+      createElement(RemoveConfirm, { entryId: "e1", name: "North State University", action: () => {}, pending: false, onKeep: () => {} }),
+    );
+    const questionId = /<p id="([^"]+)">Remove <strong>North State University<\/strong> from your list\? Its deadline, checklist, aid offer and notes will be deleted too\.<\/p>/.exec(html)?.[1];
+    expect(questionId).toBeTruthy();
+    expect(html).toMatch(new RegExp(`<button[^>]*aria-describedby="${questionId}"[^>]*>Keep it</button>`));
+    expect(html).toMatch(new RegExp(`<button[^>]*aria-describedby="${questionId}"[^>]*>Yes, remove it</button>`));
+  });
+
+  it("says an entry was removed in a message that takes focus", async () => {
+    await signIn(12);
+    const html = await render(ApplicationsPage({ params: Promise.resolve({}), searchParams: Promise.resolve({ removed: "1" }) } as PageProps<"/applications">));
+    expect(html).toMatch(/<p tabindex="-1" role="status"[^>]*>Removed from your list\.<\/p>/);
+  });
+
+  it("offers a way back when an entry isn't there", () => {
+    const html = renderToStaticMarkup(ListEntryNotFound());
+    expect(text(html)).toContain("We couldn't find that on your list");
+    expect(html).toContain('href="/applications"');
+    expect(html).toContain('href="/colleges"');
+  });
+
   it("is not found for another student's entry", async () => {
     const { db } = await signIn(12);
     const [other] = await db
@@ -171,6 +239,47 @@ describe("entry page", () => {
     if (!theirs.ok) throw new Error();
     await expect(entryPage(theirs.value.id)).rejects.toThrow();
     await expect(entryPage("not-an-id")).rejects.toThrow();
+  });
+});
+
+describe("dashboard colleges card", () => {
+  const dashboard = () => render(DashboardPage({ params: Promise.resolve({}), searchParams: Promise.resolve({}) } as PageProps<"/dashboard">));
+
+  it("shows the student's own entry names, says they're deadlines, and links to each entry", async () => {
+    const { db, id } = await signIn(12);
+    // The student's name is "Sam", so scrubbing for the AI would change these names.
+    await db.update(schema.users).set({ displayName: "Lincoln" }).where(eq(schema.users.id, id));
+    const welding = await addCustom(db, id, { name: "Lincoln Tech welding program", kind: "program" });
+    const ibew = await addCustom(db, id, { name: "IBEW Local 1 apprenticeship, 1200 Main Street", kind: "program" });
+    const north = await addCollege(db, id, 100001);
+    const later = await addCustom(db, id, { name: "Far off program", kind: "program" });
+    if (!welding.ok || !ibew.ok || !north.ok || !later.ok) throw new Error();
+    await updateEntry(db, id, welding.value.id, { deadline: "2026-10-01", deadlineType: "priority" }, NOW);
+    await updateEntry(db, id, ibew.value.id, { deadline: "2026-09-24" }, NOW);
+    await updateEntry(db, id, north.value.id, { deadline: "2026-09-30", status: "applied" }, NOW);
+    await updateEntry(db, id, later.value.id, { deadline: "2026-12-01" }, NOW);
+    state.user = { ...state.user!, displayName: "Lincoln" };
+
+    const html = await dashboard();
+    const t = text(html);
+    expect(t).toContain("Deadlines in the next two weeks:");
+    expect(t).toContain("Lincoln Tech welding program Priority deadline: October 1, 2026 · Due in 7 days");
+    expect(t).toContain("IBEW Local 1 apprenticeship, 1200 Main Street Deadline: September 24, 2026 · Due today");
+    expect(t).not.toContain("[name]");
+    expect(t).not.toContain("[address]");
+    expect(t.indexOf("IBEW")).toBeLessThan(t.indexOf("Lincoln Tech"));
+    expect(t).not.toContain("North State University"); // already sent
+    expect(t).not.toContain("Far off program"); // more than two weeks away
+    expect(html).toContain(`href="/applications/${welding.value.id}"`);
+    expect(html).toContain(`href="/applications/${ibew.value.id}"`);
+  });
+
+  it("says when nothing is due soon", async () => {
+    const { db, id } = await signIn(11);
+    await addCollege(db, id, 100001);
+    const t = text(await dashboard());
+    expect(t).toContain("1 on your list. No deadlines in the next two weeks.");
+    expect(t).not.toContain("Deadlines in the next two weeks:");
   });
 });
 
@@ -235,6 +344,23 @@ describe("AddToListButton", () => {
     expect(text(after)).toContain("On your list");
     expect(after).toContain('href="/applications"');
     expect(after).not.toContain("<form");
+  });
+
+  it("announces the result of adding in a status line that's always there", async () => {
+    state.formResult = { status: "added", message: "Added North State University to your list." };
+    const html = renderToStaticMarkup(createElement(AddToListForm, { unitId: 100001, name: "North State University", listed: false, full: false }));
+    expect(html).toMatch(/<p role="status"[^>]*>Added North State University to your list\.<\/p>/);
+    expect(text(html)).toContain("See my list");
+  });
+
+  it("announces a list that filled up after the page loaded, and offers the way to the list", async () => {
+    state.formResult = { status: "limit", message: "Your list already has 30 colleges and programs, which is the most it can hold." };
+    const html = renderToStaticMarkup(createElement(AddToListForm, { unitId: 100001, name: "North State University", listed: false, full: false }));
+    expect(html).toMatch(/<p role="status"[^>]*>Your list already has 30 colleges and programs, which is the most it can hold\.<\/p>/);
+    expect(html).toMatch(/<a[^>]*href="\/applications"[^>]*>Go to my list<\/a>/);
+    expect(html).not.toContain("<form");
+    // Said once, in the status line.
+    expect(text(html)).not.toContain("Your list is full.");
   });
 
   it("says when the list is full", async () => {

@@ -24,6 +24,21 @@ export function checklistProgress(checklist: ApplicationChecklist | null | undef
 
 export type TimelineItem<T> = { entry: T; deadline: string; daysLeft: number; submitted: boolean };
 
+type Dated = HasProgress & { deadline: string | null; name: string };
+
+/** Every entry with a deadline, soonest first (ties by name). */
+function timelineItems<T extends Dated>(entries: readonly T[], today: string): TimelineItem<T>[] {
+  return entries
+    .filter((e): e is T & { deadline: string } => Boolean(e.deadline))
+    .map((entry) => ({ entry, deadline: entry.deadline, daysLeft: daysBetween(today, entry.deadline), submitted: isSubmitted(entry) }))
+    .sort((a, b) => a.deadline.localeCompare(b.deadline) || a.entry.name.localeCompare(b.entry.name));
+}
+
+/** Applications not marked as sent that are due from `today` through `days` days later, soonest first. */
+export function dueWithin<T extends Dated>(entries: readonly T[], today: string, days: number): TimelineItem<T>[] {
+  return timelineItems(entries, today).filter((i) => !i.submitted && i.daysLeft >= 0 && i.daysLeft <= days);
+}
+
 export type Timeline<T> = {
   /** Deadlines that passed while the application still wasn't sent. */
   pastDue: TimelineItem<T>[];
@@ -38,14 +53,8 @@ export type Timeline<T> = {
  * wasn't marked as sent (those get a gentle reminder); upcoming ones are kept either way, marked
  * `submitted` so the page can show they're handled.
  */
-export function buildTimeline<T extends HasProgress & { deadline: string | null; name: string }>(
-  entries: readonly T[],
-  today: string,
-): Timeline<T> {
-  const items = entries
-    .filter((e): e is T & { deadline: string } => Boolean(e.deadline))
-    .map((entry) => ({ entry, deadline: entry.deadline, daysLeft: daysBetween(today, entry.deadline), submitted: isSubmitted(entry) }))
-    .sort((a, b) => a.deadline.localeCompare(b.deadline) || a.entry.name.localeCompare(b.entry.name));
+export function buildTimeline<T extends Dated>(entries: readonly T[], today: string): Timeline<T> {
+  const items = timelineItems(entries, today);
   return {
     pastDue: items.filter((i) => i.daysLeft < 0 && !i.submitted),
     soon: items.filter((i) => i.daysLeft >= 0 && i.daysLeft <= SOON_DAYS),

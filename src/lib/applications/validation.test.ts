@@ -96,6 +96,15 @@ describe("entry changes", () => {
     expect(errorsOf({ notes: "x".repeat(1001) }).notes?.[0]).toMatch(/1,000 characters/);
   });
 
+  it("counts a line break as one character, like the notes box does", () => {
+    // Forms send each line break as two characters (\r\n); the textarea's limit counts one.
+    const lines = Array.from({ length: 10 }, () => "x".repeat(99));
+    expect(lines.join("\n")).toHaveLength(999);
+    expect(patch({ notes: lines.join("\r\n") }).data).toEqual({ notes: lines.join("\n") });
+    expect(patch({ notes: "One\rTwo\r\n\r\n" }).data).toEqual({ notes: "One\nTwo" });
+    expect(errorsOf({ notes: `${lines.join("\r\n")}xx` }).notes?.[0]).toMatch(/1,000 characters/);
+  });
+
   it("takes only known checklist items, as true or false", () => {
     expect(patch({ checklist: { applicationSubmitted: true, depositPaid: false } }).data).toEqual({
       checklist: { applicationSubmitted: true, depositPaid: false },
@@ -110,6 +119,19 @@ describe("entry changes", () => {
     });
     expect(patch({ aidOffer: { grants: 0 } }).data).toEqual({ aidOffer: { grants: 0 } });
     expect(patch({ aidOffer: { grants: "200000" } }).success).toBe(true);
+    expect(patch({ aidOffer: { grants: " $ 1,250 ", scholarships: "12500.0", workStudy: "100,000.00" } }).data).toEqual({
+      aidOffer: { grants: 1250, scholarships: 12500, workStudy: 100000 },
+    });
+  });
+
+  it("asks again when a period or comma could mean something else", () => {
+    // "12.000" means twelve thousand in many countries, so it's never read as $12.
+    for (const bad of ["12.000", "30.000", "1.250.000", "$12.500"]) {
+      expect(errorsOf({ aidOffer: { grants: bad } })["aidOffer.grants"], bad).toEqual(["Use a comma for thousands, not a period, like 12,000."]);
+    }
+    for (const bad of ["1,2,3", "12,50", "1,00,000", ",500", "12,500,"]) {
+      expect(errorsOf({ aidOffer: { grants: bad } })["aidOffer.grants"], bad).toEqual(["Check the commas. Write it like 12,500 or 12500."]);
+    }
   });
 
   it("removes the offer when every amount is blank, or when it's null", () => {
@@ -118,7 +140,7 @@ describe("entry changes", () => {
   });
 
   it("rejects negative, fractional, too-large and non-number amounts, per field", () => {
-    for (const bad of ["-5", "12.50", "200001", "lots", -1, 1.5]) {
+    for (const bad of ["-5", "12.50", "12.5", "12.", "200001", "200,001", "lots", -1, 1.5]) {
       const errors = errorsOf({ aidOffer: { grants: bad } });
       expect(errors["aidOffer.grants"]?.[0], String(bad)).toMatch(/whole dollars from 0 to 200,000/);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { type Ref, useActionState, useEffect, useId, useRef, useState } from "react";
 import { type ListFormState, removeEntryAction } from "@/app/actions/applications";
 import { Button, FormMessage } from "@/components/ui";
 
@@ -29,26 +29,56 @@ export function RemoveEntry({ entryId, name }: { entryId: string; name: string }
   }
 
   return (
-    <form action={action} className="rounded-lg bg-danger-soft p-4 text-sm" aria-live="polite">
+    <RemoveConfirm
+      entryId={entryId}
+      name={name}
+      action={action}
+      pending={pending}
+      message={state?.message}
+      keepRef={keepRef}
+      onKeep={() => {
+        returnFocus.current = true;
+        setConfirming(false);
+      }}
+    />
+  );
+}
+
+/**
+ * The confirm step. Focus lands on "Keep it", so both buttons carry the question and the warning
+ * as their description: a screen reader reads what will be deleted along with the button, instead
+ * of just "Keep it, button".
+ */
+export function RemoveConfirm({
+  entryId,
+  name,
+  action,
+  pending,
+  message,
+  keepRef,
+  onKeep,
+}: {
+  entryId: string;
+  name: string;
+  action: (formData: FormData) => void;
+  pending: boolean;
+  message?: string;
+  keepRef?: Ref<HTMLButtonElement>;
+  onKeep: () => void;
+}) {
+  const questionId = useId();
+  return (
+    <form action={action} className="rounded-lg bg-danger-soft p-4 text-sm">
       <input type="hidden" name="entryId" value={entryId} />
-      <p>
+      <p id={questionId}>
         Remove <strong>{name}</strong> from your list? Its deadline, checklist, aid offer and notes will be deleted too.
       </p>
-      <FormMessage message={state?.message} />
+      <FormMessage message={message} />
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-        <Button type="submit" variant="danger" disabled={pending}>
+        <Button type="submit" variant="danger" disabled={pending} aria-describedby={questionId}>
           {pending ? "Removing…" : "Yes, remove it"}
         </Button>
-        <Button
-          ref={keepRef}
-          type="button"
-          variant="secondary"
-          disabled={pending}
-          onClick={() => {
-            returnFocus.current = true;
-            setConfirming(false);
-          }}
-        >
+        <Button ref={keepRef} type="button" variant="secondary" disabled={pending} aria-describedby={questionId} onClick={onKeep}>
           Keep it
         </Button>
       </div>

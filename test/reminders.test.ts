@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
 import { createChildAccount, registerParent, registerStudent } from "@/lib/accounts";
@@ -82,6 +82,23 @@ describe("weekly reminders (Monday 13:00 UTC)", () => {
     expect(reminder.email.text).toContain("- State University: ");
     expect(reminder.email.text).not.toContain("Sent Already College");
     expect(reminder.email.text).not.toContain("Far Away College");
+  });
+
+  it("still sends graduates who track applications their list deadlines", async () => {
+    const id = await teen(12);
+    // Finished 12th grade last school year, like a gap-year applicant.
+    await db.update(schema.users).set({ gradeSchoolYear: 2025 }).where(eq(schema.users.id, id));
+    // The weekly roundup stops after high school...
+    await db.insert(schema.weeklySteps).values({ userId: id, weekStart: thisWeek, text: "Email the admissions office" });
+    expect(await buildWeeklyReminders(db, APP, now)).toHaveLength(0);
+
+    // ...but deadlines on their college list still come through.
+    await db.insert(schema.collegeList).values({ userId: id, name: "Gap year: State U", deadline: "2026-10-15" });
+    const [r] = await buildWeeklyReminders(db, APP, now);
+    expect(r.email.to).toBe("ana@example.com");
+    expect(r.email.text).toContain("Deadlines on your college list in the next two weeks:\n- Gap year: State U: October 15, 2026 (in 10 days)");
+    expect(r.email.text).not.toContain("Email the admissions office");
+    expect(r.email.text).not.toContain("Timely for you this month");
   });
 
   it("claims each send so a re-run never double-sends, and a released claim is retried", async () => {

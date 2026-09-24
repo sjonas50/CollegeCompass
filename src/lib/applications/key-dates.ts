@@ -1,3 +1,5 @@
+import { MAX_GRADE, schoolYearOf } from "../auth/age";
+import { formatDollars } from "./aid";
 import { usToday } from "./dates";
 
 // "Key dates this year" for 11th and 12th graders. Built only from facts checked against official
@@ -36,9 +38,13 @@ import { usToday } from "./dates";
 //   regular decision or early action, although it is extremely important to double-check with
 //   your college to make sure it doesn't have a different date."
 // [CSS] https://cssprofile.collegeboard.org/ — "CSS Profile is free for families who make up to
-//   $100,000 a year." Getting started: "submit your CSS Profile by midnight Eastern Time of your
-//   earliest priority filing date." Participating colleges:
-//   https://profile.collegeboard.org/PPI/participatingInstitutions.aspx
+//   $100,000 a year." (checked September 24, 2026, for the 2027–28 CSS Profile). Getting started:
+//   "submit your CSS Profile by midnight Eastern Time of your earliest priority filing date."
+//   Participating colleges: https://profile.collegeboard.org/PPI/participatingInstitutions.aspx
+//
+// Facts that change from year to year (the FAFSA's opening date, the CSS Profile's free-filing
+// limit) are keyed by cycle below. Add a cycle only after checking the official source; until
+// then the page falls back to wording that stays true.
 
 export type KeyDateId = "fafsa" | "css-profile" | "state-aid" | "early-decision" | "early-action" | "regular" | "decision-day";
 
@@ -52,16 +58,27 @@ export type KeyDate = {
   end: string | null;
   /** Something that opens (and stays open), rather than a deadline. */
   opens: boolean;
+  /**
+   * The date was confirmed for this cycle by an official source. Only confirmed openings are
+   * shown as "Open now"; a usual date ("Usually October 1") gets softer wording.
+   */
+  confirmed: boolean;
   title: string;
   detail: string;
   link?: { href: string; label: string; external: boolean };
 };
 
-export type KeyDateStatus = "upcoming" | "open_now" | "passed" | "varies";
+/** "usually_open": past the usual opening date of a form whose date this year wasn't confirmed. */
+export type KeyDateStatus = "upcoming" | "open_now" | "usually_open" | "passed" | "varies";
 
 /** FAFSA opening dates confirmed by Federal Student Aid, by application cycle. [FSA-SPECS] */
 const VERIFIED_FAFSA: Record<number, { awardYear: string; opensBy: string }> = {
   2026: { awardYear: "2027–28", opensBy: "2026-10-01" },
+};
+
+/** The CSS Profile's free-filing income limit, confirmed by the College Board, by cycle. [CSS] */
+const VERIFIED_CSS: Record<number, { freeUpTo: number }> = {
+  2026: { freeUpTo: 100_000 },
 };
 
 const LONG = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
@@ -81,6 +98,7 @@ export function applicationCycle(now: Date = new Date()): number {
 export function keyDates(cycle: number): KeyDate[] {
   const next = cycle + 1;
   const fafsa = VERIFIED_FAFSA[cycle];
+  const css = VERIFIED_CSS[cycle];
   return [
     fafsa
       ? {
@@ -89,6 +107,7 @@ export function keyDates(cycle: number): KeyDate[] {
           start: fafsa.opensBy,
           end: null,
           opens: true,
+          confirmed: true,
           title: `The ${fafsa.awardYear} FAFSA opens`,
           detail:
             "The FAFSA is the free form for federal grants, work-study and student loans. Many states and colleges use it for their own aid, too. Some aid runs out, so it pays to file early.",
@@ -100,6 +119,7 @@ export function keyDates(cycle: number): KeyDate[] {
           start: `${cycle}-10-01`,
           end: null,
           opens: true,
+          confirmed: false,
           title: "The FAFSA opens for the next school year",
           detail:
             "The FAFSA is the free form for federal grants, work-study and student loans. Many states and colleges use it for their own aid, too. Some aid runs out, so it pays to file early. Check studentaid.gov for this year's date.",
@@ -111,9 +131,14 @@ export function keyDates(cycle: number): KeyDate[] {
       start: `${cycle}-10-01`,
       end: null,
       opens: true,
+      // The College Board gives the usual date, not this year's, so it's never "Open now". [CB-TIMELINE]
+      confirmed: false,
       title: "The CSS Profile opens",
-      detail:
-        "Only some colleges and scholarship programs ask for this extra aid form. See if any on your list do, and send it by the earliest priority date. It's free for families who make up to $100,000 a year.",
+      detail: `Only some colleges and scholarship programs ask for this extra aid form. See if any on your list do, and send it by the earliest priority date. ${
+        css
+          ? `It's free for families who make up to ${formatDollars(css.freeUpTo)} a year.`
+          : "Some families can send it for free, so check if you qualify for a fee waiver."
+      }`,
       link: {
         href: "https://profile.collegeboard.org/PPI/participatingInstitutions.aspx",
         label: "Colleges that use the CSS Profile",
@@ -126,6 +151,7 @@ export function keyDates(cycle: number): KeyDate[] {
       start: null,
       end: null,
       opens: false,
+      confirmed: false,
       title: "State aid deadlines",
       detail: "Each state sets its own FAFSA deadline for state grants, and some come early. Look up your state's date.",
       link: { href: "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines", label: "State deadlines on studentaid.gov", external: true },
@@ -136,6 +162,7 @@ export function keyDates(cycle: number): KeyDate[] {
       start: `${cycle}-11-01`,
       end: null,
       opens: false,
+      confirmed: false,
       title: "Early decision deadlines",
       detail:
         "At most colleges with early decision, it's due November 1. Some use mid-November or December 1. Early decision is binding: if you get in, you agree to go. Check each college's date.",
@@ -151,6 +178,7 @@ export function keyDates(cycle: number): KeyDate[] {
       start: `${cycle}-11-01`,
       end: `${cycle}-11-30`,
       opens: false,
+      confirmed: false,
       title: "Early action deadlines",
       detail:
         "Early action is usually due in November. It usually isn't binding, and you can often apply early action to more than one college. Check each college's rules.",
@@ -161,6 +189,7 @@ export function keyDates(cycle: number): KeyDate[] {
       start: `${next}-01-01`,
       end: `${next}-03-01`,
       opens: false,
+      confirmed: false,
       title: "Regular deadlines",
       detail:
         "Many regular deadlines fall between January and March, but they vary. Some colleges use rolling admission: they decide as applications come in, until they're full. Check each college's date.",
@@ -171,6 +200,7 @@ export function keyDates(cycle: number): KeyDate[] {
       start: `${next}-05-01`,
       end: null,
       opens: false,
+      confirmed: false,
       title: "Decision day at many colleges",
       detail:
         "Most colleges give you until May 1 to say yes or no if you applied regular decision or early action. Compare your aid offers before you decide. Some colleges use a different date, so double-check.",
@@ -179,9 +209,9 @@ export function keyDates(cycle: number): KeyDate[] {
   ];
 }
 
-export function keyDateStatus(item: Pick<KeyDate, "start" | "end" | "opens">, today: string): KeyDateStatus {
+export function keyDateStatus(item: Pick<KeyDate, "start" | "end" | "opens" | "confirmed">, today: string): KeyDateStatus {
   if (!item.start) return "varies";
-  if (item.opens) return today >= item.start ? "open_now" : "upcoming";
+  if (item.opens) return today < item.start ? "upcoming" : item.confirmed ? "open_now" : "usually_open";
   return today > (item.end ?? item.start) ? "passed" : "upcoming";
 }
 
@@ -203,4 +233,21 @@ export function keyDatesFor(now: Date = new Date()): KeyDatesYear {
     startsCollege: cycle + 1,
     items: keyDates(cycle).map((item) => ({ ...item, status: keyDateStatus(item, today) })),
   };
+}
+
+/**
+ * Key dates for an 11th or 12th grader: seniors get this cycle as their own, juniors (whose turn
+ * is next) get it as a preview. Null for other grades, or when the student's own cycle is over.
+ *
+ * The next cycle starts in June but grades move up in August, so in June and July the student
+ * still shown as a 12th grader has just graduated (null), and the 11th grader is the one applying
+ * this cycle (a senior here).
+ */
+export function keyDatesForStudent(grade: number | null, now: Date = new Date()): { year: KeyDatesYear; senior: boolean } | null {
+  if (grade === null || grade < 11 || grade > MAX_GRADE) return null;
+  const cycle = applicationCycle(now);
+  // The cycle that starts in the fall of the student's senior year.
+  const own = schoolYearOf(now) + (MAX_GRADE - grade);
+  if (own < cycle) return null;
+  return { year: keyDatesFor(now), senior: own === cycle };
 }

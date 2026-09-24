@@ -5,7 +5,9 @@ import {
   MAX_LIST_ENTRIES,
   addCollege,
   addCustom,
+  collegeListForCounselor,
   getEntry,
+  getEntryWithScorecard,
   listAidOffers,
   listEntries,
   listEntriesWithScorecard,
@@ -259,6 +261,14 @@ describe("Scorecard context and aid comparison", () => {
       "Line worker apprenticeship": null,
       "Gone College": { found: false, avgNetPrice: null, city: null, state: null },
     });
+
+    // The same for one entry, and still only the owner's.
+    const gone = rows.find((r) => r.name === "Gone College")!;
+    expect((await getEntryWithScorecard(db, ana, gone.id))?.scorecard).toEqual({ found: false, avgNetPrice: null, city: null, state: null });
+    const north = rows.find((r) => r.name === "North State University")!;
+    expect(await getEntryWithScorecard(db, ana, north.id)).toEqual(north);
+    expect(await getEntryWithScorecard(db, ben, north.id)).toBeNull();
+    expect(await getEntryWithScorecard(db, ana, "not-an-id")).toBeNull();
   });
 
   it("compares only entries with an offer and finds the lowest net price", async () => {
@@ -302,7 +312,7 @@ describe("counselor summaries", () => {
       NOW,
     );
 
-    const summary = await listSummary(db, ana);
+    const summary = await listSummary(db, ana, NOW);
     // Same-instant adds can tie on createdAt, so compare in a fixed order.
     summary.sort((a, b) => a.kind.localeCompare(b.kind));
     expect(summary).toEqual([
@@ -314,6 +324,8 @@ describe("counselor summaries", () => {
         submitted: false,
         deadlineType: "regular",
         deadline: "2027-01-15",
+        daysLeft: 113,
+        pastDue: false,
         checklist: { done: 2, total: 8 },
         aid: expect.objectContaining({ costOfAttendance: 30000, giftAid: 10000, netPrice: 20000, loans: 5500, paidNow: 14500, hasParentLoans: false }),
       },
@@ -325,6 +337,8 @@ describe("counselor summaries", () => {
         submitted: false,
         deadlineType: null,
         deadline: null,
+        daysLeft: null,
+        pastDue: false,
         checklist: { done: 0, total: 8 },
         aid: null,
       },
@@ -333,6 +347,30 @@ describe("counselor summaries", () => {
     for (const secret of [north.id, custom.id, ana, "secret note", "555-123-4567", "notes", "warnings"]) {
       expect(json).not.toContain(secret);
     }
+  });
+
+  it("says which deadlines have passed and gives today's date, so the counselor never has to guess", async () => {
+    const add = async (name: string, deadline: string, extra: Record<string, unknown> = {}) => {
+      const e = await customOrThrow(ana, name, "college");
+      const res = await updateEntry(db, ana, e.id, { deadline, ...extra }, NOW);
+      if (!res.ok) throw new Error(res.error);
+    };
+    await add("Missed", "2026-09-15", { status: "applying" });
+    await add("Sent on time", "2026-09-01", { status: "applied" });
+    await add("Today", "2026-09-24");
+    await add("Next year", "2027-02-01");
+
+    const out = await collegeListForCounselor(db, ana, NOW);
+    expect(out.today).toBe("2026-09-24");
+    const byName = Object.fromEntries(out.list.map((e) => [e.name, { daysLeft: e.daysLeft, pastDue: e.pastDue }]));
+    expect(byName).toEqual({
+      Missed: { daysLeft: -9, pastDue: true },
+      "Sent on time": { daysLeft: -23, pastDue: false },
+      Today: { daysLeft: 0, pastDue: false },
+      "Next year": { daysLeft: 130, pastDue: false },
+    });
+    expect(out.upcoming.map((d) => d.name)).toEqual(["Today"]);
+    expect(JSON.stringify(out)).not.toMatch(/"id"|"notes"/);
   });
 
   it("lists unsent applications due in the next two weeks, soonest first", async () => {

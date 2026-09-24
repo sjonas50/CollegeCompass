@@ -15,8 +15,10 @@ import { listCourses } from "@/lib/courses/service";
 import { listNorthStars } from "@/lib/goals";
 import { buildRoadmap, getMilestoneProgress } from "@/lib/roadmap";
 import { MILESTONES } from "@/lib/roadmap/milestones";
-import { listEntries, upcomingDeadlines } from "@/lib/applications/service";
-import { formatDate, relativeDays } from "@/lib/applications/dates";
+import { listEntries } from "@/lib/applications/service";
+import { formatDate, usToday } from "@/lib/applications/dates";
+import { deadlineName, dueText } from "@/lib/applications/display";
+import { dueWithin } from "@/lib/applications/timeline";
 import { reminderSettingFor } from "@/lib/reminders";
 
 export const metadata: Metadata = { title: "Your dashboard" };
@@ -29,6 +31,9 @@ const BAND_COPY = {
 
 const ORDER: InstrumentId[] = ["interests", "personality", "values"];
 
+/** The colleges card lists unsent applications due within this many days. */
+const DASHBOARD_DEADLINE_DAYS = 14;
+
 function statusText(s: InstrumentStatus) {
   if (s.state === "not_started") return "Not started";
   if (s.state === "in_progress") return `${s.answered} of ${s.total} answered`;
@@ -40,14 +45,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const { settings } = await searchParams;
   const db = await getDb();
   const grade = user.grade ?? 9;
-  const [statuses, stars, progress, courses, reminders, list, deadlines] = await Promise.all([
+  const [statuses, stars, progress, courses, reminders, list] = await Promise.all([
     instrumentStatuses(db, user.id),
     listNorthStars(db, user.id),
     getMilestoneProgress(db, user.id),
     listCourses(db, user.id),
     reminderSettingFor(db, user.id),
     listEntries(db, user.id),
-    upcomingDeadlines(db, user.id, new Date(), 14),
   ]);
   const roadmap = buildRoadmap(MILESTONES, grade, new Date(), progress);
   const timely = [...roadmap.now, ...roadmap.catchUp].slice(0, 3);
@@ -56,6 +60,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const hasResults = statuses.interests.state === "done";
   const graduated = grade > 12;
   const launching = grade >= 11;
+  // The student's own entries, as they typed them (no AI is involved, so nothing is scrubbed).
+  const deadlines = launching ? dueWithin(list, usToday(), DASHBOARD_DEADLINE_DAYS) : [];
 
   return (
     <div className="space-y-8">
@@ -158,19 +164,27 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       {(grade >= 9 || list.length > 0) && (
         <section>
           <h2 className="text-lg font-medium">{launching ? "Colleges and applications" : "Colleges and training"}</h2>
-          {launching && deadlines.length > 0 ? (
-            <ul className="mt-3 space-y-2">
-              {deadlines.map((d) => (
-                <li key={`${d.name}-${d.deadline}`}>
-                  <Link href="/applications" className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl border border-border bg-surface p-4 hover:border-accent">
-                    <span className="font-medium">{d.name}</span>
-                    <span className="text-sm text-muted">
-                      {formatDate(d.deadline)} · {relativeDays(d.daysLeft)}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          {deadlines.length > 0 ? (
+            <>
+              <p id="dashboard-deadlines" className="mt-1 text-sm text-muted">
+                Deadlines in the next two weeks:
+              </p>
+              <ul aria-labelledby="dashboard-deadlines" className="mt-3 space-y-2">
+                {deadlines.map(({ entry, deadline, daysLeft }) => (
+                  <li key={entry.id}>
+                    <Link
+                      href={`/applications/${entry.id}`}
+                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border border-border bg-surface p-4 hover:border-accent"
+                    >
+                      <span className="font-medium break-words">{entry.name}</span>
+                      <span className="text-sm text-muted">
+                        {deadlineName(entry.deadlineType)}: <time dateTime={deadline}>{formatDate(deadline)}</time> · {dueText(daysLeft)}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : (
             <p className="mt-1 text-sm text-muted">
               {list.length
