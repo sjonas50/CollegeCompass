@@ -8,6 +8,7 @@ import { getDb } from "@/db";
 import { RIASEC_INFO } from "@/lib/assessments/instruments";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { JOB_ZONE_INFO, getCareer } from "@/lib/careers";
+import { majorsForCip6 } from "@/lib/colleges/search";
 import { MAX_NORTH_STARS, listNorthStars } from "@/lib/goals";
 import { PATHWAY_INFO } from "@/lib/matching/match";
 
@@ -61,10 +62,20 @@ export default async function CareerPage({ params, searchParams }: PageProps<"/c
       <Card>
         <h2 className="font-medium">College majors that lead here</h2>
         {career.majors.length ? (
-          <ul className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
-            {career.majors.map((m) => (
-              <li key={m.cipCode}>{m.title}</li>
-            ))}
+          <ul className="mt-2 divide-y divide-border text-sm">
+            {career.majors.map((m) => {
+              const cip4 = majorsForCip6(m.cipCode);
+              return (
+                <li key={m.cipCode} className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 py-1">
+                  <span>{m.title}</span>
+                  {cip4 && (
+                    <Link href={`/colleges?major=${cip4}`} className="inline-flex min-h-11 shrink-0 items-center underline underline-offset-2">
+                      Find colleges<span className="sr-only"> for {m.title}</span>
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p className="mt-2 text-sm text-muted">This career is usually reached through training or experience rather than a specific major.</p>
