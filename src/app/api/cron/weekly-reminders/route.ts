@@ -4,13 +4,15 @@ import { isAuthorizedCron } from "@/lib/cron-auth";
 import { sendEmail } from "@/lib/email";
 import { type ReminderRunResult, sendWeeklyReminders } from "@/lib/reminders";
 
-export const maxDuration = 300;
+// Vercel's Hobby plan allows at most 60 seconds (a larger value fails the deploy). On Pro, raise
+// this to 300 and BUDGET_MS to 240_000.
+export const maxDuration = 60;
 /**
  * Stop starting sends with time to spare before `maxDuration`: one send can take over 30 seconds
  * when Resend is slow (three tries of up to 10 seconds each, plus the waits between them). The
  * next run picks up the rest.
  */
-const BUDGET_MS = 240_000;
+const BUDGET_MS = 25_000;
 
 /**
  * Monday reminders: each student (or a younger student's parent) gets a look back and ahead.

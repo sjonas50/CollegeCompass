@@ -198,11 +198,14 @@ Student data is never touched. Do the same for the Preview database.
 | `/api/cron/weekly-reminders` | Mondays, 13:00 | Sends each student (or a younger student's parent) a weekly look back and ahead. |
 
 **Hobby vs Pro.** Hobby allows one run a day per job and may start it any time within the hour.
-The weekly reminders then get one run a week: it stops starting new emails after 4 minutes, and
-anything that didn't go out that week (including failed sends) is not retried unless you run the
-job again by hand. That is plenty for a pilot of 10–20 families; the Monday check in
-[`docs/operations.md`](docs/operations.md) does the re-run. On Pro, change the schedule to hourly
-on Mondays (`"0 13-18 * * 1"`), so later runs finish a big week and retry failures.
+Hobby also caps a function at 60 seconds, so the weekly reminders get one short run a week: it
+stops starting new emails after 25 seconds (a few dozen reminders), and anything that didn't go
+out (including failed sends) waits until you run the job again by hand. Each manual run sends the
+next batch. That is enough for a pilot of 10–20 families; the Monday check in
+[`docs/operations.md`](docs/operations.md) does the re-run. On Pro, raise `maxDuration` to 300 and
+`BUDGET_MS` to 240 seconds in `src/app/api/cron/weekly-reminders/route.ts`, and change the
+schedule to hourly on Mondays (`"0 13-18 * * 1"`), so later runs finish a big week and retry
+failures.
 
 Re-runs never send a reminder twice. Each one is claimed in the database before it's sent, and
 Resend gets the same idempotency key for it on every run, so even an email whose answer got lost
