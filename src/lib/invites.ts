@@ -1,15 +1,8 @@
 import { and, asc, count, eq, gt, isNull, ne, or } from "drizzle-orm";
 import * as z from "zod";
 import type { Db } from "@/db";
-import {
-  type SubscriptionStatus,
-  accessGrants,
-  billingAccounts,
-  households,
-  parentInvites,
-  parentStudentLinks,
-  users,
-} from "@/db/schema";
+import { accessGrants, billingAccounts, households, parentInvites, parentStudentLinks, users } from "@/db/schema";
+import { LIVE_STATUSES, subscriptionGrantsAccess } from "./access/entitlement";
 import { audit } from "./audit";
 import { generateToken, hashToken } from "./auth/tokens";
 import type { Email } from "./email";
@@ -220,9 +213,6 @@ export async function findInvite(db: Db, token: string, now: Date = new Date()):
   return { status: "pending", inviteId: row.id, studentId: row.studentId, studentName: row.studentName, expiresAt: row.expiresAt };
 }
 
-/** Subscriptions that still bill or give access. */
-const LIVE_STATUSES: readonly SubscriptionStatus[] = ["trialing", "active", "past_due", "unpaid", "paused", "incomplete"];
-
 type BillingRow = typeof billingAccounts.$inferSelect;
 
 /** 2 = renews, 1 = live but ends at the period end, 0 = no live subscription. */
@@ -239,18 +229,28 @@ export type HouseholdMerge = {
   /** Active access grants copied over (others still live in the old household and keep theirs). */
   grantsCopied: number;
   /**
-   * What happened to the old household's billing account: moved to the parent's household (which
-   * had none); swapped (it was live and the parent's wasn't, so the parent's is parked on the old
-   * household); kept_parent (the parent's stays, the old one is parked); stayed (others still use
-   * it); none.
+   * What happened to the old household's billing account:
+   * - moved: it's the accepting parent's own, and their household had none;
+   * - swapped: it's the accepting parent's own and still going while their household's isn't, so
+   *   theirs is parked on the old household instead;
+   * - parked: it stays behind on the old household (it belongs to someone else, like a parent who
+   *   deleted their account, or the parent's own plan wins), to be closed by the caller;
+   * - stayed: others still live in the old household and keep it;
+   * - none.
+   * A Stripe customer is never handed to an adult who doesn't pay through it.
    */
-  billing: "none" | "moved" | "swapped" | "kept_parent" | "stayed";
+  billing: "none" | "moved" | "swapped" | "parked" | "stayed";
+  /**
+   * The end of the time already paid for on a plan left behind (parked, stayed or swapped out),
+   * carried into the parent's household as a comp grant so the student keeps it.
+   */
+  paidUntil?: Date;
   /** The old household was deleted: nobody was left in it and no billing account was parked there. */
   oldHouseholdDeleted: boolean;
   /**
-   * The old household, now empty, still holding a parked billing account whose plan isn't going.
-   * The caller hands it to deleteEmptyHousehold (src/lib/privacy.ts), which deletes the Stripe
-   * customer and then the household.
+   * The old household, now empty, still holding a parked billing account. The caller hands it to
+   * deleteEmptyHousehold (src/lib/privacy.ts), which deletes the Stripe customer (ending its plan;
+   * any paid time came along as `paidUntil`) and then the household.
    */
   parkedHouseholdId?: string;
 };
@@ -258,17 +258,18 @@ export type HouseholdMerge = {
 const NO_MERGE: HouseholdMerge = { moved: false, grantsMoved: 0, grantsCopied: 0, billing: "none", oldHouseholdDeleted: false };
 
 /**
- * Puts the student into the parent's household. Access grants still active come along, and so does
- * the old household's billing account when the parent's household has none. Returns
- * "both_subscribed" (and changes nothing) when both households have a subscription that renews, so
- * a family is never left paying twice with one of the plans out of reach.
+ * Puts the student into the parent's household. Access grants still active come along. The old
+ * household's billing account comes along only when the accepting parent is the one who pays
+ * through it; any other plan stays behind and ends, and the time already paid for on it comes along
+ * as a grant. Linking is never blocked by a plan in the student's old household: nobody could
+ * manage it (students can't reach billing), so it's the old plan that gives way.
  */
 async function mergeIntoParentHousehold(
   tx: Tx,
   student: { id: string; householdId: string | null },
   parent: { id: string; householdId: string | null },
   now: Date,
-): Promise<HouseholdMerge | "both_subscribed"> {
+): Promise<HouseholdMerge> {
   const from = student.householdId;
   if (from !== null && from === parent.householdId) return NO_MERGE;
 
@@ -283,9 +284,6 @@ async function mergeIntoParentHousehold(
   ]);
   // The student is the last one in their old household, so it goes (unless billing is parked there).
   const leaving = from !== null && others === 0;
-  if (leaving && fromBilling && toBilling && billingRank(fromBilling) === 2 && billingRank(toBilling) === 2) {
-    return "both_subscribed";
-  }
 
   let target = parent.householdId;
   if (!target) {
@@ -310,19 +308,32 @@ async function mergeIntoParentHousehold(
   }
 
   if (fromBilling) {
+    // Only the parent who pays through a Stripe customer may use it: its card, billing address and
+    // receipts are theirs.
+    const parentPays = fromBilling.payerUserId === parent.id;
+    let leftBehind: BillingRow | undefined = fromBilling;
     if (!leaving) {
       merge.billing = "stayed";
-    } else if (!toBilling) {
+    } else if (parentPays && !toBilling) {
       await tx.update(billingAccounts).set({ householdId: target, updatedAt: now }).where(eq(billingAccounts.householdId, from));
       merge.billing = "moved";
-    } else if (billingRank(fromBilling) > billingRank(toBilling)) {
-      // The family keeps the plan that's still going; the other one is parked for billing cleanup.
+      leftBehind = undefined;
+    } else if (parentPays && toBilling && billingRank(fromBilling) > billingRank(toBilling)) {
+      // Both are the parent's own: they keep the plan that's still going, and the other is parked.
       await tx.delete(billingAccounts).where(eq(billingAccounts.householdId, target));
       await tx.update(billingAccounts).set({ householdId: target, updatedAt: now }).where(eq(billingAccounts.householdId, from));
       await tx.insert(billingAccounts).values({ ...toBilling, householdId: from, updatedAt: now });
       merge.billing = "swapped";
+      leftBehind = toBilling;
     } else {
-      merge.billing = "kept_parent";
+      merge.billing = "parked";
+    }
+    // Time already paid for on a plan left behind comes along, so linking never costs the student
+    // days of access.
+    const paidUntil = leftBehind?.currentPeriodEnd;
+    if (leftBehind && paidUntil && subscriptionGrantsAccess(leftBehind.status) && paidUntil > now) {
+      await tx.insert(accessGrants).values({ householdId: target, kind: "comp", startsAt: now, endsAt: paidUntil });
+      merge.paidUntil = paidUntil;
     }
   }
 
@@ -342,7 +353,17 @@ async function mergeIntoParentHousehold(
   return merge;
 }
 
-export type AcceptInviteError = "not_found" | "expired" | "used" | "not_parent" | "student_has_parent" | "both_subscribed";
+export type AcceptInviteError =
+  | "not_found"
+  | "expired"
+  | "used"
+  | "not_parent"
+  | "student_has_parent"
+  /**
+   * No longer returned: a plan in the student's old household never blocks linking (see
+   * mergeIntoParentHousehold). Kept only until the invitation page drops its message for it.
+   */
+  | "both_subscribed";
 export type AcceptInviteResult =
   | { ok: true; studentId: string; studentName: string; merge: HouseholdMerge }
   | { ok: false; error: AcceptInviteError };
@@ -388,7 +409,6 @@ export async function acceptInvite(db: Db, token: string, parentUserId: string, 
     if (otherParent) return fail("student_has_parent");
 
     const merge = await mergeIntoParentHousehold(tx, student, parent, now);
-    if (merge === "both_subscribed") return fail("both_subscribed");
 
     await tx.update(parentInvites).set({ acceptedAt: now, acceptedByUserId: parent.id }).where(eq(parentInvites.id, invite.id));
     await tx.delete(parentInvites).where(and(eq(parentInvites.studentUserId, student.id), isNull(parentInvites.acceptedAt)));
@@ -404,6 +424,7 @@ export async function acceptInvite(db: Db, token: string, parentUserId: string, 
         householdMoved: result.merge.moved,
         grantsMoved: result.merge.grantsMoved + result.merge.grantsCopied,
         billing: result.merge.billing,
+        paidTimeCarried: Boolean(result.merge.paidUntil),
       },
     });
   }

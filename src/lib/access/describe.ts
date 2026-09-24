@@ -35,9 +35,21 @@ export const FULL_ACCESS_FEATURES = [
 
 const PLAN_NAMES = { monthly: "monthly", annual: "yearly" } as const;
 
-/** A date like "October 8, 2026", in Pacific time (the latest mainland US time zone). */
+/**
+ * The day something ends, like "October 8, 2026", in Pacific time (the latest mainland US time
+ * zone), so no family is told it lasts longer than it does.
+ */
 export function formatAccessDate(date: Date): string {
   return new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", month: "long", day: "numeric", year: "numeric" }).format(date);
+}
+
+/**
+ * The day something becomes possible, like "you can renew it starting August 25, 2027". These start
+ * at midnight UTC (see freeAccessRenewalOpens), which is the evening before everywhere in the US,
+ * so the day is shown as a UTC calendar day: by the time it begins for a family, it has started.
+ */
+export function formatStartDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-US", { timeZone: "UTC", month: "long", day: "numeric", year: "numeric" }).format(date);
 }
 
 function daysText(days: number) {

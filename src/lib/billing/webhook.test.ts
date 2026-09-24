@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
 import { resetEnvCache } from "@/env";
 import { getUserAccess } from "@/lib/access/service";
-import { registerParent } from "@/lib/accounts";
+import { registerParent, registerStudent } from "@/lib/accounts";
 import { type FakeStripeRequest, fakeStripe, listObject, subscriptionObject } from "./fake-stripe";
 import { handleStripeWebhook } from "./webhook";
 
@@ -32,12 +32,15 @@ afterEach(() => {
   resetEnvCache();
 });
 
-/** Stripe, as far as subscriptions go: `live` is what the API returns right now. */
+/** Stripe, as far as subscriptions go: `live` is what the API returns right now. Customers can be deleted. */
 function account(live: ReturnType<typeof subscriptionObject>[], fail = () => false) {
   const fake = fakeStripe((req: FakeStripeRequest) => {
     if (fail()) return { status: 500, body: { error: { type: "api_error", message: "Stripe is down" } } };
     if (req.method === "GET" && req.path === "/v1/subscriptions") {
       return { body: listObject(live.filter((s) => s.customer === req.query.get("customer"))) };
+    }
+    if (req.method === "DELETE" && req.path.startsWith("/v1/customers/")) {
+      return { body: { id: req.path.split("/").pop(), object: "customer", deleted: true } };
     }
     return undefined;
   });
@@ -178,6 +181,71 @@ describe("checkout.session.completed", () => {
     const e = signed(stripe, "evt_1", "checkout.session.completed", { id: "cs_1", object: "checkout.session", mode: "payment", customer: "cus_9" });
     expect(await handleStripeWebhook(db, stripe, e.payload, e.signature, SECRET)).toEqual({ status: 200, body: { received: true, ignored: true } });
     expect(requests).toHaveLength(0);
+  });
+});
+
+describe("customers nobody can use", () => {
+  const GONE = "00000000-0000-4000-8000-00000000dead";
+  const deletes = (requests: FakeStripeRequest[]) => requests.filter((r) => r.method === "DELETE").map((r) => r.path);
+
+  it("deletes a customer whose household was deleted while its plan still bills", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const sub = subscriptionObject({ id: "sub_x", customer: "cus_orphan", status: "active", periodEnd: periodEnd(), metadata: { householdId: GONE } });
+    const { stripe, requests } = account([sub]);
+    const e = signed(stripe, "evt_1", "customer.subscription.updated", sub);
+
+    expect(await handleStripeWebhook(db, stripe, e.payload, e.signature, SECRET)).toEqual({ status: 200, body: { received: true } });
+    expect(deletes(requests)).toEqual(["/v1/customers/cus_orphan"]);
+    expect(warn).toHaveBeenCalledWith("[billing] deleted a Stripe customer whose household was deleted");
+    const audit = (await db.select().from(schema.auditLog)).find((a) => a.action === "billing.customer_deleted");
+    expect(audit?.metadata).toEqual({ stripeDeleted: true, householdGone: true });
+    expect(await db.select().from(schema.billingAccounts)).toHaveLength(0);
+    warn.mockRestore();
+  });
+
+  it("only logs a customer it can't place, or whose plan has already ended", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const ended = subscriptionObject({ id: "sub_e", customer: "cus_e", status: "canceled", metadata: { householdId: GONE } });
+    const unknown = subscriptionObject({ id: "sub_u", customer: "cus_u", status: "active", periodEnd: periodEnd() });
+    const { stripe, requests } = account([ended, unknown]);
+    for (const [id, sub] of [["evt_1", ended], ["evt_2", unknown]] as const) {
+      const e = signed(stripe, id, "customer.subscription.updated", sub);
+      expect(await handleStripeWebhook(db, stripe, e.payload, e.signature, SECRET)).toMatchObject({ status: 200 });
+    }
+    expect(deletes(requests)).toEqual([]);
+    expect(warn).toHaveBeenCalledWith("[billing] event for a customer that isn't linked to a household");
+    warn.mockRestore();
+  });
+
+  it("deletes the customer once a plan left without a parent ends, and keeps the teen's household", async () => {
+    const teen = await registerStudent(db, { displayName: "Ana", email: "ana@example.com", password: "correct horse battery", birthDate: "2010-05-01", grade: 10 }, new Date());
+    if (!teen.ok) throw new Error(teen.error);
+    const [ana] = await db.select().from(schema.users).where(eq(schema.users.id, teen.value.userId));
+    await db.insert(schema.billingAccounts).values({ householdId: ana.householdId!, stripeCustomerId: "cus_left", stripeSubscriptionId: "sub_left", status: "active", cancelAtPeriodEnd: true });
+    const live = [subscriptionObject({ id: "sub_left", customer: "cus_left", status: "active", cancelAtPeriodEnd: true, periodEnd: periodEnd() })];
+    const { stripe, requests } = account(live);
+
+    // Still in its paid period: nothing changes.
+    let e = signed(stripe, "evt_1", "customer.subscription.updated", live[0]);
+    await handleStripeWebhook(db, stripe, e.payload, e.signature, SECRET);
+    expect(deletes(requests)).toEqual([]);
+
+    live[0] = subscriptionObject({ id: "sub_left", customer: "cus_left", status: "canceled", periodEnd: periodEnd() });
+    e = signed(stripe, "evt_2", "customer.subscription.deleted", live[0]);
+    expect(await handleStripeWebhook(db, stripe, e.payload, e.signature, SECRET)).toEqual({ status: 200, body: { received: true } });
+    expect(deletes(requests)).toEqual(["/v1/customers/cus_left"]);
+    expect(await db.select().from(schema.billingAccounts)).toHaveLength(0);
+    expect(await db.select().from(schema.households).where(eq(schema.households.id, ana.householdId!))).toHaveLength(1);
+  });
+
+  it("never closes a parent's own account when their plan ends", async () => {
+    await linkCustomer();
+    const sub = subscriptionObject({ id: "sub_1", customer: "cus_1", status: "canceled", periodEnd: periodEnd() });
+    const { stripe, requests } = account([sub]);
+    const e = signed(stripe, "evt_1", "customer.subscription.deleted", sub);
+    await handleStripeWebhook(db, stripe, e.payload, e.signature, SECRET);
+    expect(deletes(requests)).toEqual([]);
+    expect(await billing()).toMatchObject({ stripeCustomerId: "cus_1", status: "canceled" });
   });
 });
 

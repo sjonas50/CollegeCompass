@@ -5,8 +5,19 @@ import type { AccessKind, SubscriptionStatus } from "@/db/schema";
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Free access can be renewed once fewer than this many days are left on it. */
+/** Free access can be renewed starting on the day this many days before it ends. */
 export const FREE_ACCESS_RENEW_DAYS = 30;
+
+/**
+ * When free access ending at `endsAt` can be renewed: the start (midnight UTC) of the calendar day
+ * 30 days before it ends. Midnight UTC is the evening before everywhere in the US, so a family
+ * shown "starting August 25" (see formatStartDate) can renew all day on August 25 wherever they
+ * live. Dates follow UTC calendar days, like addMonths.
+ */
+export function freeAccessRenewalOpens(endsAt: Date): Date {
+  const day = new Date(endsAt.getTime() - FREE_ACCESS_RENEW_DAYS * DAY_MS);
+  return new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate()));
+}
 
 /**
  * Subscription statuses that keep full access. `past_due` keeps access while Stripe retries the
@@ -17,6 +28,9 @@ export const ACCESS_STATUSES: readonly SubscriptionStatus[] = ["active", "triali
 export function subscriptionGrantsAccess(status: SubscriptionStatus | null | undefined): boolean {
   return status != null && ACCESS_STATUSES.includes(status);
 }
+
+/** Subscription statuses that can still bill or give access (everything but ended ones). */
+export const LIVE_STATUSES: readonly SubscriptionStatus[] = ["trialing", "active", "past_due", "unpaid", "paused", "incomplete"];
 
 export type GrantRow = { kind: AccessKind; startsAt: Date; endsAt: Date | null };
 
@@ -57,7 +71,7 @@ export type HouseholdAccess = {
   other: GrantSummary | null;
   /** The household's subscription, as Stripe last reported it. Null if they never started checkout. */
   subscription: SubscriptionSummary | null;
-  /** Free access can be requested: none is running, or the running one has under 30 days left. */
+  /** Free access can be requested: none is running, or the running one is in its renewal window. */
   canRenewFreeAccess: boolean;
   /** When the running free access becomes renewable (null if it already is, or never will be). */
   freeAccessRenewableFrom: Date | null;
@@ -111,8 +125,8 @@ export function evaluateAccess(
     if (runningFree.endsAt === null) {
       canRenewFreeAccess = false;
     } else {
-      const opens = new Date(runningFree.endsAt.getTime() - FREE_ACCESS_RENEW_DAYS * DAY_MS);
-      canRenewFreeAccess = now.getTime() > opens.getTime();
+      const opens = freeAccessRenewalOpens(runningFree.endsAt);
+      canRenewFreeAccess = now.getTime() >= opens.getTime();
       freeAccessRenewableFrom = canRenewFreeAccess ? null : opens;
     }
   }

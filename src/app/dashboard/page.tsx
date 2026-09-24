@@ -70,8 +70,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   // the trial or free access.
   const full = access.full;
   const accessSummary = describeAccess(access, "student");
-  // The student's own entries, as they typed them (no AI is involved, so nothing is scrubbed).
-  const deadlines = launching ? dueWithin(list, usToday(), DASHBOARD_DEADLINE_DAYS) : [];
+  // The student's own entries, as they typed them (no AI is involved, so nothing is scrubbed). The
+  // deadline tracker is part of the college list, so it needs full access like the list does.
+  const deadlines = full && launching ? dueWithin(list, usToday(), DASHBOARD_DEADLINE_DAYS) : [];
 
   return (
     <div className="space-y-8">
@@ -218,9 +219,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             </>
           ) : (
             <p className="mt-1 text-sm text-muted">
-              {list.length
-                ? `${list.length} on your list${launching ? ". No deadlines in the next two weeks." : "."}`
-                : "Look up colleges and programs by major, place and price, and see what students really pay after grants."}
+              {!list.length
+                ? "Look up colleges and programs by major, place and price, and see what students really pay after grants."
+                : !full
+                  ? `${list.length} on your list. Your deadlines show up here when your family has full access.`
+                  : `${list.length} on your list${launching ? ". No deadlines in the next two weeks." : "."}`}
             </p>
           )}
           <div className="mt-3 flex flex-wrap gap-2">

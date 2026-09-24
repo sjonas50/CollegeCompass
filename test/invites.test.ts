@@ -5,7 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import InvitePage from "@/app/invite/[token]/page";
 import { InviteParentCard } from "@/components/invite-parent";
 import { type Db, createTestDb, schema } from "@/db";
+import { resetEnvCache } from "@/env";
 import { createChildAccount, isLinkedParent, registerParent, registerStudent } from "@/lib/accounts";
+import { openBillingPortal, startCheckout } from "@/lib/billing/checkout";
+import { type FakeStripeRequest, fakeStripe } from "@/lib/billing/fake-stripe";
 import type { SessionUser } from "@/lib/auth/sessions";
 import { hashToken } from "@/lib/auth/tokens";
 import { verifyParentConsent } from "@/lib/consent/verifier";
@@ -49,6 +52,8 @@ beforeEach(async () => {
 
 afterEach(() => {
   page.user = null;
+  vi.unstubAllEnvs();
+  resetEnvCache();
 });
 
 async function teen(name = "Ana", email = "ana@example.com") {
@@ -366,60 +371,154 @@ describe("household merge", () => {
     expect(await db.select().from(schema.accessGrants)).toHaveLength(2);
   });
 
-  it("moves the billing account when the parent's household has none", async () => {
+  /** Stripe that makes customers and Checkout sessions, sets plans to end and deletes customers. */
+  function stripeAccount() {
+    let customers = 0;
+    return fakeStripe((req: FakeStripeRequest) => {
+      if (req.method === "POST" && req.path === "/v1/customers") return { body: { id: `cus_${++customers}`, object: "customer" } };
+      if (req.method === "POST" && req.path === "/v1/checkout/sessions") {
+        return { body: { id: "cs_1", object: "checkout.session", url: "https://checkout.stripe.com/c/pay/cs_1" } };
+      }
+      const sub = /^\/v1\/subscriptions\/(sub_\w+)$/.exec(req.path);
+      if (req.method === "POST" && sub) return { body: { id: sub[1], object: "subscription", status: "active", cancel_at_period_end: true } };
+      if (req.method === "DELETE" && req.path.startsWith("/v1/customers/")) {
+        return { body: { id: req.path.split("/").pop(), object: "customer", deleted: true } };
+      }
+      return undefined;
+    });
+  }
+  const calls = (requests: FakeStripeRequest[]) => requests.map((r) => `${r.method} ${r.path}`);
+
+  it("never hands a parent's Stripe customer to the next parent who links the teen", async () => {
+    vi.stubEnv("STRIPE_PRICE_MONTHLY", "price_monthly");
+    vi.stubEnv("APP_URL", APP);
+    resetEnvCache();
+    const { stripe, requests } = stripeAccount();
+
+    // Ana links Rosa, and Rosa pays.
+    const ana = await teen();
+    const rosa = await parent();
+    const first = await invite(ana);
+    expect((await acceptInvite(db, first.token, rosa, now)).ok).toBe(true);
+    expect(await startCheckout(db, stripe, rosa, "monthly")).toMatchObject({ ok: true });
+    const paidUntil = new Date(now.getTime() + 20 * DAY);
+    // What the webhook records once Rosa finishes Checkout.
+    await db.update(schema.billingAccounts).set({ stripeSubscriptionId: "sub_rosa", status: "active", plan: "monthly", currentPeriodEnd: paidUntil });
+
+    // Rosa deletes her account. Ana stays, and the plan ends with the period Rosa paid for.
+    await deleteParentAccount(db, rosa, { stripe });
+    const oldHousehold = await householdOf(ana);
+    expect(await billingIn(oldHousehold)).toMatchObject({ stripeCustomerId: "cus_1", payerUserId: null, cancelAtPeriodEnd: true });
+
+    // Ana invites Sam, who accepts.
+    const sam = await parent("sam@example.com");
+    const second = await invite(ana, now, "sam@example.com");
+    const res = await acceptInvite(db, second.token, sam, now);
+    expect(res.ok && res.merge).toMatchObject({ billing: "parked", paidUntil, parkedHouseholdId: oldHousehold, oldHouseholdDeleted: false });
+    const samHousehold = await householdOf(sam);
+    expect(await householdOf(ana)).toBe(samHousehold);
+    expect(await billingIn(samHousehold)).toBeUndefined();
+    // Ana keeps the time Rosa already paid for.
+    expect(await grantsIn(samHousehold)).toContainEqual(expect.objectContaining({ kind: "comp", endsAt: paidUntil }));
+
+    // Sam never reaches Rosa's card or receipts, and his own Checkout gets his own customer.
+    expect(await openBillingPortal(db, stripe, sam)).toEqual({ ok: false, error: "no_customer" });
+    expect(await startCheckout(db, stripe, sam, "monthly")).toMatchObject({ ok: true });
+    expect(requests.filter((r) => r.path === "/v1/checkout/sessions").map((r) => r.form.get("customer"))).toEqual(["cus_1", "cus_2"]);
+    expect(await billingIn(samHousehold)).toMatchObject({ stripeCustomerId: "cus_2", payerUserId: sam });
+
+    // The accept action then closes the old household, which deletes Rosa's customer.
+    expect(await deleteEmptyHousehold(db, oldHousehold, { stripe })).toBe(true);
+    expect(calls(requests)).toContain("DELETE /v1/customers/cus_1");
+    expect(calls(requests)).not.toContain("DELETE /v1/customers/cus_2");
+  });
+
+  it("moves a billing account only when the accepting parent is the one who pays through it", async () => {
     const { parentId, token, from, to } = await setup();
-    await db.insert(schema.billingAccounts).values({ householdId: from, stripeCustomerId: "cus_teen", stripeSubscriptionId: "sub_teen", status: "active", plan: "monthly" });
+    await db.insert(schema.billingAccounts).values({
+      householdId: from,
+      stripeCustomerId: "cus_own",
+      payerUserId: parentId,
+      stripeSubscriptionId: "sub_own",
+      status: "active",
+      plan: "monthly",
+      currentPeriodEnd: new Date(now.getTime() + 20 * DAY),
+    });
     const res = await acceptInvite(db, token, parentId, now);
     expect(res.ok && res.merge).toMatchObject({ billing: "moved", oldHouseholdDeleted: true });
-    expect(await billingIn(to)).toMatchObject({ stripeCustomerId: "cus_teen", status: "active" });
+    expect(res.ok && res.merge.paidUntil).toBeUndefined();
+    expect(await billingIn(to)).toMatchObject({ stripeCustomerId: "cus_own", status: "active" });
   });
 
   it("keeps the parent's plan and parks the teen's ended one on the old household for cleanup", async () => {
     const { parentId, token, from, to } = await setup();
     await db.insert(schema.billingAccounts).values([
       { householdId: from, stripeCustomerId: "cus_teen", status: "canceled" },
-      { householdId: to, stripeCustomerId: "cus_parent", stripeSubscriptionId: "sub_parent", status: "active" },
+      { householdId: to, stripeCustomerId: "cus_parent", payerUserId: parentId, stripeSubscriptionId: "sub_parent", status: "active" },
     ]);
     const res = await acceptInvite(db, token, parentId, now);
-    expect(res.ok && res.merge).toMatchObject({ billing: "kept_parent", oldHouseholdDeleted: false });
+    expect(res.ok && res.merge).toMatchObject({ billing: "parked", oldHouseholdDeleted: false });
+    expect(res.ok && res.merge.paidUntil).toBeUndefined();
     expect((await billingIn(to)).stripeCustomerId).toBe("cus_parent");
     // Nobody lives there any more, but the Stripe customer isn't lost.
     expect((await billingIn(from)).stripeCustomerId).toBe("cus_teen");
     expect(await db.select().from(schema.users).where(eq(schema.users.householdId, from))).toHaveLength(0);
     // The accept action hands it to the household cleanup, which closes the Stripe customer.
     expect(res.ok && res.merge.parkedHouseholdId).toBe(from);
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(await deleteEmptyHousehold(db, from, { stripe: null })).toBe(true);
     expect(await billingIn(from)).toBeUndefined();
+    errors.mockRestore();
   });
 
-  it("swaps in the teen's live plan when the parent's has ended", async () => {
+  it("leaves someone else's live plan behind even when the parent has none going, carrying its paid time", async () => {
+    const { studentId, parentId, token, from, to } = await setup();
+    const paidUntil = new Date(now.getTime() + 200 * DAY);
+    await db.insert(schema.billingAccounts).values([
+      { householdId: from, stripeCustomerId: "cus_teen", stripeSubscriptionId: "sub_teen", status: "active", plan: "annual", currentPeriodEnd: paidUntil },
+      { householdId: to, stripeCustomerId: "cus_parent", payerUserId: parentId, status: "incomplete_expired" },
+    ]);
+    const res = await acceptInvite(db, token, parentId, now);
+    expect(res.ok && res.merge).toMatchObject({ billing: "parked", paidUntil, parkedHouseholdId: from });
+    expect(await billingIn(to)).toMatchObject({ stripeCustomerId: "cus_parent" });
+    expect(await billingIn(from)).toMatchObject({ stripeCustomerId: "cus_teen" });
+    expect(await grantsIn(to)).toContainEqual(expect.objectContaining({ kind: "comp", startsAt: now, endsAt: paidUntil, grantedByUserId: null }));
+    const audit = (await db.select().from(schema.auditLog)).find((a) => a.action === "parent_invite.accepted");
+    expect(audit?.metadata).toMatchObject({ billing: "parked", paidTimeCarried: true });
+    expect(await householdOf(studentId)).toBe(to);
+  });
+
+  it("swaps plans only between two of the accepting parent's own accounts", async () => {
     const { parentId, token, from, to } = await setup();
     await db.insert(schema.billingAccounts).values([
-      { householdId: from, stripeCustomerId: "cus_teen", stripeSubscriptionId: "sub_teen", status: "active", plan: "annual" },
-      { householdId: to, stripeCustomerId: "cus_parent", status: "incomplete_expired" },
+      { householdId: from, stripeCustomerId: "cus_live", payerUserId: parentId, stripeSubscriptionId: "sub_live", status: "active", plan: "annual" },
+      { householdId: to, stripeCustomerId: "cus_old", payerUserId: parentId, status: "incomplete_expired" },
     ]);
     const res = await acceptInvite(db, token, parentId, now);
-    expect(res.ok && res.merge).toMatchObject({ billing: "swapped", oldHouseholdDeleted: false });
-    expect(await billingIn(to)).toMatchObject({ stripeCustomerId: "cus_teen", plan: "annual" });
-    expect(await billingIn(from)).toMatchObject({ stripeCustomerId: "cus_parent" });
+    expect(res.ok && res.merge).toMatchObject({ billing: "swapped", parkedHouseholdId: from });
+    expect(await billingIn(to)).toMatchObject({ stripeCustomerId: "cus_live", plan: "annual" });
+    expect(await billingIn(from)).toMatchObject({ stripeCustomerId: "cus_old" });
   });
 
-  it("refuses, changing nothing, when both households have a plan that renews", async () => {
+  it("links even when both households have a plan that renews: the teen's old one is left behind and ended", async () => {
+    // The plan of a parent who deleted their account, still renewing because Stripe couldn't be
+    // reached then. Nobody can manage it (teens can't reach billing), so it never blocks linking.
     const { studentId, parentId, token, from, to } = await setup();
+    const paidUntil = new Date(now.getTime() + 10 * DAY);
     await db.insert(schema.billingAccounts).values([
-      { householdId: from, stripeCustomerId: "cus_teen", stripeSubscriptionId: "sub_teen", status: "active" },
-      { householdId: to, stripeCustomerId: "cus_parent", stripeSubscriptionId: "sub_parent", status: "trialing" },
+      { householdId: from, stripeCustomerId: "cus_teen", stripeSubscriptionId: "sub_teen", status: "active", currentPeriodEnd: paidUntil },
+      { householdId: to, stripeCustomerId: "cus_parent", payerUserId: parentId, stripeSubscriptionId: "sub_parent", status: "trialing" },
     ]);
-    expect(await acceptInvite(db, token, parentId, now)).toEqual({ ok: false, error: "both_subscribed" });
-    expect(await householdOf(studentId)).toBe(from);
-    expect(await isLinkedParent(db, parentId, studentId)).toBe(false);
-    expect((await findInvite(db, token, now)).status).toBe("pending");
-
-    // Once the teen's plan is set to end, the parent's plan wins and the link goes through.
-    await db.update(schema.billingAccounts).set({ cancelAtPeriodEnd: true }).where(eq(schema.billingAccounts.householdId, from));
     const res = await acceptInvite(db, token, parentId, now);
-    expect(res.ok && res.merge.billing).toBe("kept_parent");
+    expect(res.ok && res.merge).toMatchObject({ billing: "parked", paidUntil, parkedHouseholdId: from });
     expect(await householdOf(studentId)).toBe(to);
+    expect(await isLinkedParent(db, parentId, studentId)).toBe(true);
+    expect((await billingIn(to)).stripeCustomerId).toBe("cus_parent");
+
+    // The accept action closes the old household: deleting its customer ends that plan.
+    const { stripe, requests } = stripeAccount();
+    expect(await deleteEmptyHousehold(db, from, { stripe })).toBe(true);
+    expect(calls(requests)).toEqual(["DELETE /v1/customers/cus_teen"]);
   });
 
   it("copies grants and leaves billing when others still live in the old household", async () => {

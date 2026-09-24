@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SubscriptionStatus } from "@/db/schema";
-import { CRISIS_LINE, LOCKED_COUNSELOR_NOTICE, describeAccess, formatAccessDate } from "./describe";
+import { CRISIS_LINE, LOCKED_COUNSELOR_NOTICE, describeAccess, formatAccessDate, formatStartDate } from "./describe";
 import { type BillingRow, DAY_MS, type GrantRow, addMonths, evaluateAccess } from "./entitlement";
 
 const NOW = new Date("2026-09-24T18:00:00Z");
@@ -60,8 +60,10 @@ describe("describeAccess", () => {
     expect(describeFor([], null).headline).toBe("Your family doesn't have full access right now.");
   });
 
-  it("formats dates in US Pacific time", () => {
+  it("formats end dates in US Pacific time, and start dates as UTC calendar days", () => {
     expect(formatAccessDate(new Date("2026-10-09T05:00:00Z"))).toBe("October 8, 2026");
+    // Midnight UTC is the evening before in the US: the day shown has begun everywhere by then.
+    expect(formatStartDate(new Date("2027-08-25T00:00:00Z"))).toBe("August 25, 2027");
   });
 
   it("keeps the crisis line in the counselor's locked notice", () => {

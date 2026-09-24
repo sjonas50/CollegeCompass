@@ -4,6 +4,7 @@ import { type Db, createTestDb, schema } from "@/db";
 import { grantFreeAccess } from "@/lib/access/service";
 import { createChildAccount, registerParent, registerStudent } from "@/lib/accounts";
 import { deleteEmptyHousehold, deleteParentAccount, deleteStudent, exportStudentData } from "@/lib/privacy";
+import { runStripeCleanup } from "./cleanup";
 import { fakeStripe } from "./fake-stripe";
 
 // Households are deleted with their last member, and their Stripe customer with them (which
@@ -51,6 +52,10 @@ async function subscribe(householdId: string, customerId = "cus_1") {
   await db.insert(schema.billingAccounts).values({ householdId, stripeCustomerId: customerId, stripeSubscriptionId: "sub_1", status: "active", plan: "monthly" });
 }
 
+const DOWN = { status: 500, body: { error: { type: "api_error", message: "Stripe is down" } } };
+const cleanupQueue = () => db.select().from(schema.stripeCleanup);
+const nextDay = () => new Date(Date.now() + 25 * 60 * 60 * 1000);
+
 describe("a parent leaves while teens stay", () => {
   it("sets the family's renewing plan to end with its paid period", async () => {
     const { parentId, kid } = await parentWithKids();
@@ -67,6 +72,48 @@ describe("a parent leaves while teens stay", () => {
     expect(update?.form.get("cancel_at_period_end")).toBe("true");
     const [billing] = await db.select().from(schema.billingAccounts).where(eq(schema.billingAccounts.householdId, householdId));
     expect(billing.cancelAtPeriodEnd).toBe(true);
+    expect(await householdOf(teenId)).toBe(householdId);
+    expect(await cleanupQueue()).toHaveLength(0);
+  });
+
+  it("queues the plan's end when Stripe fails, and the daily sweep finishes it", async () => {
+    const { parentId, kid } = await parentWithKids();
+    const teenId = await kid("teen_one", "2011-01-15", false);
+    const householdId = await householdOf(teenId);
+    await subscribe(householdId);
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    let down = true;
+    const { stripe, requests } = fakeStripe((req) => {
+      if (down) return DOWN;
+      if (req.path === "/v1/subscriptions/sub_1") {
+        return { body: { id: "sub_1", object: "subscription", status: "active", cancel_at_period_end: req.method === "POST" } };
+      }
+      return undefined;
+    });
+
+    await deleteParentAccount(db, parentId, { stripe });
+    expect(errors).toHaveBeenCalledWith("[billing] couldn't end a plan without a parent", "StripeAPIError");
+    expect(await cleanupQueue()).toEqual([
+      expect.objectContaining({ action: "cancel_at_period_end", stripeSubscriptionId: "sub_1", stripeCustomerId: null, attempts: 1 }),
+    ]);
+
+    down = false;
+    expect(await runStripeCleanup(db, stripe, nextDay())).toMatchObject({ done: 1, waiting: 0 });
+    expect(requests.at(-1)).toMatchObject({ method: "POST", path: "/v1/subscriptions/sub_1" });
+    const [billing] = await db.select().from(schema.billingAccounts).where(eq(schema.billingAccounts.householdId, householdId));
+    expect(billing.cancelAtPeriodEnd).toBe(true);
+  });
+
+  it("closes a plan that had already ended, keeping the household for the teens", async () => {
+    const { parentId, kid } = await parentWithKids();
+    const teenId = await kid("teen_one", "2011-01-15", false);
+    const householdId = await householdOf(teenId);
+    await db.insert(schema.billingAccounts).values({ householdId, stripeCustomerId: "cus_1", stripeSubscriptionId: "sub_1", status: "canceled" });
+    const { stripe, requests } = stripeThatDeletes();
+
+    await deleteParentAccount(db, parentId, { stripe });
+    expect(requests.map((r) => `${r.method} ${r.path}`)).toEqual(["DELETE /v1/customers/cus_1"]);
+    expect(await db.select().from(schema.billingAccounts)).toHaveLength(0);
     expect(await householdOf(teenId)).toBe(householdId);
   });
 });
@@ -97,11 +144,16 @@ describe("deleting the last person in a household", () => {
     expect(JSON.stringify(await db.select().from(schema.auditLog))).not.toContain("cus_1");
   });
 
-  it("still deletes everything here when Stripe fails, logging only the error's name", async () => {
+  it("still deletes everything here when Stripe fails, and queues the customer for the daily sweep", async () => {
     const ana = await teen();
     await subscribe(await householdOf(ana), "cus_private_123");
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
-    const { stripe } = fakeStripe(() => ({ status: 500, body: { error: { type: "api_error", message: "cus_private_123 exploded" } } }));
+    let down = true;
+    const { stripe, requests } = fakeStripe((req) =>
+      down
+        ? { status: 500, body: { error: { type: "api_error", message: "cus_private_123 exploded" } } }
+        : { body: { id: req.path.split("/").pop(), object: "customer", deleted: true } },
+    );
 
     expect(await deleteStudent(db, ana, ana, { stripe })).toBe(true);
     expect(await db.select().from(schema.households)).toHaveLength(0);
@@ -110,6 +162,14 @@ describe("deleting the last person in a household", () => {
     expect(JSON.stringify(errors.mock.calls)).not.toContain("cus_private_123");
     const audit = (await db.select().from(schema.auditLog)).find((a) => a.action === "billing.customer_deleted");
     expect(audit?.metadata).toEqual({ stripeDeleted: false });
+    // Only the Stripe id is kept, so the sweep can finish the job.
+    const [job] = await cleanupQueue();
+    expect(job).toMatchObject({ action: "delete_customer", stripeCustomerId: "cus_private_123", lastError: "StripeAPIError" });
+    expect(Object.values(job)).not.toContain(ana);
+
+    down = false;
+    expect(await runStripeCleanup(db, stripe, nextDay())).toMatchObject({ done: 1, waiting: 0 });
+    expect(requests.map((r) => `${r.method} ${r.path}`)).toEqual(Array(2).fill("DELETE /v1/customers/cus_private_123"));
   });
 
   it("treats a customer Stripe already deleted as done", async () => {
@@ -136,6 +196,7 @@ describe("deleting the last person in a household", () => {
     await deleteStudent(db, ana, ana, { stripe: null });
     expect(await db.select().from(schema.households)).toHaveLength(0);
     expect(errors).toHaveBeenCalledWith("[billing] couldn't delete a Stripe customer", "StripeNotConfigured");
+    expect(await cleanupQueue()).toEqual([expect.objectContaining({ stripeCustomerId: "cus_1", lastError: "StripeNotConfigured" })]);
   });
 });
 
@@ -194,7 +255,8 @@ describe("export", () => {
   it("includes the household's access and subscription in each student's export", async () => {
     const { parentId, kid } = await parentWithKids();
     const leo = await kid("leo7", "2014-03-01", true);
-    await grantFreeAccess(db, parentId, TODAY);
+    // Now, not TODAY: the trial started when the household was created, so this sorts after it.
+    await grantFreeAccess(db, parentId);
     await subscribe(await householdOf(parentId));
 
     const data = await exportStudentData(db, parentId, leo);

@@ -17,7 +17,8 @@
     "eval:safety": "tsx scripts/eval-safety.ts",
     "check:matching": "tsx scripts/check-matching.ts",
     "eval:counselor": "tsx scripts/eval-counselor.ts",
-    "admin:create": "tsx scripts/create-admin.ts"
+    "admin:create": "tsx scripts/create-admin.ts",
+    "access:grant": "tsx scripts/grant-access.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

@@ -206,9 +206,28 @@ describe("/account/billing", () => {
     expect(t).not.toContain("Choose monthly");
   });
 
+  it("offers the Customer Portal only to the parent who pays", async () => {
+    const { householdId } = await signIn("parent");
+    withStripe();
+    const [payer] = await db.insert(schema.households).values({}).returning();
+    const [other] = await db
+      .insert(schema.users)
+      .values({ role: "parent", householdId: payer.id, displayName: "Rosa", email: "rosa@example.com", passwordHash: "x" })
+      .returning({ id: schema.users.id });
+    await db.insert(schema.billingAccounts).values({ householdId, stripeCustomerId: "cus_1", payerUserId: other.id, status: "active", plan: "monthly" });
+    const t = text(await billingPage());
+    expect(t).toContain("This plan was set up from another account, so it can't be changed here.");
+    expect(t).not.toContain("Manage billing");
+
+    // A plan that ended: no portal for receipts either.
+    await db.update(schema.billingAccounts).set({ status: "canceled" });
+    expect(text(await billingPage())).not.toContain("Manage billing");
+  });
+
   it("explains errors from checkout", async () => {
     await signIn("parent");
     expect(text(await billingPage({ error: "stripe" }))).toContain("We couldn't reach our payment service.");
+    expect(text(await billingPage({ error: "not_payer" }))).toContain("This plan was set up from another account");
   });
 
   it("sends students to their access page", async () => {

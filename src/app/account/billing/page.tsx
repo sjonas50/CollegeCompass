@@ -5,8 +5,9 @@ import { openPortalAction, startCheckoutAction } from "@/app/actions/billing";
 import { Button, ButtonLink, Card, FormMessage, Notice, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
 import { env } from "@/env";
-import { FREE_ACCESS_PATH, UNLOCK_PATH, describeAccess, formatAccessDate } from "@/lib/access/describe";
+import { FREE_ACCESS_PATH, UNLOCK_PATH, describeAccess, formatAccessDate, formatStartDate } from "@/lib/access/describe";
 import { getUserAccess } from "@/lib/access/service";
+import { canManageBilling } from "@/lib/billing/checkout";
 import { type Plan, type PlanPrice, getPlanPrices, priceIdFor } from "@/lib/billing/plans";
 import { getStripe, paidPlansAvailable } from "@/lib/billing/stripe";
 import { requireUser } from "@/lib/auth/dal";
@@ -20,6 +21,7 @@ const ERRORS: Record<string, string> = {
   unavailable: "That plan isn't available right now. Please try again later, or use free access.",
   stripe: "We couldn't reach our payment service. Please try again in a few minutes.",
   subscribed: "Your family already has a plan. Use Manage billing to change it.",
+  not_payer: "This plan was set up from another account, so it can't be changed here. Please contact us and we'll help.",
 };
 
 const PLAN_COPY: Record<Plan, { name: string; note: string }> = {
@@ -69,10 +71,13 @@ export default async function BillingPage({ searchParams }: PageProps<"/account/
   const parent = await requireUser(["parent", "student"]);
   if (parent.role !== "parent") redirect(UNLOCK_PATH);
   const { free, error } = await searchParams;
-  const access = await getUserAccess(await getDb(), parent.id);
+  const db = await getDb();
+  const access = await getUserAccess(db, parent.id);
   const summary = describeAccess(access, "parent");
   const sub = access.subscription;
   const subscribed = Boolean(sub?.grantsAccess);
+  // Only the parent who pays can open the Customer Portal: it shows their card and receipts.
+  const manages = sub ? await canManageBilling(db, parent.id) : false;
   const stripe = getStripe();
   const available = Boolean(stripe) && paidPlansAvailable();
   const prices = available && stripe && !subscribed ? await getPlanPrices(stripe) : null;
@@ -93,7 +98,9 @@ export default async function BillingPage({ searchParams }: PageProps<"/account/
           {subscribed ? "Your plan" : "Choose a plan"}
         </h2>
         {subscribed ? (
-          stripe ? (
+          !manages ? (
+            <p className="text-sm">This plan was set up from another account, so it can&apos;t be changed here.</p>
+          ) : stripe ? (
             <ManageBilling lead="Change your plan, update your card, see receipts or cancel on Stripe's secure page." />
           ) : (
             <p className="text-sm">Billing changes aren&apos;t available right now. Please try again later.</p>
@@ -108,7 +115,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/account/
             <p className="text-sm text-muted">
               You&apos;ll pay on Stripe&apos;s secure page. We never see or store your card details. You can cancel any time.
             </p>
-            {sub && stripe && <ManageBilling lead="See past receipts or update your card." />}
+            {manages && stripe && <ManageBilling lead="See past receipts or update your card." />}
           </>
         ) : (
           <Card>
@@ -126,7 +133,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/account/
           <p className="text-sm">
             Your family has free access{runningFree.endsAt ? <> until {formatAccessDate(runningFree.endsAt)}</> : null}.
             {!access.canRenewFreeAccess && access.freeAccessRenewableFrom && (
-              <> You can renew it starting {formatAccessDate(access.freeAccessRenewableFrom)}.</>
+              <> You can renew it starting {formatStartDate(access.freeAccessRenewableFrom)}.</>
             )}
           </p>
         ) : (

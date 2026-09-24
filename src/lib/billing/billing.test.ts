@@ -145,14 +145,15 @@ describe("prices", () => {
 describe("checkout", () => {
   it("creates one Stripe customer per household, carrying only the household id", async () => {
     const { stripe, requests } = stripeAccount();
-    expect(await ensureCustomer(db, stripe, householdId)).toBe("cus_1");
-    expect(await ensureCustomer(db, stripe, householdId)).toBe("cus_1");
+    expect(await ensureCustomer(db, stripe, householdId, parentId)).toBe("cus_1");
+    expect(await ensureCustomer(db, stripe, householdId, parentId)).toBe("cus_1");
     const creates = requests.filter((r) => r.path === "/v1/customers");
     expect(creates).toHaveLength(1);
     expect([...creates[0].form.keys()]).toEqual(["metadata[householdId]"]);
     expect(creates[0].form.get("metadata[householdId]")).toBe(householdId);
     const [account] = await db.select().from(schema.billingAccounts);
-    expect(account).toMatchObject({ householdId, stripeCustomerId: "cus_1", status: null });
+    // The parent who created it is its payer.
+    expect(account).toMatchObject({ householdId, stripeCustomerId: "cus_1", status: null, payerUserId: parentId });
   });
 
   it("starts a subscription Checkout tied to the household", async () => {
@@ -208,7 +209,7 @@ describe("checkout", () => {
     vi.stubEnv("STRIPE_PRICE_ANNUAL", "");
     resetEnvCache();
     expect(await startCheckout(db, stripe, parentId, "annual")).toEqual({ ok: false, error: "plan_unavailable" });
-    await db.insert(schema.billingAccounts).values({ householdId, stripeCustomerId: "cus_9", status: "past_due" });
+    await db.insert(schema.billingAccounts).values({ householdId, stripeCustomerId: "cus_9", payerUserId: parentId, status: "past_due" });
     expect(await startCheckout(db, stripe, parentId, "monthly")).toEqual({ ok: false, error: "already_subscribed" });
     // A plan that ended can be started again.
     await db.update(schema.billingAccounts).set({ status: "canceled" });
@@ -218,10 +219,64 @@ describe("checkout", () => {
   it("opens the Customer Portal for the household's customer", async () => {
     const { stripe, requests } = stripeAccount();
     expect(await openBillingPortal(db, stripe, parentId)).toEqual({ ok: false, error: "no_customer" });
-    await ensureCustomer(db, stripe, householdId);
+    await ensureCustomer(db, stripe, householdId, parentId);
     expect(await openBillingPortal(db, stripe, parentId)).toEqual({ ok: true, url: "https://billing.stripe.com/p/session/test" });
     const portal = requests.find((r) => r.path === "/v1/billing_portal/sessions")!.form;
     expect(Object.fromEntries(portal)).toEqual({ customer: "cus_1", return_url: "https://app.example.com/account/billing" });
+  });
+});
+
+describe("the parent who pays", () => {
+  /** Another parent account in the same household (the app never does this today). */
+  async function secondParent() {
+    const [other] = await db
+      .insert(schema.users)
+      .values({ role: "parent", householdId, displayName: "Sam", email: "sam@example.com", passwordHash: "x" })
+      .returning({ id: schema.users.id });
+    return other.id;
+  }
+
+  it("is the only one who can open the portal or check out on the household's customer", async () => {
+    const { stripe, requests } = stripeAccount();
+    const sam = await secondParent();
+    await db.insert(schema.billingAccounts).values({ householdId, stripeCustomerId: "cus_rosa", payerUserId: parentId, status: "canceled" });
+
+    expect(await openBillingPortal(db, stripe, sam)).toEqual({ ok: false, error: "not_payer" });
+    expect(await startCheckout(db, stripe, sam, "monthly")).toEqual({ ok: false, error: "not_payer" });
+    expect(await ensureCustomer(db, stripe, householdId, sam)).toBeNull();
+    expect(requests).toHaveLength(0);
+    // Rosa still can.
+    expect(await openBillingPortal(db, stripe, parentId)).toMatchObject({ ok: true });
+  });
+
+  it("is set to null when the payer deletes their account", async () => {
+    const { stripe } = stripeAccount();
+    await ensureCustomer(db, stripe, householdId, parentId);
+    await db.delete(schema.users).where(eq(schema.users.id, parentId));
+    const [account] = await db.select().from(schema.billingAccounts);
+    expect(account).toMatchObject({ householdId, stripeCustomerId: "cus_1", payerUserId: null });
+  });
+
+  it("can be claimed on an older account by the household's parent, only if Stripe made it for this household", async () => {
+    let metadataHousehold = "00000000-0000-4000-8000-000000000001";
+    const { stripe, requests } = fakeStripe((req) => {
+      if (req.method === "GET" && req.path === "/v1/customers/cus_old") {
+        return { body: { id: "cus_old", object: "customer", metadata: { householdId: metadataHousehold } } };
+      }
+      if (req.path === "/v1/billing_portal/sessions") {
+        return { body: { id: "bps_1", object: "billing_portal.session", url: "https://billing.stripe.com/p/session/test" } };
+      }
+      return undefined;
+    });
+    await db.insert(schema.billingAccounts).values({ householdId, stripeCustomerId: "cus_old", status: "active" });
+
+    // Made for another household (and moved here): never handed over.
+    expect(await openBillingPortal(db, stripe, parentId)).toEqual({ ok: false, error: "not_payer" });
+    expect(requests.map((r) => `${r.method} ${r.path}`)).toEqual(["GET /v1/customers/cus_old"]);
+
+    metadataHousehold = householdId;
+    expect(await openBillingPortal(db, stripe, parentId)).toMatchObject({ ok: true });
+    expect((await db.select().from(schema.billingAccounts))[0].payerUserId).toBe(parentId);
   });
 });
 

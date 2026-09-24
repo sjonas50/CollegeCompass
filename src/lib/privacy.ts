@@ -27,7 +27,8 @@ import { exportHouseholdAccess } from "./access/service";
 import { exportParentInvites } from "./invites";
 import { isLinkedParent } from "./accounts";
 import { audit } from "./audit";
-import { deleteStripeCustomer, endPlanWithoutParent } from "./billing/checkout";
+import { endPlanWithoutParent } from "./billing/checkout";
+import { runOrQueueCleanup } from "./billing/cleanup";
 import { type Stripe, getStripe } from "./billing/stripe";
 
 /**
@@ -162,8 +163,9 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
 export type DeletionDeps = { stripe?: Stripe | null };
 
 /**
- * Permanently deletes a student and everything tied to them. Sessions, AI usage and safety
- * events cascade; consent records and audit entries keep no link back to the child. If the
+ * Permanently deletes a student and everything tied to them. Sessions and safety events cascade;
+ * AI usage rows (token counts and cost, no content) stay for spend history with no link back to the
+ * child, as do consent records and audit entries. If the
  * student was the last person in their household, the household goes too (see deleteEmptyHousehold).
  */
 export async function deleteStudent(db: Db, requesterId: string, studentId: string, deps: DeletionDeps = {}) {
@@ -183,7 +185,8 @@ export async function deleteStudent(db: Db, requesterId: string, studentId: stri
 /**
  * Deletes a parent account. Children the parent created under COPPA consent go with it;
  * teens who own their own accounts are only unlinked. A household with teens left in it keeps its
- * access and billing account; an empty one is deleted.
+ * access, and a plan the parent paid for runs to the end of its paid period without renewing (see
+ * endPlanWithoutParent); an empty household is deleted.
  */
 export async function deleteParentAccount(db: Db, parentId: string, deps: DeletionDeps = {}) {
   const children = await db
@@ -208,7 +211,8 @@ export async function deleteParentAccount(db: Db, parentId: string, deps: Deleti
   for (const householdId of new Set(removed.map((r) => r.householdId))) {
     if (!householdId) continue;
     const deleted = await deleteEmptyHousehold(db, householdId, deps);
-    // Teens remain but no parent: a renewing plan ends when its paid period does.
+    // Teens remain but no parent: a renewing plan ends when its paid period does, and one that has
+    // already ended is closed now.
     if (!deleted) await endPlanWithoutParent(db, deps.stripe === undefined ? getStripe() : deps.stripe, householdId);
   }
   return { childrenDeleted: managedIds.length };
@@ -217,7 +221,8 @@ export async function deleteParentAccount(db: Db, parentId: string, deps: Deleti
 /**
  * Deletes a household nobody belongs to anymore. Its access grants and billing account cascade.
  * Its Stripe customer is deleted first, which cancels any subscription so the family isn't billed
- * again; if Stripe can't be reached, the error's name is logged and the local data is deleted
+ * again. If Stripe can't be reached, the error's name is logged, the deletion is queued for the
+ * daily sweep to retry (stripe_cleanup keeps only the Stripe id), and the local data is deleted
  * anyway. Returns whether the household was deleted.
  */
 export async function deleteEmptyHousehold(db: Db, householdId: string | null, deps: DeletionDeps = {}): Promise<boolean> {
@@ -231,9 +236,7 @@ export async function deleteEmptyHousehold(db: Db, householdId: string | null, d
     .where(eq(billingAccounts.householdId, householdId));
   if (billing) {
     const stripe = deps.stripe === undefined ? getStripe() : deps.stripe;
-    let stripeDeleted = false;
-    if (stripe) stripeDeleted = await deleteStripeCustomer(stripe, billing.stripeCustomerId);
-    else console.error("[billing] couldn't delete a Stripe customer", "StripeNotConfigured");
+    const stripeDeleted = await runOrQueueCleanup(db, stripe, { action: "delete_customer", stripeCustomerId: billing.stripeCustomerId });
     await audit(db, "billing.customer_deleted", { metadata: { stripeDeleted } });
   }
   await db.delete(households).where(eq(households.id, householdId));

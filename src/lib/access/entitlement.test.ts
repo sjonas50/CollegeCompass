@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { type SubscriptionStatus, subscriptionStatusEnum } from "@/db/schema";
-import { type BillingRow, DAY_MS, type GrantRow, addMonths, daysLeft, evaluateAccess, isGrantActive, subscriptionGrantsAccess } from "./entitlement";
+import { formatStartDate } from "./describe";
+import {
+  type BillingRow,
+  DAY_MS,
+  type GrantRow,
+  addMonths,
+  daysLeft,
+  evaluateAccess,
+  freeAccessRenewalOpens,
+  isGrantActive,
+  subscriptionGrantsAccess,
+} from "./entitlement";
 
 const HOUSEHOLD = "00000000-0000-4000-8000-000000000001";
 const START = new Date("2026-09-01T15:00:00Z");
@@ -59,18 +70,32 @@ describe("free access", () => {
     expect(access.freeAccess?.endsAt?.toISOString()).toBe("2027-09-11T15:00:00.000Z");
   });
 
-  it("can be renewed only once fewer than 30 days are left", () => {
+  it("can be renewed from the start (midnight UTC) of the day 30 days before it ends", () => {
     const grant = year(START);
     const end = grant.endsAt!;
-    const before = evaluate([grant], new Date(end.getTime() - 31 * DAY_MS));
-    expect(before.canRenewFreeAccess).toBe(false);
-    expect(before.freeAccessRenewableFrom?.toISOString()).toBe(new Date(end.getTime() - 30 * DAY_MS).toISOString());
-    // Exactly 30 days left is not "fewer than 30".
-    expect(evaluate([grant], new Date(end.getTime() - 30 * DAY_MS)).canRenewFreeAccess).toBe(false);
-    const inside = evaluate([grant], new Date(end.getTime() - 29 * DAY_MS));
+    expect(end.toISOString()).toBe("2027-09-01T15:00:00.000Z");
+    const opens = new Date("2027-08-02T00:00:00Z");
+    expect(freeAccessRenewalOpens(end)).toEqual(opens);
+    const before = evaluate([grant], new Date(opens.getTime() - 1));
+    expect(before).toMatchObject({ canRenewFreeAccess: false, freeAccessRenewableFrom: opens });
+    expect(evaluate([grant], new Date(end.getTime() - 31 * DAY_MS)).canRenewFreeAccess).toBe(false);
+    const inside = evaluate([grant], opens);
     expect(inside).toMatchObject({ full: true, canRenewFreeAccess: true, freeAccessRenewableFrom: null });
     // After it ends, it can be turned on again.
     expect(evaluate([grant], end)).toMatchObject({ full: false, canRenewFreeAccess: true });
+  });
+
+  it("shows a renewal date the family can renew on all day, in every US time zone", () => {
+    // Turned on at 11:30 pm Eastern on September 23, 2026 (already September 24 in UTC).
+    const grant = year(new Date("2026-09-24T03:30:00Z"));
+    const opens = evaluate([grant], new Date("2027-06-01T00:00:00Z")).freeAccessRenewableFrom!;
+    expect(formatStartDate(opens)).toBe("August 25, 2027");
+    // Midnight at the start of August 25 in each zone (summer time), from Puerto Rico to Hawaii.
+    const zones = { "Puerto Rico": 4, Eastern: 4, Central: 5, Mountain: 6, Pacific: 7, Alaska: 8, Hawaii: 10 };
+    for (const [zone, hoursBehindUtc] of Object.entries(zones)) {
+      const localMidnight = new Date(Date.UTC(2027, 7, 25, hoursBehindUtc));
+      expect(evaluate([grant], localMidnight).canRenewFreeAccess, zone).toBe(true);
+    }
   });
 
   it("counts the renewal that runs longest", () => {

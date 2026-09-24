@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { Db } from "@/db";
 import { billingAccounts, users } from "@/db/schema";
 import { env } from "@/env";
@@ -6,8 +6,9 @@ import { subscriptionGrantsAccess } from "../access/entitlement";
 import { audit } from "../audit";
 import { BILLING_PATH } from "../access/describe";
 import { getHouseholdAccess } from "../access/service";
+import { closeBillingWithoutParent, runOrQueueCleanup } from "./cleanup";
 import { type Plan, priceIdFor } from "./plans";
-import { type Stripe, errorName, isMissingResource } from "./stripe";
+import { type Stripe, isMissingResource } from "./stripe";
 import { type SyncResult, syncCustomer } from "./subscriptions";
 
 /** Only parents manage billing, and only for their own household. */
@@ -19,35 +20,92 @@ async function parentHousehold(db: Db, parentUserId: string): Promise<string | n
   return parent?.householdId ?? null;
 }
 
-async function billingAccountFor(db: Db, householdId: string) {
+type BillingAccount = typeof billingAccounts.$inferSelect;
+
+async function billingAccountFor(db: Db, householdId: string): Promise<BillingAccount | null> {
   const [row] = await db.select().from(billingAccounts).where(eq(billingAccounts.householdId, householdId));
   return row ?? null;
 }
 
+/** The household's only parent, or null when it has none (or, which doesn't happen today, two). */
+async function soleParent(db: Db, householdId: string): Promise<string | null> {
+  const parents = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.householdId, householdId), eq(users.role, "parent")))
+    .limit(2);
+  return parents.length === 1 ? parents[0].id : null;
+}
+
 /**
- * The household's Stripe customer, created on first use. It carries only the household id: no
- * names or emails (Checkout asks the parent for what Stripe needs).
+ * Whether `parentUserId` is the parent who pays through this billing account: the one whose card,
+ * email and receipts the Stripe customer holds. Only they may open its portal or check out on it.
+ *
+ * Accounts made before payers were recorded have none. The household's only parent may claim such
+ * an account when Stripe says the customer was made for this household: a parent never joins
+ * another household, and a household has at most one parent, so that parent is the one who set it
+ * up. (When a payer deletes their account their household has no parent left, so nobody can claim
+ * it.) A customer that came here from another household is never claimed.
  */
-export async function ensureCustomer(db: Db, stripe: Stripe, householdId: string): Promise<string> {
+async function isPayer(db: Db, stripe: Stripe, account: BillingAccount, parentUserId: string): Promise<boolean> {
+  if (account.payerUserId !== null) return account.payerUserId === parentUserId;
+  if ((await soleParent(db, account.householdId)) !== parentUserId) return false;
+  let customer: Stripe.Customer | Stripe.DeletedCustomer;
+  try {
+    customer = await stripe.customers.retrieve(account.stripeCustomerId);
+  } catch (error) {
+    if (isMissingResource(error)) return false;
+    throw error;
+  }
+  if (customer.deleted || customer.metadata?.householdId !== account.householdId) return false;
+  await db
+    .update(billingAccounts)
+    .set({ payerUserId: parentUserId, updatedAt: new Date() })
+    .where(and(eq(billingAccounts.householdId, account.householdId), isNull(billingAccounts.payerUserId)));
+  return true;
+}
+
+/**
+ * Whether the billing page offers this parent the Customer Portal: their household has a Stripe
+ * customer and it's theirs, or it's an older account they may claim (openBillingPortal makes the
+ * final check).
+ */
+export async function canManageBilling(db: Db, parentUserId: string): Promise<boolean> {
+  const householdId = await parentHousehold(db, parentUserId);
+  const account = householdId ? await billingAccountFor(db, householdId) : null;
+  if (!householdId || !account) return false;
+  if (account.payerUserId !== null) return account.payerUserId === parentUserId;
+  return (await soleParent(db, householdId)) === parentUserId;
+}
+
+/**
+ * The Stripe customer for a parent's household, created on first use with that parent as its
+ * payer. It carries only the household id: no names or emails (Checkout asks the parent for what
+ * Stripe needs). Returns null when the household's customer belongs to someone else: one adult's
+ * card and receipts are never handed to another.
+ */
+export async function ensureCustomer(db: Db, stripe: Stripe, householdId: string, parentUserId: string): Promise<string | null> {
   const existing = await billingAccountFor(db, householdId);
-  if (existing) return existing.stripeCustomerId;
+  if (existing) return (await isPayer(db, stripe, existing, parentUserId)) ? existing.stripeCustomerId : null;
   // The idempotency key makes a double click (or a retried request) reuse one customer.
   const customer = await stripe.customers.create({ metadata: { householdId } }, { idempotencyKey: `household-customer-${householdId}` });
   const inserted = await db
     .insert(billingAccounts)
-    .values({ householdId, stripeCustomerId: customer.id })
+    .values({ householdId, stripeCustomerId: customer.id, payerUserId: parentUserId })
     .onConflictDoNothing()
     .returning({ stripeCustomerId: billingAccounts.stripeCustomerId });
   if (inserted.length) return inserted[0].stripeCustomerId;
   const stored = await billingAccountFor(db, householdId);
   if (!stored) throw new Error("Billing account missing after insert");
-  if (stored.stripeCustomerId !== customer.id) await deleteStripeCustomer(stripe, customer.id);
-  return stored.stripeCustomerId;
+  if (stored.stripeCustomerId !== customer.id) {
+    await runOrQueueCleanup(db, stripe, { action: "delete_customer", stripeCustomerId: customer.id });
+  }
+  return (await isPayer(db, stripe, stored, parentUserId)) ? stored.stripeCustomerId : null;
 }
 
 export type CheckoutResult =
   | { ok: true; url: string }
-  | { ok: false; error: "not_parent" | "plan_unavailable" | "already_subscribed" };
+  | { ok: false; error: "not_parent" | "not_payer" | "plan_unavailable" | "already_subscribed" };
 
 /**
  * Starts Stripe Checkout (subscription mode) for a parent's household. The session and the
@@ -63,7 +121,8 @@ export async function startCheckout(db: Db, stripe: Stripe, parentUserId: string
   // One plan per household: changes go through the Customer Portal.
   if (existing && subscriptionGrantsAccess(existing.status)) return { ok: false, error: "already_subscribed" };
 
-  const customer = await ensureCustomer(db, stripe, householdId);
+  const customer = await ensureCustomer(db, stripe, householdId, parentUserId);
+  if (!customer) return { ok: false, error: "not_payer" };
   const appUrl = env().APP_URL;
   // Subscribing during the free trial keeps the days left: billing starts when the trial ends.
   // (Stripe needs a trial end at least 48 hours away.)
@@ -87,16 +146,20 @@ export async function startCheckout(db: Db, stripe: Stripe, parentUserId: string
   return { ok: true, url: session.url };
 }
 
-/** The Stripe Customer Portal, where a parent changes plans, updates their card or cancels. */
+/**
+ * The Stripe Customer Portal, where the parent who pays changes plans, updates their card or
+ * cancels. It shows their card, billing address and receipts, so it opens only for them.
+ */
 export async function openBillingPortal(
   db: Db,
   stripe: Stripe,
   parentUserId: string,
-): Promise<{ ok: true; url: string } | { ok: false; error: "not_parent" | "no_customer" }> {
+): Promise<{ ok: true; url: string } | { ok: false; error: "not_parent" | "no_customer" | "not_payer" }> {
   const householdId = await parentHousehold(db, parentUserId);
   if (!householdId) return { ok: false, error: "not_parent" };
   const account = await billingAccountFor(db, householdId);
   if (!account) return { ok: false, error: "no_customer" };
+  if (!(await isPayer(db, stripe, account, parentUserId))) return { ok: false, error: "not_payer" };
   const session = await stripe.billingPortal.sessions.create({
     customer: account.stripeCustomerId,
     return_url: new URL(BILLING_PATH, env().APP_URL).toString(),
@@ -124,50 +187,42 @@ export async function syncCheckoutSession(
   const owner = session.client_reference_id ?? session.metadata?.householdId ?? null;
   const customerId = typeof session.customer === "string" ? session.customer : (session.customer?.id ?? null);
   if (owner !== householdId || !customerId || session.mode !== "subscription") return { ok: false, error: "not_found" };
-  return { ok: true, sync: await syncCustomer(db, stripe, customerId, householdId) };
+  return { ok: true, sync: await syncCustomer(db, stripe, customerId, householdId, parentUserId) };
 }
 
-/**
- * Deletes a Stripe customer, which cancels its subscriptions right away. Never throws: a failure is
- * logged by error name only and reported as false.
- */
-export async function deleteStripeCustomer(stripe: Stripe, customerId: string): Promise<boolean> {
-  try {
-    await stripe.customers.del(customerId);
-    return true;
-  } catch (error) {
-    // Already gone (deleted in the Stripe dashboard, say): nothing left to cancel.
-    if (isMissingResource(error)) return true;
-    console.error("[billing] couldn't delete a Stripe customer", errorName(error));
-    return false;
-  }
-}
+export type EndPlanResult =
+  /** A parent is still in the household, or it has no billing account: nothing to do. */
+  | "none"
+  /** The plan ends with the period it's paid through (or that change is queued for the sweep). */
+  | "ending"
+  /** The plan had already ended: its customer is deleted (or queued) and the billing account removed. */
+  | "closed";
 
 /**
- * When a household's last parent leaves (deletes their account) but students remain, nobody can
- * open the Customer Portal any more, so a renewing plan is set to end at the close of the period
- * it's paid through instead of charging the parent's card again. Never throws.
+ * When a household's last parent leaves (deletes their account) but students remain, nobody can use
+ * its Stripe customer any more: only the parent who pays can. A plan that still gives access is set
+ * to end with the period it's paid through, instead of charging that parent's card again; once it
+ * ends, its customer is deleted (closeBillingWithoutParent, from the webhook or the daily sweep).
+ * A plan that no longer gives access is closed now. If Stripe fails, the change is queued for the
+ * daily sweep. Never throws.
  */
-export async function endPlanWithoutParent(db: Db, stripe: Stripe | null, householdId: string): Promise<boolean> {
+export async function endPlanWithoutParent(db: Db, stripe: Stripe | null, householdId: string, now = new Date()): Promise<EndPlanResult> {
   const [parent] = await db
     .select({ id: users.id })
     .from(users)
     .where(and(eq(users.householdId, householdId), eq(users.role, "parent")))
     .limit(1);
-  if (parent) return false;
+  if (parent) return "none";
   const billing = await billingAccountFor(db, householdId);
-  if (!billing?.stripeSubscriptionId || billing.cancelAtPeriodEnd || !subscriptionGrantsAccess(billing.status)) return false;
-  if (!stripe) {
-    console.error("[billing] couldn't end a plan without a parent", "StripeNotConfigured");
-    return false;
+  if (!billing) return "none";
+  if (!subscriptionGrantsAccess(billing.status)) {
+    return (await closeBillingWithoutParent(db, stripe, householdId, now)) ? "closed" : "none";
   }
-  try {
-    await stripe.subscriptions.update(billing.stripeSubscriptionId, { cancel_at_period_end: true });
-  } catch (error) {
-    console.error("[billing] couldn't end a plan without a parent", errorName(error));
-    return false;
+  if (!billing.stripeSubscriptionId || billing.cancelAtPeriodEnd) return "ending";
+  const ended = await runOrQueueCleanup(db, stripe, { action: "cancel_at_period_end", stripeSubscriptionId: billing.stripeSubscriptionId }, now);
+  if (ended) {
+    await db.update(billingAccounts).set({ cancelAtPeriodEnd: true, updatedAt: now }).where(eq(billingAccounts.householdId, householdId));
+    await audit(db, "billing.subscription_changed", { metadata: { status: billing.status ?? "unknown", cancelAtPeriodEnd: true } });
   }
-  await db.update(billingAccounts).set({ cancelAtPeriodEnd: true, updatedAt: new Date() }).where(eq(billingAccounts.householdId, householdId));
-  await audit(db, "billing.subscription_changed", { metadata: { status: billing.status ?? "unknown", cancelAtPeriodEnd: true } });
-  return true;
+  return "ending";
 }

@@ -7,11 +7,11 @@ import { isUnder13 } from "../auth/age";
 import {
   type BillingRow,
   DAY_MS,
-  FREE_ACCESS_RENEW_DAYS,
   type GrantRow,
   type HouseholdAccess,
   addMonths,
   evaluateAccess,
+  freeAccessRenewalOpens,
   isGrantActive,
 } from "./entitlement";
 
@@ -145,9 +145,9 @@ export type FreeAccessResult =
   | { ok: false; error: FreeAccessError; renewableFrom?: Date | null };
 
 /**
- * Turns on FREE_ACCESS_MONTHS of full access for the user's household, or renews it when fewer
- * than 30 days are left. A renewal adds the months to the current end date, so renewing early
- * never costs days.
+ * Turns on FREE_ACCESS_MONTHS of full access for the user's household, or renews it in its last 30
+ * days (see freeAccessRenewalOpens). A renewal adds the months to the current end date, so renewing
+ * early never costs days.
  */
 export async function grantFreeAccess(db: Db, userId: string, now = new Date()): Promise<FreeAccessResult> {
   const eligible = await freeAccessEligibility(db, userId, now);
@@ -166,9 +166,9 @@ export async function grantFreeAccess(db: Db, userId: string, now = new Date()):
         .orderBy(desc(accessGrants.endsAt))
     ).filter((g) => isGrantActive(g, now));
     const current = running[0] ?? null;
-    const renewWindow = FREE_ACCESS_RENEW_DAYS * DAY_MS;
-    if (current && (current.endsAt === null || current.endsAt.getTime() - now.getTime() >= renewWindow)) {
-      return { ok: false, error: "not_yet_renewable", renewableFrom: current.endsAt && new Date(current.endsAt.getTime() - renewWindow) };
+    const opens = current?.endsAt ? freeAccessRenewalOpens(current.endsAt) : null;
+    if (current && (opens === null || now.getTime() < opens.getTime())) {
+      return { ok: false, error: "not_yet_renewable", renewableFrom: opens };
     }
     const endsAt = addMonths(current?.endsAt ?? now, months);
     await tx.insert(accessGrants).values({ householdId, kind: "free_access", startsAt: now, endsAt, grantedByUserId: userId });

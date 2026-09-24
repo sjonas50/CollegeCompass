@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
 import { env } from "@/env";
-import { BILLING_PATH, UNLOCK_PATH, formatAccessDate } from "@/lib/access/describe";
+import { BILLING_PATH, UNLOCK_PATH, formatAccessDate, formatStartDate } from "@/lib/access/describe";
 import { freeAccessEligibility } from "@/lib/access/service";
 import { requireUser } from "@/lib/auth/dal";
 import { CrisisLine } from "../access-ui";
@@ -40,7 +40,7 @@ export default async function FreeAccessPage() {
             Your family already has free access
             {running.endsAt ? <> until {formatAccessDate(running.endsAt)}</> : null}.
             {eligibility.access?.freeAccessRenewableFrom && (
-              <> You can renew it starting {formatAccessDate(eligibility.access.freeAccessRenewableFrom)}.</>
+              <> You can renew it starting {formatStartDate(eligibility.access.freeAccessRenewableFrom)}.</>
             )}
           </p>
         ) : (

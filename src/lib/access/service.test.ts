@@ -2,7 +2,8 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
 import { createChildAccount, registerParent, registerStudent } from "@/lib/accounts";
-import { DAY_MS, addMonths } from "./entitlement";
+import { formatStartDate } from "./describe";
+import { DAY_MS, addMonths, freeAccessRenewalOpens } from "./entitlement";
 import { exportHouseholdAccess, freeAccessEligibility, getHouseholdAccess, getUserAccess, grantFreeAccess } from "./service";
 
 // Access rules against a real (in-memory) database: trials at signup and at first check, free
@@ -172,7 +173,7 @@ describe("free access", () => {
 
     const early = new Date(first.endsAt.getTime() - 31 * DAY_MS);
     const refused = await grantFreeAccess(db, rosa, early);
-    expect(refused).toEqual({ ok: false, error: "not_yet_renewable", renewableFrom: new Date(first.endsAt.getTime() - 30 * DAY_MS) });
+    expect(refused).toEqual({ ok: false, error: "not_yet_renewable", renewableFrom: freeAccessRenewalOpens(first.endsAt) });
 
     const inWindow = new Date(first.endsAt.getTime() - 10 * DAY_MS);
     const renewed = await grantFreeAccess(db, rosa, inWindow);
@@ -181,6 +182,19 @@ describe("free access", () => {
     expect(access).toMatchObject({ full: true, sources: ["free_access"] });
     // Right after renewing, it can't be renewed again.
     expect(await grantFreeAccess(db, rosa, inWindow)).toMatchObject({ ok: false, error: "not_yet_renewable" });
+  });
+
+  it("renews on the day it says it will, even for a family on the East Coast", async () => {
+    const rosa = await parent();
+    // Turned on at 11:30 pm Eastern on September 23, 2026.
+    const first = await grantFreeAccess(db, rosa, new Date("2026-09-24T03:30:00Z"));
+    if (!first.ok) throw new Error(first.error);
+    // Noon Eastern on August 24, 2027: not yet, and the date given is August 25.
+    const refused = await grantFreeAccess(db, rosa, new Date("2027-08-24T16:00:00Z"));
+    expect(refused).toEqual({ ok: false, error: "not_yet_renewable", renewableFrom: new Date("2027-08-25T00:00:00Z") });
+    expect(!refused.ok && refused.renewableFrom && formatStartDate(refused.renewableFrom)).toBe("August 25, 2027");
+    // Just after midnight Eastern on August 25, it works.
+    expect(await grantFreeAccess(db, rosa, new Date("2027-08-25T04:05:00Z"))).toMatchObject({ ok: true, renewal: true });
   });
 
   it("can be turned on again after it ended", async () => {
@@ -203,7 +217,8 @@ describe("export", () => {
   it("lists each grant's kind and dates and the subscription's status, plan and period end, without Stripe ids", async () => {
     const rosa = await parent();
     const householdId = await householdOf(rosa);
-    await grantFreeAccess(db, rosa, TODAY);
+    // Now, not TODAY: the trial started when the household was created, so this sorts after it.
+    await grantFreeAccess(db, rosa);
     const periodEnd = new Date("2026-10-24T00:00:00Z");
     await db.insert(schema.billingAccounts).values({
       householdId,

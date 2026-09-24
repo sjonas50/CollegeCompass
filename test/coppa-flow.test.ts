@@ -146,7 +146,8 @@ describe("parent controls", () => {
 
     expect(await db.select().from(schema.users).where(eq(schema.users.id, childId))).toHaveLength(0);
     expect(await db.select().from(schema.sessions)).toHaveLength(0);
-    expect(await db.select().from(schema.aiUsage)).toHaveLength(0);
+    // AI usage (token counts and cost, no content) stays for spend history, unlinked from the child.
+    expect((await db.select().from(schema.aiUsage)).map((u) => u.userId)).toEqual([null]);
     expect(await db.select().from(schema.safetyEvents)).toHaveLength(0);
     expect(await db.select().from(schema.parentStudentLinks)).toHaveLength(0);
     const [record] = await db.select().from(schema.consentRecords);

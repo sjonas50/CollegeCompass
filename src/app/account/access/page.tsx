@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ButtonLink, Card, Notice, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
-import { BILLING_PATH, FREE_ACCESS_PATH, describeAccess, formatAccessDate } from "@/lib/access/describe";
+import { BILLING_PATH, FREE_ACCESS_PATH, describeAccess, formatStartDate } from "@/lib/access/describe";
 import { freeAccessEligibility, getUserAccess } from "@/lib/access/service";
 import { requireUser } from "@/lib/auth/dal";
 import { AccessStatus, CrisisLine, FreeFeatures, FullAccessFeatures } from "../access-ui";
@@ -78,7 +78,7 @@ export default async function AccessPage({ searchParams }: PageProps<"/account/a
                 won&apos;t need any documents.
               </p>
             ) : eligibility.error === "not_yet_renewable" && access.freeAccessRenewableFrom ? (
-              <p className="mt-1 text-sm">You can renew it starting {formatAccessDate(access.freeAccessRenewableFrom)}.</p>
+              <p className="mt-1 text-sm">You can renew it starting {formatStartDate(access.freeAccessRenewableFrom)}.</p>
             ) : (
               <p className="mt-1 text-sm">Free access isn&apos;t available for this account. Please ask a parent or guardian for help.</p>
             )}

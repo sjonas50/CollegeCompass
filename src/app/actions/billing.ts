@@ -30,7 +30,10 @@ export async function startCheckoutAction(formData: FormData) {
   const db = await getDb();
   const result = await tryStripe("checkout", () => startCheckout(db, stripe, parent.id, plan));
   if (!result) redirect(`${BILLING_PATH}?error=stripe`);
-  if (!result.ok) redirect(`${BILLING_PATH}?error=${result.error === "already_subscribed" ? "subscribed" : "unavailable"}`);
+  if (!result.ok) {
+    const error = result.error === "already_subscribed" ? "subscribed" : result.error === "not_payer" ? "not_payer" : "unavailable";
+    redirect(`${BILLING_PATH}?error=${error}`);
+  }
   redirect(result.url);
 }
 
@@ -43,6 +46,6 @@ export async function openPortalAction() {
   const db = await getDb();
   const result = await tryStripe("portal", () => openBillingPortal(db, stripe, parent.id));
   if (!result) redirect(`${BILLING_PATH}?error=stripe`);
-  if (!result.ok) redirect(`${BILLING_PATH}?error=unavailable`);
+  if (!result.ok) redirect(`${BILLING_PATH}?error=${result.error === "not_payer" ? "not_payer" : "unavailable"}`);
   redirect(result.url);
 }

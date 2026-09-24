@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
-import { BILLING_PATH, UNLOCK_PATH, formatAccessDate } from "@/lib/access/describe";
+import { BILLING_PATH, UNLOCK_PATH, formatStartDate } from "@/lib/access/describe";
 import { grantFreeAccess } from "@/lib/access/service";
 import { requireUser } from "@/lib/auth/dal";
 import type { FormState } from "@/lib/forms";
@@ -24,7 +24,7 @@ export async function requestFreeAccessAction(_prev: FormState, formData: FormDa
       case "not_yet_renewable":
         return {
           message: result.renewableFrom
-            ? `Your family already has free access. You can renew it starting ${formatAccessDate(result.renewableFrom)}.`
+            ? `Your family already has free access. You can renew it starting ${formatStartDate(result.renewableFrom)}.`
             : "Your family already has free access.",
         };
       default:
