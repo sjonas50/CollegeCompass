@@ -115,7 +115,7 @@ describe("export and delete isolate students", () => {
     const ana = await make("ana", "2026-09-21");
 
     const data = await exportStudentData(db, ana.id, ana.id);
-    if (!data) throw new Error("export failed");
+    if (!data || !("counselorConversations" in data)) throw new Error("expected Ana's own, complete export");
     const exported = JSON.stringify(data);
     expect(exported).toContain("ANA-SECRET");
     expect(exported).not.toMatch(/ben-|BEN-SECRET|2025-01-06/);

@@ -32,8 +32,26 @@ import { runOrQueueCleanup } from "./billing/cleanup";
 import { type Stripe, getStripe } from "./billing/stripe";
 
 /**
- * Everything we hold about a student, for a parent's (or the student's own) export request.
+ * AI features whose usage records show when a student talked with the AI counselor (each message
+ * is safety-checked before the counselor answers).
+ */
+const COUNSELOR_AI_FEATURES: readonly string[] = ["counselor", "safety", "safety_backup"];
+
+/** Written into a linked parent's copy of a teen's data, in place of the parts left out. */
+export const PARENT_COPY_NOTE =
+  "This teen has their own account, so their chats with the AI counselor stay private to them. " +
+  "This copy leaves out those chats, the counselor's notes about them, any safety flags, " +
+  "and the record of when they used the counselor.";
+
+/**
+ * Everything we hold about a student, for the student's own export request or a linked parent's.
  * Excludes the password hash and session tokens.
+ *
+ * Who asks matters. The student's own copy is complete. A linked parent's copy of a teen who owns
+ * their account (not parentManaged) leaves out counselor conversations (messages and the saved
+ * context), memory notes, safety events and counselor usage records, which stay private to the
+ * teen; `notIncluded` says so in the file. A parent's copy of a child they set up under 13 (with
+ * COPPA consent) is complete: parents may review what was collected from a child under 13.
  */
 export async function exportStudentData(db: Db, requesterId: string, studentId: string) {
   if (requesterId !== studentId && !(await isLinkedParent(db, requesterId, studentId))) {
@@ -57,8 +75,9 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
     .where(and(eq(users.id, studentId), eq(users.role, "student")));
   if (!student) return null;
   const { householdId, ...profile } = student;
+  const complete = requesterId === studentId || student.parentManaged;
 
-  const [consents, usage, safety, attempts, responses, results, runs, matches, goals] = await Promise.all([
+  const [consents, usage, attempts, responses, results, runs, matches, goals] = await Promise.all([
     db
       .select({
         method: consentRecords.method,
@@ -78,18 +97,6 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
       })
       .from(aiUsage)
       .where(eq(aiUsage.userId, studentId)),
-    db
-      .select({
-        category: safetyEvents.category,
-        severity: safetyEvents.severity,
-        excerpt: safetyEvents.excerpt,
-        createdAt: safetyEvents.createdAt,
-        // Whether and how staff reviewed it. Staff notes stay out until counsel decides.
-        reviewedAt: safetyEvents.reviewedAt,
-        reviewOutcome: safetyEvents.reviewOutcome,
-      })
-      .from(safetyEvents)
-      .where(eq(safetyEvents.userId, studentId)),
     db
       .select({
         id: assessmentAttempts.id,
@@ -135,13 +142,9 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
     .where(eq(collegeList.userId, studentId))
     .orderBy(asc(collegeList.createdAt), asc(collegeList.id));
 
-  await audit(db, "student.exported", { actorUserId: requesterId, subjectUserId: studentId });
-  return {
-    exportedAt: new Date().toISOString(),
+  const shared = {
     profile,
     consentRecords: consents,
-    aiUsage: usage,
-    safetyEvents: safety,
     parentInvites: await exportParentInvites(db, studentId),
     assessments: attempts.map((a) => ({
       ...a,
@@ -154,6 +157,20 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
     collegeList: listRows.map(({ userId: _userId, ...entry }) => entry),
     householdAccess,
   };
+  // The private parts are only read for a copy that includes them.
+  const counselor = complete ? await exportCounselorData(db, studentId) : null;
+
+  await audit(db, "student.exported", { actorUserId: requesterId, subjectUserId: studentId, metadata: { complete } });
+  const exportedAt = new Date().toISOString();
+  if (!counselor) {
+    return {
+      exportedAt,
+      notIncluded: PARENT_COPY_NOTE,
+      ...shared,
+      aiUsage: usage.filter((u) => !COUNSELOR_AI_FEATURES.includes(u.feature)),
+    };
+  }
+  return { exportedAt, ...shared, aiUsage: usage, ...counselor };
 }
 
 /**
@@ -243,15 +260,44 @@ export async function deleteEmptyHousehold(db: Db, householdId: string | null, d
   return true;
 }
 
-/** Phase 2 data: courses, roadmap progress, weekly steps, counselor conversations and memory. */
+/** Phase 2 planning data: courses, roadmap progress, weekly steps and reminder emails. */
 async function exportPlanningData(db: Db, studentId: string) {
-  const [courses, milestones, steps, conversations, messages, memory, reminders] = await Promise.all([
+  const [courses, milestones, steps, reminders] = await Promise.all([
     db.select().from(studentCourses).where(eq(studentCourses.userId, studentId)),
     db
       .select({ milestoneId: studentMilestones.milestoneId, status: studentMilestones.status, updatedAt: studentMilestones.updatedAt })
       .from(studentMilestones)
       .where(eq(studentMilestones.userId, studentId)),
     db.select().from(weeklySteps).where(eq(weeklySteps.userId, studentId)),
+    db.select({ weekStart: reminderSends.weekStart, claimedAt: reminderSends.claimedAt, sentAt: reminderSends.sentAt }).from(reminderSends).where(eq(reminderSends.userId, studentId)),
+  ]);
+  return {
+    courses: courses.map(({ userId: _userId, ...c }) => c),
+    roadmapProgress: milestones,
+    weeklySteps: steps.map(({ userId: _userId, ...s }) => s),
+    reminderEmails: reminders,
+  };
+}
+
+/**
+ * What stays private to a teen who owns their account: counselor conversations (with their saved
+ * context), memory notes and safety events. Only in the student's own copy, or a parent's copy of
+ * a child they set up under 13.
+ */
+async function exportCounselorData(db: Db, studentId: string) {
+  const [safety, conversations, messages, memory] = await Promise.all([
+    db
+      .select({
+        category: safetyEvents.category,
+        severity: safetyEvents.severity,
+        excerpt: safetyEvents.excerpt,
+        createdAt: safetyEvents.createdAt,
+        // Whether and how staff reviewed it. Staff notes stay out until counsel decides.
+        reviewedAt: safetyEvents.reviewedAt,
+        reviewOutcome: safetyEvents.reviewOutcome,
+      })
+      .from(safetyEvents)
+      .where(eq(safetyEvents.userId, studentId)),
     db.select().from(counselorConversations).where(eq(counselorConversations.userId, studentId)),
     db
       .select({
@@ -265,17 +311,13 @@ async function exportPlanningData(db: Db, studentId: string) {
       .innerJoin(counselorConversations, eq(counselorConversations.id, counselorMessages.conversationId))
       .where(eq(counselorConversations.userId, studentId)),
     db.select({ notes: counselorMemory.notes, updatedAt: counselorMemory.updatedAt }).from(counselorMemory).where(eq(counselorMemory.userId, studentId)),
-    db.select({ weekStart: reminderSends.weekStart, claimedAt: reminderSends.claimedAt, sentAt: reminderSends.sentAt }).from(reminderSends).where(eq(reminderSends.userId, studentId)),
   ]);
   return {
-    courses: courses.map(({ userId: _userId, ...c }) => c),
-    roadmapProgress: milestones,
-    weeklySteps: steps.map(({ userId: _userId, ...s }) => s),
+    safetyEvents: safety,
     counselorConversations: conversations.map(({ userId: _userId, ...c }) => ({
       ...c,
       messages: messages.filter((m) => m.conversationId === c.id),
     })),
     counselorMemory: memory[0]?.notes ?? [],
-    reminderEmails: reminders,
   };
 }

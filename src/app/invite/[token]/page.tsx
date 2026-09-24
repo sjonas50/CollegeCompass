@@ -23,19 +23,22 @@ function errorMessage(error: string | string[] | undefined, name: string): strin
   }
 }
 
+/** What a linked parent can do, matching the parent page and exportStudentData's parent copy. */
 function WhatLinkingMeans({ name }: { name: string }) {
   return (
     <Card>
       <h2 className="font-medium">As a linked parent or guardian, you can</h2>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
         <li>See {name}&apos;s progress: activities, goals, roadmap, classes and college list</li>
+        <li>Change {name}&apos;s grade and weekly reminder emails</li>
         <li>Manage your family&apos;s plan and billing</li>
-        <li>Export or delete {name}&apos;s account and data</li>
+        <li>Download a copy of {name}&apos;s data, or delete {name}&apos;s account</li>
       </ul>
       <h2 className="mt-4 font-medium">What stays private</h2>
       <p className="mt-1 text-sm">
-        Conversations with the AI counselor stay private to {name}. You won&apos;t see them. {name} keeps their own
-        account and sign-in.
+        Conversations with the AI counselor stay private to {name}. You won&apos;t see them on your parent page, and
+        your download of {name}&apos;s data leaves them out, along with the counselor&apos;s notes and any safety
+        flags. {name} keeps their own account and sign-in.
       </p>
     </Card>
   );

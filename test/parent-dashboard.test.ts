@@ -270,7 +270,7 @@ describe("parent page", () => {
 
     const html = await renderParentPage();
     const t = text(html);
-    expect(t).toContain("Conversations with the AI counselor stay private to your child.");
+    expect(t).toContain("Chats with the AI counselor aren't shown on this page.");
     expect(t).toContain("Registered Nurses");
     expect(t).toContain("1 of 3 done");
     expect(t).toContain("11th grade roadmap");

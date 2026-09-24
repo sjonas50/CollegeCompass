@@ -27,8 +27,8 @@ describe("Phase 2 data privacy", () => {
     expect(data?.courses).toHaveLength(1);
     expect(data?.roadmapProgress).toHaveLength(1);
     expect(data?.weeklySteps).toHaveLength(1);
-    expect(data?.counselorConversations[0].messages).toHaveLength(1);
-    expect(data?.counselorMemory).toEqual(["Wants to study biology"]);
+    // The student's own copy is complete.
+    expect(data).toMatchObject({ counselorConversations: [{ messages: [{ content: "hi" }] }], counselorMemory: ["Wants to study biology"] });
     expect(data?.reminderEmails).toHaveLength(1);
     expect(JSON.stringify(data)).not.toContain(userId.slice(0, 0) + "passwordHash");
 

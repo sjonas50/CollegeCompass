@@ -47,7 +47,8 @@ export function ChildAccountForm({ consentToken }: { consentToken?: string }) {
           <p className="mt-1 text-muted">
             College Compass stores your child&apos;s first name, birthday, grade, their assessment answers and plans,
             and their conversations with our AI counselor, to guide them toward college. We never sell their data,
-            show ads, or use it to train AI. You can export or delete everything at any time from your parent page.
+            show ads, or use it to train AI. At any time, you can download a copy of everything, including their
+            counselor chats, or delete it all from your parent page.
           </p>
           <label className="mt-3 flex items-start gap-2">
             <input type="checkbox" name="consent" className="mt-1 size-4" />
@@ -55,6 +56,10 @@ export function ChildAccountForm({ consentToken }: { consentToken?: string }) {
           </label>
           <FieldError id="consent-error" errors={state?.errors?.consent} />
         </div>
+        <p className="text-sm text-muted">
+          If your child is 13 or older, the account is theirs. You&apos;ll see their progress and plans, but their chats
+          with our AI counselor stay private to them, and your download of their data leaves those chats out.
+        </p>
         {/* Unticked by default, so a parent's own quiz isn't added to the child by mistake. */}
         <SavedQuizField label="My child took the free quiz on this device. Add those results to their account." defaultChecked={false} />
         <Button type="submit" disabled={pending} className="w-full sm:w-auto">

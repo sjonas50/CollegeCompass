@@ -92,7 +92,8 @@ describe("sending an invitation", () => {
 
     expect(sent).toHaveLength(1);
     expect(sent[0].to).toBe("rosa.parent@example.com");
-    expect(sent[0].subject).toBe("Ana invited you to College Compass");
+    expect(sent[0].subject).toBe("A student invited you to College Compass");
+    expect(sent[0].text).toContain("Ana uses College Compass");
     expect(sent[0].text).toContain(`${APP}/invite/${token}`);
     expect(sent[0].text).toContain("stay private");
 
@@ -113,8 +114,10 @@ describe("sending an invitation", () => {
     expect(entry).toMatchObject({ actorUserId: studentId, subjectUserId: studentId, metadata: null });
   });
 
-  it("keeps line breaks in a display name out of the email subject", () => {
-    expect(inviteEmail("a@example.com", "Ana\r\nBcc: x@example.com", "https://x").subject).toBe("Ana Bcc: x@example.com invited you to College Compass");
+  it("keeps line breaks in a display name out of the email", () => {
+    const email = inviteEmail("a@example.com", "Ana\r\nBcc: x@example.com", "https://x");
+    expect(email.subject).toBe("A student invited you to College Compass");
+    expect(email.text).not.toContain("Bcc");
   });
 
   it("allows at most three waiting invitations; cancelling one makes room", async () => {
@@ -628,7 +631,7 @@ describe("the invitation page", () => {
     const html = await invitePage(token);
     expect(text(html)).toContain("Ana invited you to College Compass");
     expect(text(html)).toContain("Conversations with the AI counselor stay private to Ana");
-    expect(text(html)).toContain("Export or delete Ana's account");
+    expect(text(html)).toContain("Download a copy of Ana's data, or delete Ana's account");
     expect(html).toContain(`name="next" value="/invite/${token}"`);
     expect(html).toContain(`href="/login?next=${encodeURIComponent(`/invite/${token}`)}"`);
     expect(html).not.toContain("Accept and link");

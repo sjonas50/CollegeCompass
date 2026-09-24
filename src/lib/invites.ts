@@ -1,7 +1,17 @@
+import { createHmac } from "node:crypto";
 import { and, asc, count, eq, gt, isNull, ne, or } from "drizzle-orm";
 import * as z from "zod";
 import type { Db } from "@/db";
-import { accessGrants, billingAccounts, households, parentInvites, parentStudentLinks, users } from "@/db/schema";
+import { env } from "@/env";
+import {
+  type SubscriptionStatus,
+  accessGrants,
+  billingAccounts,
+  households,
+  parentInvites,
+  parentStudentLinks,
+  users,
+} from "@/db/schema";
 import { LIVE_STATUSES, subscriptionGrantsAccess } from "./access/entitlement";
 import { audit } from "./audit";
 import { generateToken, hashToken } from "./auth/tokens";
@@ -17,6 +27,10 @@ export const INVITE_TTL_DAYS = 14;
 export const MAX_PENDING_INVITES = 3;
 /** Invitation emails a student can send in a day, cancelled ones included. */
 export const MAX_INVITE_SENDS_PER_DAY = 5;
+/** Invitation emails one address can get in a day (UTC), from any number of students. */
+export const MAX_INVITES_PER_RECIPIENT_PER_DAY = 3;
+/** The longest student name the invitation email shows. */
+export const EMAIL_NAME_MAX = 30;
 
 export const InviteEmailSchema = z.object({
   parentEmail: z.email("Enter a valid email address.").trim().toLowerCase().max(254),
@@ -56,38 +70,71 @@ export type CreateInviteOptions = {
   now?: Date;
 };
 
+// Words of letters (any language) joined by single spaces, apostrophes or hyphens. No digits, dots,
+// slashes, @ or other symbols, so a name can't be a link, an email address or a phone number.
+const PLAIN_NAME = /^[\p{L}\p{M}]+(?:[ '\u2019-][\p{L}\p{M}]+)*$/u;
+
+/**
+ * The student's name as the invitation email shows it, or null when it's anything but a short,
+ * plain name. Names are typed by students and the email goes to someone who never signed up for
+ * it, so it must not carry links, spam or control characters.
+ */
+export function inviteEmailName(displayName: string): string | null {
+  const name = displayName.normalize("NFC").replace(/\s+/g, " ").trim();
+  return name.length <= EMAIL_NAME_MAX && PLAIN_NAME.test(name) ? name : null;
+}
+
 export function inviteEmail(to: string, displayName: string, link: string): Email {
-  // Names are typed by students; keep line breaks and other control characters out of the subject.
-  const studentName = displayName.replace(/[\u0000-\u001f\u007f]+/g, " ").trim() || "A student";
+  const who = inviteEmailName(displayName) ?? "A student";
   return {
     to,
-    subject: `${studentName} invited you to College Compass`,
+    // Nothing a student typed goes in the subject.
+    subject: "A student invited you to College Compass",
     text: [
       "Hello,",
       "",
-      `${studentName} uses College Compass to explore careers and plan for college or training.`,
+      `${who} uses College Compass to explore careers and plan for college or training.`,
       "They invited you, as their parent or guardian, to link your account to theirs.",
       "",
-      "As a linked parent, you can:",
+      "As a linked parent or guardian, you can:",
       "- see their progress: activities, goals, roadmap, classes and college list",
+      "- change their grade and their weekly reminder emails",
       "- manage your family's plan and billing",
-      "- export or delete their account",
+      "- download a copy of their data, or delete their account",
       "",
-      "Their conversations with the AI counselor stay private to them.",
+      "Their chats with the AI counselor stay private to them. You won't see those chats, and the copy of their data you can download leaves them out, along with the counselor's notes and any safety flags.",
       "",
       "Accept the invitation here:",
       link,
       "",
-      `The link works for ${INVITE_TTL_DAYS} days. If you don't know ${studentName}, you can ignore this email.`,
+      `The link works for ${INVITE_TTL_DAYS} days. If you weren't expecting this email, you can ignore it.`,
       "We didn't save your email address, and we won't write to you again about this.",
     ].join("\n"),
   };
 }
 
 /**
+ * The rate-limit key for invitations to one address. Plus-tags (and dots, for Gmail) don't make a
+ * new address. The key is keyed with the server secret and changes every day (UTC), so neither the
+ * address nor a hash anyone could match it against is stored.
+ */
+export function inviteRecipientKey(address: string, now: Date): string {
+  const email = address.trim().toLowerCase();
+  const at = email.lastIndexOf("@");
+  let local = (at < 0 ? email : email.slice(0, at)).replace(/\+.*$/, "");
+  let domain = at < 0 ? "" : email.slice(at + 1);
+  if (domain === "googlemail.com") domain = "gmail.com";
+  if (domain === "gmail.com") local = local.replaceAll(".", "");
+  const day = now.toISOString().slice(0, 10);
+  const secret = env().CRON_SECRET ?? "college-compass-dev-rate-key";
+  return createHmac("sha256", secret).update(`parent_invite\n${day}\n${local}@${domain}`).digest("base64url");
+}
+
+/**
  * Invites a parent or guardian by email. Only students who own their account (13+, signed up on
  * their own) and have no linked parent can invite. At most 3 invitations wait at once and 5 are
- * sent a day. The email address is used to send and then forgotten; only the token's hash is kept.
+ * sent a day; one address gets at most 3 a day from anyone. The email address is used to send and
+ * then forgotten; only the token's hash is kept.
  */
 export async function createInvite(
   db: Db,
@@ -117,6 +164,10 @@ export async function createInvite(
       .where(and(eq(parentInvites.studentUserId, studentId), pending(now)));
     if (n >= MAX_PENDING_INVITES) return { ok: false as const, error: "too_many_pending" as const };
     if (!(await consumeRateLimit(tx, `parent_invite:student:${studentId}`, MAX_INVITE_SENDS_PER_DAY, DAY_MS, now))) {
+      return { ok: false as const, error: "rate_limited" as const };
+    }
+    // The same answer as above, so a student can't learn that others invited this address.
+    if (!(await consumeRateLimit(tx, `parent_invite:to:${inviteRecipientKey(to, now)}`, MAX_INVITES_PER_RECIPIENT_PER_DAY, DAY_MS, now))) {
       return { ok: false as const, error: "rate_limited" as const };
     }
 

@@ -21,6 +21,20 @@ function gradeText(grade: number | null) {
   return grade > 12 ? "Finished high school" : `Grade ${grade}`;
 }
 
+/**
+ * What the data download holds (see exportStudentData): everything for a child the parent set up
+ * under 13, and no counselor chats, notes or safety flags for a teen who owns their account.
+ */
+function DownloadNote({ name, parentManaged }: { name: string; parentManaged: boolean }) {
+  return (
+    <p className="mt-3 text-sm text-muted">
+      {parentManaged
+        ? `You set up this account when ${name} was under 13, so you have the right to review everything we collect from ${name}. The download includes their chats with the AI counselor, even though this page doesn't show them.`
+        : `${name} owns this account, so their chats with the AI counselor stay private to them. The download leaves out those chats, the counselor's notes and any safety flags.`}
+    </p>
+  );
+}
+
 export default async function ParentHome({ searchParams }: PageProps<"/parent">) {
   const parent = await requireUser(["parent"]);
   const [children, access] = await Promise.all([parentDashboard(await getDb(), parent.id), accessFor(parent)]);
@@ -38,8 +52,8 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
         {stale && <Notice>The school year changed since that page loaded, so we didn&apos;t save the grade. Please pick it again.</Notice>}
         {children.length > 0 && (
           <p className="rounded-lg border border-border px-3 py-2 text-sm">
-            <span className="font-medium">Conversations with the AI counselor stay private to your child.</span> You see
-            their progress and plans here, not what they talk about.
+            <span className="font-medium">Chats with the AI counselor aren&apos;t shown on this page.</span> You see
+            progress and plans here, not what your child talks about.
           </p>
         )}
         {children.length === 0 && (
@@ -62,12 +76,13 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
             <ChildProgressSummary name={child.displayName} progress={child.progress} />
             <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
               <ButtonLink href={`/api/parent/children/${child.id}/export`} variant="secondary" prefetch={false}>
-                Export data
+                Download data
               </ButtonLink>
               <ButtonLink href={`/parent/children/${child.id}/delete`} variant="secondary">
                 Delete
               </ButtonLink>
             </div>
+            <DownloadNote name={child.displayName} parentManaged={child.parentManaged} />
             <details className="mt-3 border-t border-border pt-3">
               <summary className="min-h-11 cursor-pointer content-center text-sm font-medium">Settings</summary>
               <div className="mt-3 space-y-4">
