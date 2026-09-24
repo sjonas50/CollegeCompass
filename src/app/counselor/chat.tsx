@@ -19,8 +19,11 @@ const STARTERS = [
 
 const MAX_CHARS = 2000;
 
-/** Text with our page paths and https addresses as links. */
-function Linked({ text }: { text: string }) {
+/**
+ * Text with our pages and https addresses as links. Our pages show their names (the path is still
+ * the link's address); other websites open in a new tab and say so.
+ */
+export function Linked({ text }: { text: string }) {
   return (
     <>
       {chatLinks(text).map((s, i) =>
@@ -29,9 +32,13 @@ function Linked({ text }: { text: string }) {
         ) : s.external ? (
           <a key={i} href={s.href} target="_blank" rel="noopener noreferrer" className="break-words underline underline-offset-2">
             {s.text}
+            <span className="sr-only"> (opens in a new tab)</span>
+            <span aria-hidden="true" className="ml-0.5">
+              ↗
+            </span>
           </a>
         ) : (
-          <Link key={i} href={s.href} className="break-words underline underline-offset-2">
+          <Link key={i} href={s.href} lang={s.lang} hrefLang={s.lang} className="underline underline-offset-2">
             {s.text}
           </Link>
         ),
