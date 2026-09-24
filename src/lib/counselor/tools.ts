@@ -33,7 +33,7 @@ export function counselorTools(ctx: ToolContext): BetaRunnableTool[] {
   const career = betaZodTool({
     name: "get_career",
     description:
-      "Get details for one career by its O*NET code: what the work is, how much preparation it usually needs, the interests of people who enjoy it, and related college majors.",
+      "Get details for one career by its O*NET code: what the work is, how much preparation it usually needs, the interests of people who enjoy it, and related college majors. Pass a related major's cip4 (or cipCode) to search_colleges.",
     inputSchema: z.object({ code: z.string().regex(/^\d{2}-\d{4}\.\d{2}$/).describe("O*NET-SOC code, e.g. 15-1252.00") }),
     run: async ({ code }) => {
       const c = await getCareer(ctx.db, code);
@@ -45,7 +45,14 @@ export function counselorTools(ctx: ToolContext): BetaRunnableTool[] {
         preparation: c.jobZone ? JOB_ZONE_INFO[c.jobZone]?.detail : null,
         path: c.pathway === "degree" ? "usually a college degree" : "usually career training",
         topInterests: c.interests.slice(0, 2).map((i) => RIASEC_INFO[i.area].name),
-        relatedMajors: c.majors.map((m) => m.title),
+        relatedMajors: c.majors.map((m) => {
+          const p = c.majorPaths[m.cipCode];
+          return {
+            title: m.title,
+            cipCode: m.cipCode,
+            ...(p?.kind === "colleges" ? { cip4: p.cip4, colleges: p.colleges } : p?.kind === "graduate" ? { studiedAfterCollege: true } : { offeredAtColleges: false }),
+          };
+        }),
       });
     },
   });

@@ -63,7 +63,9 @@ export function StudentSettings({ grade, reminders }: { grade: number | null; re
           <form action={setMyRemindersAction} className="flex flex-wrap items-center gap-3">
             <label className="flex min-h-11 items-center gap-2 text-sm">
               <input type="checkbox" name="enabled" defaultChecked={reminders.enabled} className="size-4" />
-              Send me a weekly reminder email with my steps
+              {grade !== null && grade > MAX_GRADE
+                ? "Email me when applications on my list are due soon"
+                : "Send me a weekly reminder email with my steps"}
             </label>
             <Button type="submit" variant="secondary">Save</Button>
           </form>

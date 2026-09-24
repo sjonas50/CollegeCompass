@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { PAGE_LANG_HEADER, pageLangForPath } from "@/app/page-lang";
 
 // Kept in sync with src/lib/auth/cookies.ts; proxy code shouldn't import server modules.
 const SESSION_COOKIE = "cc_session";
@@ -24,7 +25,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  const response = NextResponse.next();
+  // Tells the root layout the page's language, so <html lang> is right from the first load. Always
+  // set, never forwarded, so a client-sent header is overwritten.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(PAGE_LANG_HEADER, pageLangForPath(pathname));
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
   if (token) {
     response.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,

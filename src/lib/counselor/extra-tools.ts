@@ -1,7 +1,7 @@
 import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import * as z from "zod";
 import type { Db } from "@/db";
-import { listSummary, upcomingDeadlines } from "../applications/service";
+import { collegeListForCounselor } from "../applications/service";
 import { planSummary } from "../courses/service";
 import { roadmapSummary } from "../roadmap";
 import type { ToolContext } from "./tools";
@@ -32,14 +32,9 @@ export async function counselorExtraTools(
   const list = betaZodTool({
     name: "get_my_college_list",
     description:
-      "Get the student's own list of colleges and programs: each one's status (considering, applying, applied, got in...), deadline, application checklist progress, and any financial aid offer they entered, with gift aid, net price and loans worked out. Also the deadlines in the next 30 days.",
+      "Get the student's own list of colleges and programs: each one's status (considering, applying, applied, got in...), deadline, application checklist progress, and any financial aid offer they entered, with gift aid, net price and loans worked out. `today` is the student's date. Each entry's `daysLeft` counts days to its deadline (below zero once it has passed), and `pastDue` is true when the deadline passed before the application was marked as sent. Use these instead of working out dates yourself.",
     inputSchema: z.object({}),
-    run: async () =>
-      JSON.stringify({
-        list: await listSummary(db, student.id),
-        upcoming: await upcomingDeadlines(db, student.id, opts.now, 30),
-        page: "/applications",
-      }),
+    run: async () => JSON.stringify({ ...(await collegeListForCounselor(db, student.id, opts.now)), page: "/applications" }),
   });
   return [plan, roadmap, list];
 }

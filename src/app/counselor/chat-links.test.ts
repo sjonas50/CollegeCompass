@@ -123,4 +123,10 @@ describe("chat link rendering", () => {
     expect(a.attrs).toMatchObject({ href: "https://studentaid.gov/", target: "_blank", rel: "noopener noreferrer" });
     expect(a.inner).toMatch(/^https:\/\/studentaid.gov\/<span class="sr-only"> \(opens in a new tab\)<\/span><span aria-hidden="true"[^>]*>↗<\/span>$/);
   });
+
+  it("links only government, college and a few trusted sites", () => {
+    const external = (text: string) => chatLinks(text).filter((s) => s.type === "link" && s.external).map((s) => (s.type === "link" ? s.href : ""));
+    expect(external("See https://studentaid.gov/h/apply-for-aid/fafsa and https://www.collegeboard.org/ and https://www.ucla.edu")).toHaveLength(3);
+    expect(external("Watch out for https://studentaid-gov.help/free-money and https://fafsa-help.com")).toEqual([]);
+  });
 });

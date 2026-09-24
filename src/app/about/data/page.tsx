@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Card, PageHeading } from "@/components/ui";
+import { SCORECARD_RELEASE } from "@/lib/colleges/describe";
 
 export const metadata: Metadata = { title: "Data sources" };
 
@@ -36,7 +37,8 @@ export default function DataSourcesPage() {
           <strong>Colleges and programs.</strong> College costs, graduation rates and earnings come from the U.S.
           Department of Education&apos;s <a className="underline" href="https://collegescorecard.ed.gov/data/">College Scorecard</a>{" "}
           institution data. The programs each college offers, and what their graduates typically earn and owe, come from
-          the College Scorecard field-of-study data. Both are from the June 2026 release. Net price is what a year
+          the College Scorecard field-of-study data. Both are from the {SCORECARD_RELEASE} release. Graduation rates
+          combine two starting years and aren&apos;t shown when fewer than 30 students started. Net price is what a year
           costs, including housing, food and books, after grants and scholarships. It&apos;s an average for new
           full-time students who got financial aid (at public colleges, in-state students). When grants add up to more
           than the cost, we show $0. College Compass is not part of, or endorsed by, the U.S. Department of Education.
