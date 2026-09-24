@@ -45,3 +45,6 @@ next-env.d.ts
 
 # allow the documented example env file
 !.env.example
+
+# Claude Code worktrees (parallel agent checkouts)
+/.claude/worktrees/
