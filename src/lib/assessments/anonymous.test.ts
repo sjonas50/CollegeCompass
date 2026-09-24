@@ -3,12 +3,16 @@ import {
   MAX_SAVED_ASSESSMENT_LENGTH,
   SAVED_ASSESSMENT_STORAGE_KEY,
   answeredCount,
+  describeSavedQuiz,
   emptySavedAssessment,
+  interestAreasText,
   isFinished,
   parseStoredAssessment,
   readSavedAssessment,
   removeSavedAssessment,
+  savedWhen,
   serializeSavedAssessment,
+  topInterestsText,
   validateAreaScores,
   validateSavedAssessment,
   withAnswer,
@@ -130,10 +134,11 @@ describe("parseStoredAssessment (lenient, for showing progress)", () => {
 
 describe("progress helpers", () => {
   it("builds up answers one at a time", () => {
-    let saved = withAnswer(null, "R1", 4);
-    expect(saved).toEqual({ v: 1, instrument: "interests", version: INSTRUMENTS.interests.version, answers: { R1: 4 } });
-    saved = withAnswer(saved, "R1", 2);
+    let saved = withAnswer(null, "R1", 4, 1_000);
+    expect(saved).toEqual({ v: 1, instrument: "interests", version: INSTRUMENTS.interests.version, answers: { R1: 4 }, savedAt: 1_000 });
+    saved = withAnswer(saved, "R1", 2, 2_000);
     expect(saved.answers).toEqual({ R1: 2 });
+    expect(saved.savedAt).toBe(2_000);
     expect(answeredCount(saved)).toBe(1);
     expect(isFinished(saved)).toBe(false);
     expect(isFinished(finished)).toBe(true);
@@ -166,6 +171,50 @@ describe("browser storage", () => {
   it("stores only the answers and the item version, never scores", () => {
     const stored = JSON.parse(serializeSavedAssessment({ ...finished, scores: { R: 40 } } as never));
     expect(Object.keys(stored).sort()).toEqual(["answers", "instrument", "v", "version"]);
+  });
+
+  it("remembers when the quiz was answered in the browser, but never sends it", () => {
+    const storage = new MemoryStorage();
+    const dated = { ...finished, savedAt: Date.UTC(2026, 8, 23, 18) };
+    writeSavedAssessment(storage, dated);
+    expect(readSavedAssessment(storage)).toEqual(dated);
+    // The server's strict check accepts exactly what's sent.
+    expect(JSON.parse(serializeSavedAssessment(dated))).not.toHaveProperty("savedAt");
+    expect(validateSavedAssessment(serializeSavedAssessment(dated)).ok).toBe(true);
+    // A broken time is dropped, not the answers.
+    for (const savedAt of ["yesterday", -5, null]) {
+      expect(parseStoredAssessment(JSON.stringify({ ...finished, savedAt }))).toEqual(finished);
+    }
+  });
+});
+
+describe("describing a saved quiz on a shared device", () => {
+  // Noon local time, so the day boundaries don't depend on the machine's time zone.
+  const now = new Date(2026, 8, 24, 12);
+  const at = (month: number, day: number, year = 2026) => new Date(year, month, day, 12).getTime();
+
+  it("says when it was taken in plain words", () => {
+    expect(savedWhen(at(8, 24), now)).toBe("today");
+    expect(savedWhen(new Date(2026, 8, 24, 0, 5).getTime(), now)).toBe("today");
+    expect(savedWhen(at(8, 23), now)).toBe("yesterday");
+    expect(savedWhen(new Date(2026, 8, 23, 23, 55).getTime(), now)).toBe("yesterday");
+    expect(savedWhen(at(8, 2), now)).toBe("on September 2");
+    expect(savedWhen(at(11, 30, 2025), now)).toBe("on December 30, 2025");
+    expect(savedWhen(undefined, now)).toBeNull();
+  });
+
+  it("names the top interests without assuming whose quiz it is", () => {
+    const answers = Object.fromEntries(INTEREST_ITEMS.map((i) => [i.id, i.area === "A" ? 5 : i.area === "S" ? 4 : i.area === "E" ? 3 : 1]));
+    expect(topInterestsText(answers)).toBe("artistic, social and enterprising");
+    expect(interestAreasText("RI")).toBe("realistic and investigative");
+    expect(interestAreasText("C")).toBe("conventional");
+    const saved = { ...emptySavedAssessment(), answers, savedAt: at(8, 23) };
+    expect(describeSavedQuiz(saved, now)).toBe(
+      "Someone finished the free interest quiz on this device yesterday. Their top interests were artistic, social and enterprising.",
+    );
+    expect(describeSavedQuiz({ ...saved, savedAt: undefined }, now)).toBe(
+      "Someone finished the free interest quiz on this device. Their top interests were artistic, social and enterprising.",
+    );
   });
 });
 

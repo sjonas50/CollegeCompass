@@ -21,3 +21,11 @@ export function ForgetAndContinue({ href, message }: { href: string; message: st
     </p>
   );
 }
+
+/** The results are in an account now, so the browser's copy goes (the page stays). */
+export function ForgetSavedQuiz() {
+  useEffect(() => {
+    forgetSavedAssessment();
+  }, []);
+  return null;
+}

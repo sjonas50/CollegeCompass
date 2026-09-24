@@ -15,14 +15,19 @@ import { isFinished } from "@/lib/assessments/anonymous";
 import type { FormState } from "@/lib/forms";
 import { useSavedAssessment } from "../try/saved-store";
 
-export function StudentSignup({ startWithParentStep }: { startWithParentStep: boolean }) {
+/**
+ * `savingQuiz`: the visitor came from "Save my results" on the free quiz's results, so the box that
+ * adds the quiz saved on this device starts ticked. Otherwise it starts unticked: on a shared
+ * computer the saved quiz may be someone else's.
+ */
+export function StudentSignup({ startWithParentStep, savingQuiz = false }: { startWithParentStep: boolean; savingQuiz?: boolean }) {
   const [age, ageAction, agePending, ageValues] = useFormAction<AgeGateState>(
     checkAgeAction,
     startWithParentStep ? { step: "child" } : undefined,
   );
 
   if (age && "step" in age && age.step === "child") return <ParentHandoff />;
-  if (age && "step" in age && age.step === "teen") return <TeenSignup birthDate={age.birthDate} />;
+  if (age && "step" in age && age.step === "teen") return <TeenSignup birthDate={age.birthDate} savingQuiz={savingQuiz} />;
 
   const errors = age && "errors" in age ? age.errors : undefined;
   return (
@@ -47,7 +52,7 @@ export function StudentSignup({ startWithParentStep }: { startWithParentStep: bo
   );
 }
 
-function TeenSignup({ birthDate }: { birthDate: string }) {
+function TeenSignup({ birthDate, savingQuiz }: { birthDate: string; savingQuiz: boolean }) {
   const [state, action, pending, values] = useFormAction<FormState>(registerStudentAction, undefined);
   return (
     <>
@@ -68,7 +73,7 @@ function TeenSignup({ birthDate }: { birthDate: string }) {
             required
             errors={state?.errors?.password}
           />
-          <SavedQuizField />
+          <SavedQuizField defaultChecked={savingQuiz} />
           <Button type="submit" disabled={pending} className="w-full sm:w-auto">
             Create account
           </Button>

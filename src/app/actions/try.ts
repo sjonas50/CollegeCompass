@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import {
   type FreeMatchesResult,
@@ -7,6 +8,7 @@ import {
   importSavedAssessment,
   matchFreeAssessment,
   rateKeySecret,
+  removeImportedAssessment,
 } from "@/lib/assessments/import";
 import { requireUser } from "@/lib/auth/dal";
 import { clientIp } from "@/lib/request";
@@ -40,4 +42,18 @@ export async function importSavedResultsAction(saved: unknown): Promise<ImportSa
     console.error("[try] import failed", error instanceof Error ? error.name : "unknown");
     return { ok: false, error: "failed", message: "Something went wrong. Please try again." };
   }
+}
+
+/**
+ * "These weren't my answers": takes back free quiz results just brought into the signed-in
+ * student's account (see /try/saved), so they can take the interests activity themselves.
+ */
+export async function removeImportedResultsAction(formData: FormData) {
+  const student = await requireUser(["student"]);
+  const attemptId = formData.get("attemptId");
+  const res =
+    typeof attemptId === "string" && attemptId
+      ? await removeImportedAssessment(await getDb(), student.id, student.id, attemptId)
+      : { ok: false as const };
+  redirect(res.ok ? "/discover/interests" : "/try/saved?undo=failed");
 }

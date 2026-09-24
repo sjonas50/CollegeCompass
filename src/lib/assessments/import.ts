@@ -1,11 +1,12 @@
 import "server-only";
 import { createHmac } from "node:crypto";
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import type { Db } from "@/db";
 import { assessmentAttempts, assessmentResponses, assessmentResults, users } from "@/db/schema";
 import { env } from "@/env";
 import { isLinkedParent } from "../accounts";
 import { audit } from "../audit";
+import { forgetSavedContexts } from "../counselor/saved-context";
 import { templateExplanation } from "../matching/explain";
 import { type Pathway, fitLabel, pathwayFor, rankForStudent } from "../matching/match";
 import { computeMatches, loadOccupationProfiles } from "../matching/service";
@@ -20,6 +21,7 @@ import { SCORING_VERSION, score } from "./scoring";
  */
 
 const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
 
 // ---------------------------------------------------------------------------
 // Matches for visitors
@@ -27,8 +29,13 @@ const HOUR = 60 * 60 * 1000;
 
 /** Fewer than a signed-in student sees; saving the results shows the full list. */
 export const FREE_MATCH_LIMITS = { degree: 6, training: 6 } as const;
-/** Generous for a person going back and forth, tight enough to stop scraping. */
-export const FREE_MATCH_RATE_LIMIT = { limit: 30, windowMs: HOUR } as const;
+/**
+ * Per internet connection, not per person: a family, a classroom or a whole library can share one
+ * address. The results page keeps the matches it found for the tab, so a visitor uses about one
+ * lookup per set of answers. Each lookup is cheap and the data is public (O*NET); this only stops
+ * a script from hammering the server.
+ */
+export const FREE_MATCH_RATE_LIMIT = { limit: 300, windowMs: HOUR } as const;
 
 /** Used only in development and tests, where CRON_SECRET may be unset (production requires it). */
 const DEV_RATE_KEY_SECRET = "college-compass-dev-rate-key";
@@ -163,6 +170,8 @@ export async function importSavedAssessment(
         userId: studentUserId,
         instrument: "interests",
         instrumentVersion: INSTRUMENTS.interests.version,
+        // Started and finished at the same moment: that's how an import is recognized later
+        // (see isImported).
         startedAt: now,
         completedAt: now,
       })
@@ -183,4 +192,87 @@ export async function importSavedAssessment(
     metadata: { instrument: "interests", via },
   });
   return outcome;
+}
+
+// ---------------------------------------------------------------------------
+// Taking an import back
+// ---------------------------------------------------------------------------
+
+/**
+ * How long results brought in from the free quiz can be taken back. On a shared computer, someone
+ * else's quiz can end up in an account; without this, the student couldn't take the interests
+ * activity themselves until the 90-day retake date.
+ */
+export const IMPORT_UNDO_DAYS = 14;
+
+/**
+ * Imports are created finished in one step, so they start and finish at the same moment. An attempt
+ * taken in the account is always started (one request) before it's finished (a later one).
+ */
+function isImported(attempt: { startedAt: Date; completedAt: Date | null }): boolean {
+  return attempt.completedAt !== null && attempt.startedAt.getTime() === attempt.completedAt.getTime();
+}
+
+export type UndoableImport = { attemptId: string; code: string; undoUntil: Date };
+
+/** The student's interest results, when they came from the free quiz and can still be taken back. */
+export async function undoableImport(db: Db, studentUserId: string, now = new Date()): Promise<UndoableImport | null> {
+  const [latest] = await db
+    .select({
+      id: assessmentAttempts.id,
+      startedAt: assessmentAttempts.startedAt,
+      completedAt: assessmentAttempts.completedAt,
+      scores: assessmentResults.scores,
+    })
+    .from(assessmentAttempts)
+    .innerJoin(assessmentResults, eq(assessmentResults.attemptId, assessmentAttempts.id))
+    .where(
+      and(
+        eq(assessmentAttempts.userId, studentUserId),
+        eq(assessmentAttempts.instrument, "interests"),
+        isNotNull(assessmentAttempts.completedAt),
+      ),
+    )
+    .orderBy(desc(assessmentAttempts.completedAt))
+    .limit(1);
+  if (!latest?.completedAt || !isImported(latest)) return null;
+  const undoUntil = new Date(latest.completedAt.getTime() + IMPORT_UNDO_DAYS * DAY);
+  if (now >= undoUntil) return null;
+  return { attemptId: latest.id, code: String(latest.scores.code), undoUntil };
+}
+
+export type RemoveImportResult = { ok: true } | { ok: false; error: "not_allowed" | "not_undoable" };
+
+/**
+ * "These weren't my answers": deletes interest results brought in from the free quiz, with their
+ * answers and career matches, so the student can take the interests activity themselves right
+ * away. Only the import named, only while it's the student's latest interest result, and only for
+ * IMPORT_UNDO_DAYS. `actorUserId` is the student themself, or a parent linked to them.
+ */
+export async function removeImportedAssessment(
+  db: Db,
+  actorUserId: string,
+  studentUserId: string,
+  attemptId: string,
+  { now = new Date() }: { now?: Date } = {},
+): Promise<RemoveImportResult> {
+  if (actorUserId !== studentUserId && !(await isLinkedParent(db, actorUserId, studentUserId))) {
+    return { ok: false, error: "not_allowed" };
+  }
+  return db.transaction(async (tx): Promise<RemoveImportResult> => {
+    // Locks the student, as the import does.
+    const [student] = await tx
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, studentUserId), eq(users.role, "student")))
+      .for("update");
+    if (!student) return { ok: false, error: "not_allowed" };
+    const imported = await undoableImport(tx, studentUserId, now);
+    if (imported?.attemptId !== attemptId) return { ok: false, error: "not_undoable" };
+    // Its answers, result and career matches go with it.
+    await tx.delete(assessmentAttempts).where(eq(assessmentAttempts.id, attemptId));
+    // The counselor's saved context described the student with these results.
+    await forgetSavedContexts(tx, studentUserId);
+    return { ok: true };
+  });
 }

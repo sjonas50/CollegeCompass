@@ -9,6 +9,7 @@ import {
   withAnswer,
   writeSavedAssessment,
 } from "@/lib/assessments/anonymous";
+import { forgetFreeMatches } from "./results/free-matches";
 
 /*
  * The free quiz's answers in this browser: localStorage when it works, otherwise memory (they last
@@ -71,9 +72,13 @@ export function recordAnswer(itemId: string, value: number) {
   emit();
 }
 
-/** Removes the saved quiz from this browser (start over, "not mine", or after it's in an account). */
+/**
+ * Removes the saved quiz from this browser (start over, "not mine", or after it's in an account),
+ * and the career matches found for it in this tab.
+ */
 export function forgetSavedAssessment() {
   current = null;
   removeSavedAssessment(browserStorage());
+  forgetFreeMatches();
   emit();
 }

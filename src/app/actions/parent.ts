@@ -59,7 +59,9 @@ export async function createChildAction(_prev: FormState, formData: FormData): P
       console.error("[parent] quiz import failed", error instanceof Error ? error.name : "unknown");
     }
   }
-  redirect(imported ? "/parent?added=1&imported=1" : "/parent?added=1");
+  // /try/saved clears the browser's copy, so the same answers can't be added to a second child,
+  // then goes on to /parent?added=1&imported=1.
+  redirect(imported ? "/try/saved" : "/parent?added=1");
 }
 
 export async function deleteChildAction(formData: FormData) {

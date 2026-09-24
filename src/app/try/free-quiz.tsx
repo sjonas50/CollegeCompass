@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button, ButtonLink, Card } from "@/components/ui";
-import { answeredCount, isFinished } from "@/lib/assessments/anonymous";
+import { answeredCount, isFinished, savedWhen } from "@/lib/assessments/anonymous";
 import { forgetSavedAssessment, recordAnswer, useSavedAssessment } from "./saved-store";
 
 type Item = { id: string; text: string };
@@ -41,9 +41,14 @@ export function FreeQuiz({ items, options }: { items: Item[]; options: Option[] 
   }
 
   if (resumed?.finished && isFinished(saved)) {
+    // Maybe not this visitor's: a shared family or library computer keeps the last person's quiz.
+    const when = savedWhen(saved.savedAt);
     return (
       <Card className="space-y-4">
-        <p>You already finished the quiz on this device. Your answers are still here.</p>
+        <p>
+          Someone already finished the quiz on this device{when ? ` ${when}` : ""}. If that was you, your answers are
+          still here. If not, start over to take it yourself.
+        </p>
         <div className="flex flex-wrap gap-2">
           <ButtonLink href="/try/results">See my results</ButtonLink>
           <Button variant="secondary" onClick={startOver}>

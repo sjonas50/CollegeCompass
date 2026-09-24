@@ -2,18 +2,22 @@ import { eq } from "drizzle-orm";
 import { type ReactNode, createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { freeMatchesAction, importSavedResultsAction } from "@/app/actions/try";
+import { createChildAction } from "@/app/actions/parent";
+import { freeMatchesAction, importSavedResultsAction, removeImportedResultsAction } from "@/app/actions/try";
 import Home from "@/app/page";
 import TryPage from "@/app/try/page";
 import TryResultsPage from "@/app/try/results/page";
+import { SaveResultsCard } from "@/app/try/results/save-card";
+import { resultsViewer } from "@/app/try/results/viewer";
 import SavedPage from "@/app/try/saved/page";
-import { SavedQuizField, SavedResultsImport } from "@/components/saved-results-import";
+import { SavedQuizChoice, SavedQuizField, SavedResultsImport } from "@/components/saved-results-import";
 import { type Db, createTestDb, schema } from "@/db";
 import { createChildAccount, registerParent, registerStudent } from "@/lib/accounts";
-import { emptySavedAssessment, serializeSavedAssessment } from "@/lib/assessments/anonymous";
+import { SAVED_ASSESSMENT_FIELD, emptySavedAssessment, serializeSavedAssessment } from "@/lib/assessments/anonymous";
 import { FREE_MATCH_RATE_LIMIT, importSavedAssessment } from "@/lib/assessments/import";
 import { INTEREST_ITEMS, type Riasec } from "@/lib/assessments/instruments";
 import { scoreInterests } from "@/lib/assessments/scoring";
+import { completeAttempt, latestResult, saveResponses, startOrResumeAttempt } from "@/lib/assessments/service";
 import type { SessionUser } from "@/lib/auth/sessions";
 import { loadOccupationProfiles } from "@/lib/matching/service";
 
@@ -97,6 +101,31 @@ async function signInStudent() {
   state.user = user;
   return user;
 }
+
+async function signInParent() {
+  const parent = await registerParent(db, { displayName: "Maria", email: "maria@example.com", password: "correct horse battery" });
+  if (!parent.ok) throw new Error(parent.error);
+  const user: SessionUser = {
+    id: parent.value.userId,
+    role: "parent",
+    displayName: "Maria",
+    username: null,
+    householdId: null,
+    parentManaged: false,
+    grade: null,
+  };
+  state.user = user;
+  return user;
+}
+
+function childForm(username: string, extra: Record<string, string> = {}) {
+  const fd = new FormData();
+  const fields = { displayName: "Leo", username, password: "correct horse battery", birthYear: "2010", birthMonth: "5", birthDay: "1", grade: "11", ...extra };
+  for (const [k, v] of Object.entries(fields)) fd.set(k, v);
+  return fd;
+}
+
+const savedPageProps = (search: Record<string, string> = {}) => ({ params: Promise.resolve({}), searchParams: Promise.resolve(search) });
 
 async function redirectOf(promise: Promise<unknown>) {
   const err = await promise.then(
@@ -186,39 +215,157 @@ describe("free quiz pages", () => {
     const html = await render(TryResultsPage());
     expect(text(html)).toContain("Loading your results");
     expect(html).toContain("O*NET Database");
+    await signInParent();
+    expect(text(await render(TryResultsPage()))).toContain("Loading your results");
   });
 
   it("clears the browser's copy only for a student whose account holds results", async () => {
-    expect(await redirectOf(Promise.resolve().then(() => SavedPage()))).toBe("/try/results");
+    expect(await redirectOf(Promise.resolve().then(() => SavedPage(savedPageProps())))).toBe("/try/results");
     const student = await signInStudent();
-    expect(await redirectOf(Promise.resolve().then(() => SavedPage()))).toBe("/dashboard");
+    expect(await redirectOf(Promise.resolve().then(() => SavedPage(savedPageProps())))).toBe("/dashboard");
     expect(await importSavedResultsAction(saved)).toEqual({ ok: true });
     expect(state.user).toBe(student);
-    expect(text(await render(SavedPage()))).toContain("Your quiz results are saved to your account.");
+    const page = text(await render(SavedPage(savedPageProps())));
+    expect(page).toContain("Your quiz results are saved to your account.");
+    expect(page).toContain("Your top interests are artistic, social and");
+  });
+
+  it("lets a student take back someone else's quiz and take it themselves", async () => {
+    // A sibling's quiz on a shared computer, added at signup.
+    const student = await signInStudent();
+    expect(await importSavedResultsAction(saved)).toEqual({ ok: true });
+    const attempt = await latestResult(db, student.id, "interests");
+    expect((await startOrResumeAttempt(db, student.id, "interests")).ok).toBe(false);
+
+    const html = await render(SavedPage(savedPageProps()));
+    expect(text(html)).toContain("Not your answers?");
+    expect(html).toContain(`name="attemptId" value="${attempt!.attemptId}"`);
+
+    const fd = new FormData();
+    fd.set("attemptId", attempt!.attemptId);
+    expect(await redirectOf(removeImportedResultsAction(fd))).toBe("/discover/interests");
+    expect(await latestResult(db, student.id, "interests")).toBeNull();
+    expect(await db.select().from(schema.matchRuns)).toHaveLength(0);
+    expect((await startOrResumeAttempt(db, student.id, "interests")).ok).toBe(true);
+
+    // Once it's gone (or for anyone else's attempt), there's nothing to remove.
+    expect(await redirectOf(removeImportedResultsAction(fd))).toBe("/try/saved?undo=failed");
+  });
+
+  it("never offers to remove results the student gave in their account", async () => {
+    const student = await signInStudent();
+    const start = await startOrResumeAttempt(db, student.id, "interests", new Date(Date.now() - 600_000));
+    if (!start.ok) throw new Error();
+    await saveResponses(db, student.id, start.attempt.id, answers);
+    expect((await completeAttempt(db, student.id, start.attempt.id)).ok).toBe(true);
+    const html = await render(SavedPage(savedPageProps()));
+    expect(text(html)).not.toContain("Not your answers?");
+    const fd = new FormData();
+    fd.set("attemptId", start.attempt.id);
+    expect(await redirectOf(removeImportedResultsAction(fd))).toBe("/try/saved?undo=failed");
+    expect(await latestResult(db, student.id, "interests")).not.toBeNull();
+    expect(text(await render(SavedPage(savedPageProps({ undo: "failed" }))))).toContain("We couldn't remove those results");
   });
 
   it("clears it for a parent only once one of their children holds results", async () => {
-    const parent = await registerParent(db, { displayName: "Maria", email: "maria@example.com", password: "correct horse battery" });
-    if (!parent.ok) throw new Error();
-    state.user = { id: parent.value.userId, role: "parent", displayName: "Maria", username: null, householdId: null, parentManaged: false, grade: null };
-    expect(await redirectOf(Promise.resolve().then(() => SavedPage()))).toBe("/parent?added=1");
+    const parent = await signInParent();
+    expect(await redirectOf(Promise.resolve().then(() => SavedPage(savedPageProps())))).toBe("/parent?added=1");
     const child = await createChildAccount(
       db,
-      parent.value.userId,
+      parent.id,
       { displayName: "Leo", username: "leo15", password: "correct horse battery", birthDate: "2010-05-01", grade: 11 },
       null,
     );
     if (!child.ok) throw new Error(child.error);
-    expect(await redirectOf(Promise.resolve().then(() => SavedPage()))).toBe("/parent?added=1");
-    await importSavedAssessment(db, parent.value.userId, child.value.userId, saved, { via: "parent" });
-    const html = await render(SavedPage());
+    expect(await redirectOf(Promise.resolve().then(() => SavedPage(savedPageProps())))).toBe("/parent?added=1");
+    await importSavedAssessment(db, parent.id, child.value.userId, saved, { via: "parent" });
+    const html = await render(SavedPage(savedPageProps()));
     expect(text(html)).toContain("The quiz results are saved to your child's account.");
-    expect(html).toContain('href="/parent?added=1"');
+    // The parent page still says the results were added.
+    expect(html).toContain('href="/parent?added=1&amp;imported=1"');
   });
 
   it("offers the saved results import only in the browser", async () => {
     expect(renderToStaticMarkup(createElement(SavedResultsImport, { startedInterests: true }))).toBe("");
     expect(renderToStaticMarkup(createElement(SavedQuizField))).toBe("");
+  });
+});
+
+describe("a parent adding the free quiz to a new child", () => {
+  it("clears the browser's copy afterwards, so the same answers can't go into a second child", async () => {
+    await signInParent();
+    // createChildAction goes through /try/saved, which clears the browser's copy.
+    expect(await redirectOf(createChildAction(undefined, childForm("leo15", { [SAVED_ASSESSMENT_FIELD]: saved })))).toBe("/try/saved");
+    expect(await db.select().from(schema.assessmentAttempts)).toHaveLength(1);
+    const html = await render(SavedPage(savedPageProps()));
+    expect(html).toContain('href="/parent?added=1&amp;imported=1"');
+
+    // Without the box ticked, straight to the parent page (the browser keeps its copy).
+    expect(await redirectOf(createChildAction(undefined, childForm("mia13")))).toBe("/parent?added=1");
+    // A quiz that doesn't check out never blocks the new account.
+    expect(await redirectOf(createChildAction(undefined, childForm("ava12", { [SAVED_ASSESSMENT_FIELD]: "{" })))).toBe("/parent?added=1");
+    expect(await db.select().from(schema.assessmentAttempts)).toHaveLength(1);
+  });
+});
+
+describe("keeping the free results", () => {
+  const cardFor = (viewer: Parameters<typeof SaveResultsCard>[0]["viewer"]) =>
+    renderToStaticMarkup(createElement(SaveResultsCard, { viewer }));
+  const hrefs = (html: string) => [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+
+  it("never sends someone who is signed in to student signup", async () => {
+    expect(await resultsViewer(db, null)).toBe("visitor");
+    const parent = await signInParent();
+    expect(await resultsViewer(db, parent)).toBe("parent");
+    const student = await signInStudent();
+    expect(await resultsViewer(db, student)).toBe("student");
+    expect(await importSavedResultsAction(saved)).toEqual({ ok: true });
+    expect(await resultsViewer(db, student)).toBe("student_with_results");
+    expect(await resultsViewer(db, { ...parent, role: "admin" })).toBe("other");
+
+    for (const viewer of ["parent", "student", "student_with_results", "other"] as const) {
+      expect(hrefs(cardFor(viewer)).filter((h) => h.startsWith("/signup"))).toEqual([]);
+    }
+  });
+
+  it("offers a parent to add the results to their child's account", () => {
+    const html = cardFor("parent");
+    expect(hrefs(html)).toContain("/parent/children/new");
+    expect(text(html)).toContain("They can sign in on this device and add the results from their dashboard.");
+  });
+
+  it("sends a signed-in student to their dashboard, where the results can be added", () => {
+    expect(hrefs(cardFor("student"))).toContain("/dashboard");
+    expect(hrefs(cardFor("student_with_results"))).toContain("/discover/results");
+    expect(text(cardFor("student_with_results"))).toContain("these can't be added");
+  });
+
+  it("sends a visitor to signup with the quiz box ticked, and tells parents where to go", () => {
+    const html = cardFor("visitor");
+    expect(hrefs(html)).toEqual(expect.arrayContaining(["/signup?from=quiz", "/login", "/signup/parent"]));
+  });
+
+  it("says whose quiz it might be, and leaves the box unticked unless the visitor asked to save it", () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const finished = { ...emptySavedAssessment(), answers, savedAt: yesterday.getTime() };
+    const unticked = renderToStaticMarkup(createElement(SavedQuizChoice, { saved: finished }));
+    expect(text(unticked)).toContain(
+      "Someone finished the free interest quiz on this device yesterday. Their top interests were artistic, social and",
+    );
+    expect(text(unticked)).toContain("Only add them if you took the quiz.");
+    expect(unticked).not.toContain(SAVED_ASSESSMENT_FIELD);
+    expect(unticked).not.toContain("checked");
+
+    const ticked = renderToStaticMarkup(createElement(SavedQuizChoice, { saved: finished, defaultChecked: true }));
+    expect(ticked).toContain(`name="${SAVED_ASSESSMENT_FIELD}"`);
+    // Only the answers go with the form, never the time.
+    const value = ticked.match(/name="savedAssessment" value="([^"]+)"/)![1].replaceAll("&quot;", '"');
+    expect(JSON.parse(value)).not.toHaveProperty("savedAt");
+
+    const forChild = text(renderToStaticMarkup(createElement(SavedQuizChoice, { saved: finished, forChild: true })));
+    expect(forChild).toContain("My child took the free quiz on this device.");
+    expect(forChild).toContain("Only add them if this child took the quiz.");
   });
 });
 

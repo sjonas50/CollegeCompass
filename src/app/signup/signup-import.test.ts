@@ -1,10 +1,14 @@
 import { eq } from "drizzle-orm";
-import { createElement } from "react";
+import { type ReactElement, createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { registerStudentAction } from "@/app/actions/auth";
+import SignupPage from "@/app/signup/page";
+import ParentSignupPage from "@/app/signup/parent/page";
 import { StudentSignup } from "@/app/signup/student-signup";
 import { type Db, createTestDb, schema } from "@/db";
+import { registerParent } from "@/lib/accounts";
+import { createSession } from "@/lib/auth/sessions";
 import { SAVED_ASSESSMENT_FIELD, emptySavedAssessment, serializeSavedAssessment } from "@/lib/assessments/anonymous";
 import { INTEREST_ITEMS, type Riasec } from "@/lib/assessments/instruments";
 import { scoreInterests } from "@/lib/assessments/scoring";
@@ -137,5 +141,57 @@ describe("signup with a saved free quiz", () => {
     expect(html).not.toMatch(/type="email"|name="email"|name="parentEmail"/);
     // The saved quiz is read from the browser, never rendered on the server.
     expect(html).not.toContain(SAVED_ASSESSMENT_FIELD);
+  });
+
+  it("ticks the quiz box only for a visitor who came from \"Save my results\"", async () => {
+    const page = async (search: Record<string, string>) =>
+      (await SignupPage({ params: Promise.resolve({}), searchParams: Promise.resolve(search) })) as ReactElement<{ savingQuiz: boolean }>;
+    expect((await page({ from: "quiz" })).props.savingQuiz).toBe(true);
+    // Anyone else on a shared computer sees the quiz described, unticked.
+    expect((await page({})).props.savingQuiz).toBe(false);
+    expect(renderToStaticMarkup(await page({}))).toContain('name="birthMonth"');
+  });
+});
+
+describe("signup while someone is signed in on this device", () => {
+  const signupPage = async (search: Record<string, string> = {}) =>
+    renderToStaticMarkup(await SignupPage({ params: Promise.resolve({}), searchParams: Promise.resolve(search) }));
+  const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/&#x27;|&#39;/g, "'").replace(/\s+/g, " ");
+
+  async function signIn(userId: string) {
+    const { token } = await createSession(db, userId);
+    state.cookie = token;
+    return token;
+  }
+
+  it("shows a parent how to add their child instead of a separate student account", async () => {
+    const parent = await registerParent(db, { displayName: "Maria", email: "maria@example.com", password: "correct horse battery" });
+    if (!parent.ok) throw new Error(parent.error);
+    const token = await signIn(parent.value.userId);
+
+    // A parent who took the free quiz with their child and pressed "Save my results".
+    const html = await signupPage({ from: "quiz" });
+    expect(html).toContain('href="/parent/children/new"');
+    expect(text(html)).toContain("Maria is signed in on this device.");
+    expect(html).not.toMatch(/name="birthMonth"|name="email"|name="password"/);
+    expect(state.cookie).toBe(token);
+
+    const parentSignup = renderToStaticMarkup(await ParentSignupPage());
+    expect(parentSignup).toContain('href="/parent"');
+    expect(parentSignup).not.toMatch(/name="email"|name="password"/);
+  });
+
+  it("offers a signed-in student their dashboard, or to sign out so someone else can sign up", async () => {
+    await submit(signupForm());
+    const html = await signupPage();
+    expect(html).toContain('href="/dashboard"');
+    expect(text(html)).toContain("To create a new account on this device, sign out first.");
+    expect(html).not.toMatch(/name="birthMonth"|name="email"/);
+    expect(renderToStaticMarkup(await ParentSignupPage())).not.toMatch(/name="email"|name="password"/);
+  });
+
+  it("shows the forms when nobody is signed in", async () => {
+    expect(await signupPage()).toContain('name="birthMonth"');
+    expect(renderToStaticMarkup(await ParentSignupPage())).toContain('name="email"');
   });
 });

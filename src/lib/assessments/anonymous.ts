@@ -1,5 +1,5 @@
-import { INSTRUMENTS, INTEREST_ITEMS, RIASEC, type Riasec, isValidResponse } from "./instruments";
-import { type Responses, missingItems } from "./scoring";
+import { INSTRUMENTS, INTEREST_ITEMS, RIASEC, RIASEC_INFO, type Riasec, isValidResponse } from "./instruments";
+import { type Responses, missingItems, scoreInterests } from "./scoring";
 
 /**
  * The free interest quiz for visitors without an account (/try).
@@ -30,15 +30,20 @@ export type SavedAssessment = {
   /** INSTRUMENTS.interests.version when the answers were given. */
   version: string;
   answers: Responses;
+  /**
+   * When the last answer was given (ms since 1970), so a shared device can say when the quiz was
+   * taken ("finished yesterday"). Kept in the browser only: it's never sent to the server.
+   */
+  savedAt?: number;
 };
 
 export function emptySavedAssessment(): SavedAssessment {
   return { v: FORMAT, instrument: INSTRUMENT, version: INSTRUMENTS.interests.version, answers: {} };
 }
 
-export function withAnswer(saved: SavedAssessment | null, itemId: string, value: number): SavedAssessment {
+export function withAnswer(saved: SavedAssessment | null, itemId: string, value: number, now = Date.now()): SavedAssessment {
   const base = saved ?? emptySavedAssessment();
-  return { ...base, answers: { ...base.answers, [itemId]: value } };
+  return { ...base, answers: { ...base.answers, [itemId]: value }, savedAt: now };
 }
 
 /** All 60 activities rated. */
@@ -111,12 +116,24 @@ export function parseStoredAssessment(raw: string | null | undefined): SavedAsse
     const value = data.answers[item.id];
     if (typeof value === "number" && isValidResponse("interests", item.id, value)) answers[item.id] = value;
   }
-  return { ...emptySavedAssessment(), answers };
+  const { savedAt } = data;
+  const validTime = typeof savedAt === "number" && Number.isFinite(savedAt) && savedAt > 0;
+  return { ...emptySavedAssessment(), answers, ...(validTime && { savedAt }) };
 }
 
+/**
+ * The saved answers as sent to the server: exactly the fields validateSavedAssessment accepts. The
+ * browser-only `savedAt` is left out.
+ */
 export function serializeSavedAssessment(saved: SavedAssessment): string {
   const { v, instrument, version, answers } = saved;
   return JSON.stringify({ v, instrument, version, answers });
+}
+
+/** What goes in the browser's storage: the answers, plus when they were last changed. */
+function storedForm(saved: SavedAssessment): string {
+  const { v, instrument, version, answers, savedAt } = saved;
+  return JSON.stringify({ v, instrument, version, answers, savedAt });
 }
 
 type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -134,7 +151,7 @@ export function readSavedAssessment(storage: StorageLike | null): SavedAssessmen
 export function writeSavedAssessment(storage: StorageLike | null, saved: SavedAssessment): boolean {
   if (!storage) return false;
   try {
-    storage.setItem(SAVED_ASSESSMENT_STORAGE_KEY, serializeSavedAssessment(saved));
+    storage.setItem(SAVED_ASSESSMENT_STORAGE_KEY, storedForm(saved));
     return true;
   } catch {
     return false;
@@ -147,6 +164,48 @@ export function removeSavedAssessment(storage: StorageLike | null) {
   } catch {
     // Nothing to do: blocked storage never held anything.
   }
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * When a saved quiz was last answered, in words: "today", "yesterday" or "on September 20" (in the
+ * browser's time zone). Null when the browser didn't keep the time (quizzes saved before it did).
+ */
+export function savedWhen(savedAt: number | undefined, now = new Date()): string | null {
+  if (savedAt === undefined) return null;
+  const then = new Date(savedAt);
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  // Rounded, so a day with a daylight saving change still counts as one day.
+  const days = Math.round((startOfDay(now) - startOfDay(then)) / DAY_MS);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  const sameYear = then.getFullYear() === now.getFullYear();
+  return `on ${then.toLocaleDateString("en-US", { month: "long", day: "numeric", ...(!sameYear && { year: "numeric" }) })}`;
+}
+
+/** An interest code in words: "ASE" is "artistic, social and enterprising". */
+export function interestAreasText(code: string): string {
+  const names = code
+    .split("")
+    .filter((l): l is Riasec => l in RIASEC_INFO)
+    .map((l) => RIASEC_INFO[l].name.toLowerCase());
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names.join("");
+}
+
+/** The top three interest areas of a finished quiz, in words. */
+export function topInterestsText(answers: Responses): string {
+  return interestAreasText(scoreInterests(answers).code);
+}
+
+/**
+ * Describes a finished quiz saved in this browser without assuming whose it is, for shared family
+ * or library computers: "Someone finished the free interest quiz on this device yesterday. Their
+ * top interests were artistic, social and enterprising."
+ */
+export function describeSavedQuiz(saved: SavedAssessment, now = new Date()): string {
+  const when = savedWhen(saved.savedAt, now);
+  return `Someone finished the free interest quiz on this device${when ? ` ${when}` : ""}. Their top interests were ${topInterestsText(saved.answers)}.`;
 }
 
 /** The most an area can score: ten items rated 0–4. */

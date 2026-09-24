@@ -11,11 +11,13 @@ import { INTEREST_ITEMS, RIASEC, RIASEC_INFO, type Riasec } from "@/lib/assessme
 import { type Responses, scoreInterests } from "@/lib/assessments/scoring";
 import { PATHWAY_INFO, type Pathway } from "@/lib/matching/match";
 import { forgetSavedAssessment, useSavedAssessment } from "../saved-store";
+import { freeMatchesProblem, keptFreeMatches, loadFreeMatches } from "./free-matches";
+import { type ResultsViewer, SaveResultsCard } from "./save-card";
 
 const PATHWAYS: Pathway[] = ["degree", "training"];
 
 /** The free quiz's results, scored in the browser from the answers saved there. */
-export function FreeResults() {
+export function FreeResults({ viewer }: { viewer: ResultsViewer }) {
   const saved = useSavedAssessment();
   if (saved === undefined) return <p className="animate-pulse text-muted">Loading your results…</p>;
   if (!isFinished(saved)) {
@@ -31,16 +33,16 @@ export function FreeResults() {
       </Card>
     );
   }
-  return <Results answers={saved.answers} />;
+  return <Results answers={saved.answers} viewer={viewer} />;
 }
 
-function Results({ answers }: { answers: Responses }) {
+function Results({ answers, viewer }: { answers: Responses; viewer: ResultsViewer }) {
   const router = useRouter();
   // The same scoring as signed-in students, run here: the answers never leave the browser.
   const { areas, code } = scoreInterests(answers);
   const top = code.split("") as Riasec[];
   const areasKey = RIASEC.map((a) => areas[a]).join(",");
-  const matches = useFreeMatches(areasKey);
+  const { matches, retry } = useFreeMatches(areasKey);
 
   function takeAgain() {
     if (!window.confirm("Erase these answers from this device and take the quiz again?")) return;
@@ -80,13 +82,12 @@ function Results({ answers }: { answers: Responses }) {
       <div aria-live="polite" className="space-y-8">
         {matches === null && <p className="animate-pulse text-muted">Finding careers that fit you…</p>}
         {matches && !matches.ok && (
-          <FormMessage
-            message={
-              matches.error === "rate_limited"
-                ? "You've looked up careers many times in the last hour. Please try again later. Your results are still saved here."
-                : "We couldn't load career matches right now. Your results are still saved here, so please try again soon."
-            }
-          />
+          <div className="space-y-3">
+            <FormMessage message={freeMatchesProblem(matches.error)} />
+            <Button variant="secondary" onClick={retry}>
+              Try again
+            </Button>
+          </div>
         )}
         {matches?.ok &&
           PATHWAYS.map((pathway) => (
@@ -94,26 +95,7 @@ function Results({ answers }: { answers: Responses }) {
           ))}
       </div>
 
-      <Card className="space-y-4">
-        <h2 className="font-medium">Save your results</h2>
-        <p className="text-sm text-muted">
-          Create an account to keep these results, see more careers and why they fit, and build a plan for high school and
-          beyond. Your answers come with you, so you won&apos;t need to take the quiz again.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <ButtonLink href="/signup">Save my results</ButtonLink>
-          <Button variant="secondary" onClick={takeAgain}>
-            Take it again
-          </Button>
-        </div>
-        <p className="text-sm text-muted">
-          Already have an account?{" "}
-          <Link href="/login" className="underline underline-offset-2">
-            Sign in
-          </Link>{" "}
-          on this device and add them from your dashboard.
-        </p>
-      </Card>
+      <SaveResultsCard viewer={viewer} onTakeAgain={takeAgain} />
 
       <p className="text-sm text-muted">
         Your answers are saved only in this browser. To find careers, we used just your six interest scores, and we
@@ -123,27 +105,32 @@ function Results({ answers }: { answers: Responses }) {
   );
 }
 
-/** Asks the server for matches from the six area scores (given as "R,I,A,S,E,C"); null while loading. */
-function useFreeMatches(areasKey: string): FreeMatchesResult | null {
+/**
+ * Matches from the six area scores (given as "R,I,A,S,E,C"); null while loading. Matches already
+ * found in this tab are shown without asking the server again (see ./free-matches).
+ */
+function useFreeMatches(areasKey: string): { matches: FreeMatchesResult | null; retry: () => void } {
+  const [tries, setTries] = useState(0);
+  const requestKey = `${areasKey}#${tries}`;
   const [state, setState] = useState<{ key: string; result: FreeMatchesResult } | null>(null);
+  const kept = keptFreeMatches(areasKey);
   useEffect(() => {
+    if (keptFreeMatches(areasKey)) return;
     let cancelled = false;
     const values = areasKey.split(",").map(Number);
     const scores = Object.fromEntries(RIASEC.map((area, i) => [area, values[i]]));
     startTransition(async () => {
-      let result: FreeMatchesResult;
-      try {
-        result = await freeMatchesAction(scores);
-      } catch {
-        result = { ok: false, error: "unavailable" };
-      }
-      if (!cancelled) setState({ key: areasKey, result });
+      const result = await loadFreeMatches(areasKey, () => freeMatchesAction(scores));
+      if (!cancelled) setState({ key: requestKey, result });
     });
     return () => {
       cancelled = true;
     };
-  }, [areasKey]);
-  return state?.key === areasKey ? state.result : null;
+  }, [areasKey, requestKey]);
+  return {
+    matches: kept ?? (state?.key === requestKey ? state.result : null),
+    retry: () => setTries((n) => n + 1),
+  };
 }
 
 function CareerList({ pathway, careers }: { pathway: Pathway; careers: FreeCareer[] }) {

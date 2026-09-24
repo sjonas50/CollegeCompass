@@ -7,10 +7,13 @@ import { deleteStudent, exportStudentData } from "@/lib/privacy";
 import { emptySavedAssessment, serializeSavedAssessment } from "./anonymous";
 import {
   FREE_MATCH_RATE_LIMIT,
+  IMPORT_UNDO_DAYS,
   anonymousRateKey,
   importSavedAssessment,
   interestCode,
   matchFreeAssessment,
+  removeImportedAssessment,
+  undoableImport,
 } from "./import";
 import { INTEREST_ITEMS, type Riasec } from "./instruments";
 import { scoreInterests } from "./scoring";
@@ -116,6 +119,17 @@ describe("matchFreeAssessment", () => {
     expect((await matchFreeAssessment(db, scientistAreas, { rateKey: other, now })).ok).toBe(true);
     const nextHour = new Date(now.getTime() + FREE_MATCH_RATE_LIMIT.windowMs + 1000);
     expect((await matchFreeAssessment(db, scientistAreas, { rateKey, now: nextHour })).ok).toBe(true);
+  });
+
+  it("is shared by one internet connection, so a whole classroom can see their matches", async () => {
+    // Forty students behind a school's one public address, each loading their results a couple of
+    // times (the results page keeps what it found, so going to a career and back costs nothing).
+    const results = [];
+    for (let student = 0; student < 40; student++) {
+      const areas = { ...scientistAreas, A: student % 41 };
+      for (let load = 0; load < 2; load++) results.push(await matchFreeAssessment(db, areas, { rateKey, now }));
+    }
+    expect(results.filter((r) => !r.ok)).toEqual([]);
   });
 
   it("stores nothing about the visitor but a hashed counter", async () => {
@@ -294,5 +308,89 @@ describe("importSavedAssessment", () => {
     for (const table of [schema.assessmentAttempts, schema.assessmentResponses, schema.assessmentResults, schema.matchRuns, schema.careerMatches]) {
       expect(await db.select().from(table)).toHaveLength(0);
     }
+  });
+});
+
+describe("taking back an import that wasn't the student's", () => {
+  const later = new Date(now.getTime() + 60_000);
+
+  it("removes someone else's quiz so the student can take the interests activity right away", async () => {
+    // A sibling's quiz, brought in at signup on a shared computer.
+    const student = await makeStudent("ana@example.com");
+    const res = await importSavedAssessment(db, student, student, saved, { via: "signup", now });
+    if (!res.ok) throw new Error(res.error);
+    const [conversation] = await db
+      .insert(schema.counselorConversations)
+      .values({ userId: student, context: "Top interests: Investigative", contextBuiltAt: later })
+      .returning();
+    expect(await startOrResumeAttempt(db, student, "interests", later)).toMatchObject({ ok: false, error: "too_soon" });
+
+    const imported = await undoableImport(db, student, later);
+    expect(imported).toMatchObject({ attemptId: res.attemptId, code: scoreInterests(answers).code });
+    expect(await removeImportedAssessment(db, student, student, res.attemptId, { now: later })).toEqual({ ok: true });
+
+    for (const table of [schema.assessmentAttempts, schema.assessmentResponses, schema.assessmentResults, schema.matchRuns, schema.careerMatches]) {
+      expect(await db.select().from(table)).toHaveLength(0);
+    }
+    const [after] = await db.select().from(schema.counselorConversations).where(eq(schema.counselorConversations.id, conversation.id));
+    expect(after.context).toBeNull();
+    expect((await instrumentStatuses(db, student)).interests.state).toBe("not_started");
+    expect((await startOrResumeAttempt(db, student, "interests", later)).ok).toBe(true);
+    // Once is enough.
+    expect(await removeImportedAssessment(db, student, student, res.attemptId, { now: later })).toEqual({
+      ok: false,
+      error: "not_undoable",
+    });
+  });
+
+  it("never removes results the student gave in their account", async () => {
+    const student = await makeStudent("ana@example.com");
+    const start = await startOrResumeAttempt(db, student, "interests", now);
+    if (!start.ok) throw new Error(start.error);
+    await saveResponses(db, student, start.attempt.id, answers);
+    await completeAttempt(db, student, start.attempt.id, new Date(now.getTime() + 8 * 60_000));
+    expect(await undoableImport(db, student, later)).toBeNull();
+    expect(await removeImportedAssessment(db, student, student, start.attempt.id, { now: later })).toEqual({
+      ok: false,
+      error: "not_undoable",
+    });
+    expect(await db.select().from(schema.assessmentAttempts)).toHaveLength(1);
+  });
+
+  it("only for a while, and only the import named", async () => {
+    const student = await makeStudent("ana@example.com");
+    const res = await importSavedAssessment(db, student, student, saved, { via: "signup", now });
+    if (!res.ok) throw new Error(res.error);
+    const tooLate = new Date(now.getTime() + IMPORT_UNDO_DAYS * 24 * 60 * 60 * 1000);
+    expect(await undoableImport(db, student, tooLate)).toBeNull();
+    expect(await removeImportedAssessment(db, student, student, res.attemptId, { now: tooLate })).toMatchObject({ ok: false });
+    for (const wrong of ["00000000-0000-4000-8000-000000000000", "not-a-uuid"]) {
+      expect(await removeImportedAssessment(db, student, student, wrong, { now: later })).toMatchObject({ ok: false });
+    }
+    expect(await db.select().from(schema.assessmentAttempts)).toHaveLength(1);
+  });
+
+  it("only by the student or a linked parent", async () => {
+    const parent = await registerParent(db, { displayName: "Maria", email: "maria@example.com", password: "correct horse battery" });
+    if (!parent.ok) throw new Error();
+    const child = await createChildAccount(
+      db,
+      parent.value.userId,
+      { displayName: "Leo", username: "leo15", password: "correct horse battery", birthDate: "2011-01-15", grade: 10 },
+      null,
+      now,
+    );
+    if (!child.ok) throw new Error(child.error);
+    const res = await importSavedAssessment(db, parent.value.userId, child.value.userId, saved, { via: "parent", now });
+    if (!res.ok) throw new Error(res.error);
+
+    const stranger = await makeStudent("bo@example.com");
+    expect(await removeImportedAssessment(db, stranger, child.value.userId, res.attemptId, { now: later })).toEqual({
+      ok: false,
+      error: "not_allowed",
+    });
+    expect(await db.select().from(schema.assessmentAttempts)).toHaveLength(1);
+    expect(await removeImportedAssessment(db, parent.value.userId, child.value.userId, res.attemptId, { now: later })).toEqual({ ok: true });
+    expect(await db.select().from(schema.assessmentAttempts)).toHaveLength(0);
   });
 });
