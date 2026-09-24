@@ -78,6 +78,24 @@ export function defaultHighSchoolCredit(gradeLevel: number) {
   return gradeLevel >= 9;
 }
 
+/** The hint beside the "Counts for high school credit" box, for the grade picked in the form. */
+export function highSchoolCreditHint(gradeLevel: number) {
+  return defaultHighSchoolCredit(gradeLevel)
+    ? "Almost every high school class does. Uncheck it if your school says this one doesn't."
+    : "Most middle school classes don't, but some do — like Algebra I or a world language. Your school counselor can tell you.";
+}
+
+/**
+ * Whether the credit box starts checked in a course form. `saved` is what the form opened with
+ * (the stored course, or what was just submitted). While the picked grade stays on the same side
+ * of the middle/high school line the saved choice stands; moving the course across it switches to
+ * the new grade's default, so an 8th-grade class moved to 9th counts for credit again.
+ */
+export function highSchoolCreditChecked(saved: { gradeLevel: number; checked: boolean }, gradeLevel: number) {
+  const crossed = defaultHighSchoolCredit(gradeLevel) !== defaultHighSchoolCredit(saved.gradeLevel);
+  return crossed ? defaultHighSchoolCredit(gradeLevel) : saved.checked;
+}
+
 /** A sensible starting status for a course added to `gradeLevel` by a student now in `currentGrade`. */
 export function defaultStatusFor(gradeLevel: number, currentGrade: number): CourseStatus {
   if (gradeLevel < currentGrade) return "completed";

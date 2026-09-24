@@ -3,6 +3,7 @@ import type { CourseLevel, CourseSubject } from "@/db/schema";
 import { RIASEC_INFO, type Riasec } from "../assessments/instruments";
 import { type CareerDetail, getCareer } from "../careers";
 import { listNorthStars } from "../goals";
+import { ALGEBRA_2_OR_BEYOND } from "./checklist";
 
 /**
  * High school course ideas that connect to a student's north-star careers. Ideas are generic
@@ -31,7 +32,8 @@ const IDEAS: CourseIdea[] = [
   { id: "speech_debate", title: "Speech and debate", subject: "english", covers: named(/\b(speech|debate|public speaking|forensics)\b/i) },
   // Math
   { id: "geometry", title: "Geometry", subject: "math", covers: named(/\bgeometry\b/i) },
-  { id: "algebra2", title: "Algebra II", subject: "math", covers: named(/\balgebra\s*(ii|2)\b/i) },
+  // Same rule as the checklist: a class that usually comes after Algebra II counts too.
+  { id: "algebra2", title: "Algebra II", subject: "math", covers: named(ALGEBRA_2_OR_BEYOND) },
   { id: "precalc_calc", title: "Pre-calculus or calculus", subject: "math", covers: named(/\b(pre-?\s?calc(ulus)?|calculus|calc)\b/i) },
   { id: "statistics", title: "Statistics", subject: "math", covers: named(/\b(statistics|stats?)\b/i) },
   // Science
@@ -83,10 +85,25 @@ const IDEAS: CourseIdea[] = [
   { id: "personal_finance", title: "Personal finance", subject: "other", covers: named(/\b(personal finance|financial literacy|money management)\b/i) },
   { id: "agriculture_cte", title: "Agriculture or animal science (CTE)", subject: "career_technical", covers: named(/\b(agri\w*|ag science|animal science|horticulture|veterinary|ffa)\b/i) },
   { id: "construction_cte", title: "Construction or building trades (CTE)", subject: "career_technical", covers: named(/\b(construction|carpentry|woodworking|wood shop|building trades|electrical|plumbing|hvac)\b/i) },
-  { id: "auto_cte", title: "Automotive, aviation or transportation (CTE)", subject: "career_technical", covers: named(/\b(auto(motive)?|mechanics?|small engines?|diesel|aviation|transportation)\b/i) },
+  {
+    id: "auto_cte",
+    title: "Automotive, aviation or transportation (CTE)",
+    subject: "career_technical",
+    // No bare "mechanics": it would match physics classes like "AP Physics C: Mechanics".
+    covers: named(/\b(auto(motive)?|auto body|collision repair|power mechanics|small engines?|diesel|aviation|aircraft|transportation)\b/i),
+  },
   { id: "manufacturing_cte", title: "Manufacturing or welding (CTE)", subject: "career_technical", covers: named(/\b(manufacturing|welding|machining|metal ?shop|cnc)\b/i) },
   { id: "culinary_cte", title: "Culinary arts (CTE)", subject: "career_technical", covers: named(/\b(culinary|cooking|baking|foods|nutrition)\b/i) },
-  { id: "education_cte", title: "Child development or teaching (CTE)", subject: "career_technical", covers: named(/\b(child development|early childhood|teaching|teacher cadet|education)\b/i) },
+  {
+    id: "education_cte",
+    title: "Child development or teaching (CTE)",
+    subject: "career_technical",
+    // No bare "education": it would match Physical, Health and Driver Education.
+    // "Teaching Assistant" (helping in a classroom or office) isn't a teaching pathway course.
+    covers: named(
+      /\b(child development|early childhood|teacher (cadets?|academy|prep)|future teachers|teaching(?! assistant)|education (and|&) training|careers in education)\b/i,
+    ),
+  },
   { id: "public_safety_cte", title: "Law and public safety (CTE)", subject: "career_technical", covers: named(/\b(criminal justice|law enforcement|public safety|fire science|forensics?)\b/i) },
   { id: "it_cte", title: "Information technology or cybersecurity (CTE)", subject: "career_technical", covers: named(/\b(information technology|networking|cyber\s?security|comptia)\b/i) },
   // Health

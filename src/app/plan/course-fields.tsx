@@ -16,7 +16,10 @@ import {
   STATUS_LABELS,
   SUBJECT_LABELS,
   TERM_LABELS,
+  defaultHighSchoolCredit,
   gradeName,
+  highSchoolCreditChecked,
+  highSchoolCreditHint,
 } from "@/lib/courses/catalog";
 
 type Errors = Record<string, string[] | undefined> | undefined;
@@ -49,6 +52,7 @@ function SelectField({
   options,
   defaultValue,
   errors,
+  onChange,
 }: {
   id: string;
   name: string;
@@ -57,6 +61,7 @@ function SelectField({
   options: { value: string; label: string }[];
   defaultValue: string;
   errors?: string[];
+  onChange?: (value: string) => void;
 }) {
   return (
     <div>
@@ -74,6 +79,7 @@ function SelectField({
         id={id}
         name={name}
         defaultValue={defaultValue}
+        onChange={onChange && ((e) => onChange(e.target.value))}
         aria-invalid={errors?.length ? true : undefined}
         aria-describedby={describedBy(hint && `${id}-hint`, errors?.length && `${id}-error`)}
         className={control}
@@ -117,7 +123,13 @@ export function CourseFields({
   const submitted = Object.keys(values).length > 0;
   const initial = (key: keyof CourseDefaults) => (submitted ? (values[key] ?? "") : String(defaults[key]));
   const [status, setStatus] = useState(initial("status"));
-  const creditChecked = submitted ? values.highSchoolCredit === "on" : defaults.highSchoolCredit;
+  const initialGrade = Number(initial("gradeLevel")) || defaults.gradeLevel;
+  // The grade picked in the edit form; the credit box and its hint follow it.
+  const [gradeLevel, setGradeLevel] = useState(initialGrade);
+  const creditChecked = highSchoolCreditChecked(
+    { gradeLevel: initialGrade, checked: submitted ? values.highSchoolCredit === "on" : defaults.highSchoolCredit },
+    gradeLevel,
+  );
 
   useEffect(() => {
     if (focusName) nameRef.current?.focus();
@@ -189,6 +201,7 @@ export function CourseFields({
             options={COURSE_GRADE_LEVELS.map((g) => ({ value: String(g), label: gradeName(g) }))}
             defaultValue={initial("gradeLevel")}
             errors={errors?.gradeLevel}
+            onChange={(v) => setGradeLevel(Number(v))}
           />
         )}
       </div>
@@ -240,7 +253,9 @@ export function CourseFields({
       <div>
         <label className="flex min-h-11 items-start gap-3 text-sm">
           <input
-            key={String(creditChecked)}
+            // Remounted when the grade moves between middle and high school, so the box resets to
+            // that grade's default (and, after a validation error, to what was submitted).
+            key={`${defaultHighSchoolCredit(gradeLevel)}-${creditChecked}`}
             type="checkbox"
             name="highSchoolCredit"
             defaultChecked={creditChecked}
@@ -250,9 +265,7 @@ export function CourseFields({
           <span>
             <span className="font-medium">Counts for high school credit</span>
             <span id={`${id}-credit-hint`} className="block text-muted">
-              {defaults.gradeLevel <= 8
-                ? "Most middle school classes don't, but some do — like Algebra I or a world language. Your school counselor can tell you."
-                : "Almost every high school class does. Uncheck it if your school says this one doesn't."}
+              {highSchoolCreditHint(gradeLevel)}
             </span>
           </span>
         </label>

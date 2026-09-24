@@ -4,6 +4,7 @@ import { createTestDb, schema } from "@/db";
 import { registerStudent } from "../accounts";
 import { RIASEC, type Riasec } from "../assessments/instruments";
 import { addNorthStar } from "../goals";
+import { collegePrepChecklist } from "./checklist";
 import {
   CIP_FAMILY_IDEAS,
   type IdeaCourse,
@@ -113,6 +114,44 @@ describe("ideasForCareer", () => {
       { name: "Spanish II", subject: "other", level: "regular" },
     ]);
     expect(lang.ideas.find((i) => i.id === "world_language")?.inPlan).toBe(true);
+  });
+
+  it("doesn't mark CTE ideas as in the plan from look-alike class names", () => {
+    const inPlan = (cipCode: string, id: string, name: string, subject: IdeaCourse["subject"]) =>
+      ideasForCareer(career({ majors: [{ cipCode, title: "Major" }] }), [{ name, subject, level: "regular" }]).ideas.find((i) => i.id === id)
+        ?.inPlan;
+
+    for (const name of ["Physical Education", "Driver Education", "Driver's Education", "Health Education", "Teaching Assistant"]) {
+      expect(inPlan("13.1202", "education_cte", name, "health_pe"), name).toBe(false);
+    }
+    for (const name of ["Teacher Cadet", "Education and Training", "Intro to Teaching", "Child Development", "Early Childhood Education"]) {
+      expect(inPlan("13.1202", "education_cte", name, "career_technical"), name).toBe(true);
+    }
+
+    expect(inPlan("47.0604", "auto_cte", "AP Physics C: Mechanics", "science")).toBe(false);
+    expect(inPlan("49.0102", "auto_cte", "Engineering Mechanics", "career_technical")).toBe(false);
+    for (const name of ["Automotive Technology", "Auto Mechanics", "Small Engine Repair", "Diesel Tech", "Aviation", "Power Mechanics"]) {
+      expect(inPlan("47.0604", "auto_cte", name, "career_technical"), name).toBe(true);
+    }
+  });
+
+  it("agrees with the checklist on Algebra II, counting classes that come after it", () => {
+    const engTech = career({ majors: [{ cipCode: "15.0303", title: "Electrical Engineering Technology" }] });
+    for (const [name, expected] of [
+      ["Algebra II", true],
+      ["Algebra 2 Honors", true],
+      ["Integrated Math III", true],
+      ["Pre-calc", true],
+      ["AP Calculus AB", true],
+      ["Algebra I", false],
+      ["Geometry", false],
+    ] as const) {
+      const courses = [{ name, subject: "math" as const, level: "regular" as const }];
+      const idea = ideasForCareer(engTech, courses).ideas.find((i) => i.id === "algebra2");
+      const checklist = collegePrepChecklist(courses.map((c) => ({ ...c, credits: 1, status: "in_progress", finalGrade: null, highSchoolCredit: true })));
+      expect(idea?.inPlan, name).toBe(expected);
+      expect(checklist.algebra2 !== "not_yet", name).toBe(expected);
+    }
   });
 
   it("only references ideas that exist", () => {

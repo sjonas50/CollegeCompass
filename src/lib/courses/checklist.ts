@@ -63,7 +63,11 @@ export type ChecklistCourse = {
   highSchoolCredit: boolean;
 };
 
-const ALGEBRA_2_OR_BEYOND =
+/**
+ * Algebra II, or a math class that usually comes after it. Shared with the course ideas so the
+ * checklist and the suggestions agree on whether Algebra II is in the plan.
+ */
+export const ALGEBRA_2_OR_BEYOND =
   /\b(algebra\s*(ii|2)|integrated\s*(math(ematics)?\s*)?(iii|3)|math\s*(iii|3)|pre-?\s?calc(ulus)?|calculus|calc\s*(ab|bc)|trig(onometry)?)\b/i;
 
 /** Finished classes with F, W or I didn't earn the credit, so they don't count as covered. */

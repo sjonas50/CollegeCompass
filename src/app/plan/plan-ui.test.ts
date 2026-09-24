@@ -8,6 +8,7 @@ import { AddCourse } from "./add-course";
 import { ChecklistCard, GpaCard, SuggestionsCard } from "./cards";
 import { type CourseDefaults, CourseFields } from "./course-fields";
 import { CourseRow, type PlanCourse } from "./course-row";
+import { GradeSections } from "./grade-section";
 
 // Server-rendered smoke tests for the planner UI (vitest runs in node, without a DOM).
 
@@ -94,6 +95,76 @@ describe("course fields", () => {
     expect(fields({ editGradeLevel: true })).toContain('<select id="');
     expect(fields({ editGradeLevel: true })).toMatch(/name="gradeLevel"[^>]*>.*12th grade/);
     expect(fields({})).toContain('type="hidden" name="gradeLevel" value="10"');
+  });
+
+  it("explains high school credit for the grade in the form, not the grade the course was saved in", () => {
+    const eighth = { ...defaults, gradeLevel: 8, highSchoolCredit: false };
+    const opened = fields({ editGradeLevel: true, defaults: eighth });
+    expect(opened).toContain("Most middle school classes don&#x27;t, but some do");
+    expect(opened).not.toMatch(/name="highSchoolCredit" checked/);
+
+    // Moved to 9th, then sent back with an error elsewhere: the box and hint follow 9th grade.
+    const moved = fields({
+      editGradeLevel: true,
+      defaults: eighth,
+      values: { name: "", subject: "math", gradeLevel: "9", status: "planned", highSchoolCredit: "on" },
+      errors: { name: ["Give the course a name."] },
+    });
+    expect(moved).toMatch(/<option value="9" selected="">9th grade/);
+    expect(moved).toContain("Almost every high school class does.");
+    expect(moved).toMatch(/name="highSchoolCredit" checked=""/);
+  });
+});
+
+describe("grade sections", () => {
+  const section = (html: string, grade: number) => {
+    const start = html.indexOf(`id="grade-${grade}-title"`);
+    const end = html.indexOf("</section>", start);
+    return html.slice(start, end);
+  };
+  const titles = (html: string) => [...html.matchAll(/id="grade-(\d+)-title"/g)].map((m) => Number(m[1]));
+
+  it("shows the current grade first and open, then later grades, then earlier ones", () => {
+    const html = render(GradeSections, { current: 9, courses: [], gpa: computeGpa([]) });
+    expect(titles(html)).toEqual([9, 10, 11, 12, 8, 7]);
+    expect(html.match(/<details open=""/g)).toHaveLength(1);
+    expect(html.indexOf('<details open=""')).toBeLessThan(html.indexOf('id="grade-9-title"'));
+    expect(section(html, 9)).toContain("This year · 0 courses");
+    expect(section(html, 10)).toContain("Next year");
+    expect(section(html, 8)).toContain("Last year");
+  });
+
+  it("opens the add form in an empty current grade, starting as “Taking now”", () => {
+    const html = render(GradeSections, { current: 9, courses: [], gpa: computeGpa([]) });
+    expect(section(html, 9)).toContain("<form");
+    expect(section(html, 9)).toMatch(/checked="" value="in_progress"/);
+    expect(section(html, 9)).toContain("What are you taking this year?");
+    expect(section(html, 10)).toContain("+ Add a course to 10th grade");
+  });
+
+  it("lists a grade's courses with a status line for changes", () => {
+    const html = render(GradeSections, { current: 10, courses: [course], gpa: computeGpa([course]) });
+    expect(section(html, 10)).toContain("This year · 1 course · est. GPA 3.70");
+    expect(section(html, 10)).toContain('role="status"');
+    expect(section(html, 10)).toContain("AP Biology");
+    expect(section(html, 10)).not.toContain("<form");
+  });
+
+  it("shows a graduate's senior year first and open, as last year", () => {
+    const html = render(GradeSections, { current: 13, courses: [], gpa: computeGpa([]) });
+    expect(titles(html)).toEqual([12, 11, 10, 9, 8, 7]);
+    expect(html.indexOf('<details open=""')).toBeLessThan(html.indexOf('id="grade-12-title"'));
+    expect(html.match(/<details open=""/g)).toHaveLength(1);
+    expect(section(html, 12)).toContain("Last year · 0 courses");
+    expect(html).not.toMatch(/This year|What are you taking this year/);
+    expect(section(html, 12)).toContain("+ Add a course to 12th grade");
+  });
+
+  it("gives middle school grades encouraging credit notes", () => {
+    const html = render(GradeSections, { current: 7, courses: [], gpa: computeGpa([]) });
+    expect(titles(html)).toEqual([7, 8, 9, 10, 11, 12]);
+    expect(section(html, 7)).toContain("Most middle school classes don&#x27;t count toward your high school GPA.");
+    expect(section(html, 9)).toContain("Thinking ahead?");
   });
 });
 

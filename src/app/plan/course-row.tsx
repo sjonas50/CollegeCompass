@@ -6,6 +6,7 @@ import { Button, FormMessage } from "@/components/ui";
 import { useFormAction } from "@/components/use-form-action";
 import type { Course } from "@/lib/courses/service";
 import { LEVEL_LABELS, STATUS_LABELS, SUBJECT_LABELS, TERM_LABELS, isLetterGrade } from "@/lib/courses/catalog";
+import { removedNotice, savedNotice } from "@/lib/courses/plan-layout";
 import type { CourseFormState } from "@/lib/courses/validation";
 import { CourseFields } from "./course-fields";
 
@@ -13,6 +14,12 @@ export type PlanCourse = Pick<
   Course,
   "id" | "name" | "subject" | "level" | "gradeLevel" | "term" | "credits" | "status" | "finalGrade" | "highSchoolCredit"
 >;
+
+/**
+ * Tells the grade's list what just happened, for its status line. `moveFocus` means this row is
+ * leaving the list (removed, or moved to another grade), so the list must take focus.
+ */
+export type Announce = (text: string, opts: { moveFocus: boolean }) => void;
 
 const STATUS_STYLES: Record<PlanCourse["status"], string> = {
   planned: "border border-dashed border-border text-muted",
@@ -24,10 +31,18 @@ function credits(n: number) {
   return `${n} ${n === 1 ? "credit" : "credits"}`;
 }
 
-function EditCourse({ course, onDone }: { course: PlanCourse; onDone: () => void }) {
+function EditCourse({
+  course,
+  onSaved,
+  onCancel,
+}: {
+  course: PlanCourse;
+  onSaved: (formData: FormData) => void;
+  onCancel: () => void;
+}) {
   const [state, action, pending, values] = useFormAction<CourseFormState>(async (prev, formData) => {
     const res = await updateCourseAction(prev, formData);
-    if (res?.ok) onDone();
+    if (res?.ok) onSaved(formData);
     return res;
   }, undefined);
   const titleId = `edit-${course.id}-title`;
@@ -60,7 +75,7 @@ function EditCourse({ course, onDone }: { course: PlanCourse; onDone: () => void
         <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : "Save changes"}
         </Button>
-        <Button type="button" variant="secondary" onClick={onDone} disabled={pending}>
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={pending}>
           Cancel
         </Button>
       </div>
@@ -68,8 +83,12 @@ function EditCourse({ course, onDone }: { course: PlanCourse; onDone: () => void
   );
 }
 
-function DeleteCourse({ course, onCancel }: { course: PlanCourse; onCancel: () => void }) {
-  const [state, action, pending] = useActionState<CourseFormState, FormData>(deleteCourseAction, undefined);
+function DeleteCourse({ course, onRemoved, onCancel }: { course: PlanCourse; onRemoved: () => void; onCancel: () => void }) {
+  const [state, action, pending] = useActionState<CourseFormState, FormData>(async (prev, formData) => {
+    const res = await deleteCourseAction(prev, formData);
+    if (res?.ok) onRemoved();
+    return res;
+  }, undefined);
   // Focus the safe choice, so an accidental Enter keeps the course.
   const keepRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -96,7 +115,7 @@ function DeleteCourse({ course, onCancel }: { course: PlanCourse; onCancel: () =
 }
 
 /** One course in a grade section: details at a glance, plus edit and remove. */
-export function CourseRow({ course }: { course: PlanCourse }) {
+export function CourseRow({ course, announce }: { course: PlanCourse; announce?: Announce }) {
   const [mode, setMode] = useState<"view" | "edit" | "delete">("view");
   const editRef = useRef<HTMLButtonElement>(null);
   const deleteRef = useRef<HTMLButtonElement>(null);
@@ -118,10 +137,21 @@ export function CourseRow({ course }: { course: PlanCourse }) {
     setMode("view");
   }
 
+  function saved(formData: FormData) {
+    const notice = savedNotice(course, {
+      name: String(formData.get("name") ?? ""),
+      gradeLevel: Number(formData.get("gradeLevel")),
+    });
+    announce?.(notice.text, { moveFocus: notice.moveFocus });
+    // A course moved to another grade leaves this list, so the list takes focus instead.
+    if (notice.moveFocus) setMode("view");
+    else closeEdit();
+  }
+
   if (mode === "edit") {
     return (
       <li className="rounded-lg border border-accent p-4">
-        <EditCourse course={course} onDone={closeEdit} />
+        <EditCourse course={course} onSaved={saved} onCancel={closeEdit} />
       </li>
     );
   }
@@ -168,7 +198,13 @@ export function CourseRow({ course }: { course: PlanCourse }) {
           </div>
         )}
       </div>
-      {mode === "delete" && <DeleteCourse course={course} onCancel={closeDelete} />}
+      {mode === "delete" && (
+        <DeleteCourse
+          course={course}
+          onRemoved={() => announce?.(removedNotice(course.name), { moveFocus: true })}
+          onCancel={closeDelete}
+        />
+      )}
     </li>
   );
 }
