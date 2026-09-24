@@ -3,7 +3,7 @@ import * as z from "zod";
 import type { Db } from "@/db";
 import { consentRecords, households, parentStudentLinks, users } from "@/db/schema";
 import { audit } from "./audit";
-import { MAX_GRADE, MIN_GRADE, isPlausibleStudentBirthDate, isUnder13 } from "./auth/age";
+import { MAX_GRADE, MIN_GRADE, currentGrade, isPlausibleStudentBirthDate, isUnder13, schoolYearOf } from "./auth/age";
 import { hashPassword, verifyPassword } from "./auth/password";
 import { CONSENT_POLICY_VERSION, type ConsentVerification } from "./consent/verifier";
 
@@ -86,6 +86,7 @@ export async function registerStudent(
         displayName: input.displayName,
         birthDate: input.birthDate,
         grade: input.grade,
+        gradeSchoolYear: schoolYearOf(today),
       })
       .returning({ id: users.id });
     return user.id;
@@ -152,6 +153,7 @@ export async function createChildAccount(
         displayName: input.displayName,
         birthDate: input.birthDate,
         grade: input.grade,
+        gradeSchoolYear: schoolYearOf(today),
         parentManaged: under13,
       })
       .returning({ id: users.id });
@@ -235,13 +237,14 @@ export async function isLinkedParent(db: Db, parentUserId: string, studentUserId
   return Boolean(link);
 }
 
-export async function listChildren(db: Db, parentUserId: string) {
-  return db
+export async function listChildren(db: Db, parentUserId: string, now = new Date()) {
+  const rows = await db
     .select({
       id: users.id,
       displayName: users.displayName,
       username: users.username,
       grade: users.grade,
+      gradeSchoolYear: users.gradeSchoolYear,
       parentManaged: users.parentManaged,
       createdAt: users.createdAt,
     })
@@ -249,4 +252,16 @@ export async function listChildren(db: Db, parentUserId: string) {
     .innerJoin(users, eq(parentStudentLinks.studentUserId, users.id))
     .where(eq(parentStudentLinks.parentUserId, parentUserId))
     .orderBy(users.createdAt);
+  return rows.map(({ gradeSchoolYear, ...r }) => ({ ...r, grade: currentGrade({ grade: r.grade, gradeSchoolYear }, now) }));
+}
+
+/** Lets a student (or their parent) correct the grade, e.g. after skipping or repeating a year. */
+export async function setStudentGrade(db: Db, studentId: string, grade: number, today = new Date()) {
+  if (!Number.isInteger(grade) || grade < MIN_GRADE || grade > MAX_GRADE) return false;
+  const updated = await db
+    .update(users)
+    .set({ grade, gradeSchoolYear: schoolYearOf(today) })
+    .where(and(eq(users.id, studentId), eq(users.role, "student")))
+    .returning({ id: users.id });
+  return updated.length > 0;
 }

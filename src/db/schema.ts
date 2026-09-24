@@ -45,6 +45,10 @@ export const users = pgTable(
     // Students only. Needed to know when COPPA protections stop applying.
     birthDate: date("birth_date", { mode: "string" }),
     grade: smallint("grade"),
+    // The school year (named by its starting calendar year) that `grade` applied to; grades
+    // advance each August from here. See currentGrade().
+    gradeSchoolYear: smallint("grade_school_year"),
+    remindersEnabled: boolean("reminders_enabled").notNull().default(true),
     // True when a parent created and controls this account (under-13 at creation).
     parentManaged: boolean("parent_managed").notNull().default(false),
     createdAt: createdAt(),
@@ -405,4 +409,135 @@ export const northStarGoals = pgTable(
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("north_star_user_occupation_uq").on(t.userId, t.occupationCode)],
+);
+
+// ---------------------------------------------------------------------------
+// Planning (Phase 2) — student data, deleted with the student
+// ---------------------------------------------------------------------------
+
+export type CourseSubject =
+  | "english" | "math" | "science" | "social_studies" | "world_language" | "arts"
+  | "computer_science" | "career_technical" | "health_pe" | "other";
+export type CourseLevel = "regular" | "honors" | "ap" | "ib" | "dual_enrollment";
+export type CourseTerm = "full_year" | "fall" | "spring" | "summer";
+export type CourseStatus = "planned" | "in_progress" | "completed";
+
+/** Courses a student has taken or plans to take, entered from their own school's catalog. */
+export const studentCourses = pgTable(
+  "student_courses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    subject: text("subject").$type<CourseSubject>().notNull(),
+    level: text("level").$type<CourseLevel>().notNull().default("regular"),
+    gradeLevel: smallint("grade_level").notNull(),
+    term: text("term").$type<CourseTerm>().notNull().default("full_year"),
+    credits: real("credits").notNull().default(1),
+    status: text("status").$type<CourseStatus>().notNull().default("planned"),
+    // Letter grade, e.g. "A-", once completed. "P"/"W"/"I" don't count toward GPA.
+    finalGrade: text("final_grade"),
+    // Middle-school courses usually don't count toward the high school GPA unless the school
+    // gives high school credit (e.g. Algebra I in 8th grade).
+    highSchoolCredit: boolean("high_school_credit").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("student_courses_user_idx").on(t.userId, t.gradeLevel)],
+);
+
+/** A student's progress on roadmap milestones (the milestone library lives in code). */
+export const studentMilestones = pgTable(
+  "student_milestones",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    milestoneId: text("milestone_id").notNull(),
+    status: text("status").$type<"done" | "skipped">().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.milestoneId] })],
+);
+
+/** One to three small actions a student commits to for a week. */
+export const weeklySteps = pgTable(
+  "weekly_steps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // Monday of the week, YYYY-MM-DD.
+    weekStart: date("week_start", { mode: "string" }).notNull(),
+    text: text("text").notNull(),
+    milestoneId: text("milestone_id"),
+    status: text("status").$type<"open" | "done">().notNull().default("open"),
+    createdAt: createdAt(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (t) => [index("weekly_steps_user_week_idx").on(t.userId, t.weekStart)],
+);
+
+// ---------------------------------------------------------------------------
+// AI counselor — student data, deleted with the student
+// ---------------------------------------------------------------------------
+
+export const counselorConversations = pgTable(
+  "counselor_conversations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title"),
+    // Set when a high-risk message was intercepted; the counselor stays in support mode.
+    concernFlagged: boolean("concern_flagged").notNull().default(false),
+    // Number of messages already folded into the student's memory notes.
+    memoryProcessedCount: integer("memory_processed_count").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("counselor_conversations_user_idx").on(t.userId, t.updatedAt)],
+);
+
+export const counselorMessages = pgTable(
+  "counselor_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => counselorConversations.id, { onDelete: "cascade" }),
+    role: text("role").$type<"user" | "assistant">().notNull(),
+    // "support" = crisis resources shown instead of a counselor reply; "notice" = system notices
+    // like the monthly AI limit.
+    kind: text("kind").$type<"chat" | "support" | "notice">().notNull().default("chat"),
+    content: text("content").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("counselor_messages_conversation_idx").on(t.conversationId, t.createdAt)],
+);
+
+/** Short notes the counselor keeps about a student across conversations (never sensitive details). */
+export const counselorMemory = pgTable("counselor_memory", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  notes: jsonb("notes").$type<string[]>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Which weekly reminder emails were sent, so the cron job is idempotent. */
+export const reminderSends = pgTable(
+  "reminder_sends",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    weekStart: date("week_start", { mode: "string" }).notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.weekStart] })],
 );

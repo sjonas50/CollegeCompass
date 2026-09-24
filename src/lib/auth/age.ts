@@ -27,6 +27,27 @@ export function isPlausibleStudentBirthDate(birthDate: string, today: Date = new
   return age >= 10 && age <= 20;
 }
 
+/**
+ * US school years run August–July; a school year is named by the calendar year it starts in.
+ * June and July belong to the year that just ended (the summer after that grade).
+ */
+export function schoolYearOf(date: Date = new Date()): number {
+  return date.getUTCMonth() >= 7 ? date.getUTCFullYear() : date.getUTCFullYear() - 1;
+}
+
+/**
+ * A student's grade today. We store the grade they gave and the school year it applied to, so
+ * grades advance each August without anyone editing them. Values above 12 mean graduated.
+ */
+export function currentGrade(
+  stored: { grade: number | null; gradeSchoolYear: number | null },
+  now: Date = new Date(),
+): number | null {
+  if (stored.grade === null) return null;
+  const elapsed = stored.gradeSchoolYear === null ? 0 : schoolYearOf(now) - stored.gradeSchoolYear;
+  return stored.grade + Math.max(0, elapsed);
+}
+
 export type GradeBand = "explore" | "build" | "launch";
 
 /** 7–8 explore, 9–10 build, 11–12 launch. */

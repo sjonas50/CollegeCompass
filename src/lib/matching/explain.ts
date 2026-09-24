@@ -11,6 +11,7 @@ import { getAnthropic } from "../ai/client";
 import { modelFor, supportsEffort } from "../ai/models";
 import { toAiContext } from "../ai/privacy";
 import { assertWithinBudget, recordUsage } from "../ai/usage";
+import { currentGrade } from "../auth/age";
 import { latestMatchRun, loadOccupationProfiles } from "./service";
 import { pathwayFor } from "./match";
 
@@ -36,13 +37,17 @@ Rules:
 type Options = { client?: Pick<Anthropic, "beta">; now?: Date };
 
 async function buildContext(db: Db, userId: string) {
-  const [student] = await db.select({ grade: users.grade }).from(users).where(eq(users.id, userId));
+  const [student] = await db
+    .select({ grade: users.grade, gradeSchoolYear: users.gradeSchoolYear })
+    .from(users)
+    .where(eq(users.id, userId));
   const [interests, personality, values] = await Promise.all([
     latestResult(db, userId, "interests"),
     latestResult(db, userId, "personality"),
     latestResult(db, userId, "values"),
   ]);
-  return { ctx: toAiContext({ grade: student?.grade ?? null }), interests, personality, values };
+  const grade = student ? currentGrade(student) : null;
+  return { ctx: toAiContext({ grade: grade === null ? null : Math.min(grade, 12) }), interests, personality, values };
 }
 
 const AREA_PHRASE: Record<Riasec, string> = {

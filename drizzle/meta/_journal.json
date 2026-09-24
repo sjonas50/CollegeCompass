@@ -15,6 +15,13 @@
       "when": 1790196936504,
       "tag": "0001_assessments",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790216319950,
+      "tag": "0002_planning",
+      "breakpoints": true
     }
   ]
 }

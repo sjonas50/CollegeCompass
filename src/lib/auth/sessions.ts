@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { Db } from "@/db";
 import { sessions, users } from "@/db/schema";
+import { currentGrade } from "./age";
 import { generateToken, hashToken } from "./tokens";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -10,8 +11,11 @@ const RENEW_WHEN_REMAINING_MS = 7 * DAY_MS;
 
 export type SessionUser = Pick<
   typeof users.$inferSelect,
-  "id" | "role" | "displayName" | "grade" | "householdId" | "parentManaged"
->;
+  "id" | "role" | "displayName" | "householdId" | "parentManaged"
+> & {
+  /** Current grade (advanced each August); above 12 means graduated. Null for adults. */
+  grade: number | null;
+};
 
 export async function createSession(db: Db, userId: string, now = new Date()) {
   const token = generateToken();
@@ -31,6 +35,7 @@ export async function validateSession(db: Db, token: string, now = new Date()) {
         role: users.role,
         displayName: users.displayName,
         grade: users.grade,
+        gradeSchoolYear: users.gradeSchoolYear,
         householdId: users.householdId,
         parentManaged: users.parentManaged,
       },
@@ -50,7 +55,8 @@ export async function validateSession(db: Db, token: string, now = new Date()) {
     expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
     await db.update(sessions).set({ expiresAt }).where(eq(sessions.id, id));
   }
-  return { user: row.user as SessionUser, expiresAt };
+  const { gradeSchoolYear, ...user } = row.user;
+  return { user: { ...user, grade: currentGrade({ grade: user.grade, gradeSchoolYear }, now) } as SessionUser, expiresAt };
 }
 
 export async function invalidateSession(db: Db, token: string) {

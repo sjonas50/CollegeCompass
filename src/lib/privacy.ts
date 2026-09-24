@@ -7,11 +7,18 @@ import {
   assessmentResults,
   careerMatches,
   consentRecords,
+  counselorConversations,
+  counselorMemory,
+  counselorMessages,
   matchRuns,
   northStarGoals,
   parentStudentLinks,
+  reminderSends,
   safetyEvents,
+  studentCourses,
+  studentMilestones,
   users,
+  weeklySteps,
 } from "@/db/schema";
 import { isLinkedParent } from "./accounts";
 import { audit } from "./audit";
@@ -32,6 +39,8 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
       username: users.username,
       birthDate: users.birthDate,
       grade: users.grade,
+      gradeSchoolYear: users.gradeSchoolYear,
+      remindersEnabled: users.remindersEnabled,
       parentManaged: users.parentManaged,
       createdAt: users.createdAt,
     })
@@ -103,6 +112,8 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
       .where(eq(northStarGoals.userId, studentId)),
   ]);
 
+  const planning = await exportPlanningData(db, studentId);
+
   await audit(db, "student.exported", { actorUserId: requesterId, subjectUserId: studentId });
   return {
     exportedAt: new Date().toISOString(),
@@ -117,6 +128,7 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
     })),
     careerMatches: runs.map((r) => ({ ...r, matches: matches.filter((m) => m.runId === r.id) })),
     northStars: goals,
+    ...planning,
   };
 }
 
@@ -155,4 +167,41 @@ export async function deleteParentAccount(db: Db, parentId: string) {
   });
   await audit(db, "parent.deleted", { metadata: { childrenDeleted: managedIds.length } });
   return { childrenDeleted: managedIds.length };
+}
+
+/** Phase 2 data: courses, roadmap progress, weekly steps, counselor conversations and memory. */
+async function exportPlanningData(db: Db, studentId: string) {
+  const [courses, milestones, steps, conversations, messages, memory, reminders] = await Promise.all([
+    db.select().from(studentCourses).where(eq(studentCourses.userId, studentId)),
+    db
+      .select({ milestoneId: studentMilestones.milestoneId, status: studentMilestones.status, updatedAt: studentMilestones.updatedAt })
+      .from(studentMilestones)
+      .where(eq(studentMilestones.userId, studentId)),
+    db.select().from(weeklySteps).where(eq(weeklySteps.userId, studentId)),
+    db.select().from(counselorConversations).where(eq(counselorConversations.userId, studentId)),
+    db
+      .select({
+        conversationId: counselorMessages.conversationId,
+        role: counselorMessages.role,
+        kind: counselorMessages.kind,
+        content: counselorMessages.content,
+        createdAt: counselorMessages.createdAt,
+      })
+      .from(counselorMessages)
+      .innerJoin(counselorConversations, eq(counselorConversations.id, counselorMessages.conversationId))
+      .where(eq(counselorConversations.userId, studentId)),
+    db.select({ notes: counselorMemory.notes, updatedAt: counselorMemory.updatedAt }).from(counselorMemory).where(eq(counselorMemory.userId, studentId)),
+    db.select({ weekStart: reminderSends.weekStart, sentAt: reminderSends.sentAt }).from(reminderSends).where(eq(reminderSends.userId, studentId)),
+  ]);
+  return {
+    courses: courses.map(({ userId: _u, ...c }) => c),
+    roadmapProgress: milestones,
+    weeklySteps: steps.map(({ userId: _u, ...s }) => s),
+    counselorConversations: conversations.map(({ userId: _u, ...c }) => ({
+      ...c,
+      messages: messages.filter((m) => m.conversationId === c.id),
+    })),
+    counselorMemory: memory[0]?.notes ?? [],
+    reminderEmails: reminders,
+  };
 }
