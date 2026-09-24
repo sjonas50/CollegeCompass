@@ -1,12 +1,14 @@
 import { env } from "@/env";
 
-export type AiFeature = "safety" | "counselor" | "explain";
+export type AiFeature = "safety" | "safety_backup" | "counselor" | "explain";
 
 /** Model per feature, overridable by env so evals can compare models without code changes. */
 export function modelFor(feature: AiFeature): string {
   const e = env();
+  if (feature === "safety") return e.AI_MODEL_SAFETY;
+  if (feature === "safety_backup") return e.AI_MODEL_SAFETY_BACKUP;
   // Match explanations are counselor-voiced, so they share its model.
-  return feature === "safety" ? e.AI_MODEL_SAFETY : e.AI_MODEL_COUNSELOR;
+  return e.AI_MODEL_COUNSELOR;
 }
 
 // US dollars per million tokens (input, output). Update when pricing changes.

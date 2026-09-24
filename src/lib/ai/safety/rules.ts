@@ -22,6 +22,12 @@ const RULES: Rule[] = [
   },
   { category: "self_harm", severity: "medium", pattern: /\bsuicidal\b|\bself[- ]harm(ing)?\b/ },
   { category: "self_harm", severity: "high", pattern: /\b(don'?t|do not) want to (be alive|live|exist)( anymore)?\b|\bno reason to live\b|\bbetter off (dead|without me)\b/ },
+  // Coded or shorthand self-harm language that stays unambiguous in context.
+  {
+    category: "self_harm",
+    severity: "high",
+    pattern: /\b(been|started|still|keep|kept|i'?m)\s+cutting(\s+again)?\b(?!\s+(class|classes|school|hair|corners|back|down|out|weight|coupons|wood|fabric|paper))|\bcutting again\b(?!\s+(class|classes|school))|\bunalive\s+(myself|me)\b|\b(don'?t|do not)\s+plan\s+on\s+(being|sticking)\s+(here|around)\b/,
+  },
   { category: "self_harm", severity: "medium", pattern: /\bsuicide\b/ },
 
   // Abuse and safety at home

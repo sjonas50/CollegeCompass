@@ -41,23 +41,30 @@ export async function assessMessage(
   const rules = classifyWithRules(text);
 
   let model: SafetySignal | null = null;
-  let degraded = false;
+  let degraded = true;
+  let client: Pick<Anthropic, "beta"> | null = null;
   try {
-    const client = opts.client ?? getAnthropic();
-    const modelId = modelFor("safety");
-    const result = await classifyWithModel(client, modelId, scrubPii(text, opts.knownNames));
-    if (result) {
+    client = opts.client ?? getAnthropic();
+  } catch (error) {
+    console.error("[safety] model tier unavailable", error instanceof Error ? error.name : "unknown");
+  }
+  // Primary model, then a backup model if the primary errors; keyword rules alone only if both fail.
+  for (const feature of ["safety", "safety_backup"] as const) {
+    if (!client) break;
+    const modelId = modelFor(feature);
+    try {
+      const result = await classifyWithModel(client, modelId, scrubPii(text, opts.knownNames));
+      if (!result) break; // declined: don't retry, flag the gap
       model = result.signal;
+      degraded = false;
       // A failed usage write must not throw away the model's verdict.
       await recordUsage(db, userId, "safety", modelId, result.usage).catch((error) =>
         console.error("[safety] failed to record usage", error instanceof Error ? error.name : "unknown"),
       );
-    } else {
-      degraded = true;
+      break;
+    } catch (error) {
+      console.error(`[safety] ${feature} model failed`, error instanceof Error ? error.name : "unknown");
     }
-  } catch (error) {
-    degraded = true;
-    console.error("[safety] model tier unavailable", error instanceof Error ? error.name : "unknown");
   }
 
   const signal = combineSignals(rules, model, !degraded);

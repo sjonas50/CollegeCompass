@@ -22,6 +22,9 @@ const EnvSchema = z
 
     ANTHROPIC_API_KEY: z.string().optional(),
     AI_MODEL_SAFETY: z.string().default("claude-opus-5"),
+    // Tried when the primary safety model errors (outage, overload), before falling back to keyword
+    // rules alone. Chosen from the safety eval: 0 misses on Opus 5, 1 borderline miss on Sonnet 5.
+    AI_MODEL_SAFETY_BACKUP: z.string().default("claude-sonnet-5"),
     AI_MODEL_COUNSELOR: z.string().default("claude-opus-5"),
     // Per-student monthly AI spend ceiling, in US dollars.
     AI_MONTHLY_BUDGET_USD: z.coerce.number().positive().default(3),

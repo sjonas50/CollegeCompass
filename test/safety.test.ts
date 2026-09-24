@@ -90,6 +90,32 @@ describe("assessMessage", () => {
   });
 });
 
+describe("safety model backup", () => {
+  it("retries on the backup model when the primary errors, before degrading to rules", async () => {
+    const models: string[] = [];
+    const flaky = {
+      beta: {
+        messages: {
+          parse: async (params: { model: string }) => {
+            models.push(params.model);
+            if (models.length === 1) throw new Error("overloaded");
+            return { stop_reason: "end_turn", parsed_output: { category: "self_harm", severity: "high", rationale: "t" }, usage: { input_tokens: 10, output_tokens: 5 } };
+          },
+        },
+      },
+    } as never;
+    const result = await assessMessage(db, userId, "i dont think ill be around by then", { client: flaky });
+    expect(models).toEqual(["claude-opus-5", "claude-sonnet-5"]);
+    expect(result).toMatchObject({ severity: "high", degraded: false, sources: ["model"] });
+  });
+
+  it("degrades to rules only when both models fail", async () => {
+    const down = { beta: { messages: { parse: async () => { throw new Error("outage"); } } } } as never;
+    const result = await assessMessage(db, userId, "been cutting again", { client: down });
+    expect(result).toMatchObject({ severity: "high", degraded: true, sources: ["rules"] });
+  });
+});
+
 describe("AI budget", () => {
   it("blocks further AI use once the monthly budget is spent", async () => {
     await assertWithinBudget(db, userId);
