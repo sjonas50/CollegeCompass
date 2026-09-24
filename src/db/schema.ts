@@ -292,8 +292,49 @@ export const colleges = pgTable(
     medianEarnings10yr: integer("median_earnings_10yr"),
     avgNetPrice: integer("avg_net_price"),
     netPriceByIncome: jsonb("net_price_by_income").$type<NetPriceByIncome>(),
+    zip: text("zip"),
+    // Undergraduate enrollment.
+    enrollment: integer("enrollment"),
+    // 1 certificate, 2 associate, 3 bachelor's, 4 graduate (the degree most students earn here).
+    predominantDegree: smallint("predominant_degree"),
+    highestDegree: smallint("highest_degree"),
+    // Each college's own net price calculator (required by federal law).
+    netPriceCalculatorUrl: text("net_price_calculator_url"),
+    // Total cost of attendance per year (academic-year or program-year schools).
+    costOfAttendance: integer("cost_of_attendance"),
+    tuitionInState: integer("tuition_in_state"),
+    tuitionOutOfState: integer("tuition_out_of_state"),
+    // Share of undergraduates receiving a Pell Grant (0–1).
+    pellShare: real("pell_share"),
+    // Median federal debt of completers.
+    medianDebt: integer("median_debt"),
+    hbcu: boolean("hbcu").notNull().default(false),
+    hispanicServing: boolean("hispanic_serving").notNull().default(false),
+    tribal: boolean("tribal").notNull().default(false),
+    onlineOnly: boolean("online_only").notNull().default(false),
   },
-  (t) => [index("colleges_state_idx").on(t.state)],
+  (t) => [index("colleges_state_idx").on(t.state), index("colleges_name_idx").on(t.name)],
+);
+
+/**
+ * Programs each college offers (College Scorecard field-of-study data), undergraduate credentials
+ * only. CIP codes here are 4-digit families ("11.07"); majors in the crosswalk are 6-digit.
+ */
+export const collegePrograms = pgTable(
+  "college_programs",
+  {
+    unitId: integer("unit_id")
+      .notNull()
+      .references(() => colleges.unitId, { onDelete: "cascade" }),
+    cip4: text("cip4").notNull(),
+    title: text("title").notNull(),
+    // 1 undergraduate certificate, 2 associate, 3 bachelor's.
+    credentialLevel: smallint("credential_level").notNull(),
+    medianDebt: integer("median_debt"),
+    // Median earnings four years after completing (only where the sample is large enough).
+    medianEarnings4yr: integer("median_earnings_4yr"),
+  },
+  (t) => [primaryKey({ columns: [t.unitId, t.cip4, t.credentialLevel] }), index("college_programs_cip_idx").on(t.cip4)],
 );
 
 /** O*NET work values extent scores (1–7), from O*NET 30.0 (the last release that includes them). */
@@ -498,6 +539,9 @@ export const counselorConversations = pgTable(
     concernFlagged: boolean("concern_flagged").notNull().default(false),
     // Number of messages already folded into the student's memory notes.
     memoryProcessedCount: integer("memory_processed_count").notNull().default(0),
+    // The student context as of the conversation's first turn, reused byte-for-byte so the prompt
+    // cache stays valid. Live plan and roadmap data come from tools.
+    context: text("context"),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -545,7 +589,69 @@ export const reminderSends = pgTable(
     weekStart: date("week_start", { mode: "string" }).notNull(),
     // SHA-256 of the recipient address (never the address itself).
     recipient: text("recipient").notNull().default(""),
-    sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }).notNull().defaultNow(),
+    // Null until the email actually went out; a stale claim with no send is retried.
+    sentAt: timestamp("sent_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.userId, t.weekStart, t.recipient] })],
+);
+
+// ---------------------------------------------------------------------------
+// College list and applications (Phase 3) — student data, deleted with the student
+// ---------------------------------------------------------------------------
+
+export type CollegeListStatus =
+  | "considering" | "applying" | "applied" | "accepted" | "waitlisted" | "not_accepted" | "enrolling" | "declined";
+export type DeadlineType = "early_decision" | "early_action" | "regular" | "rolling" | "priority";
+
+export type ApplicationChecklist = {
+  applicationSubmitted?: boolean;
+  transcriptRequested?: boolean;
+  recommendationsRequested?: boolean;
+  testScoresSent?: boolean;
+  fafsaListed?: boolean;
+  cssProfileSubmitted?: boolean;
+  aidOfferReceived?: boolean;
+  depositPaid?: boolean;
+};
+
+/** Yearly amounts from a financial aid offer, entered by the student to compare offers. */
+export type AidOffer = {
+  costOfAttendance?: number;
+  grants?: number;
+  scholarships?: number;
+  workStudy?: number;
+  federalLoans?: number;
+  parentLoans?: number;
+  otherLoans?: number;
+};
+
+/**
+ * Colleges and training programs a student is considering or applying to. Entries either point
+ * to a Scorecard college (unitId, no foreign key so reference reloads never delete them) or are
+ * custom (apprenticeships and programs not in the Scorecard).
+ */
+export const collegeList = pgTable(
+  "college_list",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    unitId: integer("unit_id"),
+    name: text("name").notNull(),
+    kind: text("kind").$type<"college" | "program">().notNull().default("college"),
+    status: text("status").$type<CollegeListStatus>().notNull().default("considering"),
+    deadlineType: text("deadline_type").$type<DeadlineType>(),
+    deadline: date("deadline", { mode: "string" }),
+    checklist: jsonb("checklist").$type<ApplicationChecklist>().notNull().default({}),
+    aidOffer: jsonb("aid_offer").$type<AidOffer>(),
+    notes: text("notes"),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("college_list_user_idx").on(t.userId),
+    uniqueIndex("college_list_user_unit_uq").on(t.userId, t.unitId),
+  ],
 );

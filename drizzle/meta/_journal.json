@@ -36,6 +36,20 @@
       "when": 1790220627829,
       "tag": "0004_message_order",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790222127999,
+      "tag": "0005_colleges",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790222200499,
+      "tag": "0006_claims_and_context",
+      "breakpoints": true
     }
   ]
 }
