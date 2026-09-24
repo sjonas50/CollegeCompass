@@ -370,17 +370,24 @@ describe("keeping the free results", () => {
 });
 
 describe("landing page", () => {
+  const home = (sp: Record<string, string> = {}) => Home({ params: Promise.resolve({}), searchParams: Promise.resolve(sp) } as PageProps<"/">);
+
   it("leads with the free quiz, then signup and sign in, then the explorers", async () => {
-    const html = await render(Home());
+    const html = await render(home());
     const hrefs = [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
     expect(hrefs[0]).toBe("/try");
     expect(hrefs).toEqual(expect.arrayContaining(["/signup", "/signup/parent", "/login", "/colleges", "/aid"]));
     expect(hrefs.indexOf("/signup")).toBeLessThan(hrefs.indexOf("/colleges"));
     expect(text(html)).toContain("Find careers that fit you — free, no account needed");
+    expect(text(html)).not.toContain("were deleted");
+  });
+
+  it("confirms a deleted account", async () => {
+    expect(text(await render(home({ "account-deleted": "1" })))).toContain("Your account and everything in it were deleted.");
   });
 
   it("sends signed-in users home", async () => {
     await signInStudent();
-    expect(await redirectOf(Promise.resolve().then(() => Home()))).toBe("/dashboard");
+    expect(await redirectOf(Promise.resolve().then(() => home()))).toBe("/dashboard");
   });
 });

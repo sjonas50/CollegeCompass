@@ -126,14 +126,18 @@ Routines and incident steps are in [operations.md](operations.md).
         child has entered (assessments, plans, lists, counselor chats, and so on).
   - [ ] A parent downloads a linked teen's export: it leaves out counselor conversations, memory
         notes, safety events and counselor usage, and its `notIncluded` note says so.
-  - [ ] A teen downloads their own export ("Download my data" on the account page): it's complete.
+  - [ ] A teen downloads their own export ("Download my data" in Settings on the dashboard): it's
+        complete.
 - [ ] **Deletion tested end to end** on production with test accounts:
   - [ ] A parent deletes one child: the child can't sign in, and their rows are gone (check the
         tables with a query).
   - [ ] A parent deletes the whole household account: parent, children, sessions, consent
         records and billing records are gone, any Stripe subscription is canceled, and no more
         emails go out.
-  - [ ] A teen (13+) deletes their own account, if the teen account page offers it.
+  - [ ] A teen (13+) deletes their own account ("Delete my account" in Settings on the dashboard,
+        confirmed with their password): they're signed out, can't sign in again, and their rows
+        are gone. If they were alone in their household, it's gone too; a linked parent keeps
+        their account. A child a parent set up under 13 is told to ask that parent instead.
   - [ ] The audit log keeps only what happened, with no names, emails or message text.
 - [ ] **Logs checked**: after a full test session (sign-up, assessments, a counselor chat, a
       safety test message, a consent email), the Vercel logs and the error-monitoring service

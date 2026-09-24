@@ -147,17 +147,25 @@ describe("GradeSettingSelect", () => {
   it("is in the student's own settings form along with the grade it shows", () => {
     setClock(JUNE_15);
     const html = renderToStaticMarkup(
-      createElement(StudentSettings, { studentId: "00000000-0000-4000-8000-000000000001", grade: 12, reminders: { kind: "self", enabled: true } }),
+      createElement(StudentSettings, { studentId: "00000000-0000-4000-8000-000000000001", parentManaged: false, grade: 12, reminders: { kind: "self", enabled: true } }),
     );
     expect(untouched(html)).toEqual({ grade: expect.objectContaining({ value: "" }), shownGrade: "12" });
   });
 
-  it("links the student to a download of their own data", () => {
-    const html = renderToStaticMarkup(
-      createElement(StudentSettings, { studentId: "00000000-0000-4000-8000-000000000001", grade: 9, reminders: { kind: "self", enabled: true } }),
-    );
-    expect(html).toContain('href="/api/parent/children/00000000-0000-4000-8000-000000000001/export"');
-    expect(html).toContain("Download my data");
+  it("links the student to a download of their own data, and a teen to deleting their account", () => {
+    const settings = (parentManaged: boolean) =>
+      renderToStaticMarkup(
+        createElement(StudentSettings, { studentId: "00000000-0000-4000-8000-000000000001", parentManaged, grade: 9, reminders: { kind: "self", enabled: true } }),
+      );
+    const teen = settings(false);
+    expect(teen).toContain('href="/api/parent/children/00000000-0000-4000-8000-000000000001/export"');
+    expect(teen).toContain("Download my data");
+    expect(teen).toContain('href="/account/delete"');
+    // A child a parent set up under 13: the parent deletes it.
+    const child = settings(true);
+    expect(child).toContain("Download my data");
+    expect(child).not.toContain('href="/account/delete"');
+    expect(child).toContain("they can delete it from their parent page");
   });
 });
 
@@ -168,7 +176,7 @@ describe("saving the grade form untouched", () => {
     const user = await signIn(db, id, JUNE_15);
     expect(user.grade).toBe(12);
     const { grade, shownGrade } = untouched(
-      renderToStaticMarkup(createElement(StudentSettings, { studentId: id, grade: user.grade, reminders: { kind: "self", enabled: true } })),
+      renderToStaticMarkup(createElement(StudentSettings, { studentId: id, parentManaged: false, grade: user.grade, reminders: { kind: "self", enabled: true } })),
     );
     await submit(setMyGradeAction, { grade: grade.value, shownGrade });
     const row = await storedRow(db, id);

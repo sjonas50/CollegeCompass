@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import * as z from "zod";
 import { getDb } from "@/db";
 import { isLinkedParent, setStudentGrade } from "@/lib/accounts";
+import { clearSessionCookie } from "@/lib/auth/cookies";
 import { requireUser } from "@/lib/auth/dal";
+import type { FormState } from "@/lib/forms";
+import { deleteOwnStudentAccount } from "@/lib/privacy";
 import { setOwnRemindersEnabled, setRemindersEnabled } from "@/lib/reminders";
 
 const Grade = z.coerce.number().int().min(6).max(12);
@@ -40,6 +43,28 @@ export async function setMyRemindersAction(formData: FormData) {
   const student = await requireUser(["student"]);
   const saved = await setOwnRemindersEnabled(await getDb(), student.id, formData.get("enabled") === "on");
   redirect(saved ? "/dashboard?settings=saved" : "/dashboard");
+}
+
+/** A teen deletes their own account (see deleteOwnStudentAccount), then lands signed out on the home page. */
+export async function deleteMyAccountAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const student = await requireUser(["student"]);
+  const password = formData.get("password");
+  if (typeof password !== "string" || password === "") return { errors: { password: ["Enter your password."] } };
+  const result = await deleteOwnStudentAccount(await getDb(), student.id, password);
+  if (!result.ok) {
+    switch (result.error) {
+      case "wrong_password":
+        return { errors: { password: ["That password isn't right."] } };
+      case "rate_limited":
+        return { message: "Too many tries. Please wait 15 minutes and try again." };
+      case "parent_managed":
+        return { message: "Your parent or guardian set up this account, so they can delete it from their parent page." };
+      default:
+        return { message: "We couldn't delete this account. Please sign out, sign in again and try again." };
+    }
+  }
+  await clearSessionCookie();
+  redirect("/?account-deleted=1");
 }
 
 async function linkedChild(formData: FormData) {

@@ -77,8 +77,9 @@ College Scorecard notes:
 - `src/db/schema.ts` — all tables. Student data hangs off `users`/`households`; reference data
   (occupations, majors, colleges) is separate and read-only.
 - `src/lib/accounts.ts`, `src/lib/consent/`, `src/lib/privacy.ts` — accounts, COPPA parental
-  consent, and parent export/deletion. Written as plain functions taking a `Db`, so they're
-  tested without a browser (`test/coppa-flow.test.ts`).
+  consent, and data export and deletion (by a parent, or by a teen for their own account). Written
+  as plain functions taking a `Db`, so they're tested without a browser (`test/coppa-flow.test.ts`,
+  `test/delete-own-account.test.ts`).
 - `src/lib/auth/` — argon2id passwords, database sessions (hashed tokens, 14-day sliding), and
   the data-access layer (`requireUser`). `src/proxy.ts` only does optimistic redirects.
 - `src/lib/ai/` — model config, cost tracking with a per-student monthly budget, PII scrubbing,

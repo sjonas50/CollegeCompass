@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ButtonLink, Card } from "@/components/ui";
+import { ButtonLink, Card, Notice } from "@/components/ui";
 import { getCurrentUser, homePathFor } from "@/lib/auth/dal";
 
 const EXPLORE = [
@@ -9,12 +9,14 @@ const EXPLORE = [
   { href: "/careers", title: "Browse careers", text: "What people do all day, and the training it takes to get there." },
 ];
 
-export default async function Home() {
+export default async function Home({ searchParams }: PageProps<"/">) {
   const user = await getCurrentUser();
   if (user) redirect(homePathFor(user));
+  const { "account-deleted": accountDeleted } = await searchParams;
 
   return (
     <div className="space-y-10">
+      {accountDeleted && <Notice>Your account and everything in it were deleted.</Notice>}
       <section className="pt-4">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           Find careers that fit you — free, no account needed
