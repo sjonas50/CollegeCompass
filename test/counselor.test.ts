@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
-import { registerStudent } from "@/lib/accounts";
+import { registerStudent, setStudentGrade } from "@/lib/accounts";
 import { env } from "@/env";
 import { recordUsage } from "@/lib/ai/usage";
 import { listMessages } from "@/lib/counselor/conversations";
@@ -236,6 +236,62 @@ describe("counselor respond", () => {
     expect(event.sources).toEqual(["rules", "rate_limited"]);
   });
 
+  it("rebuilds a saved context when what it summarizes changes, or once it's an hour old", async () => {
+    const first = fakeClient({});
+    const id = ((await collect(respond(db, student, { text: "hi" }, { client: first.client, now })))[0] as { id: string }).id;
+    expect(first.calls.runnerParams[0].system[1].text).toContain("Grade 10");
+
+    await setStudentGrade(db, student.id, 11, now);
+    const second = fakeClient({});
+    // The route passes the session's (now updated) grade.
+    await collect(respond(db, { ...student, grade: 11 }, { conversationId: id, text: "I skipped a grade actually" }, { client: second.client, now }));
+    expect(second.calls.runnerParams[0].system[1].text).toContain("Grade 11");
+
+    // Still chatting, but the saved context is over an hour old.
+    await db.insert(schema.counselorMemory).values({ userId: student.id, notes: ["Wants to study marine biology"] });
+    await db.execute(sql`update counselor_conversations set context_built_at = now() - interval '61 minutes' where id = ${id}`);
+    const third = fakeClient({});
+    await collect(respond(db, student, { conversationId: id, text: "and?" }, { client: third.client, now }));
+    expect(third.calls.runnerParams[0].system[1].text).toContain("marine biology");
+  });
+
+  it("stops sending memory notes as soon as the student clears them", async () => {
+    await db.insert(schema.counselorMemory).values({ userId: student.id, notes: ["Worried about money for college"] });
+    const first = fakeClient({});
+    const id = ((await collect(respond(db, student, { text: "hi" }, { client: first.client, now })))[0] as { id: string }).id;
+    expect(first.calls.runnerParams[0].system[1].text).toContain("Worried about money");
+    await clearMemory(db, student.id);
+    const [conv] = await db.select().from(schema.counselorConversations);
+    expect(conv.context).toBeNull();
+    const second = fakeClient({});
+    await collect(respond(db, student, { conversationId: id, text: "hi again" }, { client: second.client, now }));
+    expect(JSON.stringify(second.calls.runnerParams)).not.toContain("Worried about money");
+  });
+
+  it("keeps support mode and memory exclusion even if flagging the conversation failed", async () => {
+    const first = fakeClient({});
+    const id = ((await collect(respond(db, student, { text: "hi" }, { client: first.client, now })))[0] as { id: string }).id;
+    // As if a crisis turn stored its resources but the flag write failed.
+    await db.insert(schema.counselorMessages).values([
+      { conversationId: id, role: "user", kind: "chat", content: "i dont want to be here anymore" },
+      { conversationId: id, role: "assistant", kind: "support", content: "Call or text 988" },
+    ]);
+    const next = fakeClient({ memory: ["SHOULD NOT BE SAVED"] });
+    await collect(respond(db, student, { conversationId: id, text: "ok" }, { client: next.client, now }));
+    expect(next.calls.runnerParams[0].system.map((b) => b.text).join("\n")).toContain("shared something concerning");
+    const [conv] = await db.select().from(schema.counselorConversations);
+    expect(conv.concernFlagged).toBe(true);
+    await db.update(schema.counselorConversations).set({ concernFlagged: false });
+    expect(await updateMemory(db, student.id, id, { client: next.client, force: true })).toBeNull();
+  });
+
+  it("still sends crisis resources when storing the message fails", async () => {
+    await db.execute(sql`drop table counselor_messages cascade`);
+    const { client } = fakeClient({ verdict: { category: "self_harm", severity: "high" } });
+    const events = await collect(respond(db, student, { text: "i dont want to be here anymore" }, { client, now }));
+    expect(events.map((e) => e.type)).toEqual(["support", "done"]);
+  });
+
   it("reuses the conversation's student context within a session and rebuilds it after a break", async () => {
     const first = fakeClient({});
     const events = await collect(respond(db, student, { text: "hi" }, { client: first.client, now }));
@@ -340,9 +396,11 @@ describe("counselor respond", () => {
 
   it("scrubs names from the safety screen, earlier turns, and step text in the context", async () => {
     const withName = { ...student, username: "mayalopez" };
+    // Added before the first turn, so the step is in the context that turn builds.
+    await db.insert(schema.weeklySteps).values({ userId: student.id, weekStart: "2026-09-21", text: "Ask Maya's teacher" });
     const first = fakeClient({});
     const events = await collect(respond(db, withName, { text: "I'm Maya (mayalopez on here)" }, { client: first.client, now }));
-    await db.insert(schema.weeklySteps).values({ userId: student.id, weekStart: "2026-09-21", text: "Ask Maya's teacher" });
+    expect(first.calls.runnerParams[0].system[1].text).toContain("Ask [name]'s teacher");
     const second = fakeClient({});
     await collect(respond(db, withName, { conversationId: (events[0] as { id: string }).id, text: "hi again" }, { client: second.client, now }));
     const everything = JSON.stringify([first.calls, second.calls]);

@@ -27,6 +27,13 @@ type Options = {
   knownNames?: string[];
 };
 
+// Each safety call gets a deadline, so the primary, the backup and the rules fallback all finish
+// well inside the counselor route's 60-second limit.
+const MODEL_REQUESTS = {
+  safety: { timeout: 15_000, maxRetries: 1 },
+  safety_backup: { timeout: 12_000, maxRetries: 0 },
+} as const;
+
 /**
  * Screens a student's message before the counselor answers. Runs the rules tier and the model
  * tier, keeps the higher rating, and queues medium-or-higher messages for human review.
@@ -38,22 +45,27 @@ export async function assessMessage(
   text: string,
   opts: Options = {},
 ): Promise<SafetyAssessment> {
-  const rules = classifyWithRules(text);
+  const rules = { explicit: classifyWithRules(text, "explicit"), all: classifyWithRules(text) };
 
   let model: SafetySignal | null = null;
   let degraded = true;
+  // A plain statement the rules already rate urgent gets resources right away: the model can't
+  // lower that rating, so there's no reason to wait on it (or on an outage).
+  const rulesUrgent = rules.explicit !== null && SEVERITY_ORDER[rules.explicit.severity] >= SEVERITY_ORDER.high;
   let client: Pick<Anthropic, "beta"> | null = null;
-  try {
-    client = opts.client ?? getAnthropic();
-  } catch (error) {
-    console.error("[safety] model tier unavailable", error instanceof Error ? error.name : "unknown");
+  if (!rulesUrgent) {
+    try {
+      client = opts.client ?? getAnthropic();
+    } catch (error) {
+      console.error("[safety] model tier unavailable", error instanceof Error ? error.name : "unknown");
+    }
   }
   // Primary model, then a backup model if the primary errors; keyword rules alone only if both fail.
   for (const feature of ["safety", "safety_backup"] as const) {
     if (!client) break;
     const modelId = modelFor(feature);
     try {
-      const result = await classifyWithModel(client, modelId, scrubPii(text, opts.knownNames));
+      const result = await classifyWithModel(client, modelId, scrubPii(text, opts.knownNames), MODEL_REQUESTS[feature]);
       // Billed with or without a verdict. A failed usage write must not throw away the verdict.
       await recordMessageUsage(db, userId, "safety", modelId, result.message).catch((error) =>
         console.error("[safety] failed to record usage", error instanceof Error ? error.name : "unknown"),
@@ -70,9 +82,12 @@ export async function assessMessage(
     }
   }
 
-  const signal = combineSignals(rules, model, !degraded);
+  // Skipping the model because the rules were enough isn't an outage.
+  const modelRan = !degraded || rulesUrgent;
+  const signal = combineSignals(rules, model, modelRan);
   const sources: SafetyAssessment["sources"] = [];
-  if (rules && (degraded || SEVERITY_ORDER[rules.severity] >= SEVERITY_ORDER.high)) sources.push("rules");
+  const counted = modelRan ? (rulesUrgent ? rules.explicit : null) : rules.all;
+  if (counted) sources.push("rules");
   if (model) sources.push("model");
 
   if (signal && SEVERITY_ORDER[signal.severity] >= SEVERITY_ORDER.medium) {
@@ -81,7 +96,7 @@ export async function assessMessage(
         userId,
         category: signal.category,
         severity: signal.severity,
-        sources: degraded ? [...sources, "model_unavailable"] : sources,
+        sources: modelRan ? sources : [...sources, "model_unavailable"],
         excerpt: text.slice(0, 1000),
       });
     } catch (error) {
@@ -95,7 +110,7 @@ export async function assessMessage(
     severity: signal?.severity ?? "none",
     category: signal?.category ?? null,
     sources,
-    degraded,
+    degraded: !modelRan,
     supportMessage: urgent ? supportResponse(signal.category) : null,
   };
 }

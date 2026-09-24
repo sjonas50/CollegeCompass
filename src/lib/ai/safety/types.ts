@@ -17,11 +17,16 @@ export function maxSignal(a: SafetySignal | null, b: SafetySignal | null): Safet
 }
 
 /**
- * Combines the two tiers. High/imminent rule matches always stand: they're the safety net for
- * explicit statements. Below that, keywords are noisy ("a career in suicide prevention"), so when
- * the model ran, its judgment decides; when it didn't, the rules decide alone.
+ * Combines the two tiers. When the model ran, it decides, except that explicit rule matches at high
+ * or imminent always stand (the net for plain statements the model might under-call). When it
+ * didn't run, every rule counts, including the broad outage-only ones.
  */
-export function combineSignals(rules: SafetySignal | null, model: SafetySignal | null, modelRan: boolean) {
-  const rulesUrgent = rules && SEVERITY_ORDER[rules.severity] >= SEVERITY_ORDER.high ? rules : null;
-  return modelRan ? maxSignal(rulesUrgent, model) : rules;
+export function combineSignals(
+  rules: { explicit: SafetySignal | null; all: SafetySignal | null },
+  model: SafetySignal | null,
+  modelRan: boolean,
+) {
+  if (!modelRan) return rules.all;
+  const explicit = rules.explicit && SEVERITY_ORDER[rules.explicit.severity] >= SEVERITY_ORDER.high ? rules.explicit : null;
+  return maxSignal(explicit, model);
 }

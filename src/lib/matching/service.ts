@@ -5,6 +5,7 @@ import type { Riasec, WorkValue } from "../assessments/instruments";
 import { latestResult } from "../assessments/service";
 import { SCORING_VERSION } from "../assessments/scoring";
 import { type OccupationProfile, rankForStudent } from "./match";
+import { forgetSavedContexts } from "../counselor/saved-context";
 
 let profileCache: { at: number; profiles: OccupationProfile[] } | undefined;
 const CACHE_MS = 60 * 60 * 1000;
@@ -54,7 +55,7 @@ export async function computeMatches(db: Db, userId: string) {
     profiles,
   );
 
-  return db.transaction(async (tx) => {
+  const runId = await db.transaction(async (tx) => {
     const [run] = await tx
       .insert(matchRuns)
       .values({
@@ -79,6 +80,8 @@ export async function computeMatches(db: Db, userId: string) {
     );
     return run.id;
   });
+  await forgetSavedContexts(db, userId);
+  return runId;
 }
 
 export async function latestMatchRun(db: Db, userId: string) {

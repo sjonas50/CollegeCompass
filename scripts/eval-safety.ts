@@ -33,6 +33,7 @@ async function main() {
       while (queue.length) {
         const c = queue.shift()!;
         const rules = classifyWithRules(c.text);
+        const explicit = classifyWithRules(c.text, "explicit");
         let result = null;
         try {
           result = await classifyWithModel(client, model, c.text);
@@ -42,7 +43,7 @@ async function main() {
         // Priced per attempt, so a turn a fallback model served is charged at that model's rates.
         if (result) spend += messageCostMicros(model, result.message);
         const verdict = result?.verdict ?? null;
-        const combined = combineSignals(rules, result?.signal ?? null, verdict !== null);
+        const combined = combineSignals({ explicit, all: rules }, result?.signal ?? null, verdict !== null);
         const got: Severity = combined?.severity ?? "none";
         const risky = SEVERITY_ORDER[c.expected] >= SEVERITY_ORDER.high;
         outcomes.push({

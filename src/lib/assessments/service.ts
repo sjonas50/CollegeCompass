@@ -3,6 +3,7 @@ import type { Db } from "@/db";
 import { assessmentAttempts, assessmentResponses, assessmentResults } from "@/db/schema";
 import { INSTRUMENTS, type InstrumentId, isValidResponse } from "./instruments";
 import { type Responses, SCORING_VERSION, type ScoresFor, missingItems, score } from "./scoring";
+import { forgetSavedContexts } from "../counselor/saved-context";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Interests shift during adolescence; students can retake after this long. */
@@ -123,6 +124,7 @@ export async function completeAttempt(db: Db, userId: string, attemptId: string,
     await tx.update(assessmentAttempts).set({ completedAt: now }).where(eq(assessmentAttempts.id, attemptId));
     await tx.insert(assessmentResults).values({ attemptId, scores, scoringVersion: SCORING_VERSION });
   });
+  await forgetSavedContexts(db, userId);
   return { ok: true, instrument: attempt.instrument };
 }
 

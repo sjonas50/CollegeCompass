@@ -6,6 +6,7 @@ import { audit } from "./audit";
 import { MAX_GRADE, MIN_GRADE, currentGrade, isAllowedGrade, isPlausibleStudentBirthDate, isUnder13, schoolYearOf } from "./auth/age";
 import { hashPassword, verifyPassword } from "./auth/password";
 import { CONSENT_POLICY_VERSION, type ConsentVerification } from "./consent/verifier";
+import { forgetSavedContexts } from "./counselor/saved-context";
 
 // ---------------------------------------------------------------------------
 // Input schemas (shared by server actions and tests)
@@ -261,13 +262,24 @@ export async function listChildren(db: Db, parentUserId: string, now = new Date(
   return rows.map(({ gradeSchoolYear, ...r }) => ({ ...r, grade: currentGrade({ grade: r.grade, gradeSchoolYear }, now) }));
 }
 
-/** Lets a student (or their parent) correct the grade, e.g. after skipping or repeating a year. */
-export async function setStudentGrade(db: Db, studentId: string, grade: number, today = new Date()) {
-  if (!isAllowedGrade(grade, today)) return false;
+/**
+ * Lets a student (or their parent) correct the grade, e.g. after skipping or repeating a year.
+ * `forSchoolYear` is the school year the grade question referred to when the form was shown: a
+ * form loaded on July 31 ("Grade you just finished") and saved on August 1 still describes the year
+ * that just ended, so the grade is stored against that year and advances normally.
+ */
+export async function setStudentGrade(db: Db, studentId: string, grade: number, today = new Date(), forSchoolYear = schoolYearOf(today)) {
+  const thisYear = schoolYearOf(today);
+  const valid =
+    forSchoolYear === thisYear
+      ? isAllowedGrade(grade, today)
+      : forSchoolYear === thisYear - 1 && Number.isInteger(grade) && grade >= MIN_GRADE - 1 && grade <= MAX_GRADE;
+  if (!valid) return false;
   const updated = await db
     .update(users)
-    .set({ grade, gradeSchoolYear: schoolYearOf(today) })
+    .set({ grade, gradeSchoolYear: forSchoolYear })
     .where(and(eq(users.id, studentId), eq(users.role, "student")))
     .returning({ id: users.id });
+  if (updated.length > 0) await forgetSavedContexts(db, studentId);
   return updated.length > 0;
 }

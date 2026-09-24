@@ -10,6 +10,7 @@ import { scrubPii } from "../ai/privacy";
 import { readStructuredOutput } from "../ai/structured";
 import { BudgetExceededError, assertWithinBudget, recordMessageUsage } from "../ai/usage";
 import { listMessages } from "./conversations";
+import { forgetSavedContexts } from "./saved-context";
 
 export const MAX_MEMORY_NOTES = 12;
 /** Fold new messages into memory once this many have accumulated in a conversation. */
@@ -47,7 +48,10 @@ export async function updateMemory(
   const [conv] = await db.select().from(counselorConversations).where(eq(counselorConversations.id, conversationId));
   if (!conv || conv.userId !== userId || conv.concernFlagged) return null;
 
-  const messages = (await listMessages(db, conversationId)).filter((m) => m.kind === "chat");
+  const all = await listMessages(db, conversationId);
+  // A conversation that got crisis resources never feeds memory, even if flagging it failed.
+  if (all.some((m) => m.kind === "support")) return null;
+  const messages = all.filter((m) => m.kind === "chat");
   const fresh = messages.slice(conv.memoryProcessedCount);
   if (fresh.length === 0 || (!opts.force && fresh.length < MEMORY_BATCH)) return null;
 
@@ -102,6 +106,8 @@ export async function updateMemory(
   return notes ?? null;
 }
 
+/** Erases the notes, including the copies in each conversation's saved context. */
 export async function clearMemory(db: Db, userId: string) {
   await db.delete(counselorMemory).where(eq(counselorMemory.userId, userId));
+  await forgetSavedContexts(db, userId);
 }

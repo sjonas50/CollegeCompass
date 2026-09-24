@@ -1,6 +1,7 @@
 import { and, asc, count, eq } from "drizzle-orm";
 import type { Db } from "@/db";
 import { northStarGoals, occupations } from "@/db/schema";
+import { forgetSavedContexts } from "./counselor/saved-context";
 
 /** Students keep one or two "north star" careers at a time, framed as "for now". */
 export const MAX_NORTH_STARS = 2;
@@ -19,6 +20,7 @@ export async function addNorthStar(db: Db, userId: string, occupationCode: strin
   const [{ n }] = await db.select({ n: count() }).from(northStarGoals).where(eq(northStarGoals.userId, userId));
   if (n >= MAX_NORTH_STARS) return { ok: false as const, error: "limit" as const };
   await db.insert(northStarGoals).values({ userId, occupationCode, title: occ.title }).onConflictDoNothing();
+  await forgetSavedContexts(db, userId);
   return { ok: true as const };
 }
 
@@ -26,4 +28,5 @@ export async function removeNorthStar(db: Db, userId: string, occupationCode: st
   await db
     .delete(northStarGoals)
     .where(and(eq(northStarGoals.userId, userId), eq(northStarGoals.occupationCode, occupationCode)));
+  await forgetSavedContexts(db, userId);
 }

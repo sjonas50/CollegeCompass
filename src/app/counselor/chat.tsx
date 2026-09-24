@@ -125,19 +125,28 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
   const composing = useRef(false);
   const lastCount = useRef(initialMessages.length);
   const sendCount = useRef(0);
+  const seenSupport = useRef(new Set(initialMessages.filter((m) => m.kind === "support").map((m) => m.id)));
 
   // A chat started here moves its URL to /counselor/<id> without a navigation. Tapping Counselor in
-  // the nav goes back to /counselor without remounting this component, so start a fresh chat.
+  // the nav goes back to /counselor without remounting this component, so start a fresh chat. Each
+  // fresh chat is a new "epoch": a reply still streaming from the old one can't write into it.
   const pathname = usePathname();
   const [seenPath, setSeenPath] = useState(pathname);
+  const [epoch, setEpoch] = useState(0);
   if (pathname !== seenPath) {
     setSeenPath(pathname);
     if (!initialId && pathname === "/counselor" && conversationId) {
       setMessages([]);
       setConversationId(undefined);
       setAnnouncement("");
+      setBusy(false);
+      setEpoch((e) => e + 1);
     }
   }
+  const epochRef = useRef(epoch);
+  useEffect(() => {
+    epochRef.current = epoch;
+  }, [epoch]);
 
   // How far the end of the chat sits below the top of the sticky message box (negative: above it).
   function endOverlap() {
@@ -160,6 +169,14 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
   }, []);
 
   useEffect(() => {
+    // Crisis resources are always brought into view, top first, even if the student scrolled up.
+    const support = messages.find((m) => m.kind === "support" && !seenSupport.current.has(m.id));
+    if (support) {
+      seenSupport.current.add(support.id);
+      autoScrolling.current = true;
+      document.getElementById(`message-${support.id}`)?.scrollIntoView({ block: "start" });
+      return;
+    }
     // Always scroll when a message is added; while text streams in, only if they're following.
     const added = messages.length !== lastCount.current;
     lastCount.current = messages.length;
@@ -189,9 +206,24 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
     // updater stays pure. Each change applies to the latest list, so a reset from the nav drops
     // this turn's output.
     let turn = startTurn(replyId);
+    const myEpoch = epochRef.current;
+    // The student started a fresh chat while this turn was still running.
+    const stale = () => epochRef.current !== myEpoch;
     const apply = (fn: (s: { messages: ChatMessage[]; turn: Turn }) => { messages: ChatMessage[]; turn: Turn }) => {
       const before = turn;
       turn = fn({ messages: [], turn: before }).turn;
+      if (stale()) {
+        // Only crisis resources still reach the screen, with the message they answer.
+        if (turn.support && !before.support) {
+          const support = turn.support;
+          setMessages((ms) => [
+            ...ms,
+            { id: `u-${replyId}`, role: "user", kind: "chat", content: trimmed },
+            { id: replyId, role: "assistant", kind: "support", content: support },
+          ]);
+        }
+        return;
+      }
       setMessages((ms) => fn({ messages: ms, turn: before }).messages);
     };
 
@@ -219,7 +251,8 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
           if (!line.trim()) continue;
           const event = JSON.parse(line) as ServerEvent;
           if (event.type === "conversation") {
-            if (!conversationId) {
+            // Only while the student is still on this new chat (not after leaving or starting another).
+            if (!conversationId && !stale() && window.location.pathname === "/counselor") {
               setConversationId(event.id);
               window.history.replaceState(null, "", `/counselor/${event.id}`);
             }
@@ -229,13 +262,18 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
     } catch {
       broken = true;
     } finally {
-      const restore = finishTurn({ messages: [], turn }, broken).restoreInput;
-      apply((s) => finishTurn(s, broken));
-      // Put the message back unless they've started typing another one.
-      if (restore) setInput((prev) => (prev.trim() ? prev : trimmed));
-      setBusy(false);
-      setAnnouncement(announce(turn));
-      if (!document.activeElement || document.activeElement === document.body) inputRef.current?.focus({ preventScroll: true });
+      if (stale()) {
+        // The fresh chat owns the input, the busy state and the status line; only resources speak.
+        if (turn.support) setAnnouncement(announce(turn));
+      } else {
+        const restore = finishTurn({ messages: [], turn }, broken).restoreInput;
+        apply((s) => finishTurn(s, broken));
+        // Put the message back unless they've started typing another one.
+        if (restore) setInput((prev) => (prev.trim() ? prev : trimmed));
+        setBusy(false);
+        setAnnouncement(announce(turn));
+        if (!document.activeElement || document.activeElement === document.body) inputRef.current?.focus({ preventScroll: true });
+      }
     }
   }
 
@@ -278,7 +316,9 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
           </div>
         )}
         {messages.map((m) => (
-          <Bubble key={m.id} m={m} />
+          <div key={m.id} id={`message-${m.id}`} className="flex scroll-mt-4 flex-col">
+            <Bubble m={m} />
+          </div>
         ))}
         <div ref={endRef} />
       </div>

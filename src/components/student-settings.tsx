@@ -1,6 +1,6 @@
 import { setMyGradeAction, setMyRemindersAction } from "@/app/actions/settings";
 import { Button, gradeOptionLabel } from "@/components/ui";
-import { MAX_GRADE, gradeQuestion } from "@/lib/auth/age";
+import { MAX_GRADE, gradeQuestion, schoolYearOf } from "@/lib/auth/age";
 import type { ReminderSetting } from "@/lib/reminders";
 
 function keepLabel(grade: number | null) {
@@ -23,6 +23,7 @@ export function GradeSettingSelect({ id, grade }: { id: string; grade: number | 
   return (
     <>
       <input type="hidden" name="shownGrade" value={grade ?? ""} />
+      <input type="hidden" name="gradeYear" value={schoolYearOf()} />
       <select
         id={id}
         name="grade"

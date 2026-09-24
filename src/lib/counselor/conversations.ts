@@ -61,7 +61,10 @@ export async function appendMessage(
 
 /** Saves the student context used for this conversation's prompts (see respond). */
 export async function saveConversationContext(db: Db, conversationId: string, context: string) {
-  await db.update(counselorConversations).set({ context }).where(eq(counselorConversations.id, conversationId));
+  await db
+    .update(counselorConversations)
+    .set({ context, contextBuiltAt: sql`now()` })
+    .where(eq(counselorConversations.id, conversationId));
 }
 
 export async function flagConversation(db: Db, conversationId: string) {

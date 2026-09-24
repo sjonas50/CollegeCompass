@@ -56,7 +56,7 @@ describe("assessMessage", () => {
   });
 
   it("falls back to rules and flags the gap when the model is unavailable", async () => {
-    const result = await assessMessage(db, userId, "my dad hits me", { client: fakeClient(null) });
+    const result = await assessMessage(db, userId, "i'm scared to go home", { client: fakeClient(null) });
     expect(result).toMatchObject({ severity: "high", category: "abuse", degraded: true });
     expect(result.supportMessage).toContain("1-800-422-4453");
     const [event] = await db.select().from(schema.safetyEvents);
@@ -115,16 +115,35 @@ describe("safety model backup", () => {
 
   it("degrades to rules only when both models fail", async () => {
     const down = { beta: { messages: { create: async () => { throw new Error("outage"); } } } } as never;
-    const result = await assessMessage(db, userId, "been cutting again", { client: down });
-    expect(result).toMatchObject({ severity: "high", degraded: true, sources: ["rules"] });
+    const result = await assessMessage(db, userId, "i took the whole bottle", { client: down });
+    expect(result).toMatchObject({ severity: "imminent", degraded: true, sources: ["rules"] });
+  });
+
+  it("gives resources for a plain statement without waiting on the model", async () => {
+    let calls = 0;
+    const hanging = { beta: { messages: { create: () => { calls++; return new Promise(() => {}); } } } } as never;
+    const result = await assessMessage(db, userId, "I'm going to kill myself tonight", { client: hanging });
+    expect(result).toMatchObject({ severity: "imminent", category: "self_harm", degraded: false, sources: ["rules"] });
+    expect(result.supportMessage).toContain("988");
+    expect(calls).toBe(0);
+    const [event] = await db.select().from(schema.safetyEvents);
+    expect(event.sources).toEqual(["rules"]);
+  });
+
+  it("lets the model clear a broad keyword match that only applies in an outage", async () => {
+    const text = "I'm about to jump off a building, this group project is killing me";
+    const up = await assessMessage(db, userId, text, { client: fakeClient({ category: "none", severity: "none" }) });
+    expect(up).toMatchObject({ severity: "none", supportMessage: null });
+    const down = await assessMessage(db, userId, text, { client: fakeClient(null) });
+    expect(down).toMatchObject({ severity: "imminent", degraded: true });
   });
 });
 
 describe("safety usage accounting", () => {
   it("records a verdict cut off at max_tokens, then tries the backup model", async () => {
     const { client, requests } = stubAnthropic(() => ({ stop_reason: "max_tokens", text: '{"category":"self_harm","sev' }));
-    const result = await assessMessage(db, userId, "been cutting again", { client });
-    expect(result).toMatchObject({ severity: "high", degraded: true, sources: ["rules"] });
+    const result = await assessMessage(db, userId, "i took the whole bottle", { client });
+    expect(result).toMatchObject({ severity: "imminent", degraded: true, sources: ["rules"] });
     expect(requests.map((r) => r.model)).toEqual(["claude-opus-5", "claude-sonnet-5"]);
     const rows = await db.select().from(schema.aiUsage);
     expect(rows.map((r) => [r.feature, r.model])).toEqual([["safety", "claude-opus-5"], ["safety", "claude-sonnet-5"]]);
@@ -132,7 +151,7 @@ describe("safety usage accounting", () => {
 
   it("records a refusal whose text isn't JSON, without retrying", async () => {
     const { client, requests } = stubAnthropic(() => ({ stop_reason: "refusal", text: "I can't help with that." }));
-    const result = await assessMessage(db, userId, "my dad hits me", { client });
+    const result = await assessMessage(db, userId, "i'm scared to go home", { client });
     expect(result).toMatchObject({ severity: "high", category: "abuse", degraded: true });
     expect(requests).toHaveLength(1);
     expect(await db.select().from(schema.aiUsage)).toHaveLength(1);

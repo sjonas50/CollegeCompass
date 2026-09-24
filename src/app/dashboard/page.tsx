@@ -59,6 +59,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         lead={graduated ? "Congratulations on finishing high school! Your plans and notes are all still here." : BAND_COPY[gradeBand(grade)]}
       />
       {settings === "saved" && <Notice>Settings saved.</Notice>}
+      {settings === "stale" && <Notice>The school year changed since that page loaded, so we didn&apos;t save the grade. Please pick it again.</Notice>}
 
       {/* For graduates (no roadmap milestones) the card asks only for their own steps. */}
       <WeeklyStepsCard />

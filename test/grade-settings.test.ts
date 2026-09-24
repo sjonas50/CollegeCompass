@@ -193,6 +193,34 @@ describe("saving the grade form untouched", () => {
     expect(currentGrade(await storedRow(db, id), aug1)).toBe(11);
   });
 
+  it("stores a grade picked on July 31 and saved August 1 against the year the question asked about", async () => {
+    const { db, id } = await student(10, SENIOR_YEAR);
+    const july31 = new Date("2026-07-31T23:00:00Z");
+    setClock(july31);
+    const html = renderSelect((await signIn(db, id, july31)).grade);
+    const gradeYear = /name="gradeYear" value="([^"]*)"/.exec(html)?.[1];
+    expect(gradeYear).toBe("2025");
+    // "Grade you just finished": actually 11th, not 10th.
+    const aug1 = new Date("2026-08-01T00:10:00Z");
+    setClock(aug1);
+    await signIn(db, id, aug1);
+    await submit(setMyGradeAction, { grade: "11", shownGrade: "10", gradeYear });
+    const row = await storedRow(db, id);
+    expect({ grade: row.grade, year: row.gradeSchoolYear }).toEqual({ grade: 11, year: 2025 });
+    expect(currentGrade(row, aug1)).toBe(12);
+  });
+
+  it("does the same for a parent, and refuses a form from an older school year", async () => {
+    const { db, parentId, childId } = await parentWithChild(9, SENIOR_YEAR);
+    const aug1 = new Date("2026-08-01T00:10:00Z");
+    setClock(aug1);
+    state.user = { ...(await signIn(db, parentId, aug1)), role: "parent" };
+    await submit(setChildGradeAction, { studentId: childId, grade: "10", shownGrade: "9", gradeYear: "2025" });
+    expect(currentGrade(await storedRow(db, childId), aug1)).toBe(11);
+    await submit(setChildGradeAction, { studentId: childId, grade: "8", shownGrade: "11", gradeYear: "2023" });
+    expect(currentGrade(await storedRow(db, childId), aug1)).toBe(11);
+  });
+
   it("still saves a grade the student actually picked", async () => {
     const { db, id } = await student(12, SENIOR_YEAR);
     setClock(JUNE_15);

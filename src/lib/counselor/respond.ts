@@ -23,8 +23,13 @@ export const MAX_MESSAGE_CHARS = 2000;
 export const RATE_LIMIT = { count: 20, windowMs: 10 * 60_000 };
 /** Safety screening for messages past RATE_LIMIT. */
 export const SCREEN_LIMIT = { count: 60, windowMs: 10 * 60_000 };
-/** How long a conversation keeps its saved student context (see studentContext). */
-const CONTEXT_REUSE_MS = 60 * 60_000;
+/**
+ * A conversation's saved student context is reused while the prompt cache is likely warm (the last
+ * message was under 5 minutes ago; each cache read renews its 5-minute lifetime), and never once
+ * it's an hour old (see studentContext).
+ */
+const CONTEXT_IDLE_MS = 5 * 60_000;
+const CONTEXT_MAX_AGE_MS = 60 * 60_000;
 
 export type CounselorEvent =
   | { type: "conversation"; id: string }
@@ -148,7 +153,9 @@ export async function* respond(
   // Rate limit first: a limited request gets no counselor reply. It is still screened in full, so a
   // student in crisis gets help however many messages they've sent. Screening has its own, higher
   // cap; past that, keyword rules alone decide.
-  if (!(await consumeRateLimit(db, `counselor:${student.id}`, RATE_LIMIT.count, RATE_LIMIT.windowMs, deps.now))) {
+  // A failed rate-limit check lets the message through; it's screened either way.
+  const allowed = await safely("rate limit", () => consumeRateLimit(db, `counselor:${student.id}`, RATE_LIMIT.count, RATE_LIMIT.windowMs, deps.now));
+  if (allowed === false) {
     const screened = await safely("rate-limit screening cap", () =>
       consumeRateLimit(db, `safety-screen:${student.id}`, SCREEN_LIMIT.count, SCREEN_LIMIT.windowMs, deps.now),
     );
@@ -196,13 +203,35 @@ export async function* respond(
     return;
   }
 
-  let conversation = input.conversationId ? await getOwnedConversation(db, student.id, input.conversationId) : null;
-  if (input.conversationId && !conversation) throw new Error("Conversation not found");
-  if (!conversation) conversation = await createConversation(db, student.id, text);
+  // Screening starts before any other database work, so a failure there can't keep crisis
+  // resources from the student. assessMessage never throws.
+  const screening = assessMessage(db, student.id, text, { client: deps.client, knownNames });
+
+  let conversation: Conversation;
+  let history: Awaited<ReturnType<typeof listMessages>>;
+  try {
+    const found = input.conversationId ? await getOwnedConversation(db, student.id, input.conversationId) : null;
+    if (input.conversationId && !found) throw new Error("Conversation not found");
+    conversation = found ?? (await createConversation(db, student.id, text));
+    history = await listMessages(db, conversation.id);
+    await appendMessage(db, conversation.id, { role: "user", content: text });
+  } catch (error) {
+    const safety = await screening;
+    if (!safety.supportMessage) throw error;
+    console.error("[counselor] storing a message failed", error instanceof Error ? error.name : "unknown");
+    yield { type: "support", text: safety.supportMessage };
+    yield { type: "done", messageId: null };
+    return;
+  }
   yield { type: "conversation", id: conversation.id };
 
-  const history = await listMessages(db, conversation.id);
-  await appendMessage(db, conversation.id, { role: "user", content: text });
+  // Support mode comes from the stored messages too, so a failed flag write can't end it.
+  if (!conversation.concernFlagged && history.some((m) => m.kind === "support")) {
+    conversation = { ...conversation, concernFlagged: true };
+    const id = conversation.id;
+    await safely("flag conversation", () => flagConversation(db, id));
+  }
+  const conv = conversation;
 
   const queue = new TextQueue();
   const abort = new AbortController();
@@ -211,7 +240,7 @@ export async function* respond(
   let settled = false;
   // Never rejects (generate turns failures into outcomes), so an early return can't leave an
   // unhandled rejection behind.
-  const generation = generate(conversation, history)
+  const generation = generate(conv, history)
     .catch((): GenerationResult => ({ text: "", outcome: "error" }))
     .finally(() => {
       settled = true;
@@ -219,16 +248,16 @@ export async function* respond(
     });
 
   try {
-    const safety = await assessMessage(db, student.id, text, { client: deps.client, knownNames });
+    const safety = await screening;
 
     if (safety.supportMessage) {
       abort.abort();
       // Crisis resources go out first; nothing below may keep them from the student.
       yield { type: "support", text: safety.supportMessage };
       await generation;
-      await safely("flag conversation", () => flagConversation(db, conversation.id));
+      await safely("flag conversation", () => flagConversation(db, conv.id));
       const id = await safely("store support message", () =>
-        appendMessage(db, conversation.id, { role: "assistant", kind: "support", content: safety.supportMessage! }),
+        appendMessage(db, conv.id, { role: "assistant", kind: "support", content: safety.supportMessage! }),
       );
       yield { type: "done", messageId: id };
       return;
@@ -245,7 +274,7 @@ export async function* respond(
 
     let messageId: string | null = null;
     if (result.text.trim()) {
-      messageId = await appendMessage(db, conversation.id, { role: "assistant", content: result.text });
+      messageId = await appendMessage(db, conv.id, { role: "assistant", content: result.text });
     }
     const notice =
       result.outcome === "ok"
@@ -264,7 +293,7 @@ export async function* respond(
                   : null
                 : NOTICES.error;
     if (notice) {
-      messageId = await appendMessage(db, conversation.id, { role: "assistant", kind: "notice", content: notice });
+      messageId = await appendMessage(db, conv.id, { role: "assistant", kind: "notice", content: notice });
       yield { type: "notice", text: notice };
     }
     yield { type: "done", messageId };
@@ -355,15 +384,21 @@ export async function* respond(
   }
 
   /**
-   * The student context for this conversation. Within a session it is reused byte-for-byte, so a
-   * step checked off or a memory update doesn't invalidate the cached prompt; after a break (when
-   * the cache has expired anyway) it is rebuilt from current data.
+   * The student context for this conversation. During an active session it is reused byte-for-byte,
+   * so a checked-off step or a memory update doesn't invalidate the cached prompt. After a break,
+   * after an hour, or once something it summarizes changes (forgetSavedContexts), it is rebuilt.
    */
-  async function studentContext(conv: Conversation): Promise<string> {
-    // updatedAt comes from the database clock, so this compares against real time, not deps.now.
-    if (conv.context && Date.now() - conv.updatedAt.getTime() < CONTEXT_REUSE_MS) return conv.context;
+  async function studentContext(c: Conversation): Promise<string> {
+    // Timestamps come from the database clock, so compare with real time, not deps.now.
+    const now = Date.now();
+    const fresh =
+      c.context !== null &&
+      c.contextBuiltAt !== null &&
+      now - c.updatedAt.getTime() < CONTEXT_IDLE_MS &&
+      now - c.contextBuiltAt.getTime() < CONTEXT_MAX_AGE_MS;
+    if (fresh) return c.context!;
     const context = await buildStudentContext(db, student, { now: deps.now, knownNames });
-    await safely("save context", () => saveConversationContext(db, conv.id, context));
+    await safely("save context", () => saveConversationContext(db, c.id, context));
     return context;
   }
 }

@@ -43,7 +43,12 @@ export type ModelClassification = {
  * Asks the model to rate a message. A null verdict lets the caller fall back to the rules tier
  * and flag the gap. Throws only when the request itself fails.
  */
-export async function classifyWithModel(client: ModelClient, model: string, text: string): Promise<ModelClassification> {
+export async function classifyWithModel(
+  client: ModelClient,
+  model: string,
+  text: string,
+  request: { timeout?: number; maxRetries?: number } = {},
+): Promise<ModelClassification> {
   // `create`, not `parse`: parse throws on unparseable output, losing the usage of a billed call.
   const message = await client.beta.messages.create({
     model,
@@ -53,7 +58,7 @@ export async function classifyWithModel(client: ModelClient, model: string, text
     output_config: { ...(supportsEffort(model) && { effort: "low" as const }), format: betaZodOutputFormat(ModelVerdict) },
     system: SYSTEM,
     messages: [{ role: "user", content: `<student_message>\n${text}\n</student_message>` }],
-  });
+  }, request);
   const verdict = readStructuredOutput(message, ModelVerdict);
   const signal: SafetySignal | null =
     !verdict || verdict.category === "none" || verdict.severity === "none"

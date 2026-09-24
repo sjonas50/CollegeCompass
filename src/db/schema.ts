@@ -539,9 +539,11 @@ export const counselorConversations = pgTable(
     concernFlagged: boolean("concern_flagged").notNull().default(false),
     // Number of messages already folded into the student's memory notes.
     memoryProcessedCount: integer("memory_processed_count").notNull().default(0),
-    // The student context as of the conversation's first turn, reused byte-for-byte so the prompt
-    // cache stays valid. Live plan and roadmap data come from tools.
+    // The student context sent with this conversation's prompts, reused byte-for-byte during an
+    // active session so the prompt cache stays valid (see studentContext in respond.ts). Cleared
+    // when what it summarizes changes. Live plan and roadmap data come from tools.
     context: text("context"),
+    contextBuiltAt: timestamp("context_built_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

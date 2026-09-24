@@ -15,8 +15,13 @@
 - Authorization happens in the data-access layer (`requireUser`, ownership checks), never only
   in `src/proxy.ts`.
 - Forms use `useFormAction` so values survive validation errors (React resets forms after actions).
-- AI calls: structured outputs via `betaZodOutputFormat`; record usage with `recordUsage`;
-  check `assertWithinBudget` before non-safety calls. Safety checks are never budget-blocked.
+- AI calls: structured outputs via `messages.create` with `betaZodOutputFormat`, read with
+  `readStructuredOutput` after recording usage with `recordMessageUsage` (a response with no usable
+  output is still billed; `parse` would throw first). Check `assertWithinBudget` before non-safety
+  calls. Safety checks are never budget-blocked.
+- Safety keyword rules rated high/imminent override the model, so they only hold unambiguous
+  phrasings; ambiguous slang stays medium. Pin every rule change in `rules.test.ts` (must-catch and
+  must-not-flag tables) and check the eval set: no case expected below high may rate high.
 - After changing `src/db/schema.ts`, run `npm run db:generate` and commit the migration.
 - Assessment items are licensed: O*NET Interest Profiler items are CC BY-ND (use verbatim, keep the
   attribution); Mini-IPIP items are public domain. Scoring is code, never the model.

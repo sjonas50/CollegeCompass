@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Parent" };
 export default async function ParentHome({ searchParams }: PageProps<"/parent">) {
   const parent = await requireUser(["parent"]);
   const children = await listChildren(await getDb(), parent.id);
-  const { added, deleted, saved } = await searchParams;
+  const { added, deleted, saved, stale } = await searchParams;
 
   return (
     <>
@@ -24,6 +24,7 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
         {added && <Notice>Account created. Share the username and password with your child.</Notice>}
         {deleted && <Notice>The account and all of its data were deleted.</Notice>}
         {saved && <Notice>Settings saved.</Notice>}
+        {stale && <Notice>The school year changed since that page loaded, so we didn&apos;t save the grade. Please pick it again.</Notice>}
         {children.length === 0 && (
           <Card>
             <p className="text-muted">No children added yet.</p>

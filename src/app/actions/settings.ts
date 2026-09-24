@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth/dal";
 import { setOwnRemindersEnabled, setRemindersEnabled } from "@/lib/reminders";
 
 const Grade = z.coerce.number().int().min(6).max(12);
+const SchoolYear = z.coerce.number().int().min(2000).max(2100);
 
 /**
  * The grade picked in a settings grade form (GradeSettingSelect), or null for "no change": an
@@ -15,20 +16,23 @@ const Grade = z.coerce.number().int().min(6).max(12);
  * with what was shown, not with today's grade, means a page loaded before grades advance in August
  * and saved after can't move the student back a year.
  */
-function pickedGrade(formData: FormData): number | null {
+function pickedGrade(formData: FormData): { grade: number; schoolYear?: number } | null {
   const raw = formData.get("grade");
   if (typeof raw !== "string" || raw === "") return null;
   const grade = Grade.safeParse(raw);
   if (!grade.success) return null;
   const shown = formData.get("shownGrade");
-  return typeof shown === "string" && shown !== "" && Number(shown) === grade.data ? null : grade.data;
+  if (typeof shown === "string" && shown !== "" && Number(shown) === grade.data) return null;
+  // The school year the form's question referred to (see setStudentGrade).
+  const year = SchoolYear.safeParse(formData.get("gradeYear"));
+  return { grade: grade.data, schoolYear: year.success ? year.data : undefined };
 }
 
 export async function setMyGradeAction(formData: FormData) {
   const student = await requireUser(["student"]);
-  const grade = pickedGrade(formData);
-  if (grade !== null && grade !== student.grade) await setStudentGrade(await getDb(), student.id, grade);
-  redirect("/dashboard?settings=saved");
+  const picked = pickedGrade(formData);
+  const saved = picked === null || (await setStudentGrade(await getDb(), student.id, picked.grade, new Date(), picked.schoolYear));
+  redirect(saved ? "/dashboard?settings=saved" : "/dashboard?settings=stale");
 }
 
 /** Refused for reminders that go to a parent: only the parent changes those, on /parent. */
@@ -50,9 +54,9 @@ async function linkedChild(formData: FormData) {
 /** Parents correct a linked child's grade. "Keep as is" and unchanged values do nothing. */
 export async function setChildGradeAction(formData: FormData) {
   const { db, studentId } = await linkedChild(formData);
-  const grade = pickedGrade(formData);
-  if (grade !== null) await setStudentGrade(db, studentId, grade);
-  redirect("/parent?saved=1");
+  const picked = pickedGrade(formData);
+  const saved = picked === null || (await setStudentGrade(db, studentId, picked.grade, new Date(), picked.schoolYear));
+  redirect(saved ? "/parent?saved=1" : "/parent?stale=1");
 }
 
 export async function setChildRemindersAction(formData: FormData) {
