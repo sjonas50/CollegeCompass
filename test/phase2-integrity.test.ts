@@ -10,6 +10,7 @@ import { createSession, validateSession } from "@/lib/auth/sessions";
 import { verifyParentConsent } from "@/lib/consent/verifier";
 import { deleteStudent, exportStudentData } from "@/lib/privacy";
 import { buildWeeklyReminders } from "@/lib/reminders";
+import { MILESTONES } from "@/lib/roadmap/milestones";
 import { addStep } from "@/lib/steps";
 
 describe("grade advancement where it's applied", () => {
@@ -40,8 +41,9 @@ describe("grade advancement where it's applied", () => {
 
     await db.insert(schema.weeklySteps).values({ userId: teen.value.userId, weekStart: "2026-10-05", text: "Make an FSA ID" });
     const [r] = await buildWeeklyReminders(db, "http://localhost:3000", later);
-    // Grade 12 in October: the (placeholder) 12th-grade FAFSA milestone is timely.
-    expect(r.email.text).toContain("Fill out the FAFSA");
+    // She's now in 12th grade, so the email lists 12th-grade milestones timely in October.
+    const timely = MILESTONES.find((m) => m.grade === 12 && m.months.includes(10))!;
+    expect(r.email.text).toContain(timely.title);
   });
 });
 

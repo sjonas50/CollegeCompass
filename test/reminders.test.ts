@@ -3,8 +3,9 @@ import { type Db, createTestDb, schema } from "@/db";
 import { createChildAccount, registerParent, registerStudent } from "@/lib/accounts";
 import { verifyParentConsent } from "@/lib/consent/verifier";
 import { buildWeeklyReminders, claimReminder, releaseReminder, reminderGoesToParent, setRemindersEnabled } from "@/lib/reminders";
+import { MILESTONES } from "@/lib/roadmap/milestones";
 
-// The cron's scheduled instant: Monday 13:00 UTC. Placeholder milestones include g12 FAFSA (Oct).
+// The cron's scheduled instant: Monday 13:00 UTC.
 const now = new Date("2026-10-05T13:00:00Z");
 const thisWeek = "2026-10-05";
 const lastWeek = "2026-09-28";
@@ -67,7 +68,9 @@ describe("weekly reminders (Monday 13:00 UTC)", () => {
 
   it("skips students with nothing to do or reminders turned off", async () => {
     const id = await teen();
-    await db.insert(schema.studentMilestones).values({ userId: id, milestoneId: "g12-submit-fafsa", status: "done" });
+    // Mark every 12th-grade milestone timely in October as handled.
+    const timely = MILESTONES.filter((m) => m.grade === 12 && m.months.includes(10));
+    await db.insert(schema.studentMilestones).values(timely.map((m) => ({ userId: id, milestoneId: m.id, status: "done" as const })));
     expect(await buildWeeklyReminders(db, APP, now)).toHaveLength(0);
     await db.insert(schema.weeklySteps).values({ userId: id, weekStart: thisWeek, text: "Visit a campus" });
     await setRemindersEnabled(db, id, false);
