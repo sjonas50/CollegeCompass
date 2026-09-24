@@ -154,7 +154,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </div>
       </section>
 
-      {grade >= 9 && (
+      {/* The explorer is for grades 9-12, but a younger student who has saved colleges sees them too. */}
+      {(grade >= 9 || list.length > 0) && (
         <section>
           <h2 className="text-lg font-medium">{launching ? "Colleges and applications" : "Colleges and training"}</h2>
           {launching && deadlines.length > 0 ? (
