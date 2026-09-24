@@ -12,7 +12,7 @@ Requires Node 24+.
 
 ```bash
 npm install
-npm run data:load   # optional: O*NET careers, CIP–SOC majors, College Scorecard colleges (~30 MB download)
+npm run data:load   # optional: O*NET careers, CIP–SOC majors, College Scorecard colleges and programs (~45 MB download)
 npm run dev
 ```
 
@@ -31,8 +31,43 @@ change settings.
 | `npm run db:generate` | Create a migration after editing `src/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations to `DATABASE_URL` (run in the deploy step) |
 | `npm run data:load` | Download and load public reference data |
+| `npm run data:check-scorecard` | Checks loaded college and program data against the live College Scorecard API for 12 test schools |
 | `npm run check:matching` | Checks career matches for test students of every interest type against the real data |
 | `npm run eval:safety` | Live eval of the safety classifier (calls the Anthropic API; costs money) |
+
+## Reference data
+
+`npm run data:load` downloads public datasets into `.data/reference/` (kept between runs) and
+replaces the reference tables in one transaction. Student tables never reference them with
+foreign keys, so reloading never touches student data.
+
+| Tables | Source |
+| --- | --- |
+| `occupations`, `occupation_interests` | [O*NET 31.0 Database](https://www.onetcenter.org/database.html) (CC BY 4.0) |
+| `occupation_values` | O*NET 30.0 Work Values (the last release that has them) |
+| `majors`, `cip_soc_links` | [NCES CIP 2020–SOC 2018 crosswalk](https://nces.ed.gov/ipeds/cipcode/resources.aspx?y=56) |
+| `colleges` | [College Scorecard](https://collegescorecard.ed.gov/data/) institution data, U.S. Department of Education (June 2026 release) |
+| `college_programs` | College Scorecard field-of-study data, U.S. Department of Education (June 2026 release) |
+
+College Scorecard notes:
+
+- We keep currently operating schools that mainly award certificates, associate, bachelor's or
+  graduate degrees, and their undergraduate programs (certificate, associate, bachelor's) with
+  median debt and median earnings four years after graduating. Programs use 4-digit CIP codes
+  (`"11.07"`); the crosswalk's majors are 6-digit.
+- The files mark missing values `NA` and privacy-suppressed values `PS` (too few students to
+  publish). Both load as `null`, so the app shows a plain explanation instead of a number.
+- Net price comes from the school's own sector columns (`_PUB` or `_PRIV`, which cover every
+  calendar type), then the other sector's (for schools whose control changed), then the
+  discontinued `_PROG`/`_OTHER` columns. Published net prices can be negative when grants exceed
+  the cost; they're stored as published and shown as $0.
+- `npm run data:check-scorecard` is the Phase 3 exit check: it compares the loaded data for 12 real
+  schools (large public, small private, for-profit, community college, two program-year trade
+  schools, HBCU, HSI, tribal, online-only, highly selective, and a school whose control changed)
+  with the live [College Scorecard API](https://collegescorecard.ed.gov/data/api-documentation/).
+  It uses `SCORECARD_API_KEY` (free at [api.data.gov](https://api.data.gov/signup/)) or the
+  rate-limited `DEMO_KEY`, makes one request for all schools, and caches the response in `.data/`
+  for a day.
 
 ## How it fits together
 
@@ -45,7 +80,8 @@ change settings.
   the data-access layer (`requireUser`). `src/proxy.ts` only does optimistic redirects.
 - `src/lib/ai/` — model config, cost tracking with a per-student monthly budget, PII scrubbing,
   and the two-tier safety classifier (`safety/`), with its eval set in `evals/safety/`.
-- `src/lib/reference/` — parsers for O*NET, the NCES CIP–SOC crosswalk and College Scorecard.
+- `src/lib/reference/` — parsers for O*NET, the NCES CIP–SOC crosswalk and College Scorecard
+  (institutions and field of study).
 - `src/lib/assessments/` — the three instruments (O*NET Interest Profiler Short Form, Mini-IPIP,
   a work-values ranking), deterministic scoring, and attempts with autosave and 90-day retakes.
 - `src/lib/matching/` — career matching (interest-profile correlation, lightly adjusted by values,

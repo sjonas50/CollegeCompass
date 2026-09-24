@@ -33,8 +33,20 @@ export default function DataSourcesPage() {
           the National Center for Education Statistics.
         </p>
         <p>
-          <strong>Colleges.</strong> College costs and outcomes come from the U.S. Department of Education&apos;s{" "}
-          <a className="underline" href="https://collegescorecard.ed.gov/data/">College Scorecard</a>.
+          <strong>Colleges and programs.</strong> College costs, graduation rates and earnings come from the U.S.
+          Department of Education&apos;s <a className="underline" href="https://collegescorecard.ed.gov/data/">College Scorecard</a>{" "}
+          institution data. The programs each college offers, and what their graduates typically earn and owe, come from
+          the College Scorecard field-of-study data. Both are from the June 2026 release. Net price is what a year
+          costs, including housing, food and books, after grants and scholarships. It&apos;s an average for new
+          full-time students who got financial aid (at public colleges, in-state students). When grants add up to more
+          than the cost, we show $0. College Compass is not part of, or endorsed by, the U.S. Department of Education.
+        </p>
+        <p>
+          Some colleges are missing a number. Sometimes the college didn&apos;t report it. Other times so few students
+          are in a group that sharing it could reveal private information, so the government leaves it out. When that
+          happens, we tell you instead of guessing. A missing number doesn&apos;t mean a college is bad. Learn more in
+          the{" "}
+          <a className="underline" href="https://collegescorecard.ed.gov/data/data-documentation/">College Scorecard data documentation</a>.
         </p>
       </Card>
     </>

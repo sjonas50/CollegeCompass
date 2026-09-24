@@ -1,7 +1,7 @@
 /**
  * Downloads and loads public reference data: O*NET occupations and interest profiles, the
  * O*NET 30.0 work values (dropped from 31.0), the NCES CIP–SOC crosswalk (majors ↔ careers),
- * and College Scorecard institutions.
+ * and College Scorecard institutions and their undergraduate programs (field-of-study data).
  *
  *   npm run data:load            # downloads into .data/reference (cached) and loads
  *
@@ -18,6 +18,7 @@ import { readSheet } from "read-excel-file/node";
 import { getDb, migrateDb } from "../src/db";
 import {
   cipSocLinks,
+  collegePrograms,
   colleges,
   majors,
   occupationInterests,
@@ -25,6 +26,7 @@ import {
   occupations,
 } from "../src/db/schema";
 import {
+  collectCollegePrograms,
   parseCipSoc,
   parseCollege,
   parseJobZone,
@@ -42,6 +44,7 @@ const SOURCES = {
   workValues: "https://www.onetcenter.org/dl_files/database/db_30_0_text/Work%20Values.txt",
   crosswalk: "https://nces.ed.gov/ipeds/cipcode/Files/CIP2020_SOC2018_Crosswalk.xlsx",
   scorecard: "https://ed-public-download.scorecard.network/downloads/Most-Recent-Cohorts-Institution_06102026.zip",
+  fieldOfStudy: "https://ed-public-download.scorecard.network/downloads/Most-Recent-Cohorts-Field-of-Study_06102026.zip",
 };
 
 async function download(url: string): Promise<string> {
@@ -111,6 +114,8 @@ async function main() {
   const linkRows = [...new Map(crosswalk.map((r) => [`${r.cipCode}|${r.socCode}`, { cipCode: r.cipCode, socCode: r.socCode }])).values()];
 
   const collegeRows = await collect(await csvFromZip(files.scorecard), parseCollege);
+  // ~228k rows: streamed, keeping only parsed undergraduate programs at the colleges above.
+  const programRows = await collectCollegePrograms(csvRows(await csvFromZip(files.fieldOfStudy)), new Set(collegeRows.map((c) => c.unitId)));
 
   await migrateDb();
   const db = await getDb();
@@ -120,6 +125,7 @@ async function main() {
     await tx.delete(occupations);
     await tx.delete(cipSocLinks);
     await tx.delete(majors);
+    await tx.delete(collegePrograms);
     await tx.delete(colleges);
     for (const batch of chunks(occupationRows)) await tx.insert(occupations).values(batch);
     for (const batch of chunks(interestRows)) await tx.insert(occupationInterests).values(batch);
@@ -127,11 +133,13 @@ async function main() {
     for (const batch of chunks(majorRows)) await tx.insert(majors).values(batch);
     for (const batch of chunks(linkRows)) await tx.insert(cipSocLinks).values(batch);
     for (const batch of chunks(collegeRows, 500)) await tx.insert(colleges).values(batch);
+    for (const batch of chunks(programRows)) await tx.insert(collegePrograms).values(batch);
   });
 
   console.log(
     `Loaded ${occupationRows.length} occupations, ${interestRows.length} interest scores, ${valueRows.length} work value scores, ` +
-      `${majorRows.length} majors, ${linkRows.length} major–career links, ${collegeRows.length} colleges.`,
+      `${majorRows.length} majors, ${linkRows.length} major–career links, ${collegeRows.length} colleges, ` +
+      `${programRows.length} college programs.`,
   );
   process.exit(0);
 }
