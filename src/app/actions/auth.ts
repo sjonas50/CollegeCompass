@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import * as z from "zod";
-import { getDb } from "@/db";
+import { type Db, getDb } from "@/db";
 import { env } from "@/env";
 import {
   LoginSchema,
@@ -12,6 +12,8 @@ import {
   registerParent,
   registerStudent,
 } from "@/lib/accounts";
+import { SAVED_ASSESSMENT_FIELD } from "@/lib/assessments/anonymous";
+import { importSavedAssessment } from "@/lib/assessments/import";
 import { isPlausibleStudentBirthDate, isUnder13 } from "@/lib/auth/age";
 import {
   clearSessionCookie,
@@ -73,7 +75,20 @@ export async function registerStudentAction(_prev: FormState, formData: FormData
   }
   const { token } = await createSession(db, result.value.userId);
   await setSessionCookie(token);
-  redirect("/dashboard");
+  const imported = await importAtSignup(db, result.value.userId, formData.get(SAVED_ASSESSMENT_FIELD));
+  // /try/saved clears the browser's copy of the quiz, then shows the results.
+  redirect(imported ? "/try/saved" : "/dashboard");
+}
+
+/** Brings in a free quiz saved in the visitor's browser (see /try). Never blocks the new account. */
+async function importAtSignup(db: Db, userId: string, saved: FormDataEntryValue | null): Promise<boolean> {
+  if (typeof saved !== "string" || !saved) return false;
+  try {
+    return (await importSavedAssessment(db, userId, userId, saved, { via: "signup" })).ok;
+  } catch (error) {
+    console.error("[signup] quiz import failed", error instanceof Error ? error.name : "unknown");
+    return false;
+  }
 }
 
 export type ParentRequestState = { sent: true } | FormState;

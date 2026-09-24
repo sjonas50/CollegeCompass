@@ -8,9 +8,12 @@ import {
   registerStudentAction,
   requestParentConsentAction,
 } from "@/app/actions/auth";
+import { SavedQuizField } from "@/components/saved-results-import";
 import { BirthdayFields, Button, Card, Field, FormMessage, GradeSelect, Notice, PageHeading } from "@/components/ui";
 import { useFormAction } from "@/components/use-form-action";
+import { isFinished } from "@/lib/assessments/anonymous";
 import type { FormState } from "@/lib/forms";
+import { useSavedAssessment } from "../try/saved-store";
 
 export function StudentSignup({ startWithParentStep }: { startWithParentStep: boolean }) {
   const [age, ageAction, agePending, ageValues] = useFormAction<AgeGateState>(
@@ -65,6 +68,7 @@ function TeenSignup({ birthDate }: { birthDate: string }) {
             required
             errors={state?.errors?.password}
           />
+          <SavedQuizField />
           <Button type="submit" disabled={pending} className="w-full sm:w-auto">
             Create account
           </Button>
@@ -99,11 +103,23 @@ function ParentHandoff() {
           <p className="text-sm text-muted">
             We only use this email to ask your parent for permission. If they don&apos;t respond, we delete it.
           </p>
+          <SavedQuizNote />
           <Button type="submit" disabled={pending} className="w-full sm:w-auto">
             Send to my parent
           </Button>
         </form>
       </Card>
     </>
+  );
+}
+
+/** Under-13s can't sign up themselves, so the quiz waits in this browser until they sign in. */
+function SavedQuizNote() {
+  const saved = useSavedAssessment();
+  if (!isFinished(saved)) return null;
+  return (
+    <p className="text-sm text-muted">
+      Your quiz results stay on this device. Once your parent sets up your account, sign in here and you can add them.
+    </p>
   );
 }
