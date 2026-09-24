@@ -2,7 +2,7 @@ import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import type { Db } from "@/db";
 import { parentStudentLinks, reminderSends, studentMilestones, users, weeklySteps } from "@/db/schema";
 import { currentGrade, isUnder13 } from "./auth/age";
-import { weekStartOf } from "./counselor/prompt";
+import { weekStartOf } from "./steps";
 import type { Email } from "./email";
 import { MILESTONES } from "./roadmap/milestones";
 

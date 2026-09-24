@@ -1,14 +1,22 @@
+import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { logoutAction } from "@/app/actions/auth";
 import { removeNorthStarAction } from "@/app/actions/discover";
-import { Button, ButtonLink, Card, PageHeading } from "@/components/ui";
+import { StudentSettings } from "@/components/student-settings";
+import { ButtonLink, Card, Notice, PageHeading } from "@/components/ui";
+import { WeeklyStepsCard } from "@/components/weekly-steps";
 import { getDb } from "@/db";
+import { users } from "@/db/schema";
 import { INSTRUMENTS, type InstrumentId } from "@/lib/assessments/instruments";
 import { type InstrumentStatus, instrumentStatuses } from "@/lib/assessments/service";
 import { gradeBand } from "@/lib/auth/age";
 import { requireUser } from "@/lib/auth/dal";
+import { computeGpa } from "@/lib/courses/gpa";
+import { listCourses } from "@/lib/courses/service";
 import { listNorthStars } from "@/lib/goals";
+import { buildRoadmap, getMilestoneProgress } from "@/lib/roadmap";
+import { MILESTONES } from "@/lib/roadmap/milestones";
 
 export const metadata: Metadata = { title: "Your dashboard" };
 
@@ -26,17 +34,57 @@ function statusText(s: InstrumentStatus) {
   return "Done";
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   const user = await requireUser(["student"]);
+  const { settings } = await searchParams;
   const db = await getDb();
-  const [statuses, stars] = await Promise.all([instrumentStatuses(db, user.id), listNorthStars(db, user.id)]);
-  const band = gradeBand(user.grade ?? 9);
+  const grade = user.grade ?? 9;
+  const [statuses, stars, progress, courses, [prefs]] = await Promise.all([
+    instrumentStatuses(db, user.id),
+    listNorthStars(db, user.id),
+    getMilestoneProgress(db, user.id),
+    listCourses(db, user.id),
+    db.select({ remindersEnabled: users.remindersEnabled }).from(users).where(eq(users.id, user.id)),
+  ]);
+  const roadmap = buildRoadmap(MILESTONES, grade, new Date(), progress);
+  const timely = [...roadmap.now, ...roadmap.catchUp].slice(0, 3);
+  const gpa = computeGpa(courses);
   const next = ORDER.find((i) => statuses[i].state !== "done");
   const hasResults = statuses.interests.state === "done";
+  const graduated = grade > 12;
 
   return (
     <div className="space-y-8">
-      <PageHeading title={`Hi, ${user.displayName}!`} lead={BAND_COPY[band]} />
+      <PageHeading
+        title={`Hi, ${user.displayName}!`}
+        lead={graduated ? "Congratulations on finishing high school! Your plans and notes are all still here." : BAND_COPY[gradeBand(grade)]}
+      />
+      {settings === "saved" && <Notice>Settings saved.</Notice>}
+
+      <WeeklyStepsCard />
+
+      {!graduated && (
+        <section>
+          <h2 className="text-lg font-medium">Timely on your roadmap</h2>
+          {timely.length ? (
+            <ul className="mt-3 space-y-2">
+              {timely.map((m) => (
+                <li key={m.id}>
+                  <Link href="/roadmap" className="block rounded-xl border border-border bg-surface p-4 hover:border-accent">
+                    <span className="font-medium">{m.title}</span>
+                    <span className="mt-1 block text-sm text-muted">{m.detail}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-sm text-muted">You&apos;re all caught up for this month. Nice work!</p>
+          )}
+          <div className="mt-3">
+            <ButtonLink href="/roadmap" variant="secondary">See my roadmap</ButtonLink>
+          </div>
+        </section>
+      )}
 
       {stars.length > 0 && (
         <section>
@@ -52,7 +100,7 @@ export default async function DashboardPage() {
                   <form action={removeNorthStarAction}>
                     <input type="hidden" name="code" value={s.occupationCode} />
                     <input type="hidden" name="back" value="dashboard" />
-                    <button type="submit" className="text-sm text-muted underline">Remove</button>
+                    <button type="submit" className="min-h-11 text-sm text-muted underline">Remove</button>
                   </form>
                 </Card>
               </li>
@@ -63,16 +111,15 @@ export default async function DashboardPage() {
 
       <section>
         <h2 className="text-lg font-medium">Discover your direction</h2>
-        <p className="mb-3 text-sm text-muted">Three short activities. Start with interests — it unlocks your career matches.</p>
+        <p className="mb-3 text-sm text-muted">
+          {next ? "Three short activities. Start with interests — it unlocks your career matches." : "All done. You can retake them as you grow."}
+        </p>
         <ol className="space-y-3">
           {ORDER.map((id, i) => {
             const s = statuses[id];
             return (
               <li key={id}>
-                <Link
-                  href={`/discover/${id}`}
-                  className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 hover:border-accent"
-                >
+                <Link href={`/discover/${id}`} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 hover:border-accent">
                   <span
                     className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
                       s.state === "done" ? "bg-accent text-accent-foreground" : "border border-border text-muted"
@@ -98,12 +145,37 @@ export default async function DashboardPage() {
               {statuses[next].state === "in_progress" ? "Keep going" : `Start ${INSTRUMENTS[next].title.toLowerCase()}`}
             </ButtonLink>
           )}
-          <ButtonLink href="/careers" variant="secondary">Explore careers</ButtonLink>
         </div>
       </section>
 
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <h2 className="font-medium">Your class plan</h2>
+          {courses.length ? (
+            <p className="mt-1 text-sm text-muted">
+              {courses.length} {courses.length === 1 ? "class" : "classes"} in your plan
+              {gpa.unweighted !== null && <> · estimated GPA {gpa.unweighted.toFixed(2)}</>}
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-muted">Add your classes to see how they line up with your goals.</p>
+          )}
+          <div className="mt-3">
+            <ButtonLink href="/plan" variant="secondary">{courses.length ? "Open my plan" : "Start my plan"}</ButtonLink>
+          </div>
+        </Card>
+        <Card>
+          <h2 className="font-medium">Ask your counselor</h2>
+          <p className="mt-1 text-sm text-muted">Questions about careers, classes, college, or training? Your AI counselor knows your goals.</p>
+          <div className="mt-3">
+            <ButtonLink href="/counselor" variant="secondary">Start a chat</ButtonLink>
+          </div>
+        </Card>
+      </div>
+
+      <StudentSettings grade={user.grade} remindersEnabled={prefs?.remindersEnabled ?? true} />
+
       <form action={logoutAction}>
-        <Button type="submit" variant="secondary">Sign out</Button>
+        <button type="submit" className="min-h-11 text-sm text-muted underline">Sign out</button>
       </form>
     </div>
   );

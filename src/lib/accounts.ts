@@ -246,6 +246,7 @@ export async function listChildren(db: Db, parentUserId: string, now = new Date(
       grade: users.grade,
       gradeSchoolYear: users.gradeSchoolYear,
       parentManaged: users.parentManaged,
+      remindersEnabled: users.remindersEnabled,
       createdAt: users.createdAt,
     })
     .from(parentStudentLinks)

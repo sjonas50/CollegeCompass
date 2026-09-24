@@ -1,4 +1,5 @@
 import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
+import type { BetaRunnableTool } from "@anthropic-ai/sdk/lib/tools/BetaRunnableTool";
 import * as z from "zod";
 import type { Db } from "@/db";
 import { RIASEC_INFO } from "../assessments/instruments";
@@ -13,10 +14,10 @@ export type ToolContext = {
   userId: string;
   grade: number | null;
   /** Extra student-scoped tools registered by other modules (plan, roadmap). */
-  extra?: ReturnType<typeof betaZodTool>[];
+  extra?: BetaRunnableTool[];
 };
 
-export function counselorTools(ctx: ToolContext) {
+export function counselorTools(ctx: ToolContext): BetaRunnableTool[] {
   const search = betaZodTool({
     name: "search_careers",
     description:

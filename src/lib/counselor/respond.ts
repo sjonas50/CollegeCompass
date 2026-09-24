@@ -177,7 +177,7 @@ export async function* respond(
     }
 
     const model = modelFor("counselor");
-    const context = await buildStudentContext(db, student, { concernFlagged: conv.concernFlagged, now: deps.now });
+    const context = await buildStudentContext(db, student, { concernFlagged: conv.concernFlagged, now: deps.now, knownNames });
     const messages: Anthropic.Beta.BetaMessageParam[] = prior
       .slice(-HISTORY_LIMIT)
       .filter((m) => m.kind !== "notice")

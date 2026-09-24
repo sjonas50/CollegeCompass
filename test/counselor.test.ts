@@ -189,3 +189,21 @@ describe("counselor memory", () => {
     expect(await getMemory(db, student.id)).toEqual(["Wants to study biology", "Works after school"]);
   });
 });
+
+describe("counselor tools", () => {
+  it("exposes only the student's own plan and roadmap, with no ids or names", async () => {
+    const { counselorExtraTools } = await import("@/lib/counselor/extra-tools");
+    await db.insert(schema.studentCourses).values({ userId: student.id, name: "Maya's Biology", subject: "science", gradeLevel: 10, status: "completed", finalGrade: "A" });
+    await db.insert(schema.weeklySteps).values({ userId: student.id, weekStart: "2026-09-21", text: "Ask Maya's counselor about AP Bio" });
+    const tools = await counselorExtraTools(db, student);
+    expect(tools.map((t) => t.name)).toEqual(["get_my_plan", "get_my_roadmap"]);
+    const plan = String(await tools[0].run({}));
+    expect(plan).toContain("Biology");
+    expect(plan).not.toContain("Maya");
+    expect(plan).not.toContain(student.id);
+    const roadmap = String(await tools[1].run({}));
+    expect(roadmap).not.toContain(student.id);
+    expect(roadmap).toContain("AP Bio");
+    expect(roadmap).not.toContain("Maya");
+  });
+});
