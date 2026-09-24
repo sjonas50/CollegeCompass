@@ -242,8 +242,9 @@ Set this up in test mode first (test keys for Preview), then again in live mode 
    - `customer.subscription.created`
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
-   - `invoice.paid`
-   - `invoice.payment_failed`
+
+   (Payment failures arrive as `customer.subscription.updated` with status `past_due`, which keeps
+   access while Stripe retries; the handler answers 200 to any other event.)
 
    Copy the signing secret into `STRIPE_WEBHOOK_SECRET`. Stripe retries failed deliveries for up to
    three days; the app records each event id, so a repeat is ignored.

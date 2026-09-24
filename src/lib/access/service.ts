@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type { Db } from "@/db";
 import { accessGrants, billingAccounts, households, users } from "@/db/schema";
 import { env } from "@/env";
@@ -209,4 +209,42 @@ export async function exportHouseholdAccess(db: Db, householdId: string | null, 
   ]);
   const access = evaluateAccess({ householdId, grants, billing: billing[0] ?? null }, now);
   return { fullAccess: access.full, grants, subscription: billing[0] ?? null };
+}
+
+/**
+ * Which of these households have full access now, in two queries (for batch jobs like the weekly
+ * reminder emails). Unlike getHouseholdAccess, it never starts a first-check trial.
+ */
+export async function householdsWithFullAccess(db: Db, householdIds: string[], now = new Date()): Promise<Set<string>> {
+  const ids = [...new Set(householdIds)];
+  if (!ids.length) return new Set();
+  const [grants, billing] = await Promise.all([
+    db
+      .select({ householdId: accessGrants.householdId, kind: accessGrants.kind, startsAt: accessGrants.startsAt, endsAt: accessGrants.endsAt })
+      .from(accessGrants)
+      .where(inArray(accessGrants.householdId, ids)),
+    db
+      .select({
+        householdId: billingAccounts.householdId,
+        status: billingAccounts.status,
+        plan: billingAccounts.plan,
+        currentPeriodEnd: billingAccounts.currentPeriodEnd,
+        cancelAtPeriodEnd: billingAccounts.cancelAtPeriodEnd,
+      })
+      .from(billingAccounts)
+      .where(inArray(billingAccounts.householdId, ids)),
+  ]);
+  const full = new Set<string>();
+  for (const householdId of ids) {
+    const access = evaluateAccess(
+      {
+        householdId,
+        grants: grants.filter((g) => g.householdId === householdId),
+        billing: billing.find((b) => b.householdId === householdId) ?? null,
+      },
+      now,
+    );
+    if (access.full) full.add(householdId);
+  }
+  return full;
 }

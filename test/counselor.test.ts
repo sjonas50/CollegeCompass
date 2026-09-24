@@ -135,7 +135,10 @@ describe("counselor respond", () => {
     expect(calls.aborted).toBe(true);
     const [conv] = await db.select().from(schema.counselorConversations);
     expect(conv.concernFlagged).toBe(true);
-    expect(await db.select().from(schema.safetyEvents)).toHaveLength(1);
+    const events2 = await db.select().from(schema.safetyEvents);
+    expect(events2).toHaveLength(1);
+    // Linked to its conversation for staff review.
+    expect(events2[0].conversationId).toBe(conv.id);
   });
 
   it("keeps a flagged conversation in support mode on the next turn", async () => {

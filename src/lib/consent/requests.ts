@@ -29,6 +29,11 @@ export async function findConsentRequest(db: Db, token: string, now = new Date()
   return request ?? null;
 }
 
+/** Drops a request whose email couldn't be sent, so we don't keep an address we never used. */
+export async function cancelConsentRequest(db: Db, token: string) {
+  await db.delete(consentRequests).where(eq(consentRequests.tokenHash, hashToken(token)));
+}
+
 /** Called once the parent has created the child's account; the stored email is no longer needed. */
 export async function completeConsentRequest(db: Db, requestId: string) {
   await db.delete(consentRequests).where(eq(consentRequests.id, requestId));

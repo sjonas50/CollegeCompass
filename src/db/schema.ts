@@ -210,6 +210,8 @@ export const safetyEvents = pgTable(
     severity: safetySeverityEnum("severity").notNull(),
     // Which classifier tiers fired, e.g. ["rules", "model"].
     sources: jsonb("sources").$type<string[]>().notNull(),
+    // The counselor conversation the message was in, when there is one (for staff review).
+    conversationId: uuid("conversation_id").references(() => counselorConversations.id, { onDelete: "set null" }),
     excerpt: text("excerpt").notNull(),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     reviewedByUserId: uuid("reviewed_by_user_id").references(() => users.id, { onDelete: "set null" }),

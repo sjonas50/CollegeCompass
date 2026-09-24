@@ -37,5 +37,12 @@
   (schema, en/es parity, safe links). Dates and amounts change every year: re-verify them against
   studentaid.gov before each FAFSA season, and set `review` only after a counselor has reviewed the
   exact content. The long fact-checked originals are kept outside git in `.data/aid-guide-verified/`.
+- Access is per household (trial, subscription, free access, sponsored, comp). Pages, actions and
+  routes that need it call `requireFullAccess(user)`; locked UI and route handlers use
+  `accessFor(user)` (src/lib/access/guard.ts). Assessments, careers, colleges, the aid guide,
+  privacy controls and crisis help are never gated. New household data must be covered by
+  `exportHouseholdAccess` and `deleteEmptyHousehold`.
+- Staff tools live under /admin (role "admin", created only by `npm run admin:create`). Every view
+  of a student's conversation is audited; admin sessions last 12 hours.
 - Key dates on /applications come from `VERIFIED_FAFSA`/`VERIFIED_CSS` in
   `src/lib/applications/key-dates.ts`; add each cycle's confirmed dates there.

@@ -11,7 +11,8 @@ import { sendEmail } from "@/lib/email";
 import { type FormState, fieldErrors } from "@/lib/forms";
 import { type CreateInviteError, InviteEmailSchema, MAX_PENDING_INVITES, acceptInvite, cancelInvite, createInvite } from "@/lib/invites";
 import { consumeRateLimit } from "@/lib/rate-limit";
-import { clientIp } from "@/lib/request";
+import { clientIpKey } from "@/lib/request";
+import { deleteEmptyHousehold } from "@/lib/privacy";
 
 const HOUR = 60 * 60 * 1000;
 const TOKEN = /^[A-Za-z0-9_-]{1,128}$/;
@@ -34,7 +35,7 @@ export async function sendParentInviteAction(_prev: InviteFormState, formData: F
   if (!parsed.success) return fieldErrors(parsed.error);
 
   const db = await getDb();
-  if (!(await consumeRateLimit(db, `parent_invite:ip:${await clientIp()}`, 20, HOUR))) {
+  if (!(await consumeRateLimit(db, `parent_invite:ip:${await clientIpKey()}`, 20, HOUR))) {
     return { message: "Too many invitations from here. Please try again later." };
   }
   const res = await createInvite(db, student.id, parsed.data.parentEmail, { appUrl: env().APP_URL, send: sendEmail });
@@ -61,8 +62,11 @@ export async function acceptParentInviteAction(formData: FormData) {
   const parent = await requireUser(["parent"]);
   const token = tokenFrom(formData);
   if (!token) redirect("/parent");
-  const res = await acceptInvite(await getDb(), token, parent.id);
+  const db = await getDb();
+  const res = await acceptInvite(db, token, parent.id);
   if (!res.ok) redirect(`/invite/${token}?error=${res.error}`);
+  // The student's old household is empty but held a lapsed plan: close its Stripe customer.
+  if (res.merge.parkedHouseholdId) await deleteEmptyHousehold(db, res.merge.parkedHouseholdId);
   redirect("/parent?linked=1");
 }
 

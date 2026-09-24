@@ -24,9 +24,10 @@ import {
   weeklySteps,
 } from "@/db/schema";
 import { exportHouseholdAccess } from "./access/service";
+import { exportParentInvites } from "./invites";
 import { isLinkedParent } from "./accounts";
 import { audit } from "./audit";
-import { deleteStripeCustomer } from "./billing/checkout";
+import { deleteStripeCustomer, endPlanWithoutParent } from "./billing/checkout";
 import { type Stripe, getStripe } from "./billing/stripe";
 
 /**
@@ -82,6 +83,9 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
         severity: safetyEvents.severity,
         excerpt: safetyEvents.excerpt,
         createdAt: safetyEvents.createdAt,
+        // Whether and how staff reviewed it. Staff notes stay out until counsel decides.
+        reviewedAt: safetyEvents.reviewedAt,
+        reviewOutcome: safetyEvents.reviewOutcome,
       })
       .from(safetyEvents)
       .where(eq(safetyEvents.userId, studentId)),
@@ -137,6 +141,7 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
     consentRecords: consents,
     aiUsage: usage,
     safetyEvents: safety,
+    parentInvites: await exportParentInvites(db, studentId),
     assessments: attempts.map((a) => ({
       ...a,
       responses: Object.fromEntries(responses.filter((r) => r.attemptId === a.id).map((r) => [r.itemId, r.value])),
@@ -201,7 +206,10 @@ export async function deleteParentAccount(db: Db, parentId: string, deps: Deleti
   });
   await audit(db, "parent.deleted", { metadata: { childrenDeleted: managedIds.length } });
   for (const householdId of new Set(removed.map((r) => r.householdId))) {
-    await deleteEmptyHousehold(db, householdId, deps);
+    if (!householdId) continue;
+    const deleted = await deleteEmptyHousehold(db, householdId, deps);
+    // Teens remain but no parent: a renewing plan ends when its paid period does.
+    if (!deleted) await endPlanWithoutParent(db, deps.stripe === undefined ? getStripe() : deps.stripe, householdId);
   }
   return { childrenDeleted: managedIds.length };
 }

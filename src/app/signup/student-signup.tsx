@@ -91,6 +91,7 @@ function ParentHandoff() {
     );
   }
   const errors = state && "errors" in state ? state.errors : undefined;
+  const message = state && "message" in state ? state.message : undefined;
   return (
     <>
       <PageHeading
@@ -104,6 +105,11 @@ function ParentHandoff() {
             We only use this email to ask your parent for permission. If they don&apos;t respond, we delete it.
           </p>
           <SavedQuizNote />
+          {message && (
+            <p role="alert" className="text-sm text-danger">
+              {message}
+            </p>
+          )}
           <Button type="submit" disabled={pending} className="w-full sm:w-auto">
             Send to my parent
           </Button>

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { AddToListForm } from "@/app/applications/add-to-list-form";
 import { getDb } from "@/db";
 import { listStatusFor } from "@/lib/applications/service";
+import { UNLOCK_PATH } from "@/lib/access/describe";
+import { accessFor } from "@/lib/access/guard";
 import { getCurrentUser } from "@/lib/auth/dal";
 
 /**
@@ -22,6 +24,13 @@ export async function AddToListButton({ unitId, name }: { unitId: number; name: 
     );
   }
   if (user.role !== "student") return null;
+  if (!(await accessFor(user)).full) {
+    return (
+      <Link href={UNLOCK_PATH} className="inline-flex min-h-11 items-center underline underline-offset-2">
+        Unlock your college list
+      </Link>
+    );
+  }
   const status = await listStatusFor(await getDb(), user.id, unitId);
   return <AddToListForm unitId={unitId} name={name} listed={status.listed} full={status.full} />;
 }

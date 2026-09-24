@@ -51,6 +51,26 @@ async function subscribe(householdId: string, customerId = "cus_1") {
   await db.insert(schema.billingAccounts).values({ householdId, stripeCustomerId: customerId, stripeSubscriptionId: "sub_1", status: "active", plan: "monthly" });
 }
 
+describe("a parent leaves while teens stay", () => {
+  it("sets the family's renewing plan to end with its paid period", async () => {
+    const { parentId, kid } = await parentWithKids();
+    const teenId = await kid("teen_one", "2011-01-15", false);
+    const householdId = await householdOf(teenId);
+    await subscribe(householdId);
+    const { stripe, requests } = fakeStripe((req) =>
+      req.method === "POST" && req.path === "/v1/subscriptions/sub_1"
+        ? { body: { id: "sub_1", object: "subscription", status: "active", cancel_at_period_end: true } }
+        : undefined,
+    );
+    await deleteParentAccount(db, parentId, { stripe });
+    const update = requests.find((r) => r.path === "/v1/subscriptions/sub_1");
+    expect(update?.form.get("cancel_at_period_end")).toBe("true");
+    const [billing] = await db.select().from(schema.billingAccounts).where(eq(schema.billingAccounts.householdId, householdId));
+    expect(billing.cancelAtPeriodEnd).toBe(true);
+    expect(await householdOf(teenId)).toBe(householdId);
+  });
+});
+
 function stripeThatDeletes() {
   return fakeStripe((req) =>
     req.method === "DELETE" && req.path.startsWith("/v1/customers/")
@@ -142,7 +162,8 @@ describe("deleting someone who isn't the last", () => {
     const { stripe, requests } = stripeThatDeletes();
 
     expect(await deleteParentAccount(db, parentId, { stripe })).toEqual({ childrenDeleted: 1 });
-    expect(requests).toHaveLength(0);
+    // The customer isn't deleted; the only call asks Stripe to end the plan with its paid period.
+    expect(requests.map((r) => `${r.method} ${r.path}`)).toEqual(["POST /v1/subscriptions/sub_1"]);
     expect((await db.select({ id: schema.users.id }).from(schema.users)).map((u) => u.id)).toEqual([ana]);
     expect(await householdOf(ana)).toBe(householdId);
     expect(await db.select().from(schema.billingAccounts)).toEqual([expect.objectContaining({ householdId, status: "active" })]);

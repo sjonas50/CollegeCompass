@@ -70,6 +70,19 @@ describe("weekly reminders (Monday 13:00 UTC)", () => {
     expect(r.weekStart).toBe(thisWeek);
   });
 
+  it("skips students whose family has no access (the roadmap and steps are locked)", async () => {
+    const id = await teen(12);
+    await db.insert(schema.weeklySteps).values({ userId: id, weekStart: thisWeek, text: "Ask about dual enrollment" });
+    expect(await buildWeeklyReminders(db, APP, now)).toHaveLength(1);
+    await db.delete(schema.accessGrants);
+    await db.insert(schema.billingAccounts).values({
+      householdId: (await db.select().from(schema.users))[0].householdId!,
+      stripeCustomerId: "cus_x",
+      status: "canceled",
+    });
+    expect(await buildWeeklyReminders(db, APP, now)).toHaveLength(0);
+  });
+
   it("lists unsent college-list deadlines in the next two weeks", async () => {
     const id = await teen(12);
     await db.insert(schema.collegeList).values([

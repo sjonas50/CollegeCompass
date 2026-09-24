@@ -2,6 +2,7 @@ import { and, asc, eq, gt, inArray, isNotNull, isNull, lt } from "drizzle-orm";
 import type { Db } from "@/db";
 import { parentStudentLinks, reminderSends, studentMilestones, users, weeklySteps } from "@/db/schema";
 import { formatDate, relativeDays } from "./applications/dates";
+import { householdsWithFullAccess } from "./access/service";
 import { upcomingDeadlinesFor } from "./applications/service";
 import { MAX_GRADE, currentGrade, isUnder13 } from "./auth/age";
 import { hashToken } from "./auth/tokens";
@@ -73,6 +74,7 @@ type StudentRow = {
   birthDate: string | null;
   grade: number | null;
   gradeSchoolYear: number | null;
+  householdId: string | null;
 };
 
 function group<T extends { userId: string }>(rows: T[]) {
@@ -115,6 +117,7 @@ export async function* weeklyReminderBatches(
         birthDate: users.birthDate,
         grade: users.grade,
         gradeSchoolYear: users.gradeSchoolYear,
+        householdId: users.householdId,
       })
       .from(users)
       .where(
@@ -131,7 +134,7 @@ export async function* weeklyReminderBatches(
     afterId = students[students.length - 1].id;
     const ids = students.map((s) => s.id);
 
-    const [steps, progress, parentLinks, deadlinesBy] = await Promise.all([
+    const [steps, progress, parentLinks, deadlinesBy, withAccess] = await Promise.all([
       db
         .select({ userId: weeklySteps.userId, weekStart: weeklySteps.weekStart, text: weeklySteps.text, status: weeklySteps.status })
         .from(weeklySteps)
@@ -146,12 +149,16 @@ export async function* weeklyReminderBatches(
         .innerJoin(users, eq(users.id, parentStudentLinks.parentUserId))
         .where(inArray(parentStudentLinks.studentUserId, ids)),
       upcomingDeadlinesFor(db, ids, now, 14),
+      householdsWithFullAccess(db, students.flatMap((s) => (s.householdId ? [s.householdId] : [])), now),
     ]);
     const stepsBy = group(steps);
     const progressBy = group(progress);
     const parentsBy = group(parentLinks);
 
     for (const s of students) {
+      // The roadmap, weekly steps and college list are locked without the family's plan, trial or
+      // free access, so there's nothing for the email to point to.
+      if (!s.householdId || !withAccess.has(s.householdId)) continue;
       const grade = currentGrade(s, now);
       if (grade === null) continue;
 

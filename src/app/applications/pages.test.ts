@@ -30,6 +30,7 @@ vi.mock("@/components/use-form-action", async (original) => {
 vi.mock("@/lib/auth/dal", () => ({ requireUser: async () => state.user, getCurrentUser: async () => state.user }));
 // The dashboard's weekly steps card loads its own data (an async component) and has its own tests.
 vi.mock("@/components/weekly-steps", () => ({ WeeklyStepsCard: () => null }));
+vi.mock("@/components/invite-parent", () => ({ InviteParentCard: () => null }));
 
 const NOW = new Date("2026-09-24T18:00:00Z");
 

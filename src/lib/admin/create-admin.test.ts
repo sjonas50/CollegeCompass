@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { CREATE_ADMIN_USAGE, CreateAdminSchema, parseCreateAdminArgs } from "./create-admin";
+import { createTestDb } from "@/db";
+import { ADMIN_SESSION_TTL_MS, createSession, validateSession } from "@/lib/auth/sessions";
+import { CREATE_ADMIN_USAGE, CreateAdminSchema, createAdminUser, parseCreateAdminArgs } from "./create-admin";
 
 // Account creation itself runs against a database in test/admin.test.ts.
 
@@ -36,5 +38,19 @@ describe("admin account input", () => {
     expect(CreateAdminSchema.safeParse({ email: "not-an-email", displayName: "Jordan", password: "a".repeat(20) }).success).toBe(false);
     expect(CreateAdminSchema.safeParse({ email: "staff@example.com", displayName: " ", password: "a".repeat(20) }).success).toBe(false);
     expect(CreateAdminSchema.safeParse({ email: "staff@example.com", displayName: "Jordan", password: "a".repeat(129) }).success).toBe(false);
+  });
+});
+
+describe("admin sessions", () => {
+  it("last 12 hours and are never extended", async () => {
+    const db = await createTestDb();
+    const res = await createAdminUser(db, { email: "staff@example.org", displayName: "Staff", password: "a-very-long-staff-password" });
+    if (!res.ok) throw new Error(res.error);
+    const start = new Date("2026-09-24T12:00:00Z");
+    const { token, expiresAt } = await createSession(db, res.userId, start);
+    expect(expiresAt.getTime() - start.getTime()).toBe(ADMIN_SESSION_TTL_MS);
+    const later = await validateSession(db, token, new Date(start.getTime() + 11 * 60 * 60 * 1000));
+    expect(later?.expiresAt.getTime()).toBe(expiresAt.getTime());
+    expect(await validateSession(db, token, new Date(start.getTime() + 13 * 60 * 60 * 1000))).toBeNull();
   });
 });

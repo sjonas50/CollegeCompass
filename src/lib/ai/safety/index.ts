@@ -19,6 +19,8 @@ export type SafetyAssessment = {
   degraded: boolean;
   /** At high/imminent, the counselor replies with this instead of continuing normally. */
   supportMessage: string | null;
+  /** The review-queue event recorded for this message, if any (medium or higher). */
+  eventId?: string;
 };
 
 type Options = {
@@ -90,15 +92,20 @@ export async function assessMessage(
   if (counted) sources.push("rules");
   if (model) sources.push("model");
 
+  let eventId: string | undefined;
   if (signal && SEVERITY_ORDER[signal.severity] >= SEVERITY_ORDER.medium) {
     try {
-      await db.insert(safetyEvents).values({
-        userId,
-        category: signal.category,
-        severity: signal.severity,
-        sources: modelRan ? sources : [...sources, "model_unavailable"],
-        excerpt: text.slice(0, 1000),
-      });
+      const [row] = await db
+        .insert(safetyEvents)
+        .values({
+          userId,
+          category: signal.category,
+          severity: signal.severity,
+          sources: modelRan ? sources : [...sources, "model_unavailable"],
+          excerpt: text.slice(0, 1000),
+        })
+        .returning({ id: safetyEvents.id });
+      eventId = row?.id;
     } catch (error) {
       // Never let a failed write keep crisis resources from the student. Log no message text.
       console.error("[safety] failed to record event", error instanceof Error ? error.name : "unknown");
@@ -112,6 +119,7 @@ export async function assessMessage(
     sources,
     degraded: !modelRan,
     supportMessage: urgent ? supportResponse(signal.category) : null,
+    ...(eventId && { eventId }),
   };
 }
 

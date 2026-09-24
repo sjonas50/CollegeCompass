@@ -23,7 +23,7 @@ import {
   inviteEmail,
   listPendingInvites,
 } from "@/lib/invites";
-import { deleteParentAccount, deleteStudent } from "@/lib/privacy";
+import { deleteEmptyHousehold, deleteParentAccount, deleteStudent } from "@/lib/privacy";
 
 const now = new Date("2026-09-24T15:00:00Z");
 const DAY = 24 * 60 * 60 * 1000;
@@ -343,8 +343,18 @@ describe("household merge", () => {
   const billingIn = async (householdId: string) =>
     (await db.select().from(schema.billingAccounts).where(eq(schema.billingAccounts.householdId, householdId)))[0];
 
+  it("carries a teen's running trial into the parent's household", async () => {
+    const { parentId, token, from, to } = await setup();
+    const trial = (await grantsIn(from)).find((g) => g.kind === "trial");
+    expect(trial).toBeTruthy();
+    await acceptInvite(db, token, parentId, now);
+    expect((await grantsIn(to)).map((g) => g.id)).toContain(trial!.id);
+  });
+
   it("moves grants that are still active; ended ones are deleted with the old household", async () => {
     const { studentId, parentId, token, from, to } = await setup();
+    // Only the grants below (not the trials registration created).
+    await db.delete(schema.accessGrants);
     await db.insert(schema.accessGrants).values([
       { householdId: from, kind: "trial", startsAt: new Date(now.getTime() - 20 * DAY), endsAt: new Date(now.getTime() - 6 * DAY) },
       { householdId: from, kind: "free_access", grantedByUserId: studentId, endsAt: new Date(now.getTime() + 300 * DAY) },
@@ -376,6 +386,10 @@ describe("household merge", () => {
     // Nobody lives there any more, but the Stripe customer isn't lost.
     expect((await billingIn(from)).stripeCustomerId).toBe("cus_teen");
     expect(await db.select().from(schema.users).where(eq(schema.users.householdId, from))).toHaveLength(0);
+    // The accept action hands it to the household cleanup, which closes the Stripe customer.
+    expect(res.ok && res.merge.parkedHouseholdId).toBe(from);
+    expect(await deleteEmptyHousehold(db, from, { stripe: null })).toBe(true);
+    expect(await billingIn(from)).toBeUndefined();
   });
 
   it("swaps in the teen's live plan when the parent's has ended", async () => {
@@ -425,6 +439,7 @@ describe("household merge", () => {
     const [a, b] = [await make("teen_a"), await make("teen_b")];
     const shared = await householdOf(a);
     await deleteParentAccount(db, firstParent);
+    await db.delete(schema.accessGrants);
     await db.insert(schema.accessGrants).values({ householdId: shared, kind: "free_access", endsAt: new Date(now.getTime() + 100 * DAY) });
     await db.insert(schema.billingAccounts).values({ householdId: shared, stripeCustomerId: "cus_shared", status: "active" });
 
@@ -435,7 +450,8 @@ describe("household merge", () => {
     expect(await householdOf(a)).toBe(await householdOf(newParent));
     expect(await householdOf(b)).toBe(shared);
     expect(await grantsIn(shared)).toHaveLength(1);
-    expect(await grantsIn(await householdOf(newParent))).toHaveLength(1);
+    // The new parent's own trial, plus the copied free access.
+    expect((await grantsIn(await householdOf(newParent))).map((g) => g.kind).sort()).toEqual(["free_access", "trial"]);
     expect((await billingIn(shared)).stripeCustomerId).toBe("cus_shared");
   });
 

@@ -25,11 +25,11 @@ import {
 import { homePathFor } from "@/lib/auth/dal";
 import { createSession, invalidateSession, validateSession } from "@/lib/auth/sessions";
 import { hashToken } from "@/lib/auth/tokens";
-import { createConsentRequest } from "@/lib/consent/requests";
+import { createConsentRequest, cancelConsentRequest } from "@/lib/consent/requests";
 import { sendEmail } from "@/lib/email";
 import { type FormState, birthDateFromForm, fieldErrors, safeNext } from "@/lib/forms";
 import { consumeRateLimit } from "@/lib/rate-limit";
-import { clientIp } from "@/lib/request";
+import { clientIpKey } from "@/lib/request";
 
 const MINUTE = 60_000;
 
@@ -61,7 +61,7 @@ export async function registerStudentAction(_prev: FormState, formData: FormData
   if (!parsed.success) return fieldErrors(parsed.error);
 
   const db = await getDb();
-  if (!(await consumeRateLimit(db, `signup:ip:${await clientIp()}`, 10, 60 * MINUTE))) {
+  if (!(await consumeRateLimit(db, `signup:ip:${await clientIpKey()}`, 10, 60 * MINUTE))) {
     return { message: "Too many attempts. Please try again later." };
   }
   const result = await registerStudent(db, parsed.data);
@@ -106,12 +106,13 @@ export async function requestParentConsentAction(
   const { parentEmail } = parsed.data;
   const underLimit =
     (await consumeRateLimit(db, `consent:email:${hashToken(parentEmail)}`, 3, 24 * 60 * MINUTE)) &&
-    (await consumeRateLimit(db, `consent:ip:${await clientIp()}`, 10, 60 * MINUTE));
+    (await consumeRateLimit(db, `consent:ip:${await clientIpKey()}`, 10, 60 * MINUTE));
   // Same response either way, so the form can't be used to probe or spam an address.
   if (underLimit) {
     const { token, expiresAt } = await createConsentRequest(db, parentEmail);
     const link = new URL(`/parent/consent/${token}`, env().APP_URL).toString();
-    await sendEmail({
+    try {
+      await sendEmail({
       to: parentEmail,
       subject: "Your child asked to join College Compass",
       text: [
@@ -127,7 +128,12 @@ export async function requestParentConsentAction(
         `This link expires on ${expiresAt.toDateString()}. If you do nothing, we will delete your email address`,
         "and won't contact you again.",
       ].join("\n"),
-    });
+      });
+    } catch (error) {
+      console.error("[consent] email failed", error instanceof Error ? error.name : "unknown");
+      await cancelConsentRequest(db, token);
+      return { message: "We couldn't send the email right now. Please try again in a few minutes." };
+    }
   }
   return { sent: true };
 }
@@ -141,7 +147,7 @@ export async function registerParentAction(_prev: FormState, formData: FormData)
   if (!parsed.success) return fieldErrors(parsed.error);
 
   const db = await getDb();
-  if (!(await consumeRateLimit(db, `signup:ip:${await clientIp()}`, 10, 60 * MINUTE))) {
+  if (!(await consumeRateLimit(db, `signup:ip:${await clientIpKey()}`, 10, 60 * MINUTE))) {
     return { message: "Too many attempts. Please try again later." };
   }
   const result = await registerParent(db, parsed.data);
@@ -162,7 +168,7 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
   const db = await getDb();
   const underLimit =
     (await consumeRateLimit(db, `login:id:${hashToken(parsed.data.identifier)}`, 10, 15 * MINUTE)) &&
-    (await consumeRateLimit(db, `login:ip:${await clientIp()}`, 50, 15 * MINUTE));
+    (await consumeRateLimit(db, `login:ip:${await clientIpKey()}`, 50, 15 * MINUTE));
   if (!underLimit) return { message: "Too many sign-in attempts. Please wait 15 minutes and try again." };
 
   const result = await authenticate(db, parsed.data);

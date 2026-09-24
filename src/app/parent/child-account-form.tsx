@@ -2,6 +2,7 @@
 
 import { createChildAction } from "@/app/actions/parent";
 import { BirthdayFields, Button, Card, Field, FieldError, FormMessage, GradeSelect } from "@/components/ui";
+import { SavedQuizField } from "@/components/saved-results-import";
 import { useFormAction } from "@/components/use-form-action";
 import type { FormState } from "@/lib/forms";
 
@@ -54,6 +55,8 @@ export function ChildAccountForm({ consentToken }: { consentToken?: string }) {
           </label>
           <FieldError id="consent-error" errors={state?.errors?.consent} />
         </div>
+        {/* Unticked by default, so a parent's own quiz isn't added to the child by mistake. */}
+        <SavedQuizField label="My child took the free quiz on this device. Add those results to their account." defaultChecked={false} />
         <Button type="submit" disabled={pending} className="w-full sm:w-auto">
           Create my child&apos;s account
         </Button>

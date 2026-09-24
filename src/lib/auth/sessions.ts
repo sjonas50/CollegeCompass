@@ -8,6 +8,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // Short-ish because many students share school Chromebooks; active users are renewed.
 export const SESSION_TTL_MS = 14 * DAY_MS;
 const RENEW_WHEN_REMAINING_MS = 7 * DAY_MS;
+// Staff can read minors' flagged messages, so their sessions end after a working day and are
+// never extended.
+export const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
 export type SessionUser = Pick<
   typeof users.$inferSelect,
@@ -19,7 +22,8 @@ export type SessionUser = Pick<
 
 export async function createSession(db: Db, userId: string, now = new Date()) {
   const token = generateToken();
-  const expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
+  const [user] = await db.select({ role: users.role }).from(users).where(eq(users.id, userId));
+  const expiresAt = new Date(now.getTime() + (user?.role === "admin" ? ADMIN_SESSION_TTL_MS : SESSION_TTL_MS));
   await db.insert(sessions).values({ id: hashToken(token), userId, expiresAt });
   return { token, expiresAt };
 }
@@ -52,7 +56,7 @@ export async function validateSession(db: Db, token: string, now = new Date()) {
   }
 
   let expiresAt = row.expiresAt;
-  if (expiresAt.getTime() - now.getTime() < RENEW_WHEN_REMAINING_MS) {
+  if (row.user.role !== "admin" && expiresAt.getTime() - now.getTime() < RENEW_WHEN_REMAINING_MS) {
     expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
     await db.update(sessions).set({ expiresAt }).where(eq(sessions.id, id));
   }

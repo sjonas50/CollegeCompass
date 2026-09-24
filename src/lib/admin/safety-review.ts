@@ -277,6 +277,7 @@ export async function revealSafetyContext(
       userId: safetyEvents.userId,
       excerpt: safetyEvents.excerpt,
       createdAt: safetyEvents.createdAt,
+      conversationId: safetyEvents.conversationId,
       displayName: users.displayName,
       parentManaged: users.parentManaged,
     })
@@ -307,7 +308,7 @@ export async function revealSafetyContext(
  */
 async function conversationAround(
   db: Db,
-  event: { userId: string; excerpt: string; createdAt: Date },
+  event: { userId: string; excerpt: string; createdAt: Date; conversationId: string | null },
   window: number,
 ): Promise<SafetyContext["conversation"]> {
   // A 1,000-character excerpt can end in half an emoji, which the database stores as U+FFFD.
@@ -320,6 +321,8 @@ async function conversationAround(
     .where(
       and(
         eq(counselorConversations.userId, event.userId),
+        // Events recorded since the link existed name their conversation; older ones are matched by text and time.
+        event.conversationId ? eq(counselorMessages.conversationId, event.conversationId) : undefined,
         eq(counselorMessages.role, "user"),
         sql`starts_with(${counselorMessages.content}, ${prefix})`,
         gte(counselorMessages.createdAt, new Date(event.createdAt.getTime() - MATCH_WINDOW_MS)),

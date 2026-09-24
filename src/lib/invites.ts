@@ -165,6 +165,7 @@ export async function cancelInvite(db: Db, studentId: string, inviteId: string):
     .delete(parentInvites)
     .where(and(eq(parentInvites.id, inviteId), eq(parentInvites.studentUserId, studentId), isNull(parentInvites.acceptedAt)))
     .returning({ id: parentInvites.id });
+  if (rows.length > 0) await audit(db, "parent_invite.cancelled", { actorUserId: studentId, subjectUserId: studentId });
   return rows.length > 0;
 }
 
@@ -246,6 +247,12 @@ export type HouseholdMerge = {
   billing: "none" | "moved" | "swapped" | "kept_parent" | "stayed";
   /** The old household was deleted: nobody was left in it and no billing account was parked there. */
   oldHouseholdDeleted: boolean;
+  /**
+   * The old household, now empty, still holding a parked billing account whose plan isn't going.
+   * The caller hands it to deleteEmptyHousehold (src/lib/privacy.ts), which deletes the Stripe
+   * customer and then the household.
+   */
+  parkedHouseholdId?: string;
 };
 
 const NO_MERGE: HouseholdMerge = { moved: false, grantsMoved: 0, grantsCopied: 0, billing: "none", oldHouseholdDeleted: false };
@@ -328,6 +335,8 @@ async function mergeIntoParentHousehold(
       // Expired grants go with it.
       await tx.delete(households).where(eq(households.id, from));
       merge.oldHouseholdDeleted = true;
+    } else {
+      merge.parkedHouseholdId = from;
     }
   }
   return merge;

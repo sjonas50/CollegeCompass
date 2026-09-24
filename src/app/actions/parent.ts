@@ -8,6 +8,8 @@ import { clearSessionCookie } from "@/lib/auth/cookies";
 import { requireUser } from "@/lib/auth/dal";
 import { completeConsentRequest, findConsentRequest } from "@/lib/consent/requests";
 import { verifyParentConsent } from "@/lib/consent/verifier";
+import { SAVED_ASSESSMENT_FIELD } from "@/lib/assessments/anonymous";
+import { importSavedAssessment } from "@/lib/assessments/import";
 import { type FormState, birthDateFromForm, fieldErrors } from "@/lib/forms";
 import { deleteParentAccount, deleteStudent } from "@/lib/privacy";
 
@@ -47,7 +49,17 @@ export async function createChildAction(_prev: FormState, formData: FormData): P
     const request = await findConsentRequest(db, consentToken);
     if (request) await completeConsentRequest(db, request.id);
   }
-  redirect("/parent?added=1");
+  // The free quiz the child took on this device, when the parent ticked the box.
+  const saved = formData.get(SAVED_ASSESSMENT_FIELD);
+  let imported = false;
+  if (typeof saved === "string" && saved) {
+    try {
+      imported = (await importSavedAssessment(db, parent.id, result.value.userId, saved, { via: "parent" })).ok;
+    } catch (error) {
+      console.error("[parent] quiz import failed", error instanceof Error ? error.name : "unknown");
+    }
+  }
+  redirect(imported ? "/parent?added=1&imported=1" : "/parent?added=1");
 }
 
 export async function deleteChildAction(formData: FormData) {

@@ -166,6 +166,8 @@ describe("checkout", () => {
       client_reference_id: householdId,
       "metadata[householdId]": householdId,
       "subscription_data[metadata][householdId]": householdId,
+      // The family is in its 14-day trial, so billing starts when the trial ends.
+      "subscription_data[trial_end]": expect.stringMatching(/^\d+$/),
       "line_items[0][price]": "price_annual",
       "line_items[0][quantity]": "1",
       success_url: "https://app.example.com/account/billing/success?session_id={CHECKOUT_SESSION_ID}",
@@ -173,6 +175,19 @@ describe("checkout", () => {
     });
     const audits = (await db.select().from(schema.auditLog)).filter((a) => a.action === "billing.checkout_started");
     expect(audits).toEqual([expect.objectContaining({ actorUserId: parentId, metadata: { plan: "annual" } })]);
+  });
+
+  it("keeps the trial's remaining days, and starts billing now once the trial is over", async () => {
+    const [trial] = await db.select().from(schema.accessGrants).where(eq(schema.accessGrants.householdId, householdId));
+    const first = stripeAccount();
+    await startCheckout(db, first.stripe, parentId, "monthly");
+    const withTrial = first.requests.find((r) => r.path === "/v1/checkout/sessions")!.form;
+    expect(Number(withTrial.get("subscription_data[trial_end]"))).toBe(Math.floor(trial.endsAt!.getTime() / 1000));
+
+    await db.delete(schema.accessGrants);
+    const second = stripeAccount();
+    await startCheckout(db, second.stripe, parentId, "monthly");
+    expect(second.requests.find((r) => r.path === "/v1/checkout/sessions")!.form.has("subscription_data[trial_end]")).toBe(false);
   });
 
   it("is for parents only", async () => {

@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { StudentNav } from "@/components/site-nav";
-import { getCurrentUser } from "@/lib/auth/dal";
+import { getCurrentUser, homePathFor } from "@/lib/auth/dal";
 import "./globals.css";
 import { PAGE_LANG_HEADER, SITE_LANG, documentLang } from "./page-lang";
 
@@ -42,7 +42,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <header lang={SITE_LANG} className="border-b border-border bg-surface">
           <div className="mx-auto max-w-3xl px-4 py-2">
             <div className="flex min-h-11 items-center justify-between">
-              <Link href={user ? (user.role === "parent" ? "/parent" : "/dashboard") : "/"} className="font-semibold tracking-tight">
+              <Link href={user ? homePathFor(user) : "/"} className="font-semibold tracking-tight">
                 College Compass
               </Link>
             </div>

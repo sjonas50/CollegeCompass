@@ -5,6 +5,11 @@ import { removeNorthStarAction } from "@/app/actions/discover";
 import { StudentSettings } from "@/components/student-settings";
 import { ButtonLink, Card, Notice, PageHeading } from "@/components/ui";
 import { WeeklyStepsCard } from "@/components/weekly-steps";
+import { InviteParentCard } from "@/components/invite-parent";
+import { SavedResultsImport } from "@/components/saved-results-import";
+import { FullAccessFeatures } from "@/app/account/access-ui";
+import { UNLOCK_PATH, describeAccess } from "@/lib/access/describe";
+import { accessFor } from "@/lib/access/guard";
 import { getDb } from "@/db";
 import { INSTRUMENTS, type InstrumentId } from "@/lib/assessments/instruments";
 import { type InstrumentStatus, instrumentStatuses } from "@/lib/assessments/service";
@@ -45,7 +50,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const { settings } = await searchParams;
   const db = await getDb();
   const grade = user.grade ?? 9;
-  const [statuses, stars, progress, courses, reminders, list] = await Promise.all([
+  const [access, statuses, stars, progress, courses, reminders, list] = await Promise.all([
+    accessFor(user),
     instrumentStatuses(db, user.id),
     listNorthStars(db, user.id),
     getMilestoneProgress(db, user.id),
@@ -60,6 +66,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const hasResults = statuses.interests.state === "done";
   const graduated = grade > 12;
   const launching = grade >= 11;
+  // Assessments, careers, colleges and the aid guide stay free; the rest needs the family's plan,
+  // the trial or free access.
+  const full = access.full;
+  const accessSummary = describeAccess(access, "student");
   // The student's own entries, as they typed them (no AI is involved, so nothing is scrubbed).
   const deadlines = launching ? dueWithin(list, usToday(), DASHBOARD_DEADLINE_DAYS) : [];
 
@@ -72,10 +82,30 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       {settings === "saved" && <Notice>Settings saved.</Notice>}
       {settings === "stale" && <Notice>The school year changed since that page loaded, so we didn&apos;t save the grade. Please pick it again.</Notice>}
 
-      {/* For graduates (no roadmap milestones) the card asks only for their own steps. */}
-      <WeeklyStepsCard />
+      {!full ? (
+        <Card className="space-y-3">
+          <h2 className="font-medium">{accessSummary.headline}</h2>
+          {accessSummary.detail && <p className="text-sm text-muted">{accessSummary.detail}</p>}
+          <FullAccessFeatures heading="Unlock these with your family's plan or free access:" />
+          <ButtonLink href={UNLOCK_PATH}>See how to unlock</ButtonLink>
+        </Card>
+      ) : (
+        access.sources[0] === "trial" && (
+          <p className="text-sm text-muted">
+            {accessSummary.headline}{" "}
+            <Link href={UNLOCK_PATH} className="underline underline-offset-2">
+              Keep everything after your trial
+            </Link>
+          </p>
+        )
+      )}
 
-      {!graduated && (
+      {/* For graduates (no roadmap milestones) the card asks only for their own steps. */}
+      {full && <WeeklyStepsCard />}
+
+      <InviteParentCard />
+
+      {full && !graduated && (
         <section>
           <h2 className="text-lg font-medium">Timely on your roadmap</h2>
           {timely.length ? (
@@ -123,6 +153,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
       <section>
         <h2 className="text-lg font-medium">Discover your direction</h2>
+        {statuses.interests.state !== "done" && <SavedResultsImport startedInterests={statuses.interests.state === "in_progress"} />}
         <p className="mb-3 text-sm text-muted">
           {next ? "Three short activities. Start with interests — it unlocks your career matches." : "All done. You can retake them as you grow."}
         </p>
@@ -194,7 +225,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
           )}
           <div className="mt-3 flex flex-wrap gap-2">
             <ButtonLink href="/colleges" variant="secondary">Explore colleges</ButtonLink>
-            {(list.length > 0 || launching) && <ButtonLink href="/applications" variant="secondary">My list</ButtonLink>}
+            {(list.length > 0 || launching) && (
+              <ButtonLink href={full ? "/applications" : UNLOCK_PATH} variant="secondary">
+                {full ? "My list" : "Unlock my list"}
+              </ButtonLink>
+            )}
             {launching && <ButtonLink href="/aid" variant="secondary">Paying for college</ButtonLink>}
           </div>
         </section>
@@ -212,14 +247,18 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             <p className="mt-1 text-sm text-muted">Add your classes to see how they line up with your goals.</p>
           )}
           <div className="mt-3">
-            <ButtonLink href="/plan" variant="secondary">{courses.length ? "Open my plan" : "Start my plan"}</ButtonLink>
+            <ButtonLink href={full ? "/plan" : UNLOCK_PATH} variant="secondary">
+              {full ? (courses.length ? "Open my plan" : "Start my plan") : "Unlock my plan"}
+            </ButtonLink>
           </div>
         </Card>
         <Card>
           <h2 className="font-medium">Ask your counselor</h2>
           <p className="mt-1 text-sm text-muted">Questions about careers, classes, college, or training? Your AI counselor knows your goals.</p>
           <div className="mt-3">
-            <ButtonLink href="/counselor" variant="secondary">Start a chat</ButtonLink>
+            <ButtonLink href={full ? "/counselor" : UNLOCK_PATH} variant="secondary">
+              {full ? "Start a chat" : "Unlock the counselor"}
+            </ButtonLink>
           </div>
         </Card>
       </div>

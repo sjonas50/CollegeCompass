@@ -56,6 +56,13 @@ const EnvSchema = z
     if (env.EMAIL_TRANSPORT === "log") {
       ctx.addIssue({ code: "custom", path: ["EMAIL_TRANSPORT"], message: "configure a real email provider" });
     }
+    // Email links and Stripe return addresses are built from APP_URL.
+    if (!env.APP_URL.startsWith("https://") || /\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(env.APP_URL)) {
+      ctx.addIssue({ code: "custom", path: ["APP_URL"], message: "must be the site's public https address in production" });
+    }
+    if (env.EMAIL_TRANSPORT === "resend" && /@localhost\b/.test(env.EMAIL_FROM)) {
+      ctx.addIssue({ code: "custom", path: ["EMAIL_FROM"], message: "use an address on your verified sending domain" });
+    }
     if (env.EMAIL_TRANSPORT === "resend" && !env.RESEND_API_KEY) {
       ctx.addIssue({ code: "custom", path: ["RESEND_API_KEY"], message: "required when EMAIL_TRANSPORT is resend" });
     }

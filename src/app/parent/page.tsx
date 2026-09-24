@@ -10,6 +10,8 @@ import { Button, ButtonLink, Card, Notice, PageHeading } from "@/components/ui";
 import { aidGuideHref } from "@/lib/aid-guide/navigation";
 import { requireUser } from "@/lib/auth/dal";
 import { parentDashboard } from "@/lib/parent-dashboard";
+import { describeAccess } from "@/lib/access/describe";
+import { accessFor } from "@/lib/access/guard";
 import { ChildProgressSummary } from "./child-progress";
 
 export const metadata: Metadata = { title: "Parent" };
@@ -21,14 +23,15 @@ function gradeText(grade: number | null) {
 
 export default async function ParentHome({ searchParams }: PageProps<"/parent">) {
   const parent = await requireUser(["parent"]);
-  const children = await parentDashboard(await getDb(), parent.id);
-  const { added, deleted, saved, stale, linked } = await searchParams;
+  const [children, access] = await Promise.all([parentDashboard(await getDb(), parent.id), accessFor(parent)]);
+  const plan = describeAccess(access, "parent");
+  const { added, deleted, saved, stale, linked, imported } = await searchParams;
 
   return (
     <>
       <PageHeading title={`Hi, ${parent.displayName}`} lead="Follow your children's progress and manage their accounts." />
       <div className="space-y-4">
-        {added && <Notice>Account created. Share the username and password with your child.</Notice>}
+        {added && <Notice>Account created. Share the username and password with your child.{imported && " Their saved quiz results were added too."}</Notice>}
         {linked && <Notice>You&apos;re linked. You can follow your teen&apos;s progress here now.</Notice>}
         {deleted && <Notice>The account and all of its data were deleted.</Notice>}
         {saved && <Notice>Settings saved.</Notice>}
@@ -106,6 +109,7 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
         </Card>
         <Card>
           <h2 className="font-medium">Plan and billing</h2>
+          <p className="mt-1 text-sm">{plan.headline}</p>
           <p className="mt-1 text-sm text-muted">See or change your family&apos;s plan. If cost is a problem, you can ask for free access there.</p>
           <div className="mt-3">
             <ButtonLink href="/account/billing" variant="secondary">Plan and billing</ButtonLink>

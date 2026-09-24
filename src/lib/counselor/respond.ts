@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { eq } from "drizzle-orm";
 import type { Db } from "@/db";
 import { safetyEvents } from "@/db/schema";
 import { AiUnavailableError, getAnthropic } from "../ai/client";
@@ -192,6 +193,8 @@ export async function* respond(
       );
       if (conv) {
         yield { type: "conversation", id: conv.id };
+        const eventId = "eventId" in screen ? screen.eventId : undefined;
+        if (typeof eventId === "string") await linkEvent(eventId, conv.id);
         await safely("store user message", () => appendMessage(db, conv.id, { role: "user", content: text }));
         await safely("flag conversation", () => flagConversation(db, conv.id));
         messageId = await safely("store support message", () =>
@@ -249,6 +252,7 @@ export async function* respond(
 
   try {
     const safety = await screening;
+    if (safety.eventId) await linkEvent(safety.eventId, conv.id);
 
     if (safety.supportMessage) {
       abort.abort();
@@ -381,6 +385,11 @@ export async function* respond(
       console.error("[counselor] generation failed", error instanceof Anthropic.APIError ? `${error.status} ${error.name}` : error instanceof Error ? error.name : "unknown");
       return { text: kept + inProgress, outcome: "error" };
     }
+  }
+
+  /** Ties a review-queue event to its conversation, for staff looking at the context. */
+  async function linkEvent(eventId: string, conversationId: string) {
+    await safely("link safety event", () => db.update(safetyEvents).set({ conversationId }).where(eq(safetyEvents.id, eventId)));
   }
 
   /**

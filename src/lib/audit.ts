@@ -20,6 +20,7 @@ export type AuditAction =
   | "billing.customer_deleted"
   | "parent_invite.sent"
   | "parent_invite.accepted"
+  | "parent_invite.cancelled"
   | "assessment.imported"
   | "safety.reviewed"
   | "admin.viewed_safety_event"

@@ -5,6 +5,7 @@ import { env } from "@/env";
 import { subscriptionGrantsAccess } from "../access/entitlement";
 import { audit } from "../audit";
 import { BILLING_PATH } from "../access/describe";
+import { getHouseholdAccess } from "../access/service";
 import { type Plan, priceIdFor } from "./plans";
 import { type Stripe, errorName, isMissingResource } from "./stripe";
 import { type SyncResult, syncCustomer } from "./subscriptions";
@@ -64,12 +65,19 @@ export async function startCheckout(db: Db, stripe: Stripe, parentUserId: string
 
   const customer = await ensureCustomer(db, stripe, householdId);
   const appUrl = env().APP_URL;
+  // Subscribing during the free trial keeps the days left: billing starts when the trial ends.
+  // (Stripe needs a trial end at least 48 hours away.)
+  const trial = (await getHouseholdAccess(db, householdId)).trial;
+  const trialEnd =
+    trial?.active && trial.endsAt && trial.endsAt.getTime() - Date.now() >= 48 * 60 * 60 * 1000
+      ? Math.floor(trial.endsAt.getTime() / 1000)
+      : undefined;
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer,
     client_reference_id: householdId,
     metadata: { householdId },
-    subscription_data: { metadata: { householdId } },
+    subscription_data: { metadata: { householdId }, ...(trialEnd && { trial_end: trialEnd }) },
     line_items: [{ price, quantity: 1 }],
     success_url: `${new URL(`${BILLING_PATH}/success`, appUrl)}?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: new URL(`${BILLING_PATH}/canceled`, appUrl).toString(),
@@ -133,4 +141,33 @@ export async function deleteStripeCustomer(stripe: Stripe, customerId: string): 
     console.error("[billing] couldn't delete a Stripe customer", errorName(error));
     return false;
   }
+}
+
+/**
+ * When a household's last parent leaves (deletes their account) but students remain, nobody can
+ * open the Customer Portal any more, so a renewing plan is set to end at the close of the period
+ * it's paid through instead of charging the parent's card again. Never throws.
+ */
+export async function endPlanWithoutParent(db: Db, stripe: Stripe | null, householdId: string): Promise<boolean> {
+  const [parent] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.householdId, householdId), eq(users.role, "parent")))
+    .limit(1);
+  if (parent) return false;
+  const billing = await billingAccountFor(db, householdId);
+  if (!billing?.stripeSubscriptionId || billing.cancelAtPeriodEnd || !subscriptionGrantsAccess(billing.status)) return false;
+  if (!stripe) {
+    console.error("[billing] couldn't end a plan without a parent", "StripeNotConfigured");
+    return false;
+  }
+  try {
+    await stripe.subscriptions.update(billing.stripeSubscriptionId, { cancel_at_period_end: true });
+  } catch (error) {
+    console.error("[billing] couldn't end a plan without a parent", errorName(error));
+    return false;
+  }
+  await db.update(billingAccounts).set({ cancelAtPeriodEnd: true, updatedAt: new Date() }).where(eq(billingAccounts.householdId, householdId));
+  await audit(db, "billing.subscription_changed", { metadata: { status: billing.status ?? "unknown", cancelAtPeriodEnd: true } });
+  return true;
 }

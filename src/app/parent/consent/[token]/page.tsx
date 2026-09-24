@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getDb } from "@/db";
 import { PageHeading } from "@/components/ui";
-import { getCurrentUser } from "@/lib/auth/dal";
+import { getCurrentUser, homePathFor } from "@/lib/auth/dal";
 import { findConsentRequest } from "@/lib/consent/requests";
 import { ChildAccountForm } from "../../child-account-form";
 import { ParentSignupForm } from "../../../signup/parent/parent-signup-form";
@@ -38,7 +38,7 @@ export default async function ConsentPage({ params }: PageProps<"/parent/consent
     return (
       <PageHeading
         title="This link is for a parent"
-        lead={<>You&apos;re signed in as a student. <Link href="/dashboard" className="underline">Go to your dashboard</Link>.</>}
+        lead={<>You&apos;re signed in with an account that isn&apos;t a parent account. <Link href={homePathFor(user)} className="underline">Go to your home page</Link>, or sign out and open this link again.</>}
       />
     );
   }

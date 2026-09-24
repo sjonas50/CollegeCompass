@@ -28,7 +28,7 @@ vi.mock("next/navigation", () => ({
   },
 }));
 vi.mock("@/db", async (original) => ({ ...(await original<typeof import("@/db")>()), getDb: async () => state.db }));
-vi.mock("@/lib/request", () => ({ clientIp: async () => "203.0.113.9" }));
+vi.mock("@/lib/request", () => ({ clientIp: async () => "203.0.113.9", clientIpKey: async () => "hashed-203.0.113.9" }));
 vi.mock("@/lib/auth/cookies", () => ({
   hasUnder13Gate: async () => state.under13,
   setUnder13Gate: async () => {
