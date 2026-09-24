@@ -15,6 +15,7 @@ import { usToday } from "./dates";
 //   Volume 2 (FPS Schedule): "October 1, 2026 (on or before) Federal Student Aid will launch full
 //   functionality of the online 2027–28 FAFSA form, including submission, processing, and
 //   corrections, at the same time to all applicants."
+//   It went live to everyone early, on Sept. 23, 2026 (see VERIFIED_FAFSA).
 // [FSA-DEADLINES] https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines
 //   "states and colleges use FAFSA information to award their own grants, scholarships, and loans.
 //   But, since some aid is limited, you have to meet the deadlines!" / State deadlines: "Each state
@@ -50,7 +51,7 @@ export type KeyDateId = "fafsa" | "css-profile" | "state-aid" | "early-decision"
 
 export type KeyDate = {
   id: KeyDateId;
-  /** How the date reads on the page: "By October 1, 2026", "Often November 1". */
+  /** How the date reads on the page: "September 23, 2026", "Often November 1". */
   when: string;
   /** First day it applies (YYYY-MM-DD), or null when it's different everywhere. */
   start: string | null;
@@ -71,9 +72,13 @@ export type KeyDate = {
 /** "usually_open": past the usual opening date of a form whose date this year wasn't confirmed. */
 export type KeyDateStatus = "upcoming" | "open_now" | "usually_open" | "passed" | "varies";
 
-/** FAFSA opening dates confirmed by Federal Student Aid, by application cycle. [FSA-SPECS] */
-const VERIFIED_FAFSA: Record<number, { awardYear: string; opensBy: string }> = {
-  2026: { awardYear: "2027–28", opensBy: "2026-10-01" },
+/**
+ * FAFSA opening dates confirmed by Federal Student Aid, by application cycle. The 2027–28 form went
+ * live to the general public on Sept. 23, 2026, ahead of the Oct. 1 target:
+ * https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-21/2027-28-fafsa-beta-testing-plan-updated-sept-23-2026
+ */
+const VERIFIED_FAFSA: Record<number, { awardYear: string; opened: string }> = {
+  2026: { awardYear: "2027–28", opened: "2026-09-23" },
 };
 
 /** The CSS Profile's free-filing income limit, confirmed by the College Board, by cycle. [CSS] */
@@ -103,8 +108,8 @@ export function keyDates(cycle: number): KeyDate[] {
     fafsa
       ? {
           id: "fafsa",
-          when: `By ${longDate(fafsa.opensBy)}`,
-          start: fafsa.opensBy,
+          when: longDate(fafsa.opened),
+          start: fafsa.opened,
           end: null,
           opens: true,
           confirmed: true,

@@ -1,52 +1,1734 @@
 {
   "language": "en",
-  "updated": "2026-09-23",
-  "review": { "status": "draft" },
+  "updated": "2026-09-24",
+  "review": {
+    "status": "draft"
+  },
   "sections": [
     {
       "id": "how-aid-works",
-      "title": "How financial aid works (placeholder)",
-      "summary": "PLACEHOLDER: one sentence about how financial aid works will go here.",
+      "title": "How paying for college or training works",
+      "summary": "The price a school lists is often not what you pay: grants and scholarships lower it, and work-study and loans help with the rest.",
       "blocks": [
         {
-          "kind": "paragraph",
-          "text": "PLACEHOLDER TEXT. The real, fact-checked guide will replace this whole section. It will explain grants, scholarships, work-study and loans in plain words. Official information is at https://studentaid.gov."
+          "kind": "list",
+          "heading": "The short version",
+          "items": [
+            "The price a school lists is often not what you pay. Check each school's net price before you decide it costs too much.",
+            "12th graders: fill out the FAFSA, the free federal aid form, as soon as you can. The 2027–28 FAFSA, for students starting in fall 2027, opened Sept. 23, 2026. 11th graders: you'll file next fall.",
+            "Borrow only what you need, and use federal loans before private loans. Parents: talk it over as a family before you take a Parent PLUS Loan.",
+            "The FAFSA is free, and the official site has .gov in its address. Never pay anyone to fill it out or to find scholarships for you. Free help in English and Spanish: 1-800-433-3243."
+          ]
         },
         {
           "kind": "list",
-          "heading": "Placeholder list",
-          "items": ["PLACEHOLDER: first list item.", "PLACEHOLDER: second list item.", "PLACEHOLDER: third list item."]
+          "heading": "Words to know",
+          "items": [
+            "Cost of attendance (COA): a school's estimate of the full cost for one year. It includes tuition (the charge for classes) and fees, plus housing, food, books and travel, which often cost more than tuition. Programs like an 18-month certificate may list the cost for a different length of time.",
+            "Student Aid Index (SAI): a number from your FAFSA that schools use to decide your aid. It is not a bill or the amount your family has to pay.",
+            "Financial need: the cost of attendance minus your SAI.",
+            "Full-time: usually 12 or more credits a term. Pell Grants and federal loans can be smaller if you go part-time.",
+            "Net price: the cost of attendance minus your grants and scholarships. Don't subtract loans or work-study, even if an aid offer lists loans as if they were discounts. Many colleges have a net price calculator that estimates it. Find them at https://collegecost.ed.gov/net-price"
+          ]
         },
         {
-          "kind": "tip",
-          "text": "PLACEHOLDER: a helpful tip will go here."
-        }
-      ],
-      "sources": [{ "title": "PLACEHOLDER source: Federal Student Aid", "url": "https://studentaid.gov" }]
-    },
-    {
-      "id": "comparing-aid-offers",
-      "title": "Comparing aid offers (placeholder)",
-      "summary": "PLACEHOLDER: one sentence about comparing aid offers will go here.",
-      "blocks": [
-        {
-          "kind": "paragraph",
-          "text": "PLACEHOLDER TEXT. The real, fact-checked guide will replace this whole section. It will show how to compare aid offers from different schools and programs."
-        },
-        {
-          "kind": "steps",
-          "heading": "Placeholder steps",
-          "items": ["PLACEHOLDER: step one.", "PLACEHOLDER: step two.", "PLACEHOLDER: step three."]
+          "kind": "list",
+          "heading": "The main types of aid",
+          "items": [
+            "Grants and scholarships: money you usually don't pay back.",
+            "Pell Grant: the biggest federal grant, for students with high financial need who don't have a bachelor's degree. For 2026–27 (July 1, 2026, to June 30, 2027), the largest Pell Grant for a school year is $7,395. You may get less, depending on your SAI, your school's cost and whether you go full-time. Some students who also take summer classes can get more. You can get Pell for about 6 years of full-time study in total. The 2027–28 amount isn't announced yet.",
+            "Work-study: a part-time job for students with financial need. You have to find the job first, and your aid offer shows the most you can earn. It comes in paychecks, so it can't pay your first bill. Not every school has it, and money is limited, so file the FAFSA early and ask the aid office how to find a job.",
+            "Federal student loans: money you borrow and pay back with interest (an extra charge for borrowing). Most don't need a credit check or a co-signer (someone who promises to pay if you don't). Most students right out of high school can borrow up to $5,500 their first year. You don't start paying until you leave school or drop below half-time, and there is a payment plan based on your income. The interest rate never changes: 6.52% for undergraduate loans first paid out in 2026–27. The fall 2027 rate isn't set yet.",
+            "Private loans from banks often need a co-signer and usually cost more."
+          ]
         },
         {
           "kind": "warning",
-          "heading": "Placeholder warning",
-          "text": "PLACEHOLDER: something to be careful about will go here."
+          "heading": "Before you borrow",
+          "text": "Loans must be paid back, even if you don't finish school or can't find a job. You can accept less than a school offers. You can cancel all or part of a federal loan within 120 days of getting it, with no interest or fees. For loans made on or after July 1, 2027, there will be fewer ways to pause payments if you lose your job or money gets tight."
+        },
+        {
+          "kind": "warning",
+          "heading": "Parent PLUS Loans",
+          "text": "A Parent PLUS Loan is a federal loan a parent takes out for a student. It's in the parent's name and can't be moved to the student later. Grandparents and legal guardians can't get one. It costs more than student loans: 9.07% interest for loans first paid out in 2026–27, plus a fee of about 4% taken out before the money is paid. The fall 2027 rate isn't set yet. Most new borrowers can borrow up to $20,000 a year and $65,000 in total per student. The credit check looks only for serious problems, like debts sent to collections or a recent bankruptcy, so being approved doesn't mean the payments will be easy. Parent PLUS Loans made on or after July 1, 2026, can't use payment plans based on income. Already have Parent PLUS loans for an older child? A new one can lock the old loans into the fixed-payment plan, so the parent should call their loan servicer (the company that handles the loan bills) first. If a parent can't get one, the student may be able to borrow more in their own federal loans. See \"Borrowing Wisely: Student Loans Explained.\""
+        },
+        {
+          "kind": "tip",
+          "heading": "If the price is still too high",
+          "text": "Don't just sign for big loans. If your family's money situation is very different from what's on the FAFSA, like after a job loss or a big drop in income, ask the aid office to review your aid. Ask each school whether your grants and scholarships will be the same every year and what you must do to keep them. A lower-cost school, or starting at a community college, can also help."
+        },
+        {
+          "kind": "tip",
+          "heading": "When the money arrives",
+          "text": "When you say yes to a college, you may have to pay a tuition or housing deposit. If money is tight, ask if the school can waive (cancel) or delay it. Aid is usually paid at least once a term and goes to your school bill first, so some costs come before it arrives. First-year students taking a federal loan for the first time may wait 30 days after the term starts for that money. Leftover aid must be paid to you within 14 days, unless you ask the school to hold it. Need books before your aid comes? Ask the aid office. Schools must help some students get books by the seventh day of the term."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "How to keep your aid",
+          "text": "Fill out the FAFSA every year and make \"satisfactory academic progress\": keep your grades up and finish enough of the classes you start. Each school sets its own rules, but in programs longer than two years you usually need at least a C average by the end of your second year. Some scholarships have their own rules, like a certain GPA. You might owe back part of a federal grant if you leave school early in a term, drop from full-time to part-time, or get outside aid that lowers your need. A few grants, like the TEACH Grant, turn into loans if you don't follow their rules. Talk to the aid office before you drop a class or leave school. If you lose aid, ask whether you can appeal (ask the school to decide again). Reasons usually include your own illness or injury, or a death in the family."
+        },
+        {
+          "kind": "tip",
+          "heading": "Money back at tax time",
+          "text": "The American Opportunity Tax Credit can lower your family's federal income taxes by up to $2,500 a year per student, for up to 4 years. The student must be enrolled at least half-time, working toward a degree or other recognized credential. Up to $1,000 can come back even if your family owes no tax, but you have to file a tax return. Tuition, fees and course materials paid with loans, savings or job pay can count. Costs paid with tax-free grants, like Pell, usually don't. Keep the Form 1098-T your school sends. Starting with 2026 tax returns (filed in 2027), the person claiming the credit and the student both need a Social Security number valid for work, so a parent with only an ITIN (a tax ID number from the IRS) can't claim it. There are income limits. Free IRS tax help (VITA): 800-906-9887."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Aid for career training",
+          "text": "Federal aid also helps at community colleges, career schools and trade schools that accept it, so ask. Since July 1, 2026, Workforce Pell Grants can help pay for approved job-training programs of 8 to just under 15 weeks. In these programs, you can't get federal loans or work-study. Some states pay community or technical college tuition for students who qualify, like the Tennessee Promise. These programs have their own rules and deadlines, and some require the FAFSA. Registered apprenticeships give you a paid job from day one while you train, and some start at age 16. See \"Paying for Career Training.\""
+        },
+        {
+          "kind": "list",
+          "heading": "Before you pay for a career program, ask",
+          "items": [
+            "Does the school accept federal aid?",
+            "What is the total cost of the whole program?",
+            "How many students finish, how many get jobs in the field, and what do they earn? Get it in writing and compare it with College Scorecard: https://collegescorecard.ed.gov",
+            "Does a community college have a similar program? It often costs much less.",
+            "Is anyone pushing you to sign up fast? Don't sign anything until you've checked."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "How you apply",
+          "text": "The FAFSA (Free Application for Federal Student Aid) is the form for federal aid, and many states and schools use it for their own aid, too. You fill out your first FAFSA in the fall of 12th grade, then again every year you're in school. Some states give out aid first come, first served, until the money runs out, and some state deadlines come in January 2027. Find your state's deadline at https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines. Some colleges and scholarship programs also use a second form, the CSS Profile. It's free if your family's income is up to $100,000, and in some other cases."
+        },
+        {
+          "kind": "list",
+          "heading": "Getting ready for the FAFSA",
+          "items": [
+            "A free StudentAid.gov account for you and one for the parent who fills out your form. Sometimes both parents need one; the form will tell you. A parent without a Social Security number can still make an account and fill out their part.",
+            "Your family's 2025 tax information. Didn't file taxes? You can still apply.",
+            "Everyone on the form must agree to have their tax information brought in from the IRS. If a parent doesn't agree, you can't get federal aid.",
+            "In foster care or a ward of the court at any time since you turned 13, homeless, or unable to safely contact your parents? You may be able to apply without your parents' information. See \"Special situations on the FAFSA.\""
+          ]
+        },
+        {
+          "kind": "tip",
+          "heading": "Free help in English, Spanish and other languages",
+          "text": "The FAFSA comes in English and Spanish, with Spanish guides at https://studentaid.gov/es/resources. The free help line, 1-800-433-3243, answers in English and Spanish. For other languages, call 1-833-610-2590 and press 7. No computer at home? Use a school or library computer, or print a paper FAFSA from StudentAid.gov or call 1-800-433-3243 for one. Don't mail it before Oct. 1, 2026. Online is faster, so file online if a deadline is close. Ask your counselor about free FAFSA help at school."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Immigration and aid",
+          "text": "If you are a U.S. citizen or an eligible noncitizen (like a green card holder, refugee or person granted asylum), your parents' immigration status does not affect your federal aid, and the FAFSA doesn't ask about it. Undocumented students, including DACA recipients, can't get federal aid. People with Temporary Protected Status (TPS) or a student, visitor or work visa can't either. But you may get state aid, school aid or private scholarships. Some states have their own form for students who can't use the FAFSA, like the California Dream Act Application or Washington's WASFA, so ask your counselor which form to use. Rules are different in each state, and some states changed them in 2025. See \"Special situations on the FAFSA.\" Worried about sharing information? Talk with a licensed immigration lawyer or a DOJ-accredited representative (a trained helper at a nonprofit approved by the U.S. Justice Department) before you decide. The USCIS \"Legal services\" page explains how to find them."
         }
       ],
       "sources": [
-        { "title": "PLACEHOLDER source: Federal Student Aid", "url": "https://studentaid.gov" },
-        { "title": "PLACEHOLDER source: Consumer Financial Protection Bureau", "url": "https://www.consumerfinance.gov/paying-for-college/" }
+        {
+          "title": "Types of Financial Aid: Grants, Work-Study, and Loans – Federal Student Aid",
+          "url": "https://studentaid.gov/understand-aid/types"
+        },
+        {
+          "title": "Federal Grants for College or Career/Trade School (including when you may have to repay a grant) – Federal Student Aid",
+          "url": "https://studentaid.gov/understand-aid/types/grants"
+        },
+        {
+          "title": "Federal Pell Grants – Federal Student Aid",
+          "url": "https://studentaid.gov/understand-aid/types/grants/pell"
+        },
+        {
+          "title": "TEACH Grants – Federal Student Aid",
+          "url": "https://studentaid.gov/understand-aid/types/grants/teach"
+        },
+        {
+          "title": "Finding and Applying for Scholarships – Federal Student Aid",
+          "url": "https://studentaid.gov/understand-aid/types/scholarships"
+        },
+        {
+          "title": "Work-Study Jobs – Federal Student Aid",
+          "url": "https://studentaid.gov/understand-aid/types/work-study"
+        },
+        {
+          "title": "Federal Student Loans – Federal Student Aid",
+          "url": "https://studentaid.gov/understand-aid/types/loans"
+        },
+        {
+          "title": "Federal Versus Private Loans – Federal Student Aid",
+          "url": "https://studentaid.gov/understand-aid/types/loans/federal-vs-private"
+        },
+        {
+          "title": "Federal Interest Rates and Fees (rates for loans first disbursed on or after July 1, 2026, and before July 1, 2027) – Federal Student Aid",
+          "url": "https://studentaid.gov/understand-aid/types/loans/interest-rates"
+        },
+        {
+          "title": "Net Price Calculator Center – U.S. Department of Education",
+          "url": "https://collegecost.ed.gov/net-price"
+        },
+        {
+          "title": "FAFSA Application Deadlines (2027–28 state and federal deadlines) – Federal Student Aid",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"
+        },
+        {
+          "title": "Recursos en español – Federal Student Aid",
+          "url": "https://studentaid.gov/es/resources"
+        }
+      ]
+    },
+    {
+      "id": "fafsa-step-by-step",
+      "title": "The FAFSA, Step by Step (2027–28)",
+      "summary": "How to fill out the free 2027–28 FAFSA: find your deadline, make accounts, gather papers, fill it out with your family, read your results, fix mistakes, and get free help.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "The short version",
+          "items": [
+            "The 2027–28 FAFSA (Free Application for Federal Student Aid) opened Sept. 23, 2026, for school starting in fall 2027. It's free, in English and Spanish. Use only fafsa.gov or StudentAid.gov.",
+            "Some state or college deadlines can be as early as Oct. 1, 2026. A good goal: file within two weeks of when the form opens, and before your earliest college or state date.",
+            "Make StudentAid.gov accounts for you and your parent a few days early. Never share a password.",
+            "After you submit, watch your email and each college's online portal. Send requested papers right away.",
+            "Free help: 1-800-433-3243 (English and Spanish). Never pay anyone for FAFSA help."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Find your earliest deadline",
+          "items": [
+            "Colleges and career schools set their own deadlines, and many are early. Some count the date your FAFSA is processed, not the day you send it, so don't wait until the last day. Check each school's aid page for its dates and forms.",
+            "Applying early decision or early action (applying early to hear back sooner)? Your aid forms may be due soon after they open, so check each college's dates.",
+            "Each state has its own deadline, and some need an extra form. In some states, like Illinois and Kentucky, aid is first come, first served until the money runs out. Other states have dates in winter or spring 2027. For example, Texas's priority date is Jan. 15, 2027, Missouri's is Feb. 1, 2027, and California's (for Cal Grant) is March 2, 2027. See StudentAid.gov's FAFSA deadlines page.",
+            "Tennessee Promise applications are due Nov. 2, 2026. Ask your counselor if your state has a similar program.",
+            "Federal deadline: June 30, 2028, at 11:59 p.m. Central time. That's the last possible day, not a goal.",
+            "Missed a state deadline? File anyway. It doesn't change whether you can get federal aid.",
+            "Some colleges and scholarship programs also use the CSS Profile, a second aid form run by the College Board. It's a real form, not a scam. It opens Oct. 1. It's free for families who make up to $100,000 a year, and some others can get the fee waived."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Who has to be on your FAFSA",
+          "items": [
+            "You and usually one or two parents give information and sign. A parent means a legal parent: biological, adoptive, or recognized by your state.",
+            "Grandparents, aunts, uncles, older siblings, foster parents, and legal guardians are not parents on the FAFSA unless they adopted you.",
+            "Parents married to each other? Include both, even if one lives in another country, unless they're separated. If they filed 2025 taxes together, only one fills out the parent section.",
+            "Parents not married but living together? Include both.",
+            "Parents divorced, separated, or never married, and living apart? Include the one who gave you more financial support in the last 12 months. If they gave the same amount, or neither supports you, include the one with more income and assets.",
+            "Not sure? Try the Who's My FAFSA Parent? tool on StudentAid.gov.",
+            "Living on your own, paying your own bills, or not being claimed on your parents' taxes does not change who's on your form.",
+            "Live with a relative? You usually still need your parents' information. Exceptions include foster care at any time since you turned 13, a court-appointed legal guardian, or being homeless and on your own."
+          ]
+        },
+        {
+          "kind": "steps",
+          "heading": "Step 1: Make your accounts",
+          "items": [
+            "You and the parent who fills out your form each make a StudentAid.gov account. If your parents are married and filed 2025 taxes together, usually only one needs an account. If they filed separately, or aren't married but live together, both need one.",
+            "Your account is your legal signature. Never share your password, even with family or a helper. Each person can have only one account, so recover an old one instead of making another.",
+            "Make accounts a few days early. Social Security has to confirm your information, which can take 1 to 3 days. Don't sign the FAFSA while your account says \"Pending,\" or your tax information can't come in from the IRS.",
+            "Type your name, birth date, and Social Security number (SSN) exactly as they appear on your Social Security card. Don't use a nickname. If your card shows two last names or a hyphen, type it the same way. Each person needs their own personal email, not a school one.",
+            "Account couldn't be checked with Social Security? Check that your account matches your card. If your name changed, like after marriage, update it with the Social Security Administration first, then fix it in your account settings or call 1-800-433-3243.",
+            "You (the student) need an SSN to make an account and get federal aid, unless you're a citizen of Micronesia, the Marshall Islands, or Palau.",
+            "A parent without an SSN can still make an account by checking the box for no SSN. Never type an ITIN (an IRS tax ID number) or anyone else's number there.",
+            "That parent may get up to four questions from a credit company to confirm who they are. If those don't work, they'll get a \"Verify Your Identity\" email. They should follow its steps soon: send a copy of an ID, like a driver's license, state ID, or foreign passport, plus a signed form. They can still fill out and sign their part while they wait."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Step 2: Gather what you need",
+          "items": [
+            "Social Security numbers. If you're an eligible noncitizen (like a green card holder, refugee, or asylee), also your A-Number (Alien Registration Number).",
+            "Your family's 2025 federal tax returns and W-2s (employer forms that show pay), including yours if you had a job. Most tax information comes straight from the IRS, but keep these handy. Didn't file? You can still apply.",
+            "Parent filed taxes only in another country? They'll type in the amounts from that return, changed to U.S. dollars using the published exchange rate.",
+            "Any child support your parent received.",
+            "Balances of checking, savings, and cash, and the value of investments. Don't count the home you live in, retirement accounts, a family business with 100 or fewer full-time workers, or a farm your family lives on.",
+            "Whether anyone in your family got federal benefits in 2025 or 2026, like SNAP (food stamps), Medicaid, SSI, TANF, WIC, the Earned Income Tax Credit, federal housing help, or free or reduced-price school lunch (only if your family qualified because of income, not if your school gives free meals to every student). If so, you may get to skip the savings questions.",
+            "Who your parents support: your parents, you, and anyone else who lives with them and gets more than half their support from them. This can be different from their tax return."
+          ]
+        },
+        {
+          "kind": "steps",
+          "heading": "Step 3: Fill it out together",
+          "items": [
+            "Go to fafsa.gov, log in, and choose \"Start New Form.\" Pick 2027–28, not 2026–27. When asked who is starting, choose \"Student.\" It's faster, with fewer mistakes.",
+            "Give consent. Each person on the form must let the IRS send their tax information, even if they didn't file taxes or don't have an SSN. Without consent, you can't get federal aid. Consent doesn't make a parent responsible for your costs.",
+            "List up to 20 schools online, even ones you haven't applied to yet. The FAFSA works for four-year colleges, community colleges, and career and trade schools.",
+            "Short job training? Pell Grants (grant money you usually don't pay back) can now help pay for some approved short programs. Ask the school if the program is approved for Workforce Pell. Can't find a training school in the FAFSA's school search? Ask the school whether it takes federal student aid. See \"Pell Grants and Workforce Pell.\"",
+            "Registered apprenticeships usually pay you while you learn. If yours includes college classes, ask whether Workforce Pell can help pay for them.",
+            "Invite your parent using the email on their StudentAid.gov account. You'll also get a link and code to share. If another parent or a stepparent is needed, the form asks your parent to invite them.",
+            "Your parent logs in with their own account, never yours, fills out their part, and signs. You sign too.",
+            "Nothing is sent until everyone signs. On your StudentAid.gov dashboard, \"Draft\" or \"In Progress\" means it hasn't been sent yet. \"In Review\" or \"Processed\" means it went in. \"Action Required\" means something needs fixing."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Before you say your parents refuse",
+          "text": "The form asks if your parents refuse to give their information. Answer yes only if it's really true and none of the situations below apply. Filling out the form doesn't make a parent responsible for your costs. If you answer yes, you can't get a Pell Grant or most other federal aid. You also won't get a Student Aid Index, so you could miss state and college aid. You may get only a Direct Unsubsidized Loan (a loan that builds interest while you're in school), and only if the college approves it. Talk with your counselor or a college aid office first."
+        },
+        {
+          "kind": "list",
+          "heading": "Foster care, homelessness, or can't reach your parents",
+          "items": [
+            "Foster care: In foster care or a ward of the court at any time since you turned 13? Say so on the form. You won't need parent information.",
+            "Homelessness: At any point in 2026 or later, were you homeless or about to lose your housing, and not living with a parent or guardian? Say so on the form. Homeless can mean a shelter, motel, car, or park, or staying with others because you have nowhere else to go.",
+            "A school district homeless liaison, shelter or youth program director, TRIO or GEAR UP director, or college aid office can confirm it. If no one has yet, choose \"None of these apply,\" submit, and contact each college's aid office.",
+            "Can't reach your parents for a serious reason, or would contacting them put you at risk? You can submit without them. Then contact each college's aid office.",
+            "Details are in \"Special situations on the FAFSA.\""
+          ]
+        },
+        {
+          "kind": "tip",
+          "heading": "If your family includes immigrants",
+          "text": "If you're a U.S. citizen or an eligible noncitizen, your parents' immigration status doesn't affect your federal aid, and the FAFSA doesn't ask about it. Worried about sharing information? Read \"Privacy and immigration\" in Special situations on the FAFSA, and talk with a licensed immigration lawyer or a DOJ-accredited representative (a trained helper at a nonprofit approved by the U.S. Justice Department) before you decide. The USCIS \"Legal services\" page explains how to find them. Undocumented students, including DACA recipients, and students with Temporary Protected Status can't get federal aid, but may get state, college, or private aid. See \"If you're undocumented or have DACA\" in Special situations on the FAFSA to learn which form to use."
+        },
+        {
+          "kind": "list",
+          "heading": "Step 4: After you submit",
+          "items": [
+            "Most forms are processed right away, but some take 1 to 3 days. Then check every answer on your FAFSA Submission Summary. If it says 2026–27 and you're starting school in fall 2027, start a 2027–28 form now.",
+            "The summary shows your Student Aid Index (SAI), a number schools use to figure out your aid. It's not a dollar amount or a bill, and it can be as low as −1500. A lower SAI usually means more aid.",
+            "If your SAI is 0 or less, you may qualify for the largest Pell Grant.",
+            "Asked to take extra steps to prove who you are? Do it right away. Aid can't be paid until it's done.",
+            "Selected for \"verification\"? That doesn't mean you did anything wrong. Some students are picked at random, and some schools check everyone. Each college will tell you what it needs, like proof of 2025 income or a signed statement that your parent didn't file taxes. Send it right away so your aid isn't held up. Can't get a document? The aid office can sometimes accept something else.",
+            "Each school sends its own aid offer, usually after you're accepted. At a community college or training program, ask the aid office what steps you need to finish to get one.",
+            "Offers can mix grants and scholarships (you don't pay these back), work-study (money you earn at a job), and loans (you pay these back with interest). You can turn down a loan or take less. Parent PLUS loans on an offer would be owed by your parent. To compare offers, see \"Reading and Comparing Financial Aid Offers.\"",
+            "Many colleges ask you to decide by May 1. Check each school's date.",
+            "File a new FAFSA every year you're in school."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Step 5: Fix mistakes or ask for changes",
+          "items": [
+            "To fix a typo, add a missing signature or consent, or change your schools, choose \"Make a Correction\" on your summary. Parents can fix only their own sections. Corrections close Sept. 12, 2028.",
+            "Said your parents refuse by mistake? Change that answer to \"No\" to be considered for all aid.",
+            "Money situation changed a lot, like a job loss or big medical bills? Don't change your FAFSA answers. Ask each college's aid office for a \"special circumstances\" review, and bring papers. Each college decides, and a change isn't guaranteed."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Free help",
+          "items": [
+            "Federal Student Aid Information Center: 1-800-433-3243 (English and Spanish). TTY for deaf or hard-of-hearing callers: 1-800-730-8913. Other languages: call 1-833-610-2590 and press 7.",
+            "Your school counselor, any college's aid office, or your Upward Bound, Talent Search, or GEAR UP adviser. No computer at home? Use one at school or a public library.",
+            "Paper FAFSA: print it from StudentAid.gov or call 1-800-433-3243. Don't mail it before Oct. 1, 2026. Online is faster, so file online if a deadline is close.",
+            "A good helper sits with you but never gets your password. If a site asks for a credit card while you fill out the FAFSA, it's not the real site."
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "title": "FAFSA Application Deadlines, 2027–28 (StudentAid.gov)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"
+        },
+        {
+          "title": "2027–28 FAFSA form (StudentAid.gov)",
+          "url": "https://studentaid.gov/sites/default/files/2027-28-fafsa-form.pdf"
+        },
+        {
+          "title": "FAFSA Application page (StudentAid.gov)",
+          "url": "https://studentaid.gov/h/apply-for-aid/fafsa"
+        },
+        {
+          "title": "2027–28 FAFSA Beta Testing Plan (Updated Sept. 23, 2026): form now live to the general public (FSA Partner Connect)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-21/2027-28-fafsa-beta-testing-plan-updated-sept-23-2026"
+        },
+        {
+          "title": "2027–28 FAFSA Specifications Guide, Vol. 1",
+          "url": "https://fsapartners.ed.gov/sites/default/files/2026-07/2728FSGVol1.pdf"
+        },
+        {
+          "title": "2027–28 FAFSA Specifications Guide, Vol. 2: FPS schedule; FSAIC 1-800-433-3243 in English and Spanish; paper form in October 2026",
+          "url": "https://fsapartners.ed.gov/sites/default/files/2026-07/2728FSGVol2FPSScheduleGettingHelp.pdf"
+        },
+        {
+          "title": "Key Facts About Your StudentAid.gov Account (StudentAid.gov)",
+          "url": "https://studentaid.gov/articles/key-facts-accounts/"
+        },
+        {
+          "title": "How do I verify my identity if I don't have an SSN? (StudentAid.gov Help Center)",
+          "url": "https://studentaid.gov/help-center/answers/article/verify-identity-create-account-dont-have-ssn"
+        },
+        {
+          "title": "Steps for Students Filling Out the FAFSA Form (StudentAid.gov)",
+          "url": "https://studentaid.gov/articles/fafsa-student-steps/"
+        },
+        {
+          "title": "Completing the FAFSA Form: Steps for Parents: consent doesn't create responsibility for costs, marital status guide, what to gather (StudentAid.gov)",
+          "url": "https://studentaid.gov/articles/fafsa-for-parents/"
+        },
+        {
+          "title": "7 Things To Do After Submitting Your FAFSA Form: processing time, SAI range, Pell estimate, form statuses, verification, corrections (StudentAid.gov)",
+          "url": "https://studentaid.gov/articles/things-after-fafsa/"
+        },
+        {
+          "title": "Reporting Parent Information (StudentAid.gov)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out/parent-info"
+        }
+      ]
+    },
+    {
+      "id": "special-situations",
+      "title": "Special situations on the FAFSA",
+      "summary": "How the FAFSA works if a parent has no SSN, you're not a citizen or have DACA, you were in foster care or are homeless, your parents are divorced or won't help, or a parent didn't file taxes.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "The short version",
+          "items": [
+            "Start early. Special situations take extra time, and some aid is first-come, first-served.",
+            "A parent without a Social Security number can still fill out the FAFSA. It doesn't ask about a parent's immigration status.",
+            "Parents live apart? Use the one who gave more financial support in the past 12 months.",
+            "After you submit, contact the aid office at every school on your FAFSA. Each school makes its own decision.",
+            "Free help: 1-800-433-3243, in English or Spanish."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "text": "We checked these rules for the 2027–28 FAFSA (Free Application for Federal Student Aid) in September 2026. Rules can change, so confirm with StudentAid.gov or a school's financial aid office."
+        },
+        {
+          "kind": "list",
+          "heading": "Which parents go on the FAFSA",
+          "items": [
+            "Your legal parents are your birth or adoptive parents, or a parent your state recognizes. If they live together, both go on the FAFSA, even if they never married or are divorced.",
+            "If they live apart, use the one who gave you more financial support in the past 12 months, even if you don't live with them. Older advice to use \"the parent you live with\" is out of date. Support isn't only cash. Child support counts for the parent who pays it. If both gave exactly the same, or neither supports you, use the parent with more income and assets, like savings.",
+            "If that parent is married, your stepparent goes on the form too. If the couple filed taxes separately, the stepparent needs their own StudentAid.gov account and must give consent (permission for the IRS to send their tax information).",
+            "Grandparents, other relatives, and family friends don't count unless they adopted you. Living with one without a court order? You still give your parents' information.",
+            "A parent living in another country may still need to be on your FAFSA."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "If a parent doesn't have an SSN",
+          "items": [
+            "If you're a U.S. citizen or eligible noncitizen, you can get federal aid even if your parents are undocumented. The FAFSA doesn't ask about their citizenship or immigration status.",
+            "One exception: a parent must be a U.S. citizen or eligible noncitizen to take out a Parent PLUS loan (a federal loan for parents)."
+          ]
+        },
+        {
+          "kind": "steps",
+          "heading": "How a parent without an SSN takes part",
+          "items": [
+            "Your parent makes their own StudentAid.gov account with an email no other account uses, and checks the box saying they don't have an SSN.",
+            "They answer identity questions from TransUnion, a credit company. If that doesn't work, they can still fill out the FAFSA right away. Don't make a second account.",
+            "StudentAid.gov will email next steps, which may include sending a copy of an ID, like a driver's license, state ID, or foreign passport. A consular ID (matrícula consular) plus a utility bill may also work.",
+            "Invite your parent using the email on their account. Spell their name the same way every time, with the same last names and any hyphen.",
+            "Your parent's SSN box stays blank online (all zeros on paper). An ITIN (a tax ID number from the IRS) goes only in the ITIN box.",
+            "Your parent must give consent, or you can't get federal aid. If the IRS can't send their tax information, they type in the numbers from their 2025 tax return."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Privacy and immigration",
+          "text": "The FAFSA privacy notice says your information is used to decide aid and is protected by federal privacy law. But it may be shared in some cases, like with an agency looking into possibly breaking a law. It doesn't promise the information will never reach immigration officials. Worried? Get free, trusted advice soon from an immigration lawyer or an \"accredited representative\" (a nonprofit worker approved by the U.S. Justice Department): https://www.uscis.gov/scams-fraud-and-misconduct/avoid-scams/legal-services. Watch out for \"notarios.\" In some countries, a notario has legal training. In the U.S., a notary public is not a lawyer and can't help with immigration cases. The choice is your family's. Some states, like Washington, let families apply for state aid only, with a state form. But a citizen or eligible noncitizen student who skips the FAFSA can miss out on federal grants, and often state grants too."
+        },
+        {
+          "kind": "list",
+          "heading": "If you're not a U.S. citizen",
+          "items": [
+            "With a green card, refugee or asylee status, or certain other statuses, you may be an \"eligible noncitizen\" who can get federal aid. Choose \"Eligible noncitizen\" and enter your A-Number (the 8- or 9-digit number on your immigration papers). Not sure if you're an eligible noncitizen? Ask a school's aid office before you give up.",
+            "Undocumented students and students with DACA (Deferred Action for Childhood Arrivals) can't get federal aid, but may get state or school aid. Ask your state's student aid agency or a school's aid office which form to use.",
+            "Have DACA and an SSN, and your state wants the FAFSA? Choose \"Neither U.S. citizen nor eligible noncitizen.\" Your results will say you can't get federal aid. That's expected. States and schools can still use your FAFSA.",
+            "Undocumented with no SSN? You can't submit the FAFSA at all. A state form may be your only way to apply for state aid.",
+            "Ask each school if you can pay in-state tuition (the lower price for state residents). Rules differ by state, and they change. In 2025, undocumented students lost in-state tuition in Florida and Texas. Don't rely on an older brother's or sister's experience. Ask each school for this year's rules.",
+            "Look for school and private scholarships. Some accept students who aren't citizens."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Foster care, guardianship, or no living parent",
+          "text": "At any time since you turned 13, were you in foster care, a ward of the court (in a court's custody), or without a living parent? Then you're independent and don't report parent information, even if things changed later. You're also independent if a court in your state named someone other than your parent as your legal guardian, or made you an emancipated minor (legally an adult before 18). That decision must be in effect now, or right before you became an adult. If the papers say \"custody,\" not \"guardianship,\" leave that box blank and ask the aid office. Your school may ask for proof, like a copy of the court's decision or a letter from your caseworker. Current and former foster youth: ask your caseworker, your state's child welfare agency, or a school's aid office about Education and Training Vouchers (ETV), a federal program that can help pay for college or career training."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Homeless or at risk of homelessness",
+          "text": "Homeless means you don't have a fixed, regular, and adequate place to live, like a shelter, motel, car, or park, or staying with others because you have nowhere else to go. If you're in one of these places because you left an abusive parent, you may count as homeless even if that parent would give you a place to live. You may be independent if, at any point in 2026 or later, you lived apart from your parents or guardian and were either homeless or paying your own way and at risk of homelessness. Homeless with your parent? You still give their information. Tell each school's aid office what's going on. They may be able to adjust your aid."
+        },
+        {
+          "kind": "steps",
+          "heading": "How to show you're a homeless youth",
+          "items": [
+            "Ask for a determination (an official decision) from your high school or district's homeless liaison (a staff member who helps students without a stable home), or the director of a shelter, youth program, or TRIO or GEAR UP program (federal college access programs). Mark who made it on the FAFSA.",
+            "No determination? Choose \"None of these apply,\" submit, and contact each school's aid office. They must decide. They can use a letter you write or a talk with you. You don't need a police or child-protection report.",
+            "Use a mailing address where you can count on getting mail, like a trusted relative's or friend's (ask them first) or a school's."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "If parents can't be reached or won't help",
+          "text": "If your parents refuse to pay or to fill out the FAFSA, that alone doesn't make you independent. If it's safe, talk with them first, or ask a counselor to. The FAFSA doesn't sign parents up for a loan. The number it figures out, called the Student Aid Index (SAI), is not a bill. If that doesn't work, or you can't reach them, there are two paths."
+        },
+        {
+          "kind": "list",
+          "heading": "Path 1: Unusual circumstances",
+          "items": [
+            "You may qualify if you left home because of abuse or threats, your parents abandoned you, you're estranged (cut off) from them, or you can't find or reach them.",
+            "Other reasons: you're a refugee or asylee separated from your parents, your parents are displaced in another country, you're a trafficking victim, or you or your parents are in prison or jail and contact would put you at risk.",
+            "Answer \"Yes\" to the unusual circumstances question, leave the parent sections blank, and submit. You'll be \"provisionally independent\" (not final yet). Right away, ask each school's aid office what they need.",
+            "Proof can be a letter or call from a caseworker or child welfare agency, an abuse or violence program, TRIO or GEAR UP staff, a court-appointed advocate, or a lawyer. Have no one? Ask the aid office to interview you."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Path 2: Your parents still won't take part",
+          "items": [
+            "This is the last choice. Answer \"Yes\" to the question about parents refusing. The school needs a signed note from your parents, or, if they won't sign, a letter from someone like a teacher or counselor.",
+            "The school may then offer only a Direct Unsubsidized Loan, which you repay with interest. For a first-year student, the most is usually $5,500 for the year.",
+            "You won't get Pell Grants (federal grants that usually don't have to be paid back), subsidized loans (the government pays the interest while you're in school), or work-study (part-time jobs for students). With no SAI, state and school grants may be out of reach too."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "If a parent didn't file taxes",
+          "text": "You can still apply. Your parent says they didn't file a 2025 U.S. tax return and picks the reason. If the parents on your FAFSA (including any stepparent on it) didn't have to file because of low income, you automatically qualify for the most Pell Grant money, if you meet the other rules. But cash pay counts as income: people who work for themselves usually must file if they earned $400 or more after costs. If a parent earned money in another country, they change it to U.S. dollars and type it in, and the automatic maximum Pell doesn't apply. Your parent still has to give consent."
+        },
+        {
+          "kind": "warning",
+          "heading": "If a parent was supposed to file but didn't",
+          "text": "Don't panic, and don't skip the FAFSA. Your school may require your parent to file the 2025 return and show proof before you get federal aid, so file as soon as you can. The IRS runs free tax help sites, called VITA, for people with low to moderate incomes or limited English. Some also help apply for an ITIN. Call 800-906-9887 or visit https://www.irs.gov/individuals/free-tax-return-preparation-for-qualifying-taxpayers"
+        },
+        {
+          "kind": "tip",
+          "heading": "Free help, and watch for scams",
+          "text": "Call the Federal Student Aid Information Center at 1-800-433-3243 in English or Spanish. For other languages, call 1-833-610-2590 and press 7, or see https://studentaid.gov/apply-for-aid/fafsa/filling-out/other-languages. You can fill out the FAFSA in English or Spanish. For in-person help, ask your school counselor or your state's student aid agency. The FAFSA is always free, and paid preparers aren't allowed to fill it out. Use only StudentAid.gov or fafsa.gov. Never give your StudentAid.gov username or password to anyone, even someone helping you. Never pay to apply for a scholarship. Online is faster, so file online if a deadline is close. Using a paper FAFSA? Don't mail it before Oct. 1, 2026."
+        }
+      ],
+      "sources": [
+        {
+          "title": "2027–28 FAFSA form",
+          "url": "https://studentaid.gov/sites/default/files/2027-28-fafsa-form.pdf"
+        },
+        {
+          "title": "FSA Handbook 2026–27, Application and Verification Guide Ch. 1 (press 7)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch1-application-process-fafsa-isir"
+        },
+        {
+          "title": "FSA Handbook 2026–27, Application and Verification Guide Ch. 2: who counts as a parent, divorced parents, contributors, non-filers, foreign income",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch2-filling-out-fafsa-form"
+        },
+        {
+          "title": "FSA Handbook 2023–24, Application and Verification Guide Ch. 2: the older divorced-parent rule (parent you lived with)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2023-2024/application-and-verification-guide/ch2-filling-out-fafsa"
+        },
+        {
+          "title": "FSA Handbook 2026–27, Application and Verification Guide Ch. 5: unusual circumstances, parents who refuse, homeless youth",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch5-special-cases"
+        },
+        {
+          "title": "FSA Handbook 2026–27, Vol. 1 Ch. 2: eligible noncitizens, DACA, Parent PLUS citizenship rule",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol1/ch2-us-citizenship-eligible-noncitizens"
+        },
+        {
+          "title": "StudentAid.gov: How do I verify my identity if I create an account without an SSN?",
+          "url": "https://studentaid.gov/help-center/answers/article/verify-identity-create-account-dont-have-ssn"
+        },
+        {
+          "title": "2027–28 Student Aid Index (SAI) and Pell Grant Eligibility Guide (PDF): maximum Pell for non-filers",
+          "url": "https://fsapartners.ed.gov/sites/default/files/2026-06/2728StudentAidIndexSAIandPellGrantEligibilityGuide.pdf"
+        },
+        {
+          "title": "FSA Handbook 2025–26, Vol. 8 Ch. 4: annual loan limits ($5,500 for dependent first-year students)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2025-2026/vol8/ch4-annual-and-aggregate-loan-limits"
+        },
+        {
+          "title": "StudentAid.gov: FAFSA support in other languages",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out/other-languages"
+        },
+        {
+          "title": "USCIS: Legal services (who can give immigration advice, free and low-cost help, notario warning)",
+          "url": "https://www.uscis.gov/scams-fraud-and-misconduct/avoid-scams/legal-services"
+        },
+        {
+          "title": "IRS: Free tax return preparation (VITA), including ITIN help at some sites",
+          "url": "https://www.irs.gov/individuals/free-tax-return-preparation-for-qualifying-taxpayers"
+        }
+      ]
+    },
+    {
+      "id": "pell-and-workforce-pell",
+      "title": "Pell Grants and Workforce Pell",
+      "summary": "A Pell Grant is government money that helps students with financial need pay for college or job training, and you usually don't have to pay it back.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "The short version",
+          "items": [
+            "Starting school right after high school? Fill out the FAFSA (Free Application for Federal Student Aid) in the fall of senior year, and again every year. The 2027-28 form opened Sept. 23, 2026. File early, because some state and college aid runs out.",
+            "Don't count on Pell until a school's financial aid offer lists it. If it's missing, call the financial aid office.",
+            "Looking at a short training program? Ask the school to show you in writing that it's approved for Workforce Pell, and what you would still owe.",
+            "The FAFSA is free and comes in Spanish. The real site ends in .gov. Never pay anyone to fill it out. Free help in English or Spanish: 1-800-433-3243, or ask your school counselor."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Who can get one",
+          "items": [
+            "Your school, whether a four-year college, community college, or career or trade school, takes federal student aid.",
+            "You have financial need, based on your FAFSA.",
+            "You don't have a bachelor's degree (a four-year college degree) yet. Workforce Pell is an exception, below.",
+            "You are a U.S. citizen or eligible noncitizen, like a green card holder, refugee, or person granted asylum.",
+            "You finished high school (diploma, GED, HiSET, other state-approved high school equivalency, or homeschool). Pell can't pay for college classes taken during high school (dual enrollment)."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "If you are undocumented or have DACA",
+          "text": "Undocumented students, including DACA recipients, can't get federal aid like Pell, but may get state, college, or private scholarship money. Some states, like California, have their own application for undocumented students instead of the FAFSA. Before you fill out any form, ask your counselor or the college's financial aid office which one to use. Don't guess."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "If your parents are undocumented",
+          "text": "If you're a U.S. citizen or eligible noncitizen, your parents' immigration status doesn't affect your federal aid, including Pell, and the FAFSA doesn't ask about it. A parent without a Social Security number can still make an account at https://studentaid.gov and fill out and sign their part of your FAFSA. If your family is worried about sharing information, read \"Privacy and immigration\" in Special situations on the FAFSA, and talk with a licensed immigration lawyer or a DOJ-accredited representative (a trained helper at a nonprofit approved by the U.S. Justice Department) before you decide. The USCIS \"Legal services\" page explains how to find them."
+        },
+        {
+          "kind": "warning",
+          "heading": "Your parents' part of the FAFSA",
+          "text": "Each parent who must be on your FAFSA has to fill out their part and consent (agree) to let the IRS share their federal tax information, even with no Social Security number or U.S. tax return. Without that, you can't get Pell or other federal aid. If your parents simply don't want to help, that doesn't let you skip their part. Some students can file without parents, like those who were in foster care or a ward of the court at any time since age 13, or who are homeless and on their own. There's also a process if you can't reach your parents or it isn't safe to contact them. Don't just leave their part blank; see Special situations on the FAFSA."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "How much",
+          "text": "For 2026-27, full-time students can get up to $7,395 a year. The smallest award is $740. Part-time students (usually under 12 credits a term) get less. Classes in an extra term, like summer, can sometimes get you up to 1.5 times your yearly amount. The 2027-28 amounts, for fall 2027, aren't announced yet."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Money left over",
+          "text": "Pell pays your school bill first. The school pays you what's left over, often called a refund, for costs like books, food, or rent. Schools usually must pay it within 14 days, unless you agree to let them hold it for later bills. Ask your school when refunds are paid."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Your SAI and your Pell",
+          "text": "Your amount depends mostly on your SAI (Student Aid Index), a number the FAFSA figures from your family's finances. The lower your SAI, the more Pell you get. For 2026-27, most students need an SAI of 6,655 or less. Some lower-income families can get the $740 minimum with a higher SAI, but no one with an SAI of 14,790 or more can. The one exception: if your parent died in the line of duty as a service member or public safety officer, you may still get Pell. Ask the financial aid office. Your SAI is not a bill. It can even be negative, which means high need."
+        },
+        {
+          "kind": "list",
+          "heading": "How to keep your Pell",
+          "items": [
+            "Keep your grades up and pass enough classes. Falling behind on your school's rules, called Satisfactory Academic Progress, can cost you Pell. If something hard happens, like an illness, ask about an appeal.",
+            "Talk to the financial aid office before you drop a class or leave school. Going part-time can lower your Pell. If you stop going partway through a term, you may have to pay some back.",
+            "Keep applying for scholarships, and tell your school about each one. In rare cases, grants and scholarships from your state, school, or private groups cover the school's whole yearly cost estimate, and then Pell isn't allowed. The school may lower other grants so you keep it.",
+            "The lifetime limit is about 6 years of full-time school. Part-time terms use up less. To see how much you've used, log in at https://studentaid.gov and check \"My Grants.\""
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Workforce Pell for short programs",
+          "items": [
+            "Starting July 1, 2026, Workforce Pell can help pay for some job-training programs that last 8 weeks to just under 15 weeks. Programs must meet several rules, including approval by your state's governor and the U.S. Department of Education.",
+            "You get part of the yearly Pell amount, based on program length. The Department of Education estimates the average award at about $1,710.",
+            "It's Pell only (no federal student loans), and it uses up part of your lifetime Pell limit.",
+            "Adults with a bachelor's degree can use it, but not if they have a graduate degree or graduate certificate (like a master's), or are enrolled in or accepted to a graduate program.",
+            "You still fill out the FAFSA and add the school."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "It's brand new",
+          "text": "Schools could first apply for approval on July 1, 2026, so many programs may not be approved yet, and a newly launched program can't qualify right away. \"Financial aid available\" in an ad doesn't mean Workforce Pell. Don't sign up because approval is \"coming soon.\" Ask for the total price and how many students finish and get jobs. If a school pushes a private loan or an \"income share agreement\" (a loan you repay with a share of your future income), slow down and compare options."
+        },
+        {
+          "kind": "tip",
+          "heading": "Other help with training costs",
+          "text": "Your local American Job Center may also be able to help pay for job training. People with low incomes get priority. Find one at https://www.careeronestop.org/LocalHelp/AmericanJobCenters/find-american-job-centers.aspx"
+        },
+        {
+          "kind": "steps",
+          "heading": "How to apply",
+          "items": [
+            "Go to https://studentaid.gov to fill out the 2027-28 FAFSA, for school that starts between July 1, 2027, and June 30, 2028. See \"The FAFSA, Step by Step\" for details.",
+            "List every school you're thinking about, including community colleges and career and trade schools. You can list up to 20 online.",
+            "If a school asks for documents (called \"verification\"), send them quickly. If you don't finish, you can lose your Pell."
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "title": "Federal Pell Grants (StudentAid.gov)",
+          "url": "https://studentaid.gov/understand-aid/types/grants/pell"
+        },
+        {
+          "title": "2026-27 Federal Pell Grant Maximum and Minimum Award Amounts (GEN-26-01, updated Feb. 18, 2026)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/dear-colleague-letters/2026-01-30/2026-27-federal-pell-grant-maximum-and-minimum-award-amounts"
+        },
+        {
+          "title": "2026-27 FSA Handbook, Vol. 7, Ch. 2: Calculating Pell Grants (Calculated, Max and Min Pell; SAI ineligibility)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol7/ch2-calculating-pell-grants"
+        },
+        {
+          "title": "2026-27 FSA Handbook, Application and Verification Guide, Ch. 3: SAI and Pell Grant Eligibility (SAI as low as -1,500)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch3-student-aid-index-sai-and-pell-grant-eligibility"
+        },
+        {
+          "title": "How Financial Aid Is Calculated (StudentAid.gov: SAI is not a dollar amount; cost of attendance)",
+          "url": "https://studentaid.gov/complete-aid-process/how-calculated"
+        },
+        {
+          "title": "2026-27 FSA Handbook, Vol. 7, Ch. 3: Pell Enrollment Intensity and Cost of Attendance (full-time is at least 12 credit hours)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol7/ch3-pell-grant-enrollment-intensity-and-cost-attendance"
+        },
+        {
+          "title": "2026-27 FSA Handbook, Vol. 7, Ch. 7: Recalculations (enrollment changes; non-federal grants that meet cost of attendance)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol7/ch7-initial-calculations-recalculations-and-overawards"
+        },
+        {
+          "title": "Final rule: Workforce Pell Grants and Pell Grant Exclusion Relating to Other Grant Aid (91 FR 29254, May 19, 2026), FSA summary",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/federal-registers/2026-05-19/final-accountability-higher-education-and-access-through-demand-driven-workforce-pell-pell-grant-exclusion-relating-other-grant-aid-and-workforce-pell-grants"
+        },
+        {
+          "title": "Final rule 91 FR 29254, full text",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2026-05-19/html/2026-10013.htm"
+        },
+        {
+          "title": "Effective Dates for Workforce Pell and Federal Pell Grant Ineligibility Provisions (GENERAL-26-32)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-06-04/effective-dates-workforce-pell-and-federal-pell-grant-ineligibility-provisions"
+        },
+        {
+          "title": "Eligible Workforce Programs: State Workforce Pell Certification Form Available (GENERAL-26-44)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-01/eligible-workforce-programs-state-workforce-pell-certification-form-available"
+        },
+        {
+          "title": "American Job Center Finder (CareerOneStop, U.S. Department of Labor)",
+          "url": "https://www.careeronestop.org/LocalHelp/AmericanJobCenters/find-american-job-centers.aspx"
+        }
+      ]
+    },
+    {
+      "id": "state-aid-and-promise-programs",
+      "title": "State Aid and Promise Programs",
+      "summary": "Your state may add grants, tuition-free community or technical college, merit scholarships, or early sign-up programs, but each has its own rules and deadlines.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "The short version",
+          "items": [
+            "File the 2027-28 FAFSA (the Free Application for Federal Student Aid) soon. It opened Sept. 23, 2026.",
+            "Check your state's deadlines now. Some state or college deadlines can be as early as Oct. 1, 2026, and some states give aid only until the money runs out.",
+            "Missed a state deadline? File the FAFSA anyway. It doesn't change whether you can get federal aid. Then ask your state aid office and your college's financial aid office whether any money is left. Some programs have a later deadline for some students.",
+            "Many \"tuition-free\" programs pay only tuition. You may still need money for books, tools, transportation, food and housing. Compare schools by the total cost after all your aid.",
+            "The FAFSA is always free and comes in English and Spanish. Be careful with any company that charges a fee to find grants or fill out forms. Never share your StudentAid.gov username and password with anyone, including companies.",
+            "Free help: your counselor, FAFSA events at your school, and the Federal Student Aid Information Center at 1-800-433-3243. Many public libraries have free computers and Wi-Fi."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Seniors (class of 2027): check these dates now",
+          "items": [
+            "Tennessee Promise (every step is required): Apply by Nov. 2, 2026. Go to a required meeting in December 2026 or January 2027. In spring 2027, apply to a community college, a college of applied technology or another eligible school. File the FAFSA by April 1, 2027.",
+            "Tennessee Promise, continued: Do 16 hours of community service by Aug. 1, 2027 (hours since Aug. 1, 2025 count) and enroll full-time. Can't go full-time? Talk to the college's financial aid office before the term starts.",
+            "Oklahoma's Promise (for families whose adjusted gross income, a number on the tax return, is under $60,000 to $80,000, depending on family size): Seniors can apply until Dec. 31, 2026. Documents are due Feb. 1, 2027. You must finish the required classes, and in college your parents' income must be $100,000 or less each year. It doesn't pay fees or books.",
+            "Indiana 21st Century Scholars: Finish all 12 Scholar Success Program activities, graduate with at least a 2.5 GPA and the required diploma type, and file the FAFSA by April 15 every year.",
+            "Washington College Bound: File the FAFSA or WASFA every year and start college within one year of graduating. Going straight to a four-year college? You need at least a 2.0 GPA. Income is checked every year in college (2027-28 limit: $95,500 for a family of four).",
+            "Texas: File the FAFSA by Jan. 15, 2027, for priority (the first chance at state aid). Missouri: Priority deadline Feb. 1, 2027, final deadline April 1, 2027. Illinois and Kentucky: Aid goes out until the money runs out, so file early.",
+            "California: The Cal Grant needs your FAFSA or CADAA (California Dream Act Application) and your school-certified GPA by March 2, 2027. Most schools send the GPA, but check. About a week after you apply, make a WebGrants 4 Students account (California's state aid account) and make sure your GPA is there. California community college students have until Sept. 2, 2027, but March 2 is best.",
+            "Starting a program before July 1, 2027? You need the 2026-27 FAFSA. It's open until June 30, 2027, but some 2026-27 state deadlines have passed. Starting in summer 2027? Ask the school's financial aid office which year's form to file."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Kinds of state help",
+          "items": [
+            "State grants (money you usually don't have to pay back): Often based on financial need. Some also pay for career training, like certificates (short job-training programs) or apprenticeships.",
+            "Promise programs: Help pay tuition at community or technical colleges. \"Last-dollar\" programs pay only the tuition (and sometimes required fees) your other grants don't cover. If other grants already cover your tuition, they may add little or nothing.",
+            "Merit scholarships: Some states pay part or all of in-state tuition for students who meet rules about grades, classes, test scores, or volunteer or work hours. Some, like Florida's Bright Futures, need their own application. Florida's Gold Seal Vocational award is for career programs. Ask your counselor early what you need."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "When grant money has to be paid back",
+          "text": "Sometimes grant money must be paid back. If you withdraw partway through a term, you may have to return some federal grant money. Going part-time can lower your grant, and state grants have their own rules. Talk to the financial aid office before you drop classes. Some grants, like the federal TEACH Grant for future teachers, turn into loans if you don't do required work later."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Early sign-up: signing up is step one",
+          "text": "You sign up in middle or high school and promise to follow some rules, like keeping your grades up. To get the money, you must keep those promises, file the FAFSA (or your state's form) starting in your senior year, and still meet the income limit in college. Missed the sign-up window? That's common and not your fault. Ask your counselor if you were signed up automatically, and look at your state's other aid."
+        },
+        {
+          "kind": "tip",
+          "heading": "Younger brothers and sisters",
+          "text": "Help them sign up in time. Indiana: by June 30 of 8th grade. Oklahoma: in grades 8-11. In Indiana and Washington, many students get signed up through the free or reduced-price meal form, so fill it out every year if the school asks. If your school gives free meals to everyone, it may not collect these forms, so ask the counselor how students get signed up. You and your parents don't have to be U.S. citizens to apply for school meals."
+        },
+        {
+          "kind": "steps",
+          "heading": "Find your state's programs",
+          "items": [
+            "Find your state in the 2027-28 table on StudentAid.gov's FAFSA Deadlines page: https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines",
+            "Find your state's higher education agency (not the office for K-12 schools). Use the \"state grant agency\" link on StudentAid.gov's \"Types of Aid\" page.",
+            "On that agency's website, write down each program's form and deadline. Some need an extra form. Deadlines change every year, so check each fall.",
+            "Ask your counselor and each college's financial aid office about state and local aid. Colleges may set their own deadlines too.",
+            "Put every deadline on a calendar with a two-week reminder, and save a screenshot or confirmation number for every form. Check your email and your state aid account for requests for more information, and answer quickly."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "If your parents aren't U.S. citizens",
+          "text": "If you're a U.S. citizen or an eligible noncitizen (for example, you have a green card, refugee status or asylum), your parents' immigration status does not affect your federal aid. The FAFSA doesn't ask about it, and a parent without a Social Security number can still make a StudentAid.gov account and fill out their part. Worried about sharing information? Read \"Privacy and immigration\" in Special situations on the FAFSA, and talk with a licensed immigration lawyer or a DOJ-accredited representative (a trained helper at a nonprofit approved by the U.S. Justice Department) before you decide."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "If you can't get federal aid",
+          "text": "Undocumented students, including DACA recipients, can't get federal aid, but some states have their own aid forms. California's CADAA is for undocumented students, DACA recipients, and students with a U visa or TPS (Temporary Protected Status) who meet California's AB 540 rules. That usually means at least 3 years of school in California and graduating from a California high school (or the equivalent). California's state aid agency says it doesn't share CADAA information with the federal government or use it for immigration enforcement. For other states' forms, see Special situations on the FAFSA. Rules can change each year, so check with your state aid office."
+        },
+        {
+          "kind": "warning",
+          "heading": "State forms mean state aid only",
+          "text": "The CADAA and Washington's state aid form, the WASFA, apply only for state and college aid. Some students who could file the FAFSA, such as a citizen whose parents are undocumented, may be allowed to use these forms. But if you use one instead of the FAFSA, you give up the federal Pell Grant and other federal aid. Talk with your counselor or a college financial aid office before you choose."
+        },
+        {
+          "kind": "list",
+          "heading": "Foster and homeless youth",
+          "items": [
+            "On the FAFSA: If you were in foster care or a ward of the court at any time since you turned 13, you don't give your parents' information. The same can be true if you're homeless and not living with a parent or guardian. See Special situations on the FAFSA.",
+            "Education and Training Vouchers (ETV): Through a federal program called Chafee, states offer up to $5,000 a year to many current and former foster youth. Ask your caseworker or your state's independent living program.",
+            "California's Chafee Grant for Foster Youth needs its own application, and money is limited, so apply early.",
+            "Washington's Passport to Careers helps former foster youth and unaccompanied homeless youth with college or apprenticeships.",
+            "Students in foster care can still join Indiana's 21st Century Scholars in high school. Washington signs up students in state foster care for College Bound automatically."
+          ]
+        },
+        {
+          "kind": "tip",
+          "heading": "Going to another state?",
+          "text": "Many state programs are only for students who live and study in the state. Ask whether your aid can go with you, and about regional deals that cut out-of-state tuition: the Western Undergraduate Exchange (WUE), the Midwest Student Exchange Program, the Academic Common Market in the South, and New England's Tuition Break. Moved recently, or do your parents live in different states? Ask how your state decides who counts as a resident."
+        }
+      ],
+      "sources": [
+        {
+          "title": "StudentAid.gov",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"
+        },
+        {
+          "title": "2027-28 FAFSA form (PDF): state or college deadlines may be as early as Oct. 1, 2026; some states award aid while funds last (StudentAid.gov)",
+          "url": "https://studentaid.gov/sites/default/files/2027-28-fafsa-form.pdf"
+        },
+        {
+          "title": "StudentAid.gov: FAFSA Application (check your state's deadline; missing a state deadline doesn't affect federal aid eligibility)",
+          "url": "https://studentaid.gov/h/apply-for-aid/fafsa"
+        },
+        {
+          "title": "FSA Partners: 2027-28 FAFSA Beta Testing Plan (Updated Sept. 23, 2026) - form now live to the general public",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-21/2027-28-fafsa-beta-testing-plan-updated-sept-23-2026"
+        },
+        {
+          "title": "34 CFR 600.2: Award year is July 1 through June 30",
+          "url": "https://www.ecfr.gov/current/title-34/subtitle-B/chapter-VI/part-600/subpart-A/section-600.2"
+        },
+        {
+          "title": "StudentAid.gov",
+          "url": "https://studentaid.gov/understand-aid/types"
+        },
+        {
+          "title": "StudentAid.gov: Grants (when you may have to repay a grant; TEACH Grant service obligation)",
+          "url": "https://studentaid.gov/understand-aid/types/grants"
+        },
+        {
+          "title": "StudentAid.gov: FAFSA Help (form available in English and Spanish; Federal Student Aid Information Center)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out/help"
+        },
+        {
+          "title": "FTC: How To Avoid Scholarship and Financial Aid Scams (FAFSA is always free; never share your FSA ID)",
+          "url": "https://consumer.ftc.gov/articles/how-avoid-scholarship-and-financial-aid-scams"
+        },
+        {
+          "title": "StudentAid.gov",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out/undocumented-students"
+        },
+        {
+          "title": "StudentAid.gov: Eligible Noncitizens (permanent residents, refugees, asylees)",
+          "url": "https://studentaid.gov/understand-aid/eligibility/requirements/non-us-citizens"
+        },
+        {
+          "title": "USCIS: Legal Services (licensed lawyers and DOJ-accredited representatives)",
+          "url": "https://www.uscis.gov/scams-fraud-and-misconduct/avoid-scams/legal-services"
+        }
+      ]
+    },
+    {
+      "id": "css-profile-and-fee-waivers",
+      "title": "The CSS Profile and fee waivers",
+      "summary": "Some colleges ask for a second aid form called the CSS Profile, and if you qualify, fee waivers can make that form, the SAT or ACT, and many college applications free.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "The short version",
+          "items": [
+            "Only some colleges use the CSS Profile. It never replaces the FAFSA.",
+            "It opens Oct. 1. Every college sets its own deadline, so write each one down.",
+            "Many students get it free. The form checks for you.",
+            "In 11th or 12th grade? Ask your counselor about SAT, ACT and college application fee waivers.",
+            "Undocumented, no contact with a parent, or in foster care? Talk to each college's financial aid office before you start."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "What is it?",
+          "text": "The CSS Profile is an online form from College Board, which runs the SAT. Some colleges and scholarship programs use it to give out their own money. It doesn't replace the FAFSA (Free Application for Federal Student Aid), which you need for federal aid. If a college asks for both forms, do both."
+        },
+        {
+          "kind": "steps",
+          "heading": "Do you need it?",
+          "items": [
+            "Find each college on College Board's list: https://profile.collegeboard.org/PPI/participatingInstitutions.aspx",
+            "Look at the column \"CSS Profile – Domestic Students\" (U.S. students). If it says No, that school doesn't use the form for U.S. students. Then check the college's financial aid website to be sure."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "text": "Going to a community college or career training program? You most likely won't need it, but still fill out the FAFSA. Don't cross a college off your list because of this form. It's not a sign the college will cost more."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "When it's due",
+          "text": "College Board says it opens Oct. 1 each year, so it should open Oct. 1, 2026 for fall 2027. Every school sets its own deadline, and some come early, so write each one down now. If a college wants both forms, check its deadline for each. For early decision or early action (applying early to hear back sooner), it may be due soon after it opens. Submit by midnight Eastern time on your earliest priority deadline (the date that counts as on time for aid). If you live out West, in Alaska or in Hawaii, submit earlier in the day. Added a college later? Submit the form again."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Filling it out",
+          "text": "Have ready your parents' latest federal tax returns (with all schedules) and W-2s, this year's pay stubs, records of untaxed income and benefits, and bank and asset records. The student starts the form in their own College Board account. Parents fill in their parts there, except a noncustodial parent (see below). Parents: answer \"Student Status\" questions for your student, not yourself. Have more than one College Board account? Call CSS Profile customer service at (866) 630-9305 before you start so your SAT fee waiver can be found. Found a mistake after you submit? You can fix it once with \"Correct Your CSS Profile\" on your dashboard."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "After you submit",
+          "text": "Check your dashboard for next steps. Some colleges want copies of papers, like tax returns, through IDOC, College Board's upload service. College Board emails you if you need IDOC. Upload early, since it can take about 10 business days. Parents who don't have to file taxes may be asked for a Non-Tax Filer Statement and proof of any wages. If they file taxes in another country, upload those official tax papers with an English translation. You can write the translation right on the forms. Tell each college's financial aid office about big things the form misses, like large medical bills, a lost job or money sent to family in another country."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Cost and fee waivers",
+          "text": "If your form isn't free, it costs $25 for the first college and $16 for each one you add. Undergraduates (working toward a first college degree) get it free if their parents live in the U.S. or a U.S. territory and one of these is true:"
+        },
+        {
+          "kind": "list",
+          "items": [
+            "Your family's adjusted gross income (AGI, a number on your parents' federal tax return) is up to $100,000.",
+            "You qualified for an SAT fee waiver. Use the same College Board account you used for the SAT.",
+            "You're under 24 and an orphan or a ward of the court (placed in the state's care by a court)."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "text": "Can't pay? Don't skip the form. Some colleges have their own fee waivers, so ask each one before the deadline. If a natural disaster changed your family's money situation a lot, contact CSS Profile customer service before you submit."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Parents who live apart",
+          "text": "If your parents are divorced or separated, the parent who gives you more than half of your financial support fills out your main form. It may not be the one you live with most. Split evenly? Pick the one with more income and assets. If you're a U.S. citizen or permanent resident, pick the same parent who fills out your FAFSA. Only one parent should say they give more than half, or your form will be slowed down. List all your parents, including stepparents and a parent's partner."
+        },
+        {
+          "kind": "paragraph",
+          "text": "Some colleges also want a form from your other parent (the noncustodial parent). That parent makes their own College Board account. It's free for them if they live in the U.S. and their family AGI is up to $100,000, but your SAT fee waiver doesn't cover them."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "No contact with a parent",
+          "text": "No contact with your other parent, or contact isn't safe? You can ask each college to excuse that parent, using the form it asks for. Colleges may want court papers or a letter from someone like a counselor. A parent who just refuses to fill out the form usually isn't enough. Start early. You should never have to contact a parent who isn't safe for you."
+        },
+        {
+          "kind": "paragraph",
+          "text": "In foster care, homeless and on your own, or no contact with either parent? Before you start, ask each college's financial aid office how to answer the parent questions. Some answers are hard to fix after you submit."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Immigration and citizenship",
+          "text": "Starting with the 2026-27 form, the CSS Profile doesn't ask about citizenship. A college's admission application may still ask. The fee-waiver rules are about where your parents live and your family's income, not citizenship. Undocumented students, including DACA recipients, can't get federal aid, but may get college, state or private aid. Ask each financial aid office which forms to fill out. You can ask general questions without giving your name. If you or a parent don't have a Social Security number, call CSS Profile customer service or the college before you start and ask how to answer those questions. If you're a U.S. citizen or eligible noncitizen, your parents' immigration status doesn't affect your federal aid. Worried about sharing information? Read \"Privacy and immigration\" in Special situations on the FAFSA."
+        },
+        {
+          "kind": "tip",
+          "heading": "Help in Spanish",
+          "text": "Call CSS Profile at 844-202-0524 and press 6. For IDOC, call 866-897-9881 and press 7. Hours are Monday to Friday, 9 a.m. to 6 p.m. Eastern time. College Board also has a page about the CSS Profile in Spanish. The form itself may be only in English, so a bilingual counselor or family member can help you fill it out."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "SAT and ACT fee waivers",
+          "text": "These are for 11th and 12th graders. Before you pay for a test, check whether your colleges require it and whether your school offers it free on a school day. Get your waiver before you register."
+        },
+        {
+          "kind": "list",
+          "heading": "Who qualifies for an SAT fee waiver (you need just one)",
+          "items": [
+            "You get or are eligible for free or reduced-price school lunch, or your family's income is within the free or reduced-price lunch limits.",
+            "You're in a program for students from low-income families, like Upward Bound, or your family gets public assistance (government benefits).",
+            "You're homeless, an orphan or a ward of the state, or you live in a foster home or in public housing that the federal government helps pay for."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "text": "An SAT fee waiver gives you two free SATs, free score reports to as many colleges as you want, and a free CSS Profile. Seniors who have taken the SAT also pay no application fee at colleges that accept the SAT fee waiver. Get a code from your counselor, or use College Board's online form at least 1–2 weeks before the registration deadline. If you use the online form, you'll need an adult who can confirm you qualify. You can get it only once in your life. Codes expire each August, so enter yours in your My SAT account soon after you get it. A free SAT at school isn't a fee waiver, so still ask if you qualify."
+        },
+        {
+          "kind": "paragraph",
+          "text": "The ACT's rules are similar. Your counselor checks whether you qualify and gives you a code. You get up to two free tests (including the optional science and writing parts), free score reports to your high school and up to six colleges plus free extra reports after scores come out, and a free online prep course. You can also ask colleges, not ACT, to waive or delay their application fee."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Applying to college for free",
+          "text": "The Common App, one online application many colleges accept, has its own fee waiver. You may qualify if you fit the SAT fee waiver list, got or could get an SAT or ACT fee waiver or a Pell Grant (federal money for students with high financial need), or have a supporting statement from someone like a school official. Ask for it in your Common App profile before you submit, then tell your counselor, who must confirm it. Can't reach your counselor? Contact each college's admissions office. Some colleges don't accept it."
+        },
+        {
+          "kind": "paragraph",
+          "text": "Also ask your counselor about the NACAC fee waiver form. A counselor signs it, and you send it to up to four colleges. Each college decides whether to accept it. You can also ask each admissions office about a fee waiver."
+        },
+        {
+          "kind": "tip",
+          "heading": "Not sure if you qualify?",
+          "text": "Go by your family's situation, not your school's. If your school gives everyone free lunch, that alone doesn't decide whether you qualify. From July 2026 to June 2027, a family of four in most states can have income of up to $61,050 a year before taxes and still qualify for free or reduced-price lunch. Limits are higher in Alaska and Hawaii. Asking your counselor is normal."
+        },
+        {
+          "kind": "warning",
+          "heading": "Only claim a waiver that fits",
+          "text": "College Board warns that giving false information for an SAT fee waiver can get your account banned, keep you from taking the SAT or AP exams, and get your scores canceled."
+        }
+      ],
+      "sources": [
+        {
+          "title": "College Board: About CSS Profile",
+          "url": "https://cssprofile.collegeboard.org/about"
+        },
+        {
+          "title": "College Board: Why do I need to complete the CSS Profile?",
+          "url": "https://cssprofile.collegeboard.org/help-center/why-do-i-need-complete-css-profile"
+        },
+        {
+          "title": "College Board: CSS Profile participating institutions (2027-28)",
+          "url": "https://profile.collegeboard.org/PPI/participatingInstitutions.aspx"
+        },
+        {
+          "title": "College Board: How do I know if my school requires the CSS Profile?",
+          "url": "https://cssprofile.collegeboard.org/help-center/how-do-i-know-if-my-school-requires-css-profile"
+        },
+        {
+          "title": "College Board: CSS Profile getting started",
+          "url": "https://cssprofile.collegeboard.org/getting-started"
+        },
+        {
+          "title": "College Board: Complete the CSS Profile application",
+          "url": "https://cssprofile.collegeboard.org/complete-application"
+        },
+        {
+          "title": "College Board: How do I add additional schools to the CSS Profile?",
+          "url": "https://cssprofile.collegeboard.org/help-center/how-do-i-add-additional-schools-css-profile"
+        },
+        {
+          "title": "College Board: What documents do I need to complete the CSS Profile?",
+          "url": "https://cssprofile.collegeboard.org/help-center/what-documents-do-i-need-complete-css-profile"
+        },
+        {
+          "title": "Federal Student Aid: Eligibility for non-U.S. citizens (parents' status doesn't affect eligibility)",
+          "url": "https://studentaid.gov/understand-aid/eligibility/requirements/non-us-citizens"
+        },
+        {
+          "title": "Federal Student Aid: Federal Pell Grants",
+          "url": "https://studentaid.gov/understand-aid/types/grants/pell"
+        },
+        {
+          "title": "USDA Food and Nutrition Service: Income Eligibility Guidelines 2026-2027 (reduced-price limit is 185% of the poverty guideline)",
+          "url": "https://www.fns.usda.gov/schoolmeals/fr-040926"
+        },
+        {
+          "title": "HHS ASPE: 2026 poverty guidelines (family of four: $33,000 in the 48 contiguous states and D.C.)",
+          "url": "https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines"
+        }
+      ]
+    },
+    {
+      "id": "scholarships-and-scams",
+      "title": "Scholarships and How to Avoid Scams",
+      "summary": "Scholarships are free money for college or career training: where to find them for free, how to apply, and how to spot and report scams.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "The short version",
+          "items": [
+            "Seniors: file the free FAFSA early in the fall. Some states give aid only until the money runs out.",
+            "Scholarship deadlines happen all year, and some are a year before school starts. Federal Student Aid suggests applying the summer between junior and senior year. Seniors: some deadlines are this fall, so start searching now.",
+            "Never pay to apply for a scholarship or to file the FAFSA. Never share your StudentAid.gov password.",
+            "If you win, tell the financial aid office at the college or career school you'll attend. It may lower your other aid."
+          ]
+        },
+        {
+          "kind": "tip",
+          "heading": "Start with the FAFSA",
+          "text": "The FAFSA (Free Application for Federal Student Aid) is the free form for federal Pell Grants, which can help pay for college or career school (see “Pell Grants and Workforce Pell”). Grants are money you don't pay back. States and colleges also use the FAFSA to give out their own grants and scholarships. The 2027–28 FAFSA is for students starting school in fall 2027. StudentAid.gov says it's available now. Some state deadlines are as early as January 2027 (Texas: Jan. 15), so seniors should file early in the fall. Check deadlines on StudentAid.gov."
+        },
+        {
+          "kind": "list",
+          "heading": "Where to find scholarships",
+          "items": [
+            "Your school counselor. Ask for the list of local scholarships.",
+            "The financial aid office at each college or career school you're thinking about. Ask what scholarships the school offers.",
+            "CareerOneStop Scholarship Finder, a free U.S. Department of Labor tool (filter for “Vocational” for career training), and BigFuture Scholarship Search from the College Board.",
+            "Your state's financial aid agency, the state office that gives out state grants for school. Search your state's name plus “student aid.”",
+            "Local businesses, community groups, and your parents' employers.",
+            "American Indian and Alaska Native students: the Bureau of Indian Education's scholarship page, and your tribe."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Check out a school before you sign up",
+          "text": "Scammers have even made websites for fake schools. You can get federal aid only at an accredited school, which means a recognized group checked its quality. Look the school up on College Navigator at https://nces.ed.gov/collegenavigator. Then search its name plus “review,” “complaint,” and “scam.”"
+        },
+        {
+          "kind": "list",
+          "heading": "If you or your parents aren't U.S. citizens",
+          "items": [
+            "Many noncitizens can get federal aid, including green card holders, refugees, and people granted asylum. See the list of “eligible noncitizens” on StudentAid.gov.",
+            "If you're a U.S. citizen or eligible noncitizen, your parents' immigration status does not affect your federal aid, and the FAFSA doesn't ask about it. Parents without a Social Security number can still fill in their part.",
+            "Undocumented students, including DACA (Deferred Action for Childhood Arrivals) recipients, can't get federal aid, but may get state aid, college aid, or private scholarships. The aid form and in-state tuition rules depend on your state, and some changed in 2025. Ask each college.",
+            "Check that a private scholarship doesn't require U.S. citizenship or a Social Security number. Immigrants Rising lists scholarships that don't require proof of citizenship. TheDream.US offers scholarships for immigrant students, with or without DACA, who meet its rules.",
+            "You choose what to share about your immigration status in essays and forms."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Getting immigration help safely",
+          "text": "This guide can't give immigration legal advice. If your family worries about sharing information, talk first with a licensed immigration lawyer or a DOJ-accredited representative (a trained helper at a nonprofit approved by the U.S. Justice Department). “Privacy and immigration” in Special situations on the FAFSA explains how to find them. In the U.S., a “notario” is not a lawyer."
+        },
+        {
+          "kind": "steps",
+          "heading": "How to apply well",
+          "items": [
+            "Use a personal email you'll keep after high school.",
+            "Track each deadline and what it needs, like an essay, teacher letters, or a transcript (your official record of classes and grades). Deadlines can change, so check each scholarship's website.",
+            "Ask for transcripts early, and for letters a few weeks before the deadline.",
+            "Make sure you qualify, fill out every part, and write your own essays.",
+            "If a scholarship asks for tax forms and your family doesn't file taxes, ask what you can send instead.",
+            "Fill out the FAFSA, or the state form your school tells you to use, every year you're in school.",
+            "Keep applying every year after high school. Some scholarships are for students already in college or training."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "If you win",
+          "text": "Congratulations! Tell the financial aid office at the college or career school you'll attend about every award. All your aid together can't be more than your cost of attendance, the school's yearly estimate of tuition, fees, housing, food, books, and other costs. So the school may lower other aid, like loans. Before you accept, ask which aid it will lower. Also, if state, school, and private grants and scholarships add up to your whole cost of attendance, you can't get a Pell Grant that year. Even a full-tuition award may not cover housing, food, and books. Ask the scholarship giver if the award repeats every year, and how to keep it."
+        },
+        {
+          "kind": "tip",
+          "heading": "Scholarships and taxes",
+          "text": "Scholarship money for tuition, fees, and required books and supplies is usually tax-free. Money for housing, food, or travel may count as income. Keep your award letters."
+        },
+        {
+          "kind": "warning",
+          "heading": "Never pay for the FAFSA or a scholarship",
+          "text": "Fill out the FAFSA only at StudentAid.gov. Paid preparers aren't allowed to fill it out, so never pay for FAFSA help. Free help comes from your counselor, a college financial aid office, or the Federal Student Aid Information Center at 1-800-433-3243 (English or Spanish). Watch out for paid “helpers” who put false income information on the form. You and your family are responsible for what's on your FAFSA, and false information can lead to large fines. If a company wants a “processing fee” or other upfront payment for a scholarship, walk away."
+        },
+        {
+          "kind": "tip",
+          "heading": "Two real fees, often waived",
+          "text": "College applications and the CSS Profile, a College Board aid form some colleges use, can cost money. Many students get these fees waived. The CSS Profile is free if your family's adjusted gross income (yearly income on the tax return) is $100,000 or less, or if you got an SAT fee waiver. Pay only the college or the College Board."
+        },
+        {
+          "kind": "list",
+          "heading": "Scam red flags from the FTC (the government agency that fights scams)",
+          "items": [
+            "“Guaranteed or your money back.”",
+            "A request for your card or bank account number to “hold” a scholarship.",
+            "“You're a finalist” in a contest you never entered.",
+            "Pressure to sign up or pay right now.",
+            "A request to pay with a gift card, wire transfer, payment app, or cryptocurrency.",
+            "A check, then a request to send some money back. The check is fake.",
+            "An official-sounding name, a claim to be the government, or threats like arrest or deportation."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Protect yourself",
+          "items": [
+            "Never share your StudentAid.gov username and password, not even with family or someone helping you. The U.S. Department of Education and its partners will never ask for your password.",
+            "The student and each parent who fills in the FAFSA need their own account. An email or phone number can be used for only one account. Parents: don't create or sign in to your child's account.",
+            "A FAFSA site that asks for a credit card is not the official site.",
+            "Never give personal information by phone or online unless you made the contact."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "If you think you were scammed",
+          "text": "It's not your fault, and acting fast helps. Ask whatever you used to pay (bank, card company, payment app, wire transfer company, or gift card company) to reverse it. If you shared your StudentAid.gov login, change your password, or call 1-800-433-3243 if you can't get in. Report the scam at https://reportfraud.ftc.gov (in Spanish: https://reportefraude.ftc.gov) and to your state attorney general, the state office that handles scam complaints."
+        }
+      ],
+      "sources": [
+        {
+          "title": "Finding and Applying for Scholarships (Federal Student Aid)",
+          "url": "https://studentaid.gov/understand-aid/types/scholarships"
+        },
+        {
+          "title": "Avoiding Student Aid Scams (Federal Student Aid)",
+          "url": "https://studentaid.gov/resources/scams"
+        },
+        {
+          "title": "Cómo evitar estafas relacionadas con la ayuda para estudiantes (Federal Student Aid, en español)",
+          "url": "https://studentaid.gov/es/resources/scams"
+        },
+        {
+          "title": "Avoiding Fake Schools (Federal Student Aid)",
+          "url": "https://studentaid.gov/resources/scams/avoiding-fake-schools"
+        },
+        {
+          "title": "FAFSA Application Deadlines, 2027–28 (Federal Student Aid)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"
+        },
+        {
+          "title": "2027–28 FAFSA form (Federal Student Aid)",
+          "url": "https://studentaid.gov/sites/default/files/2027-28-fafsa-form.pdf"
+        },
+        {
+          "title": "Filling Out the FAFSA Form (Federal Student Aid)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out"
+        },
+        {
+          "title": "Key Facts About StudentAid.gov Accounts (Federal Student Aid)",
+          "url": "https://studentaid.gov/articles/key-facts-accounts/"
+        },
+        {
+          "title": "Grants (Federal Student Aid)",
+          "url": "https://studentaid.gov/understand-aid/types/grants"
+        },
+        {
+          "title": "Federal Pell Grants (Federal Student Aid)",
+          "url": "https://studentaid.gov/understand-aid/types/grants/pell"
+        },
+        {
+          "title": "Public Law 119-21, sec. 83004: no Pell Grant when non-federal grant aid equals or exceeds cost of attendance, beginning July 1, 2026 (GovInfo)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm"
+        },
+        {
+          "title": "Eligibility for Non-U.S. Citizens (Federal Student Aid)",
+          "url": "https://studentaid.gov/understand-aid/eligibility/requirements/non-us-citizens"
+        }
+      ]
+    },
+    {
+      "id": "loans-wisely",
+      "title": "Borrowing Wisely: Student Loans Explained",
+      "summary": "How federal student loans, Parent PLUS loans and private loans work, how to borrow only what you need, and what repaying looks like under the new federal rules.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "The short version",
+          "items": [
+            "Use grants and scholarships first. Then, if you need to, borrow your own federal loans, and only what you need.",
+            "Parent PLUS is your parent's debt, and the bill doesn't drop if their income does. Talk it over as a family first.",
+            "Federal loan rules changed a lot in 2025 and 2026. Check StudentAid.gov or ask the college's financial aid office.",
+            "Payment too high? Call your loan servicer (the company that handles your loan bills) before you miss one."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Federal loans for students",
+          "items": [
+            "No credit check or credit history is needed. You sign and repay the loan yourself, even if you're under 18. If you die, the loan is canceled, so your family never has to pay it. It may also be canceled if you become totally and permanently disabled.",
+            "Direct Subsidized Loans are for undergraduates with financial need (the school's cost minus your Student Aid Index, a number the FAFSA works out from your family's finances). The government pays the interest (the extra cost of borrowing) while you're in school at least half-time and for six months after you leave.",
+            "Direct Unsubsidized Loans don't require financial need. Interest adds up the whole time, even while you're in school.",
+            "Dependent students (who report parent information on the FAFSA) can borrow $5,500 the first year, $6,500 the second and $7,500 a year after that, up to $31,000 in total.",
+            "Independent students can borrow $9,500 to $12,500 a year, up to $57,500 in total. You're independent if, for example, you're 24 or older, married, a veteran or supporting a child.",
+            "You can also count as independent if you were in foster care or a ward of the court any time after you turned 13, if a court set up a legal guardianship for you, or if you're homeless or at risk of it and not living with a parent or guardian. See Special situations on the FAFSA, and tell your counselor or the college's financial aid office.",
+            "You must be at least half-time (about half a full class load) in a degree or certificate program, at a college or trade school in the federal loan program. Less than full-time lowers your limit.",
+            "Cost: 6.52% fixed interest for loans first paid out July 1, 2026, to June 30, 2027. A 1.057% fee comes out before your school gets the money: on $5,500, about $5,442 reaches your school, but you owe $5,500. Rates for fall 2027 aren't set yet."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Parent PLUS loans",
+          "items": [
+            "A Parent PLUS loan is in your parent's name. Your parent must repay it, and it can't be moved to you later.",
+            "A biological or adoptive parent, or a stepparent on your FAFSA, can borrow. Grandparents and legal guardians can't unless they adopted you. If a grandparent or another relative is raising you, talk to the college's financial aid office.",
+            "Your parent applies after your FAFSA is done, usually at StudentAid.gov. Little or no credit history is fine. The check looks for serious problems, like a default or bankruptcy in the past five years.",
+            "If turned down, your parent can still borrow with an endorser (someone who agrees to repay if your parent doesn't) or by showing special reasons for the credit problems, and must also do credit counseling.",
+            "Limits: if you start college on or after July 1, 2026, all your parents together can borrow at most $20,000 a year and $65,000 in total for you. It can't be more than your cost of attendance minus other aid, your school may set a lower limit, and paying some back doesn't let your parents borrow more.",
+            "Cost: 9.07% fixed interest plus a 4.228% fee, for loans first paid out July 1, 2026, to June 30, 2027. Rates for fall 2027 aren't set yet.",
+            "If your parent asks, payments can wait while you're in school at least half-time and for six months after. Interest keeps adding up.",
+            "Have Parent PLUS loans for an older child? A new loan, or combining old loans (consolidating), can limit the old loans' payment plans too. Your parent should call their servicer first.",
+            "If your parent is turned down and doesn't get the loan another way, you may be able to borrow up to $4,000 more a year ($5,000 after your first two years) in unsubsidized loans. The financial aid office decides. Sometimes your parent doesn't have to apply first, for example if they're in prison, can't be found, have income only from public benefits or disability, or can't get federal aid because of immigration status. Reaching the PLUS limit, or a parent not wanting to borrow, doesn't count."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Before your parent borrows",
+          "text": "Parent PLUS can be easy to get and hard to pay back. No one checks whether the payments fit your family's budget. The payment is fixed: it doesn't go down if your parent's income drops or they retire, and Public Service Loan Forgiveness doesn't apply. If it goes unpaid, the government can take part of your parent's paycheck, tax refund and even Social Security. Example: $65,000 at 9.07% over 20 years is about $588 a month, or about $141,000 in total."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Private loans",
+          "text": "Private loans from banks, credit unions and others often need a credit history or a cosigner (someone who promises to pay if you don't). They usually cost more, rates may go up, and they lack federal benefits like income-based payments. Use them last, if at all. Be careful with high-cost career schools that push them or 'income share agreements', where you repay a share of future pay (see Paying for Career Training)."
+        },
+        {
+          "kind": "steps",
+          "heading": "Borrow only what you need",
+          "items": [
+            "Fill out the FAFSA (the free federal aid form) every year. It's how you get federal loans.",
+            "In each aid offer, cover up the loans, including Parent PLUS, to see what each school really costs you.",
+            "Borrow only what's left after grants, scholarships and what your family can pay.",
+            "Ask the financial aid office about a tuition payment plan. Many schools let you pay monthly with no interest.",
+            "Loans aren't automatic. When you accept them, you can turn a loan down or take less. If you need more later, you can ask to increase it.",
+            "Before your first federal loan is paid out, finish entrance counseling (about 30 minutes online, in one sitting) and sign the loan contract (Master Promissory Note) at StudentAid.gov, using your own account. Your loan money can't be paid out until both are done, so don't wait. A parent taking Parent PLUS signs their own contract. No internet at home? Use a school or library computer, or ask the financial aid office for help.",
+            "Leftover loan money is still borrowed. Use it only for school costs, or give it back.",
+            "Changed your mind? You can usually cancel all or part of a loan within 14 or 30 days of the school's written notice that it was paid out. After that, you can still give it back within 120 days of when it was paid out, with no interest or fee. Ask the financial aid office how.",
+            "Need more than your own federal loans (up to $27,000 over four years if you're dependent)? Stop and look again. If your family's income dropped or you have big costs like medical bills, ask the financial aid office for a second look. Compare other schools' offers, and think about community college, an in-state public college or living at home. For a tax credit, see \"Money back at tax time\" in How paying for college or training works."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "What repayment looks like",
+          "items": [
+            "Payments usually start six months after you graduate, leave school or drop below half-time. Talk to the financial aid office before you drop a class or withdraw. Dropping below half-time can start your six months, and withdrawing may mean you give back aid or owe the school money.",
+            "Tiered Standard Plan: the same payment each month for 10 to 25 years, depending on what you owe. Example: $27,000 at 6.52% is about $236 a month for 15 years, or about $42,400 in total.",
+            "Repayment Assistance Plan (RAP): your payment is based on your income and dependents, and can be as low as $10 a month. Pay on time and in full, and interest your payment doesn't cover is dropped. After 30 years of qualifying payments, the rest is forgiven (you may owe tax on it).",
+            "Public Service Loan Forgiveness: after 120 qualifying payments (about 10 years) while working full-time for a government or qualifying nonprofit employer, the rest is forgiven tax-free. For new loans, only RAP payments count. Which employers qualify can change."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "If your payment is too high",
+          "text": "Call your loan servicer before you miss a payment, and ask about RAP. For loans made on or after July 1, 2027, you can't pause payments because you lost a job or are short on money, and general pauses for money problems are limited to 9 months in any 2-year period. Can't find your servicer? Log in at StudentAid.gov or call the Federal Student Aid Information Center at 1-800-433-3243. Never share your StudentAid.gov login, and never pay a company for help. Your servicer and StudentAid.gov help for free."
+        },
+        {
+          "kind": "warning",
+          "heading": "If you fall behind",
+          "text": "At 90 days late, your servicer tells the credit bureaus (companies that track how people pay bills). After 270 days without a payment, the loan is in default (officially unpaid). Then part of your paycheck, tax refund and even Social Security can be taken, and you can't get more federal student aid. Programs like loan rehabilitation can get a defaulted loan back on track, so call your servicer right away."
+        },
+        {
+          "kind": "list",
+          "heading": "If you or your parents are undocumented",
+          "items": [
+            "U.S. citizens and eligible noncitizens (like green card holders, refugees and asylees) can get federal loans, even if their parents are undocumented. The FAFSA doesn't ask about parents' status. Parents without a Social Security number can still make a StudentAid.gov account and fill out their part of the FAFSA.",
+            "Parents who aren't citizens or eligible noncitizens can't get Parent PLUS, but you may be able to borrow more (see Parent PLUS loans above).",
+            "Undocumented students, including DACA recipients, can't get federal loans but may qualify for state or college aid. Some states have their own form, like the CA Dream Act Application in California. Ask your counselor or the college's financial aid office which form to use.",
+            "This guide can't give legal advice. With immigration worries, read \"Privacy and immigration\" in Special situations on the FAFSA, and talk with a licensed immigration lawyer or a DOJ-accredited representative (a trained helper at a nonprofit approved by the U.S. Justice Department) before you apply. The USCIS \"Legal services\" page explains how to find them."
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "title": "Direct Subsidized and Direct Unsubsidized Loans (StudentAid.gov)",
+          "url": "https://studentaid.gov/understand-aid/types/loans/subsidized-unsubsidized"
+        },
+        {
+          "title": "Federal Interest Rates and Fees (StudentAid.gov)",
+          "url": "https://studentaid.gov/understand-aid/types/loans/interest-rates"
+        },
+        {
+          "title": "Direct PLUS Loans for Parents: eligibility, adverse credit, limits, repayment (StudentAid.gov)",
+          "url": "https://studentaid.gov/understand-aid/types/loans/plus/parent"
+        },
+        {
+          "title": "One Big Beautiful Bill Act: Important Definitions (loan limits, RAP, Tiered Standard, PSLF, Workforce Pell), updated Aug. 24, 2026 (StudentAid.gov)",
+          "url": "https://studentaid.gov/announcements-events/big-updates/definitions"
+        },
+        {
+          "title": "Accepting Financial Aid: loan order, turning down loans, tuition payment plans (StudentAid.gov)",
+          "url": "https://studentaid.gov/complete-aid-process/accept-aid"
+        },
+        {
+          "title": "Receiving Financial Aid: leftover money, 120-day cancellation (StudentAid.gov)",
+          "url": "https://studentaid.gov/complete-aid-process/receive-aid"
+        },
+        {
+          "title": "Entrance Counseling (StudentAid.gov)",
+          "url": "https://studentaid.gov/entrance-counseling"
+        },
+        {
+          "title": "Master Promissory Note (StudentAid.gov)",
+          "url": "https://studentaid.gov/mpn"
+        },
+        {
+          "title": "Student Loan Forbearance: limits for loans made on or after July 1, 2027 (StudentAid.gov)",
+          "url": "https://studentaid.gov/manage-loans/lower-payments/get-temporary-relief/forbearance"
+        },
+        {
+          "title": "Student Loan Delinquency and Default (StudentAid.gov)",
+          "url": "https://studentaid.gov/manage-loans/default"
+        },
+        {
+          "title": "Student Loan Discharge and Forgiveness: death, disability, PSLF, minors (StudentAid.gov)",
+          "url": "https://studentaid.gov/manage-loans/forgiveness-cancellation"
+        },
+        {
+          "title": "Avoiding Student Aid Scams (StudentAid.gov)",
+          "url": "https://studentaid.gov/resources/scams"
+        }
+      ]
+    },
+    {
+      "id": "comparing-aid-offers",
+      "title": "Reading and Comparing Financial Aid Offers",
+      "summary": "How to read each aid offer, find your real net price, accept only what you need, and decide by your school's deadline (often May 1).",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "The short version",
+          "items": [
+            "Compare net prices: the full cost minus only grants and scholarships.",
+            "Take grants and scholarships first. Borrow last, and only what you need.",
+            "Finish verification early so your federal aid isn't held.",
+            "Offer too small, or your family's money changed? Ask each aid office to look again.",
+            "Most colleges ask you to decide by May 1. Check each school's date."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "What an aid offer is",
+          "text": "An aid offer (or award letter) shows what a college or career/trade school can give or lend you for one school year. It comes after you're accepted, by email, by mail, or in the school's online portal. Set up each school's portal and school email right away, and check them every week for your offer and any requests for documents. No offer after a few weeks? Make sure the school is on your FAFSA form at StudentAid.gov (add it if it's missing), then call the aid office. Ask if they can go over the offer with your family by phone or video, in Spanish or another language. Your high school counselor can help, too."
+        },
+        {
+          "kind": "list",
+          "heading": "Sort the aid into piles",
+          "items": [
+            "Gift aid: grants and scholarships, which you usually don't pay back. But if you stop going to all your classes early in a term, you may owe some federal grant money. Ask the aid office before dropping even one class.",
+            "Work-study: pay from a part-time job you usually find yourself. The offer shows the most you can earn, not a promised job. It isn't taken off your bill up front, so plan to use it for books and living costs.",
+            "Federal student loans: paid back with interest. Subsidized loans don't add interest while you're in school at least half time (about half a full class load); unsubsidized loans do. First-year students whose parents are on their FAFSA can usually borrow up to $5,500 a year, less if part time.",
+            "Other loans: Parent PLUS (your parent's federal loan), plus private, state, or school loans."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Words you may see on an offer",
+          "items": [
+            "Loans: any line that says loan, Direct, Stafford, PLUS, private, or institutional (from the school).",
+            "SAI (Student Aid Index): not your bill, just a number schools use to figure your aid.",
+            "Unmet need or gap: usually the part your family still has to cover.",
+            "In Spanish: \"oferta de ayuda financiera\" (aid offer), \"beca\" or \"subvención\" (grant), \"préstamo\" (loan)."
+          ]
+        },
+        {
+          "kind": "steps",
+          "heading": "Find your net price",
+          "items": [
+            "Use the same plan for every school: full or part time, and where you'll live. Part time means a smaller Pell Grant and smaller federal loans.",
+            "Start with the cost of attendance (COA), the school's full estimate for one year. It counts housing and food even if you live at home. Offer shows only your bill? Ask for the COA.",
+            "Subtract only grants and scholarships. What's left is your net price.",
+            "Multiply by the years in the program (for a short certificate, use the whole program). Ask how much costs may go up, and add up the loans for the whole program.",
+            "Ask if each grant comes back every year and what it takes to keep it, like certain grades, enough classes, and a new FAFSA each year."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "A loan is not a discount",
+          "text": "Some offers count loans in \"total aid\" or subtract them from the cost, so a school looks cheaper than it is. Every loan, including Parent PLUS, has to be paid back with interest."
+        },
+        {
+          "kind": "steps",
+          "heading": "Say yes only to what you need",
+          "items": [
+            "Follow your offer's directions. Accept grants and scholarships first, then work-study if you'll work.",
+            "Borrow last, and only what you need. You can take all of a loan, ask for less, or say no. If you take less now, you can ask for more later. Some schools count a loan as accepted unless you turn it down.",
+            "Take your own federal loans first (subsidized, then unsubsidized), then Parent PLUS. Private loans, which usually have worse terms, come last.",
+            "First federal student loan? You get it only after entrance counseling (a short lesson on paying it back) and signing a Master Promissory Note (the loan contract).",
+            "Aid more than your bill? You get the extra, usually within 14 days. Many schools call this a refund, but loan money is still a loan. Any you don't need can be given back within 120 days with no interest or fees."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Before your parent takes a Parent PLUS Loan",
+          "items": [
+            "It's your parent's loan, and it can't be moved to you later. Being approved doesn't mean your family can afford it.",
+            "For students who start on or after July 1, 2026, all parents together can borrow at most $20,000 a year and $65,000 total per student.",
+            "Parent PLUS Loans made on or after July 1, 2026, have only fixed monthly payments, not a plan based on income. A new one can lock older Parent PLUS loans into fixed payments, too, so your parent should call the company that handles those loan bills first.",
+            "Parent turned down? Tell the aid office. You may be able to borrow more in your own federal loans. See \"Borrowing Wisely: Student Loans Explained.\""
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "If the offer isn't enough",
+          "items": [
+            "Ask the aid office to take another look, and whether they'll consider a better offer from another school.",
+            "Ask about more grants, work-study, or a no-interest monthly payment plan.",
+            "Ask whether your state or college has a free-tuition program (see \"State Aid and Promise Programs\").",
+            "Keep applying for local scholarships. Never pay to apply or to get help with federal aid, and never share your StudentAid.gov username or password, even with someone helping you.",
+            "Starting at a community college and transferring later is a strong path. If a school costs more than your family can manage, picking another is a smart money choice, not a failure."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "If your family's money situation changed",
+          "text": "The FAFSA uses tax information from a past year. If things changed, ask each school's aid office for a \"special circumstances\" review. Reasons can include:"
+        },
+        {
+          "kind": "list",
+          "items": [
+            "A lost job, or less income or savings",
+            "Medical bills that insurance didn't cover",
+            "Child care costs, or a severe disability in your household",
+            "Losing your housing",
+            "A brother, sister, or parent also in college",
+            "Private school tuition for a younger brother or sister",
+            "A parent's death or a divorce (these are only examples, so ask)"
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "text": "Send a short letter with proof soon, or ask what else they accept. Approval isn't guaranteed and doesn't carry over to other schools, so ask every school."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "If you're selected for verification",
+          "text": "Verification means proving your FAFSA information is correct. It doesn't mean you did anything wrong. If the Department of Education picks you, your FAFSA Submission Summary on StudentAid.gov shows an asterisk (*) next to your SAI. A school can also pick you, so watch for messages from every school. Each will tell you what to send, how, and by when. If a parent didn't file taxes, is paid in cash, has no Social Security number, or earned money in another country, ask the aid office what papers they'll accept. Don't send tax forms or Social Security numbers in a regular email."
+        },
+        {
+          "kind": "warning",
+          "heading": "Finish verification early",
+          "text": "Until verification is done, the school may hold your federal aid. If you never finish, you lose your Pell Grant for that year, must pay back any Pell or FSEOG (another federal grant) money you got, and can't get more federal loans (including Parent PLUS) or work-study. Finish even if you don't get a Pell Grant. Stuck getting a document? Tell the aid office right away."
+        },
+        {
+          "kind": "tip",
+          "heading": "If you can't include your parents",
+          "text": "Can't reach your parents, or contact with them would put you at risk? You may be able to get aid without their information. Say so on the FAFSA form, then contact each school's aid office. See \"Special situations on the FAFSA.\""
+        },
+        {
+          "kind": "tip",
+          "heading": "If you can't get federal aid",
+          "text": "Undocumented students, including DACA recipients, can't get federal aid, so their offers may show only state aid, school aid, or private scholarships. Ask each school which form to fill out. If you're a U.S. citizen or eligible noncitizen, your parents' immigration status doesn't affect your federal aid. Worried about sharing information? See \"Privacy and immigration\" in \"Special situations on the FAFSA\" to find trusted legal advice."
+        },
+        {
+          "kind": "tip",
+          "heading": "Career and trade programs",
+          "text": "Some short programs can qualify for a Workforce Pell Grant (see \"Pell Grants and Workforce Pell\"). Before you borrow for a career school, make sure it takes federal aid. Check how many students finish and what they earn at https://collegescorecard.ed.gov. Be careful if a school pushes private or school loans."
+        },
+        {
+          "kind": "tip",
+          "heading": "Outside scholarships",
+          "text": "Tell the school you pick about every outside scholarship. It may lower other aid, so ask each school what it lowers first. The best answer is loans or work-study, not grants. New rule: if state, school, and private grants add up to your whole cost of attendance, you can't also get a Pell Grant."
+        },
+        {
+          "kind": "list",
+          "heading": "Deciding by May 1",
+          "items": [
+            "Most colleges ask you to decide by May 1 if you applied regular decision or early action. Community colleges and career programs may differ, so check each school's date.",
+            "Say yes to only one school: send its forms and any deposit, then tell the others you won't attend.",
+            "Deposit hard to pay? Ask if the school can waive (drop) or delay it. Still waiting on an offer or verification near the deadline? Ask for more time.",
+            "Applied Early Decision and the aid isn't enough? Contact the school's admission and aid offices right away."
+          ]
+        },
+        {
+          "kind": "steps",
+          "heading": "After you say yes: your summer checklist",
+          "items": [
+            "Check the school's portal and email every week and finish every to-do item, like sending your final high school transcript and any shot (immunization) records. Your aid can't be paid until verification and first-time loan steps are done.",
+            "Register for classes, and ask how many credits you need to keep each grant. Federal loans need at least half time.",
+            "Already have health insurance, like Medicaid? If the school charges every student for its plan, ask whether you can waive (skip) it, and by when.",
+            "Ask when your first bill is due and whether your aid will be paid by then. First-year students taking their first federal loan may wait 30 days into the term for it. Need books sooner? Ask the aid office.",
+            "Can't pay a bill? Before the due date, ask the aid office about a payment plan or emergency grants. Don't just skip enrolling."
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "title": "Federal Student Aid",
+          "url": "https://studentaid.gov/sites/default/files/do-you-need-money.pdf"
+        },
+        {
+          "title": "StudentAid.gov: How To Review and Correct Your FAFSA Form (verification, adding schools, Unsubsidized-Loan-only option)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/review-and-correct"
+        },
+        {
+          "title": "StudentAid.gov: Accepting Financial Aid (order to accept aid, turning down or lowering loans, tuition payment plans)",
+          "url": "https://studentaid.gov/complete-aid-process/accept-aid"
+        },
+        {
+          "title": "StudentAid.gov",
+          "url": "https://studentaid.gov/complete-aid-process/receive-aid"
+        },
+        {
+          "title": "StudentAid.gov: Direct Subsidized and Unsubsidized Loans",
+          "url": "https://studentaid.gov/understand-aid/types/loans/subsidized-unsubsidized"
+        },
+        {
+          "title": "StudentAid.gov",
+          "url": "https://studentaid.gov/understand-aid/types/loans/plus/parent"
+        },
+        {
+          "title": "StudentAid.gov: Federal Pell Grants (renewing the FAFSA each year, part-time awards, workforce programs)",
+          "url": "https://studentaid.gov/understand-aid/types/grants/pell"
+        },
+        {
+          "title": "Public Law 119-21",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm"
+        },
+        {
+          "title": "2026-27 FSA Handbook, Vol. 6, Ch. 2: Federal Work-Study Program",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol6/ch2-federal-work-study-program"
+        },
+        {
+          "title": "2026-27 FSA Handbook, Application and Verification Guide, Ch. 4: Verification, Updates, and Corrections",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch4-verification-updates-and-corrections"
+        },
+        {
+          "title": "2026-27 FSA Handbook, Application and Verification Guide, Ch. 5: Special Cases (professional judgment, unusual circumstances, homeless youth)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch5-special-cases"
+        },
+        {
+          "title": "StudentAid.gov: Eligibility for Non-U.S. Citizens (undocumented and DACA students; parents' immigration status)",
+          "url": "https://studentaid.gov/understand-aid/eligibility/requirements/non-us-citizens"
+        }
+      ]
+    },
+    {
+      "id": "training-programs-and-apprenticeships",
+      "title": "Paying for Career Training",
+      "summary": "Career training is a smart choice, not a backup plan: apprenticeships, grants, and job centers can help pay for it, and a few checks can protect you from programs that overpromise.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "The short version",
+          "items": [
+            "Registered Apprenticeships pay you from day one. Find one at https://www.apprenticeship.gov/apprenticeship-job-finder.",
+            "File the free FAFSA as soon as you can at https://studentaid.gov.",
+            "Community college is often low cost. On average, grants cover tuition and fees for first-time, full-time students, but only if you apply.",
+            "Ask your counselor this week about free community college (“Promise”) programs. Some have applications due in the fall of senior year. For example, the class of 2027 must apply for Tennessee Promise by Nov. 2, 2026.",
+            "Before you sign up, get in writing whether your program can get a Pell Grant, and how much."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Start now, in high school",
+          "items": [
+            "Take career and technical education (CTE) classes, and ask about youth apprenticeships. In some, you start paid on-the-job learning at 16.",
+            "Finish high school or get a GED. You need one for most federal aid. Without one, ask a community college about “ability to benefit” career pathway programs, which let you get federal aid while you work toward a GED."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Apprenticeships: get paid to learn",
+          "text": "An apprenticeship is a real job that includes classes. A Registered Apprenticeship (approved by the U.S. Department of Labor or a state agency) pays you from day one."
+        },
+        {
+          "kind": "list",
+          "items": [
+            "The sponsor (the employer or group running the program) doesn't have to pay you for class time. Ask if it's paid, and if you'll owe anything for classes, books, or tools.",
+            "The federal minimum age is 16, but some programs require 18. Sponsors can add rules, like a diploma or GED, a math test, or a driver's license. Ask what each requires and when it takes applications.",
+            "Make sure it's a Registered Apprenticeship. Be careful if anyone asks you to pay a big fee to get an apprenticeship job."
+          ]
+        },
+        {
+          "kind": "tip",
+          "heading": "Costs besides tuition",
+          "text": "Books, tools, uniforms, test fees, background checks, shots, and rides add up. Get a list of every cost before you enroll. Aid is usually paid in parts, so ask when it will arrive and whether the school can help with costs you pay first."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Pell Grants",
+          "text": "A Pell Grant (federal money you don't pay back) works at many community colleges and trade schools if the school takes part in federal aid and your program is long enough. For a regular Pell Grant, a certificate program usually needs at least 600 clock hours (class and lab hours), or 16 semester credits, and at least 15 weeks. Associate degrees qualify too. For 2026-27, the most is $7,395, for a full year of full-time study. Shorter programs and part-time students get less. Congress sets the 2027-28 amount."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Workforce Pell for short programs",
+          "text": "Starting July 1, 2026, Workforce Pell Grants can help pay for approved programs of 8 to just under 15 weeks (150 to 599 clock hours). Few programs may be approved yet, and students in them can't get federal loans. The average grant is expected to be about $1,710. Don't count on it until the school confirms in writing. See “Pell Grants and Workforce Pell.”"
+        },
+        {
+          "kind": "steps",
+          "heading": "How to apply for aid",
+          "items": [
+            "Training starts before July 1, 2027? Use the 2026-27 FAFSA (Free Application for Federal Student Aid), open until June 30, 2027. Starting July 1, 2027, or later? Use the 2027-28 FAFSA, open since Sept. 23, 2026. Summer program? Ask the school which to use.",
+            "File as soon as you can, since some state grants are first come, first served. List every school you're thinking about (up to 20 online; you can change the list later). Not a senior yet? You'll usually file in the fall of senior year.",
+            "Free help: 1-800-433-3243 (English or Spanish), or 1-833-610-2590, then press 7 for other languages. For accounts, documents, and parent information, see “The FAFSA, Step by Step.”"
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "If you have to borrow",
+          "items": [
+            "Try grants, apprenticeships, and job center help first. If you must borrow, use federal student loans (you apply with the FAFSA) before other loans.",
+            "When a school says you'll “get federal aid,” ask how much is grants and how much is loans. Some programs of 300 to 599 clock hours can get federal loans but not Pell Grants.",
+            "Be very careful with private loans, loans from the school, and payment plans that charge interest. A federal agency says an income share agreement (paying part of your future income for a set time) is credit, just like a loan.",
+            "A Parent PLUS loan is in your parent's name. Your parent must pay it back, even if you don't finish.",
+            "Before you sign, ask how much you'll owe in total and per month. Rule of thumb: don't borrow more in total than you expect to earn your first year on the job."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "American Job Centers",
+          "text": "American Job Centers can help pay for training through a law called WIOA. This training money can help adults 18 and older, laid-off workers, and people ages 16 to 24 who are out of school and face barriers, like being homeless, in foster care, a parent, or having a disability. Students ages 14 to 21 from low-income families who face barriers may get tutoring, summer jobs, or paid work experience."
+        },
+        {
+          "kind": "list",
+          "items": [
+            "Job center training money works like a voucher (a credit you can only spend on training) for programs on your state's approved list. Ask the center for its list.",
+            "Centers use other grants first and may ask you to apply for a Pell Grant.",
+            "Centers may also help with transportation and child care. If the money pays for apprenticeship classes, it can also cover tools, books, and uniforms. Each area sets its own rules.",
+            "Almost all men ages 18 through 25 must register with Selective Service at https://www.sss.gov. You need to be registered to get job center help.",
+            "Find a center at https://www.careeronestop.org or call 1-877-US-2JOBS (1-877-872-5627). Centers must give you free language help, like an interpreter."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "More ways to pay",
+          "items": [
+            "If you've been in foster care, ask your caseworker about an Education and Training Voucher (up to $5,000 a year) and whether your state waives tuition for foster youth.",
+            "Some employers pay for training. Ask when you apply for jobs.",
+            "Ask your counselor about scholarships for trade programs. Never pay to apply for one.",
+            "If you're at least half-time in training that leads to a recognized credential, your family may get money back at tax time through the American Opportunity Tax Credit. See “Money back at tax time.”"
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Immigrant families",
+          "items": [
+            "If you're a U.S. citizen or an eligible noncitizen, your parents' immigration status doesn't affect your federal aid, and the FAFSA doesn't ask about it. A parent without a Social Security number can still fill out their part.",
+            "Green card holders, refugees, asylees, and some other noncitizens can get federal aid. DACA recipients can't, but the FAFSA may help them get state or school aid.",
+            "Without a Social Security number, you can't fill out the FAFSA, but some states have their own aid form. Ask your counselor.",
+            "Worried about sharing information? Read “Privacy and immigration” in Special situations on the FAFSA, and talk with a licensed immigration lawyer or a DOJ-accredited representative (a trained helper approved by the Justice Department) before you decide.",
+            "Job centers can't treat you unfairly because of citizenship status if you're a citizen or an immigrant allowed to work in the U.S. Rules for immigrants in some education and job programs have been changing, so ask each program what it requires now."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Programs that overpromise",
+          "text": "Red flags: pressure to sign up today; a “guaranteed” job; pay or job promises they won't put in writing; pushing loan papers before you see your grants; asking for your StudentAid.gov username or password; or saying credits will transfer without showing which schools accept them. No papers to read before you commit? Don't enroll."
+        },
+        {
+          "kind": "steps",
+          "heading": "Check a program before you sign",
+          "items": [
+            "Look up the school at https://collegescorecard.ed.gov to see cost, graduation rate, what graduates earn and owe, and whether it's for-profit (run to make money for its owners).",
+            "Make sure it's accredited (checked by an approved group). Some fake schools make up their own accreditor, so check it at https://ope.ed.gov/dapip/. Federal aid works only at accredited schools.",
+            "If the job needs a state license, ask whether the program lets you take the test in your state, and what percent pass. If you have a criminal record, ask whether it could keep you from getting licensed before you pay anything.",
+            "Get in writing what percent of students finish and get jobs in the field, what recent graduates owe, and whether you can cancel and get your money back."
+          ]
+        },
+        {
+          "kind": "tip",
+          "heading": "If a school misled you",
+          "text": "Report it at https://reportfraud.ftc.gov and to your state attorney general. If you used federal aid, also file a complaint at https://studentaid.gov/feedback-center/. If your school closed before you finished, or misled you, you may be able to get your federal student loans canceled. Call 1-800-4-FED-AID."
+        }
+      ],
+      "sources": [
+        {
+          "title": "Apprenticeship.gov: Career Seekers (Registered Apprenticeship is a paid job from day one, wage increases, classroom instruction, national credential)",
+          "url": "https://www.apprenticeship.gov/career-seekers"
+        },
+        {
+          "title": "Apprenticeship.gov",
+          "url": "https://www.apprenticeship.gov/sites/default/files/apprenticeship-requirements-reference-guide.pdf"
+        },
+        {
+          "title": "Apprenticeship.gov: Apprenticeship for Young People (youth apprenticeships in high school, on-the-job learning from age 16, dual enrollment and CTE)",
+          "url": "https://www.apprenticeship.gov/educators/apprenticeship-for-young-people"
+        },
+        {
+          "title": "Apprenticeship.gov: Apprenticeship Job Finder",
+          "url": "https://www.apprenticeship.gov/apprenticeship-job-finder"
+        },
+        {
+          "title": "eCFR 34 CFR 668.8: Eligible program (600 clock hours / 16 semester hours / 15 weeks; 300-599 clock-hour programs eligible for Direct Loans only)",
+          "url": "https://www.ecfr.gov/current/title-34/section-668.8"
+        },
+        {
+          "title": "FSA Partners: (GEN-26-01) 2026-27 Federal Pell Grant Maximum and Minimum Award Amounts ($7,395)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/dear-colleague-letters/2026-01-30/2026-27-federal-pell-grant-maximum-and-minimum-award-amounts"
+        },
+        {
+          "title": "Federal Register",
+          "url": "https://www.federalregister.gov/documents/2026/05/19/2026-10013/accountability-in-higher-education-and-access-through-demand-driven-workforce-pell-pell-grant"
+        },
+        {
+          "title": "FSA Partners: 2027-28 FAFSA Beta Testing Plan (Sept. 23, 2026 update: form now live to the public)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-21/2027-28-fafsa-beta-testing-plan-updated-sept-23-2026"
+        },
+        {
+          "title": "2026-27 FSA Handbook, Application and Verification Guide, Ch. 1",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch1-application-process-fafsa-isir"
+        },
+        {
+          "title": "2026-27 FSA Handbook, Application and Verification Guide, Ch. 2",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch2-filling-out-fafsa-form"
+        },
+        {
+          "title": "2026-27 FSA Handbook, Vol. 1, Ch. 1",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol1/ch1-school-determined-requirements"
+        },
+        {
+          "title": "2026-27 FSA Handbook, Vol. 1, Ch. 2",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol1/ch2-us-citizenship-eligible-noncitizens"
+        },
+        {
+          "title": "CareerOneStop: Find an American Job Center",
+          "url": "https://www.careeronestop.org/LocalHelp/AmericanJobCenters/find-american-job-centers.aspx"
+        }
       ]
     }
   ]

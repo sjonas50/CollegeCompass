@@ -96,7 +96,7 @@ describe("list page", () => {
     expect(t).toContain("2 of 30 spots used");
     expect(t).toContain("Key dates this year");
     expect(t).toContain("The 2027–28 FAFSA opens");
-    expect(t).toContain("By October 1, 2026");
+    expect(t).toContain("September 23, 2026");
     expect(html).toContain('href="https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"');
     expect(html).toContain('href="/colleges"');
     expect(html).toContain('href="/aid/en/comparing-aid-offers"');
