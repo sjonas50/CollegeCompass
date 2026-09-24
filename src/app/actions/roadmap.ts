@@ -18,7 +18,7 @@ const TRY_AGAIN = "We couldn't save that. Please try again.";
 const ADD_STEP_MESSAGES: Record<AddStepError, string> = {
   invalid_text: "Write a short step (up to 140 characters).",
   milestone_not_found: "We couldn't find that roadmap step. Try refreshing the page.",
-  week_full: `This week already has ${MAX_STEPS_PER_WEEK} steps. Remove one to make room for something new.`,
+  week_full: `This week already has ${MAX_STEPS_PER_WEEK} steps. Remove one you haven't finished to make room for something new.`,
   already_added: "That's already on this week's list.",
   not_found: TRY_AGAIN,
 };
@@ -69,11 +69,12 @@ export async function setStepDoneAction(stepId: string, done: boolean): Promise<
   return { ok: true };
 }
 
+/** Removes an unfinished weekly step (finished ones stay, since they count as progress). */
 export async function removeStepAction(stepId: string): Promise<ActionResult> {
   const student = await requireUser(["student"]);
   if (typeof stepId !== "string") return { ok: false, message: TRY_AGAIN };
   const ok = await removeStep(await getDb(), student.id, stepId);
-  if (!ok) return { ok: false, message: TRY_AGAIN };
+  if (!ok) return { ok: false, message: "We couldn't remove that step. Try refreshing the page." };
   refresh();
   return { ok: true };
 }

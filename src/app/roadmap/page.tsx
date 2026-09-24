@@ -11,8 +11,10 @@ import {
   type Roadmap,
   type RoadmapItem,
   buildRoadmap,
+  countedTotal,
   getMilestoneProgress,
   gradeName,
+  gradeProgressLabel,
   milestonesByMonth,
   monthList,
   monthName,
@@ -99,38 +101,28 @@ export default async function RoadmapPage({ searchParams }: PageProps<"/roadmap"
 
 function MainView({ roadmap, gradeProgress, week }: { roadmap: Roadmap; gradeProgress?: GradeProgress; week: WeeklyStep[] }) {
   const weekFull = week.length >= MAX_STEPS_PER_WEEK;
+  const weekAllDone = weekFull && week.every((s) => s.status === "done");
   const weekState = (id: string): WeekState =>
     week.some((s) => s.milestoneId === id) ? "added" : weekFull ? "full" : "can_add";
-  const counted = gradeProgress ? gradeProgress.total - gradeProgress.skipped : 0;
   const month = monthName(roadmap.month);
   const done = roadmap.done.filter((m) => m.status === "done");
   const skipped = roadmap.done.filter((m) => m.status === "skipped");
+  const doneTitle = skipped.length > 0 ? "Done and set aside" : "Done";
   // Undo moves a card out of "Done"; if it was the last one the section goes away too.
   const doneFocus = roadmap.done.length > 1 ? "done-summary" : PAGE_HEADING_ID;
 
   return (
     <>
-      {gradeProgress && counted > 0 && (
-        <div>
-          <p className="text-sm">
-            <strong>{gradeProgress.done}</strong> of {counted} done in {gradeName(roadmap.grade)}
-            {gradeProgress.done > 0 ? ". Nice going!" : "."}
-          </p>
-          <div className="mt-2 h-2 rounded-full bg-border" aria-hidden>
-            <div
-              className="h-2 rounded-full bg-accent"
-              style={{ width: `${Math.max(2, Math.round((gradeProgress.done / counted) * 100))}%` }}
-            />
-          </div>
-        </div>
-      )}
+      {gradeProgress && gradeProgress.total > 0 && <GradeProgressLine grade={roadmap.grade} progress={gradeProgress} />}
 
       <div className="space-y-2">
         <WeeklyStepsCard linkToRoadmap={false} />
         {weekFull && (
           <p id="week-full-note" className="text-sm text-muted">
-            This week&apos;s list is full ({MAX_STEPS_PER_WEEK} steps), so &ldquo;Add to this week&rdquo; is paused. Remove a
-            step if you&apos;d like to swap one in.
+            This week&apos;s list is full ({MAX_STEPS_PER_WEEK} steps), so &ldquo;Add to this week&rdquo; is paused.{" "}
+            {weekAllDone
+              ? "You finished all of them, so there's room again next week."
+              : "Remove a step you haven't finished if you'd like to swap one in."}
           </p>
         )}
       </div>
@@ -186,14 +178,19 @@ function MainView({ roadmap, gradeProgress, week }: { roadmap: Roadmap; gradePro
       )}
 
       {roadmap.done.length > 0 && (
-        <section aria-labelledby="done-summary">
+        <section aria-labelledby="done-heading">
+          {/* A real heading, so the finished cards (h3) sit under "Done" in the heading outline
+              rather than under whichever section came before. The summary is only the toggle. */}
+          <h2 id="done-heading" className="sr-only">
+            {doneTitle}
+          </h2>
           <details className="group rounded-xl border border-border bg-surface">
             <summary
               id="done-summary"
               className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 font-medium [&::-webkit-details-marker]:hidden"
             >
               <span>
-                Done{skipped.length > 0 ? " and set aside" : ""} ({roadmap.done.length})
+                {doneTitle} ({roadmap.done.length})
               </span>
               <span aria-hidden className="text-muted transition-transform group-open:rotate-180">
                 ▾
@@ -220,6 +217,34 @@ function MainView({ roadmap, gradeProgress, week }: { roadmap: Roadmap; gradePro
         </section>
       )}
     </>
+  );
+}
+
+/** "2 of 3 done in 10th grade, not counting 2 set aside." Set-aside items never count against anyone. */
+function GradeProgressLine({ grade, progress }: { grade: number; progress: GradeProgress }) {
+  const counted = countedTotal(progress);
+  if (counted === 0) {
+    return (
+      <p className="text-sm">
+        You&apos;ve set aside everything on your {gradeName(grade)} roadmap for now. You can bring anything back from
+        &ldquo;Done and set aside&rdquo; below.
+      </p>
+    );
+  }
+  return (
+    <div>
+      <p className="text-sm">
+        <strong>{progress.done}</strong> of {counted} done in {gradeName(grade)}
+        {progress.skipped > 0 && `, not counting ${progress.skipped} set aside`}
+        {progress.done > 0 ? ". Nice going!" : "."}
+      </p>
+      <div className="mt-2 h-2 rounded-full bg-border" aria-hidden>
+        <div
+          className="h-2 rounded-full bg-accent"
+          style={{ width: `${Math.max(2, Math.round((progress.done / counted) * 100))}%` }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -373,7 +398,6 @@ function GradeNav({ grades, current, viewing }: { grades: GradeProgress[]; curre
         {grades.map((g) => {
           const isCurrent = g.grade === current;
           const isViewing = g.grade === viewing;
-          const counted = g.total - g.skipped;
           return (
             <li key={g.grade}>
               <Link
@@ -387,7 +411,7 @@ function GradeNav({ grades, current, viewing }: { grades: GradeProgress[]; curre
                   {gradeName(g.grade)}
                   {isCurrent && <span className="font-normal text-muted"> (you&apos;re here)</span>}
                 </span>
-                <span className="text-xs text-muted">{counted > 0 ? `${g.done} of ${counted} done` : "Nothing to track yet"}</span>
+                <span className="text-xs text-muted">{gradeProgressLabel(g)}</span>
               </Link>
             </li>
           );

@@ -76,10 +76,11 @@ export type MilestoneStatus = "open" | "done" | "skipped";
 export type ProgressMap = ReadonlyMap<string, "done" | "skipped">;
 
 /**
- * - now: one of its months is this month
+ * - now: one of its months is this month, or it has no months (it fits any time of year, so it
+ *   is always something the student can act on, including at the very end of the year)
  * - coming_up: one of its months is in the next two months (running past July into the next
  *   grade's August and September during the summer)
- * - later: its next month is further off this school year (also milestones with no months)
+ * - later: its next month is further off this school year
  * - earlier: all of its months have passed this school year
  */
 export type Timing = "now" | "coming_up" | "later" | "earlier";
@@ -95,7 +96,9 @@ export function milestoneTiming(m: Milestone, grade: number, date: Date): Timing
 function placement(m: Milestone, grade: number, current: number): { timing: Timing; key: number } | null {
   const idx = yearIndexes(m);
   if (m.grade === grade) {
-    if (idx.length === 0) return { timing: "later", key: 12 };
+    // No (valid) months: relevant all year. Never "later", which would hide it in June and July
+    // and let it vanish unseen when the grade advances.
+    if (idx.length === 0) return { timing: "now", key: current };
     if (idx.includes(current)) return { timing: "now", key: current };
     const soon = idx.find((x) => x > current && x <= current + 2);
     if (soon !== undefined) return { timing: "coming_up", key: soon };
@@ -196,6 +199,26 @@ export function progressByGrade(library: readonly Milestone[], progress: Progres
     });
   }
   return grades;
+}
+
+/**
+ * Milestones that count toward a grade's progress: everything except what the student set aside,
+ * so "Not for me" never counts against them.
+ */
+export function countedTotal(g: GradeProgress): number {
+  return g.total - g.skipped;
+}
+
+/**
+ * Short progress label for a grade, e.g. "2 of 3 done · 2 set aside". Set-aside milestones are
+ * left out of the count but named, so the numbers still add up to the grade's full list.
+ */
+export function gradeProgressLabel(g: GradeProgress): string {
+  if (g.total === 0) return "Nothing to track yet";
+  const counted = countedTotal(g);
+  if (counted === 0) return g.skipped === 1 ? "Set aside for now" : `All ${g.skipped} set aside for now`;
+  const done = `${g.done} of ${counted} done`;
+  return g.skipped > 0 ? `${done} · ${g.skipped} set aside` : done;
 }
 
 export type MonthGroup = { month: number | null; items: (Milestone & { status: MilestoneStatus })[] };
@@ -333,7 +356,7 @@ export async function roadmapSummary(
     now: all.filter((m) => m.timing === "now").map(brief),
     comingUp: all.filter((m) => m.timing === "coming_up").map(brief),
     catchUp: (roadmap?.catchUp ?? []).map((m) => ({ id: m.id, title: m.title })),
-    gradeProgress: gradeCounts ? { done: gradeCounts.done, total: gradeCounts.total - gradeCounts.skipped } : null,
+    gradeProgress: gradeCounts ? { done: gradeCounts.done, total: countedTotal(gradeCounts) } : null,
     thisWeek: steps.map((s) => ({ text: scrubPii(s.text, knownNames), done: s.status === "done", milestoneId: s.milestoneId })),
     weeklyStepLimit: MAX_STEPS_PER_WEEK,
   };

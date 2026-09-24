@@ -68,6 +68,18 @@ export function WeeklyStepsList({
     });
   }
 
+  function added(text: string, left: number) {
+    setError(undefined);
+    // The last step of the week replaces the add form with a note, so move focus to the heading
+    // instead of letting it drop to the top of the page.
+    if (left <= 0) document.getElementById(headingId)?.focus();
+    setStatus(
+      left > 0
+        ? `Added “${text}” to this week. Room for ${left} more.`
+        : `Added “${text}” to this week. That fills this week's list.`,
+    );
+  }
+
   const allDone = shown.length > 0 && shown.every((s) => s.status === "done");
 
   return (
@@ -98,13 +110,16 @@ export function WeeklyStepsList({
                   />
                   <span className={`min-w-0 break-words ${done ? "text-muted line-through" : ""}`}>{step.text}</span>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => remove(step)}
-                  className="min-h-11 shrink-0 rounded-lg px-3 text-sm text-muted underline underline-offset-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
-                >
-                  Remove<span className="sr-only">: {step.text}</span>
-                </button>
+                {/* Finished steps stay: they count toward lifetime progress. Un-check one to remove it. */}
+                {!done && (
+                  <button
+                    type="button"
+                    onClick={() => remove(step)}
+                    className="min-h-11 shrink-0 rounded-lg px-3 text-sm text-muted underline underline-offset-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
+                  >
+                    Remove<span className="sr-only">: {step.text}</span>
+                  </button>
+                )}
               </li>
             );
           })}
@@ -118,12 +133,12 @@ export function WeeklyStepsList({
       )}
 
       {shown.length < max ? (
-        <AddStepForm maxLength={maxLength} remaining={max - shown.length} />
+        <AddStepForm maxLength={maxLength} remaining={max - shown.length} onAdded={added} />
       ) : (
         <p className="mt-3 text-sm text-muted">
           {allDone
             ? `You finished all ${max} steps this week. That's a big deal!`
-            : "That's a full week! To swap something in, remove a step first."}
+            : "That's a full week! To swap something in, remove a step you haven't finished yet."}
         </p>
       )}
 
@@ -142,9 +157,23 @@ export function WeeklyStepsList({
   );
 }
 
-function AddStepForm({ maxLength, remaining }: { maxLength: number; remaining: number }) {
-  const [state, action, pending, values] = useFormAction<AddStepState>(addStepAction, undefined);
+function AddStepForm({
+  maxLength,
+  remaining,
+  onAdded,
+}: {
+  maxLength: number;
+  remaining: number;
+  /** Called after a successful add with the step's text and how many slots are left. */
+  onAdded: (text: string, left: number) => void;
+}) {
+  const [state, action, pending, values] = useFormAction<AddStepState>(async (prev, formData) => {
+    const res = await addStepAction(prev, formData);
+    if (res?.ok) onAdded(String(formData.get("stepText") ?? "").trim(), remaining - 1);
+    return res;
+  }, undefined);
   const failed = state?.ok === false ? state : undefined;
+
   return (
     <form action={action} className="mt-4 space-y-2">
       <FormMessage message={failed?.message} />

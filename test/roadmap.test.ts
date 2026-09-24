@@ -159,8 +159,31 @@ describe("weekly steps", () => {
     expect(await addStep(db, ben, { text: "Ben's first" }, { now })).toMatchObject({ ok: true });
     expect(await addStep(db, ana, { text: "Next week" }, { now: nextWeek })).toMatchObject({ ok: true });
 
-    await removeStep(db, ana, first.id);
+    // Removing an unfinished step makes room again.
+    const open = (await listWeek(db, ana, "2026-09-21")).find((s) => s.status === "open");
+    expect(await removeStep(db, ana, open!.id)).toBe(true);
     expect(await addStep(db, ana, { text: "Room again" }, { now })).toMatchObject({ ok: true });
+  });
+
+  it("keeps finished steps, so removing never takes progress away", async () => {
+    for (const text of ["One", "Two", "Three"]) await addStep(db, ana, { text }, { now });
+    const [first, second] = await listWeek(db, ana, "2026-09-21");
+    await completeStep(db, ana, first.id, now);
+    await completeStep(db, ana, second.id, now);
+    const before = await stepStats(db, ana);
+    expect(before).toEqual({ stepsCompleted: 2, weeksWithProgress: 1 });
+
+    expect(await removeStep(db, ana, first.id)).toBe(false);
+    expect(await removeStep(db, ana, second.id)).toBe(false);
+    expect(await stepStats(db, ana)).toEqual(before);
+    expect(await listWeek(db, ana, "2026-09-21")).toHaveLength(3);
+    // Still a full week: the finished steps hold their places.
+    expect(await addStep(db, ana, { text: "Four" }, { now })).toEqual({ ok: false, error: "week_full" });
+
+    // A step checked by mistake can be un-checked, and then removed.
+    expect(await reopenStep(db, ana, first.id)).toBe(true);
+    expect(await removeStep(db, ana, first.id)).toBe(true);
+    expect(await stepStats(db, ana)).toEqual({ stepsCompleted: 1, weeksWithProgress: 1 });
   });
 
   it("holds the limit when several adds arrive at once", async () => {
@@ -278,6 +301,19 @@ describe("roadmapSummary", () => {
 
     const unknown = await roadmapSummary(db, ana, null, now, LIBRARY);
     expect(unknown).toMatchObject({ grade: null, graduated: false, now: [], gradeProgress: null, thisWeek: [] });
+  });
+
+  it("includes any-time milestones in now, even at the end of the year", async () => {
+    const library = [...LIBRARY, ms("g10-any", 10, [], "Keep a list of your activities")];
+    const july = await roadmapSummary(db, ana, 10, new Date("2027-07-20T12:00:00Z"), library);
+    expect(july.now).toEqual([{ id: "g10-any", title: "Keep a list of your activities", status: "open" }]);
+  });
+
+  it("leaves set-aside milestones out of grade progress", async () => {
+    for (const id of ["g10-aug", "g10-sep", "g10-sep-2", "g10-oct", "g10-mar"]) {
+      await markMilestone(db, ana, id, "skipped", { library: LIBRARY });
+    }
+    expect((await roadmapSummary(db, ana, 10, now, LIBRARY)).gradeProgress).toEqual({ done: 0, total: 0 });
   });
 
   it("looks ahead to next grade in the summer", async () => {

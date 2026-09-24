@@ -26,7 +26,10 @@ export type WeeklyStep = {
 };
 
 export type StepStats = {
-  /** Every step ever finished. Never goes down because a week was missed. */
+  /**
+   * Every step ever finished. Never goes down because a week was missed, and finished steps
+   * can't be removed; only un-checking a step (a correction) takes it back out.
+   */
   stepsCompleted: number;
   /** Weeks with at least one finished step (not necessarily in a row). */
   weeksWithProgress: number;
@@ -126,11 +129,17 @@ export async function reopenStep(db: Db, userId: string, stepId: string) {
   return updateOwnStep(db, userId, stepId, { status: "open", completedAt: null });
 }
 
+/**
+ * Removes one of the student's own unfinished steps. Finished steps stay: they are the lifetime
+ * progress in `stepStats`, and removing one would quietly take progress away. (A step checked
+ * by mistake can be un-checked with `reopenStep` first.) False if the step doesn't exist, isn't
+ * theirs, or is already finished.
+ */
 export async function removeStep(db: Db, userId: string, stepId: string) {
   if (!StepId.safeParse(stepId).success) return false;
   const rows = await db
     .delete(weeklySteps)
-    .where(and(eq(weeklySteps.id, stepId), eq(weeklySteps.userId, userId)))
+    .where(and(eq(weeklySteps.id, stepId), eq(weeklySteps.userId, userId), eq(weeklySteps.status, "open")))
     .returning({ id: weeklySteps.id });
   return rows.length > 0;
 }

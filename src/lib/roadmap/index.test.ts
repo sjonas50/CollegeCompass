@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildRoadmap,
+  countedTotal,
+  gradeProgressLabel,
   milestoneTiming,
   milestonesByMonth,
   monthList,
@@ -61,11 +63,12 @@ describe("buildRoadmap", () => {
   it("sorts a grade's milestones into now, coming up, catch up and later", () => {
     const r = buildRoadmap(LIBRARY, 10, at("2026-10-15"));
     expect(r).toMatchObject({ grade: 10, month: 10, summer: false, graduated: false, comingUpMonths: [11, 12] });
-    expect(ids(r.now)).toEqual(["sep-oct", "oct"]);
+    // A milestone with no months fits any time, so it's always something to do now.
+    expect(ids(r.now)).toEqual(["sep-oct", "oct", "anytime"]);
     expect(ids(r.comingUp)).toEqual(["nov", "dec"]);
     expect(ids(r.catchUp)).toEqual(["aug"]);
     // A milestone that comes around again later this year isn't something to catch up on.
-    expect(ids(r.later)).toEqual(["jan", "sep-and-apr", "may", "jul", "anytime"]);
+    expect(ids(r.later)).toEqual(["jan", "sep-and-apr", "may", "jul"]);
     expect(r.done).toEqual([]);
   });
 
@@ -74,7 +77,7 @@ describe("buildRoadmap", () => {
     const all = [...r.now, ...r.comingUp, ...r.catchUp, ...r.later, ...r.done];
     expect(all.every((m) => m.grade === 10)).toBe(true);
     expect(all).toHaveLength(10);
-    expect(ids(r.items)).toEqual(["aug", "sep-oct", "oct", "nov", "dec", "jan", "sep-and-apr", "may", "jul", "anytime"]);
+    expect(ids(r.items)).toEqual(["aug", "sep-oct", "oct", "anytime", "nov", "dec", "jan", "sep-and-apr", "may", "jul"]);
   });
 
   it("moves done and skipped milestones out of the other sections", () => {
@@ -84,7 +87,7 @@ describe("buildRoadmap", () => {
       ["may", "done"],
     ] as const);
     const r = buildRoadmap(LIBRARY, 10, at("2026-10-15"), progress);
-    expect(ids(r.now)).toEqual(["sep-oct"]);
+    expect(ids(r.now)).toEqual(["sep-oct", "anytime"]);
     expect(r.catchUp).toEqual([]);
     expect(ids(r.later)).not.toContain("may");
     expect(r.done.map((m) => [m.id, m.status])).toEqual([
@@ -98,14 +101,14 @@ describe("buildRoadmap", () => {
   it("wraps from December into January without leaving the school year", () => {
     const r = buildRoadmap(LIBRARY, 10, at("2026-12-01"));
     expect(r.comingUpMonths).toEqual([1, 2]);
-    expect(ids(r.now)).toEqual(["dec"]);
+    expect(ids(r.now)).toEqual(["dec", "anytime"]);
     expect(ids(r.comingUp)).toEqual(["jan"]);
     expect(ids(r.catchUp)).toEqual(["aug", "sep-oct", "oct", "nov"]);
   });
 
   it("treats August as the start of the year", () => {
     const r = buildRoadmap(LIBRARY, 10, at("2026-08-03"));
-    expect(ids(r.now)).toEqual(["aug"]);
+    expect(ids(r.now)).toEqual(["aug", "anytime"]);
     // Ordered by the month that makes them "coming up" (September before October).
     expect(ids(r.comingUp)).toEqual(["sep-oct", "sep-and-apr", "oct"]);
     expect(r.catchUp).toEqual([]);
@@ -118,9 +121,11 @@ describe("buildRoadmap", () => {
     expect(ids(june.comingUp)).toEqual(["jul", "g11-aug"]);
     expect(june.comingUp[1]).toMatchObject({ grade: 11, timing: "coming_up" });
     expect(ids(june.catchUp)).toContain("may");
+    expect(june.later).toEqual([]);
 
     const july = buildRoadmap(LIBRARY, 10, at("2027-07-10"));
-    expect(ids(july.now)).toEqual(["jul"]);
+    expect(ids(july.now)).toEqual(["jul", "anytime"]);
+    expect(july.later).toEqual([]);
     expect(july.comingUpMonths).toEqual([8, 9]);
     expect(ids(july.comingUp)).toEqual(["g11-aug"]);
   });
@@ -144,9 +149,24 @@ describe("buildRoadmap", () => {
   it("ignores invalid months and handles an empty library", () => {
     const lib = [ms("bad", 10, [0, 13]), ms("half", 10, [13, 10])];
     const r = buildRoadmap(lib, 10, at("2026-10-15"));
-    expect(ids(r.later)).toEqual(["bad"]);
-    expect(ids(r.now)).toEqual(["half"]);
+    // No valid months is the same as no months: relevant any time.
+    expect(ids(r.now)).toEqual(["bad", "half"]);
+    expect(r.later).toEqual([]);
     expect(buildRoadmap([], 9, at("2026-10-15")).now).toEqual([]);
+  });
+
+  it("keeps any-time milestones in Right now all year, never in Later or Catch up", () => {
+    const anytime = ms("anytime", 10, []);
+    for (let month = 1; month <= 12; month++) {
+      const date = new Date(Date.UTC(2027, month - 1, 15, 12));
+      expect(milestoneTiming(anytime, 10, date)).toBe("now");
+      const r = buildRoadmap([anytime], 10, date);
+      expect(ids(r.now)).toEqual(["anytime"]);
+    }
+    // Next grade's any-time items wait for next grade rather than joining the summer look-ahead.
+    expect(milestoneTiming(ms("g11-anytime", 11, []), 10, at("2027-07-10"))).toBeNull();
+    // Done or set aside still wins.
+    expect(ids(buildRoadmap([anytime], 10, at("2027-07-10"), new Map([["anytime", "done"]])).done)).toEqual(["anytime"]);
   });
 
   it("uses the UTC month", () => {
@@ -170,6 +190,24 @@ describe("progressByGrade", () => {
     expect(grades.find((g) => g.grade === 10)).toEqual({ grade: 10, done: 2, skipped: 1, total: 10 });
     expect(grades.find((g) => g.grade === 9)).toEqual({ grade: 9, done: 1, skipped: 0, total: 1 });
     expect(grades.find((g) => g.grade === 7)).toEqual({ grade: 7, done: 0, skipped: 0, total: 0 });
+  });
+});
+
+describe("gradeProgressLabel", () => {
+  const g = (done: number, skipped: number, total: number) => ({ grade: 10, done, skipped, total });
+
+  it("leaves set-aside milestones out of the count but still names them", () => {
+    expect(countedTotal(g(2, 2, 5))).toBe(3);
+    expect(gradeProgressLabel(g(0, 0, 5))).toBe("0 of 5 done");
+    expect(gradeProgressLabel(g(2, 0, 5))).toBe("2 of 5 done");
+    expect(gradeProgressLabel(g(2, 2, 5))).toBe("2 of 3 done · 2 set aside");
+    expect(gradeProgressLabel(g(3, 2, 5))).toBe("3 of 3 done · 2 set aside");
+  });
+
+  it("only says there's nothing to track when the grade has no milestones", () => {
+    expect(gradeProgressLabel(g(0, 0, 0))).toBe("Nothing to track yet");
+    expect(gradeProgressLabel(g(0, 4, 4))).toBe("All 4 set aside for now");
+    expect(gradeProgressLabel(g(0, 1, 1))).toBe("Set aside for now");
   });
 });
 
