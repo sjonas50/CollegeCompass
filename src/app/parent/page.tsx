@@ -7,47 +7,63 @@ import { reminderGoesToParent } from "@/lib/reminders";
 import { gradeQuestion } from "@/lib/auth/age";
 import { getDb } from "@/db";
 import { Button, ButtonLink, Card, Notice, PageHeading } from "@/components/ui";
-import { listChildren } from "@/lib/accounts";
+import { aidGuideHref } from "@/lib/aid-guide/navigation";
 import { requireUser } from "@/lib/auth/dal";
+import { parentDashboard } from "@/lib/parent-dashboard";
+import { ChildProgressSummary } from "./child-progress";
 
 export const metadata: Metadata = { title: "Parent" };
 
+function gradeText(grade: number | null) {
+  if (grade === null) return "Grade not set";
+  return grade > 12 ? "Finished high school" : `Grade ${grade}`;
+}
+
 export default async function ParentHome({ searchParams }: PageProps<"/parent">) {
   const parent = await requireUser(["parent"]);
-  const children = await listChildren(await getDb(), parent.id);
-  const { added, deleted, saved, stale } = await searchParams;
+  const children = await parentDashboard(await getDb(), parent.id);
+  const { added, deleted, saved, stale, linked } = await searchParams;
 
   return (
     <>
-      <PageHeading title={`Hi, ${parent.displayName}`} lead="Your children's accounts and data." />
+      <PageHeading title={`Hi, ${parent.displayName}`} lead="Follow your children's progress and manage their accounts." />
       <div className="space-y-4">
         {added && <Notice>Account created. Share the username and password with your child.</Notice>}
+        {linked && <Notice>You&apos;re linked. You can follow your teen&apos;s progress here now.</Notice>}
         {deleted && <Notice>The account and all of its data were deleted.</Notice>}
         {saved && <Notice>Settings saved.</Notice>}
         {stale && <Notice>The school year changed since that page loaded, so we didn&apos;t save the grade. Please pick it again.</Notice>}
+        {children.length > 0 && (
+          <p className="rounded-lg border border-border px-3 py-2 text-sm">
+            <span className="font-medium">Conversations with the AI counselor stay private to your child.</span> You see
+            their progress and plans here, not what they talk about.
+          </p>
+        )}
         {children.length === 0 && (
           <Card>
-            <p className="text-muted">No children added yet.</p>
+            <p className="font-medium">No children added yet.</p>
+            <p className="mt-1 text-sm text-muted">
+              Add your child below. If your teen already has an account, ask them to invite you from their dashboard.
+            </p>
           </Card>
         )}
         {children.map((child) => (
           <Card key={child.id}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="font-medium">{child.displayName}</h2>
-                <p className="text-sm text-muted">
-                  {child.grade === null ? "Grade not set" : child.grade > 12 ? "Finished high school" : `Grade ${child.grade}`}
-                  {child.username && <> · signs in as <span className="font-mono">{child.username}</span></>}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <ButtonLink href={`/api/parent/children/${child.id}/export`} variant="secondary" prefetch={false}>
-                  Export data
-                </ButtonLink>
-                <ButtonLink href={`/parent/children/${child.id}/delete`} variant="secondary">
-                  Delete
-                </ButtonLink>
-              </div>
+            <div>
+              <h2 className="text-lg font-medium">{child.displayName}</h2>
+              <p className="text-sm text-muted">
+                {gradeText(child.grade)}
+                {child.username && <> · signs in as <span className="font-mono">{child.username}</span></>}
+              </p>
+            </div>
+            <ChildProgressSummary name={child.displayName} progress={child.progress} />
+            <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
+              <ButtonLink href={`/api/parent/children/${child.id}/export`} variant="secondary" prefetch={false}>
+                Export data
+              </ButtonLink>
+              <ButtonLink href={`/parent/children/${child.id}/delete`} variant="secondary">
+                Delete
+              </ButtonLink>
             </div>
             <details className="mt-3 border-t border-border pt-3">
               <summary className="min-h-11 cursor-pointer content-center text-sm font-medium">Settings</summary>
@@ -74,6 +90,29 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
         ))}
         <ButtonLink href="/parent/children/new">Add a child</ButtonLink>
       </div>
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <Card>
+          <h2 className="font-medium">Paying for college</h2>
+          <p className="mt-1 text-sm text-muted">
+            A plain-language guide to financial aid: the FAFSA, grants, loans, and how to compare offers.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <ButtonLink href={aidGuideHref("en")} variant="secondary">Read the guide</ButtonLink>
+            <ButtonLink href={aidGuideHref("es")} variant="secondary" hrefLang="es" lang="es">
+              Guía en español
+            </ButtonLink>
+          </div>
+        </Card>
+        <Card>
+          <h2 className="font-medium">Plan and billing</h2>
+          <p className="mt-1 text-sm text-muted">See or change your family&apos;s plan. If cost is a problem, you can ask for free access there.</p>
+          <div className="mt-3">
+            <ButtonLink href="/account/billing" variant="secondary">Plan and billing</ButtonLink>
+          </div>
+        </Card>
+      </div>
+
       <div className="mt-10 flex flex-wrap gap-3 border-t border-border pt-6">
         <form action={logoutAction}>
           <Button type="submit" variant="secondary">Sign out</Button>
