@@ -16,13 +16,21 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   return session?.user ?? null;
 });
 
+/**
+ * The signed-in user, or a redirect to sign in. With `roles`, other roles are sent to their own home
+ * page. Without `roles`, any family account passes but staff admins don't: they have their own pages
+ * under /admin and should never end up in a student's or parent's pages by accident.
+ */
 export async function requireUser(roles?: SessionUser["role"][]): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (roles && !roles.includes(user.role)) redirect(homePathFor(user));
+  const allowed = roles ? roles.includes(user.role) : user.role !== "admin";
+  if (!allowed) redirect(homePathFor(user));
   return user;
 }
 
 export function homePathFor(user: Pick<SessionUser, "role">) {
-  return user.role === "parent" ? "/parent" : "/dashboard";
+  if (user.role === "parent") return "/parent";
+  if (user.role === "admin") return "/admin";
+  return "/dashboard";
 }

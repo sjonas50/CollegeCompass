@@ -16,7 +16,8 @@
     "data:check-scorecard": "tsx scripts/check-scorecard.ts",
     "eval:safety": "tsx scripts/eval-safety.ts",
     "check:matching": "tsx scripts/check-matching.ts",
-    "eval:counselor": "tsx scripts/eval-counselor.ts"
+    "eval:counselor": "tsx scripts/eval-counselor.ts",
+    "admin:create": "tsx scripts/create-admin.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
