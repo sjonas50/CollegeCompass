@@ -266,7 +266,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </Card>
       </div>
 
-      <StudentSettings studentId={user.id} grade={user.grade} reminders={reminders} />
+      <StudentSettings studentId={user.id} parentManaged={user.parentManaged} grade={user.grade} reminders={reminders} />
 
       <form action={logoutAction}>
         <button type="submit" className="min-h-11 text-sm text-muted underline">Sign out</button>

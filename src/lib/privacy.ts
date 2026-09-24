@@ -27,9 +27,11 @@ import { exportHouseholdAccess } from "./access/service";
 import { exportParentInvites } from "./invites";
 import { isLinkedParent } from "./accounts";
 import { audit } from "./audit";
+import { verifyPassword } from "./auth/password";
 import { endPlanWithoutParent } from "./billing/checkout";
 import { runOrQueueCleanup } from "./billing/cleanup";
 import { type Stripe, getStripe } from "./billing/stripe";
+import { consumeRateLimit } from "./rate-limit";
 
 /**
  * AI features whose usage records show when a student talked with the AI counselor (each message
@@ -179,12 +181,6 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
  */
 export type DeletionDeps = { stripe?: Stripe | null };
 
-/**
- * Permanently deletes a student and everything tied to them. Sessions and safety events cascade;
- * AI usage rows (token counts and cost, no content) stay for spend history with no link back to the
- * child, as do consent records and audit entries. If the
- * student was the last person in their household, the household goes too (see deleteEmptyHousehold).
- */
 /** Safety events nobody has reviewed yet, read before their students are deleted. */
 async function unreviewedSafetyEvents(db: Db, studentIds: string[]) {
   if (!studentIds.length) return [];
@@ -204,6 +200,12 @@ async function auditDeletedUnreviewed(db: Db, events: Awaited<ReturnType<typeof 
   }
 }
 
+/**
+ * Permanently deletes a student and everything tied to them. Sessions and safety events cascade;
+ * AI usage rows (token counts and cost, no content) stay for spend history with no link back to the
+ * child, as do consent records and audit entries. If the
+ * student was the last person in their household, the household goes too (see deleteEmptyHousehold).
+ */
 export async function deleteStudent(db: Db, requesterId: string, studentId: string, deps: DeletionDeps = {}) {
   if (requesterId !== studentId && !(await isLinkedParent(db, requesterId, studentId))) {
     return false;
@@ -218,6 +220,38 @@ export async function deleteStudent(db: Db, requesterId: string, studentId: stri
   await auditDeletedUnreviewed(db, unreviewed);
   await deleteEmptyHousehold(db, deleted[0].householdId, deps);
   return true;
+}
+
+export type DeleteOwnAccountError = "not_found" | "parent_managed" | "rate_limited" | "wrong_password";
+
+/** Password tries for deleting one's own account, per account. */
+export const DELETE_OWN_ACCOUNT_LIMIT = { count: 5, windowMs: 15 * 60_000 };
+
+/**
+ * A student deleting their own account, with everything in it (see deleteStudent). Only teens who
+ * own their account can: a child a parent set up under 13 (parentManaged) is deleted by that
+ * parent. The password is asked again because a family or library computer may be left signed
+ * in, and tries are limited like sign-in.
+ */
+export async function deleteOwnStudentAccount(
+  db: Db,
+  studentId: string,
+  password: string,
+  deps: DeletionDeps & { now?: Date } = {},
+): Promise<{ ok: true } | { ok: false; error: DeleteOwnAccountError }> {
+  const [student] = await db
+    .select({ passwordHash: users.passwordHash, parentManaged: users.parentManaged })
+    .from(users)
+    .where(and(eq(users.id, studentId), eq(users.role, "student")));
+  if (!student) return { ok: false, error: "not_found" };
+  if (student.parentManaged) return { ok: false, error: "parent_managed" };
+  const { count, windowMs } = DELETE_OWN_ACCOUNT_LIMIT;
+  if (!(await consumeRateLimit(db, `delete-account:${studentId}`, count, windowMs, deps.now))) {
+    return { ok: false, error: "rate_limited" };
+  }
+  if (!(await verifyPassword(student.passwordHash, password))) return { ok: false, error: "wrong_password" };
+  const deleted = await deleteStudent(db, studentId, studentId, { stripe: deps.stripe });
+  return deleted ? { ok: true } : { ok: false, error: "not_found" };
 }
 
 /**

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { setMyGradeAction, setMyRemindersAction } from "@/app/actions/settings";
 import { Button, ButtonLink, gradeOptionLabel } from "@/components/ui";
 import { MAX_GRADE, gradeQuestion, schoolYearOf } from "@/lib/auth/age";
@@ -42,8 +43,21 @@ export function GradeSettingSelect({ id, grade }: { id: string; grade: number | 
   );
 }
 
-/** Small settings panel for the student dashboard: grade correction, reminder emails and a copy of their data. */
-export function StudentSettings({ studentId, grade, reminders }: { studentId: string; grade: number | null; reminders: ReminderSetting }) {
+/**
+ * Small settings panel for the student dashboard: grade correction, reminder emails, a copy of
+ * their data, and deleting the account (a child a parent set up under 13 is sent to that parent).
+ */
+export function StudentSettings({
+  studentId,
+  parentManaged,
+  grade,
+  reminders,
+}: {
+  studentId: string;
+  parentManaged: boolean;
+  grade: number | null;
+  reminders: ReminderSetting;
+}) {
   const q = gradeQuestion();
   return (
     <details className="rounded-xl border border-border bg-surface p-4">
@@ -89,6 +103,15 @@ export function StudentSettings({ studentId, grade, reminders }: { studentId: st
               Download my data
             </ButtonLink>
           </div>
+          <p className="mt-3 text-sm">
+            {parentManaged ? (
+              "Your parent or guardian set up your account, so they can delete it from their parent page."
+            ) : (
+              <Link href="/account/delete" className="inline-flex min-h-11 items-center text-danger underline">
+                Delete my account
+              </Link>
+            )}
+          </p>
         </div>
       </div>
     </details>
