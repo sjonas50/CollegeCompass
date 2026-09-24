@@ -11,7 +11,18 @@ export type AuditAction =
   | "student.created_by_parent"
   | "student.exported"
   | "student.deleted"
-  | "parent.deleted";
+  | "parent.deleted"
+  | "access.trial_started"
+  | "access.free_access_granted"
+  | "access.granted_by_staff"
+  | "billing.checkout_started"
+  | "billing.subscription_changed"
+  | "billing.customer_deleted"
+  | "parent_invite.sent"
+  | "parent_invite.accepted"
+  | "assessment.imported"
+  | "safety.reviewed"
+  | "admin.created";
 
 /** Records who did what. Metadata must never contain personal data: it outlives deletion. */
 export async function audit(

@@ -16,8 +16,9 @@ const EnvSchema = z
     CONSENT_REQUEST_TTL_DAYS: z.coerce.number().int().min(1).max(30).default(7),
 
     EMAIL_FROM: z.string().default("College Compass <no-reply@localhost>"),
-    // "log" prints emails to the server console (development only).
-    EMAIL_TRANSPORT: z.enum(["log"]).default("log"),
+    // "log" prints emails to the server console (development only); "resend" sends through Resend.
+    EMAIL_TRANSPORT: z.enum(["log", "resend"]).default("log"),
+    RESEND_API_KEY: z.string().optional(),
     CRON_SECRET: z.string().min(16).optional(),
 
     ANTHROPIC_API_KEY: z.string().optional(),
@@ -28,6 +29,17 @@ const EnvSchema = z
     AI_MODEL_COUNSELOR: z.string().default("claude-opus-5"),
     // Per-student monthly AI spend ceiling, in US dollars.
     AI_MONTHLY_BUDGET_USD: z.coerce.number().positive().default(3),
+
+    // Access and billing. Every new household gets a free trial; after it, a parent's subscription
+    // or the free-access path (self-report, no documents) keeps full access. Without Stripe keys,
+    // paid checkout is off and families can still use the trial and free access.
+    TRIAL_DAYS: z.coerce.number().int().min(0).max(90).default(14),
+    FREE_ACCESS_MONTHS: z.coerce.number().int().min(1).max(24).default(12),
+    STRIPE_SECRET_KEY: z.string().optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().optional(),
+    // Stripe Price ids for the family plan (prices are set after the pilot).
+    STRIPE_PRICE_MONTHLY: z.string().optional(),
+    STRIPE_PRICE_ANNUAL: z.string().optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== "production") return;
@@ -43,6 +55,14 @@ const EnvSchema = z
     }
     if (env.EMAIL_TRANSPORT === "log") {
       ctx.addIssue({ code: "custom", path: ["EMAIL_TRANSPORT"], message: "configure a real email provider" });
+    }
+    if (env.EMAIL_TRANSPORT === "resend" && !env.RESEND_API_KEY) {
+      ctx.addIssue({ code: "custom", path: ["RESEND_API_KEY"], message: "required when EMAIL_TRANSPORT is resend" });
+    }
+    if (env.STRIPE_SECRET_KEY) {
+      for (const key of ["STRIPE_WEBHOOK_SECRET", "STRIPE_PRICE_MONTHLY"] as const) {
+        if (!env[key]) ctx.addIssue({ code: "custom", path: [key], message: "required when STRIPE_SECRET_KEY is set" });
+      }
     }
     if (!env.CRON_SECRET) {
       ctx.addIssue({ code: "custom", path: ["CRON_SECRET"], message: "required in production" });

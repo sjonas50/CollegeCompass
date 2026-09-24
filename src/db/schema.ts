@@ -196,6 +196,8 @@ export const safetyCategoryEnum = pgEnum("safety_category", [
 
 export const safetySeverityEnum = pgEnum("safety_severity", ["low", "medium", "high", "imminent"]);
 
+export type SafetyReviewOutcome = "no_action" | "followed_up" | "escalated";
+
 /** Human review queue for concerning student messages. Deleted with the student. */
 export const safetyEvents = pgTable(
   "safety_events",
@@ -210,6 +212,9 @@ export const safetyEvents = pgTable(
     sources: jsonb("sources").$type<string[]>().notNull(),
     excerpt: text("excerpt").notNull(),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    reviewedByUserId: uuid("reviewed_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    // What the reviewer did. Notes stay with the event and are deleted with the student.
+    reviewOutcome: text("review_outcome").$type<SafetyReviewOutcome>(),
     reviewNote: text("review_note"),
     createdAt: createdAt(),
   },
@@ -656,4 +661,87 @@ export const collegeList = pgTable(
     index("college_list_user_idx").on(t.userId),
     uniqueIndex("college_list_user_unit_uq").on(t.userId, t.unitId),
   ],
+);
+
+// ---------------------------------------------------------------------------
+// Access and billing (Phase 4). Access belongs to a household: every student in it shares the
+// trial, subscription or free access. No payment details are stored; Stripe holds those.
+// ---------------------------------------------------------------------------
+
+export const accessKindEnum = pgEnum("access_kind", ["trial", "free_access", "sponsored", "comp"]);
+export type AccessKind = (typeof accessKindEnum.enumValues)[number];
+
+/**
+ * Periods of full access other than a paid subscription: the 14-day trial, the self-reported
+ * free-access path (no documents), sponsored seats and staff comps. `endsAt` null means no end.
+ */
+export const accessGrants = pgTable(
+  "access_grants",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    householdId: uuid("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    kind: accessKindEnum("kind").notNull(),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull().defaultNow(),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    // Who asked for it (a parent or teen for free access, staff for comps). Kept only as a link.
+    grantedByUserId: uuid("granted_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("access_grants_household_idx").on(t.householdId, t.endsAt)],
+);
+
+export const subscriptionStatusEnum = pgEnum("subscription_status", [
+  "incomplete",
+  "incomplete_expired",
+  "trialing",
+  "active",
+  "past_due",
+  "canceled",
+  "unpaid",
+  "paused",
+]);
+export type SubscriptionStatus = (typeof subscriptionStatusEnum.enumValues)[number];
+
+/** A household's Stripe customer and subscription, as last reported by Stripe webhooks. */
+export const billingAccounts = pgTable("billing_accounts", {
+  householdId: uuid("household_id")
+    .primaryKey()
+    .references(() => households.id, { onDelete: "cascade" }),
+  stripeCustomerId: text("stripe_customer_id").notNull().unique(),
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  status: subscriptionStatusEnum("status"),
+  plan: text("plan").$type<"monthly" | "annual">(),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  createdAt: createdAt(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Stripe webhook events already applied, so a retried delivery changes nothing. */
+export const stripeEvents = pgTable("stripe_events", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * A student's invitation for a parent or guardian to link to their account (for teens who
+ * signed up on their own). Only a hash of the token is kept, and not the email address.
+ */
+export const parentInvites = pgTable(
+  "parent_invites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    studentUserId: uuid("student_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    acceptedByUserId: uuid("accepted_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("parent_invites_student_idx").on(t.studentUserId)],
 );
