@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
   title: { default: "College Compass", template: "%s · College Compass" },
   description:
-    "Discover careers that fit you and build a grade-by-grade plan for college — for students in grades 7–12.",
+    "An AI guidance counselor for students in grades 7–12: find careers that fit, follow a grade-by-grade plan for college and career, and take small steps each week.",
 };
 
 const FOOTER_LINKS = [
@@ -35,21 +35,35 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const lang = documentLang((await headers()).get(PAGE_LANG_HEADER));
   return (
     <html lang={lang} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col font-sans">
+      {/* A page opts into full width (for full-bleed sections) with a data-wide element at its root. */}
+      <body className="group/body flex min-h-full flex-col font-sans">
         <a href="#main" lang={SITE_LANG} className="sr-only focus:not-sr-only focus:absolute focus:m-2 focus:rounded focus:bg-surface focus:p-2">
           Skip to content
         </a>
         <header lang={SITE_LANG} className="border-b border-border bg-surface">
-          <div className="mx-auto max-w-3xl px-4 py-2">
-            <div className="flex min-h-11 items-center justify-between">
+          <div className="mx-auto max-w-3xl px-4 py-2 group-has-[[data-wide]]/body:max-w-6xl">
+            <div className="flex min-h-11 items-center justify-between gap-4">
               <Link href={user ? homePathFor(user) : "/"} className="font-semibold tracking-tight">
                 College Compass
               </Link>
+              {!user && (
+                <nav aria-label="Account" className="flex items-center gap-1 text-sm">
+                  <Link href="/login" className="inline-flex min-h-11 items-center rounded-lg px-3 text-muted hover:text-foreground">
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/#get-started"
+                    className="inline-flex min-h-11 items-center rounded-lg bg-accent px-3 font-medium text-accent-foreground hover:opacity-90"
+                  >
+                    Get started
+                  </Link>
+                </nav>
+              )}
             </div>
             {user?.role === "student" && <StudentNav grade={user.grade} />}
           </div>
         </header>
-        <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
+        <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 has-[[data-wide]]:max-w-none has-[[data-wide]]:p-0">
           {children}
         </main>
         <footer lang={SITE_LANG} className="border-t border-border px-4 py-4 text-center text-sm text-muted">
