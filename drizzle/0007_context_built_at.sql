@@ -1,0 +1,1 @@
+ALTER TABLE "counselor_conversations" ADD COLUMN "context_built_at" timestamp with time zone;

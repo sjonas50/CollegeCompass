@@ -1,34 +1,13 @@
 {
-  "buildCommand": "npm run build",
-  "framework": "nextjs",
-  "installCommand": "npm install",
-  "regions": ["sfo1"],
-  "functions": {
-    "src/app/api/**/*.ts": {
-      "memory": 1024,
-      "maxDuration": 60
-    },
-    "src/middleware.ts": {
-      "runtime": "@vercel/node@2.0.0"
-    }
-  },
-  "headers": [
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
     {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection", 
-          "value": "1; mode=block"
-        }
-      ]
+      "path": "/api/cron/sweep",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-reminders",
+      "schedule": "0 13 * * 1"
     }
   ]
-} 
+}

@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local data (PGlite database, downloaded reference files)
+/.data/
+
+# allow the documented example env file
+!.env.example
+
+# Claude Code worktrees (parallel agent checkouts)
+/.claude/worktrees/

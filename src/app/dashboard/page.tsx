@@ -1,340 +1,276 @@
-'use client';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { logoutAction } from "@/app/actions/auth";
+import { removeNorthStarAction } from "@/app/actions/discover";
+import { StudentSettings } from "@/components/student-settings";
+import { ButtonLink, Card, Notice, PageHeading } from "@/components/ui";
+import { WeeklyStepsCard } from "@/components/weekly-steps";
+import { InviteParentCard } from "@/components/invite-parent";
+import { SavedResultsImport } from "@/components/saved-results-import";
+import { FullAccessFeatures } from "@/app/account/access-ui";
+import { UNLOCK_PATH, describeAccess } from "@/lib/access/describe";
+import { accessFor } from "@/lib/access/guard";
+import { getDb } from "@/db";
+import { INSTRUMENTS, type InstrumentId } from "@/lib/assessments/instruments";
+import { type InstrumentStatus, instrumentStatuses } from "@/lib/assessments/service";
+import { gradeBand } from "@/lib/auth/age";
+import { requireUser } from "@/lib/auth/dal";
+import { computeGpa } from "@/lib/courses/gpa";
+import { listCourses } from "@/lib/courses/service";
+import { listNorthStars } from "@/lib/goals";
+import { buildRoadmap, getMilestoneProgress } from "@/lib/roadmap";
+import { MILESTONES } from "@/lib/roadmap/milestones";
+import { listEntries } from "@/lib/applications/service";
+import { formatDate, usToday } from "@/lib/applications/dates";
+import { deadlineName, dueText } from "@/lib/applications/display";
+import { dueWithin } from "@/lib/applications/timeline";
+import { reminderSettingFor } from "@/lib/reminders";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+export const metadata: Metadata = { title: "Your dashboard" };
 
-interface DashboardData {
-  user: {
-    name: string;
-    grade: number;
-  };
-  completedAssessments: number;
-  totalAssessments: number;
-  recommendedFields: string[];
-  upcomingDeadlines: Array<{
-    id: string;
-    title: string;
-    dueDate: string;
-    type: string;
-  }>;
+const BAND_COPY = {
+  explore: "Grades 7–8 are for exploring. Let's find subjects and careers that light you up.",
+  build: "Grades 9–10 are for building. Let's find a direction and choose classes that fit it.",
+  launch: "Grades 11–12 are for launching. Let's make sure your plans fit who you are.",
+} as const;
+
+const ORDER: InstrumentId[] = ["interests", "personality", "values"];
+
+/** The colleges card lists unsent applications due within this many days. */
+const DASHBOARD_DEADLINE_DAYS = 14;
+
+function statusText(s: InstrumentStatus) {
+  if (s.state === "not_started") return "Not started";
+  if (s.state === "in_progress") return `${s.answered} of ${s.total} answered`;
+  return "Done";
 }
 
-function AssessmentProgressCard({ completed, total }: { completed: number; total: number }) {
-  const progressPercentage = (completed / total) * 100;
+export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
+  const user = await requireUser(["student"]);
+  const { settings } = await searchParams;
+  const db = await getDb();
+  const grade = user.grade ?? 9;
+  const [access, statuses, stars, progress, courses, reminders, list] = await Promise.all([
+    accessFor(user),
+    instrumentStatuses(db, user.id),
+    listNorthStars(db, user.id),
+    getMilestoneProgress(db, user.id),
+    listCourses(db, user.id),
+    reminderSettingFor(db, user.id),
+    listEntries(db, user.id),
+  ]);
+  const roadmap = buildRoadmap(MILESTONES, grade, new Date(), progress);
+  const timely = [...roadmap.now, ...roadmap.catchUp].slice(0, 3);
+  const gpa = computeGpa(courses);
+  const next = ORDER.find((i) => statuses[i].state !== "done");
+  const hasResults = statuses.interests.state === "done";
+  const graduated = grade > 12;
+  const launching = grade >= 11;
+  // Assessments, careers, colleges and the aid guide stay free; the rest needs the family's plan,
+  // the trial or free access.
+  const full = access.full;
+  const accessSummary = describeAccess(access, "student");
+  // The student's own entries, as they typed them (no AI is involved, so nothing is scrubbed). The
+  // deadline tracker is part of the college list, so it needs full access like the list does.
+  const deadlines = full && launching ? dueWithin(list, usToday(), DASHBOARD_DEADLINE_DAYS) : [];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">Assessment Progress</h3>
-      <div className="mb-2 flex justify-between items-center">
-        <span className="text-sm text-gray-600">
-          {completed} of {total} completed
-        </span>
-        <span className="text-sm font-medium text-indigo-600">{progressPercentage}%</span>
-      </div>
-      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-        <div
-          className="bg-indigo-600 h-2.5 rounded-full"
-          style={{ width: `${progressPercentage}%` }}
-        ></div>
-      </div>
-      <Link
-        href="/dashboard/assessment"
-        className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-      >
-        {completed < total ? 'Continue assessments →' : 'View your results →'}
-      </Link>
-    </div>
-  );
-}
+    <div className="space-y-8">
+      <PageHeading
+        title={`Hi, ${user.displayName}!`}
+        lead={graduated ? "Congratulations on finishing high school! Your plans and notes are all still here." : BAND_COPY[gradeBand(grade)]}
+      />
+      {settings === "saved" && <Notice>Settings saved.</Notice>}
+      {settings === "stale" && <Notice>The school year changed since that page loaded, so we didn&apos;t save the grade. Please pick it again.</Notice>}
 
-function RecommendedFieldsCard({ fields }: { fields: string[] }) {
-  return (
-    <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">Recommended Fields of Study</h3>
-      {fields.length > 0 ? (
-        <ul className="space-y-2">
-          {fields.map((field, index) => (
-            <li key={index} className="flex items-start">
-              <span className="flex-shrink-0 h-5 w-5 text-indigo-500">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </span>
-              <span className="ml-2 text-gray-700">{field}</span>
-            </li>
-          ))}
-        </ul>
+      {!full ? (
+        <Card className="space-y-3">
+          <h2 className="font-medium">{accessSummary.headline}</h2>
+          {accessSummary.detail && <p className="text-sm text-muted">{accessSummary.detail}</p>}
+          <FullAccessFeatures heading="Unlock these with your family's plan or free access:" />
+          <ButtonLink href={UNLOCK_PATH}>See how to unlock</ButtonLink>
+        </Card>
       ) : (
-        <p className="text-gray-500 text-sm">
-          Complete your assessments to see recommended fields of study.
-        </p>
-      )}
-      <div className="mt-4">
-        <Link
-          href="/dashboard/academic-plan"
-          className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-        >
-          View detailed recommendations →
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function UpcomingDeadlinesCard({
-  deadlines,
-}: {
-  deadlines: DashboardData['upcomingDeadlines'];
-}) {
-  return (
-    <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">Upcoming Deadlines</h3>
-      {deadlines.length > 0 ? (
-        <ul className="divide-y divide-gray-200">
-          {deadlines.map((deadline) => (
-            <li key={deadline.id} className="py-3">
-              <div className="flex justify-between">
-                <p className="text-sm font-medium text-gray-900">{deadline.title}</p>
-                <span
-                  className={`px-2 py-1 text-xs rounded-full ${
-                    deadline.type === 'application'
-                      ? 'bg-red-100 text-red-800'
-                      : deadline.type === 'assessment'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-green-100 text-green-800'
-                  }`}
-                >
-                  {deadline.type}
-                </span>
-              </div>
-              <p className="text-sm text-gray-500">
-                Due: {new Date(deadline.dueDate).toLocaleDateString()}
-              </p>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-gray-500 text-sm">No upcoming deadlines.</p>
-      )}
-    </div>
-  );
-}
-
-export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [userData, setUserData] = useState<{ name: string; grade: number } | null>(null);
-
-  // Fetch user data
-  useEffect(() => {
-    async function fetchUserData() {
-      try {
-        const response = await fetch('/api/user/profile');
-        if (!response.ok) {
-          throw new Error('Failed to fetch user data');
-        }
-        const data = await response.json();
-        setUserData({
-          name: data.name,
-          grade: data.grade || 9,
-        });
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        // Fallback to demo data if API call fails
-        setUserData({
-          name: 'Student',
-          grade: 11,
-        });
-      }
-    }
-
-    fetchUserData();
-  }, []);
-
-  // Fetch dashboard data
-  useEffect(() => {
-    async function fetchDashboardData() {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await fetch('/api/dashboard/recommendations');
-        if (!response.ok) {
-          throw new Error('Failed to fetch recommendations');
-        }
-
-        const recommendationsData = await response.json();
-        
-        // Combine with user data to create complete dashboard data
-        setData({
-          user: userData || { name: 'Student', grade: 11 },
-          completedAssessments: recommendationsData.completedAssessments || 0,
-          totalAssessments: recommendationsData.totalAssessments || 4,
-          recommendedFields: recommendationsData.recommendedFields || [],
-          upcomingDeadlines: recommendationsData.upcomingDeadlines || [],
-        });
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setError('Failed to load dashboard data. Please try again later.');
-        
-        // Fallback to demo data if API call fails
-        setData({
-          user: userData || { name: 'Student', grade: 11 },
-          completedAssessments: 2,
-          totalAssessments: 4,
-          recommendedFields: [
-            'Computer Science',
-            'Engineering',
-            'Business Administration',
-            'Psychology',
-          ],
-          upcomingDeadlines: [
-            {
-              id: '1',
-              title: 'Complete Interests Assessment',
-              dueDate: '2023-12-01',
-              type: 'assessment',
-            },
-            {
-              id: '2',
-              title: 'Update Academic Plan',
-              dueDate: '2023-12-15',
-              type: 'academic',
-            },
-          ],
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    // Only fetch dashboard data once we have user data
-    if (userData) {
-      fetchDashboardData();
-    }
-  }, [userData]);
-
-  if (isLoading || !data) {
-    return (
-      <div className="flex justify-center items-center min-h-screen -mt-16">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 text-red-800 rounded-md p-4 text-sm">
-          {error}
-        </div>
+        access.sources[0] === "trial" && (
+          <p className="text-sm text-muted">
+            {accessSummary.headline}{" "}
+            <Link href={UNLOCK_PATH} className="underline underline-offset-2">
+              Keep everything after your trial
+            </Link>
+          </p>
+        )
       )}
 
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Welcome back, {data.user.name}!
-        </h1>
-        <p className="text-gray-600">
-          Grade {data.user.grade} • {new Date().toLocaleDateString()}
-        </p>
-      </div>
+      {/* For graduates (no roadmap milestones) the card asks only for their own steps. */}
+      {full && <WeeklyStepsCard />}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <AssessmentProgressCard
-          completed={data.completedAssessments}
-          total={data.totalAssessments}
-        />
-        <RecommendedFieldsCard fields={data.recommendedFields} />
-        <UpcomingDeadlinesCard deadlines={data.upcomingDeadlines} />
-      </div>
+      <InviteParentCard />
 
-      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Your Journey</h3>
-          <span className="text-sm text-gray-500">Grade {data.user.grade}</span>
-        </div>
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center" aria-hidden="true">
-            <div className="w-full border-t border-gray-300"></div>
+      {full && !graduated && (
+        <section>
+          <h2 className="text-lg font-medium">Timely on your roadmap</h2>
+          {timely.length ? (
+            <ul className="mt-3 space-y-2">
+              {timely.map((m) => (
+                <li key={m.id}>
+                  <Link href="/roadmap" className="block rounded-xl border border-border bg-surface p-4 hover:border-accent">
+                    <span className="font-medium">{m.title}</span>
+                    <span className="mt-1 block text-sm text-muted">{m.detail}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-sm text-muted">You&apos;re all caught up for this month. Nice work!</p>
+          )}
+          <div className="mt-3">
+            <ButtonLink href="/roadmap" variant="secondary">See my roadmap</ButtonLink>
           </div>
-          <div className="relative flex justify-between">
-            {[9, 10, 11, 12].map((grade) => (
-              <div
-                key={grade}
-                className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                  grade < data.user.grade
-                    ? 'bg-indigo-600 text-white'
-                    : grade === data.user.grade
-                    ? 'ring-2 ring-indigo-600 bg-white'
-                    : 'bg-gray-200 text-gray-500'
-                }`}
-              >
-                {grade}
-              </div>
+        </section>
+      )}
+
+      {stars.length > 0 && (
+        <section>
+          <h2 className="text-lg font-medium">Your north stars</h2>
+          <p className="mb-3 text-sm text-muted">Careers you&apos;re aiming for, for now. You can change them anytime.</p>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {stars.map((s) => (
+              <li key={s.occupationCode}>
+                <Card className="flex items-start justify-between gap-2">
+                  <Link href={`/careers/${s.occupationCode}`} className="font-medium underline-offset-2 hover:underline">
+                    {s.title}
+                  </Link>
+                  <form action={removeNorthStarAction}>
+                    <input type="hidden" name="code" value={s.occupationCode} />
+                    <input type="hidden" name="back" value="dashboard" />
+                    <button type="submit" className="min-h-11 text-sm text-muted underline">Remove</button>
+                  </form>
+                </Card>
+              </li>
             ))}
-          </div>
-        </div>
-        <div className="mt-6">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Next Steps:</h4>
-          <ul className="space-y-2 text-sm text-gray-600">
-            <li className="flex items-center">
-              <svg
-                className="h-4 w-4 text-indigo-500 mr-2"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Complete all personality and skills assessments
-            </li>
-            <li className="flex items-center">
-              <svg
-                className="h-4 w-4 text-indigo-500 mr-2"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Review and update your academic plan for next semester
-            </li>
-            <li className="flex items-center">
-              <svg
-                className="h-4 w-4 text-gray-400 mr-2"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 12.586V7z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Start researching colleges that match your interests
-            </li>
           </ul>
+        </section>
+      )}
+
+      <section>
+        <h2 className="text-lg font-medium">Discover your direction</h2>
+        {statuses.interests.state !== "done" && <SavedResultsImport startedInterests={statuses.interests.state === "in_progress"} />}
+        <p className="mb-3 text-sm text-muted">
+          {next ? "Three short activities. Start with interests — it unlocks your career matches." : "All done. You can retake them as you grow."}
+        </p>
+        <ol className="space-y-3">
+          {ORDER.map((id, i) => {
+            const s = statuses[id];
+            return (
+              <li key={id}>
+                <Link href={`/discover/${id}`} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 hover:border-accent">
+                  <span
+                    className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+                      s.state === "done" ? "bg-accent text-accent-foreground" : "border border-border text-muted"
+                    }`}
+                    aria-hidden
+                  >
+                    {s.state === "done" ? "✓" : i + 1}
+                  </span>
+                  <span className="flex-1">
+                    <span className="block font-medium">{INSTRUMENTS[id].title}</span>
+                    <span className="block text-sm text-muted">{INSTRUMENTS[id].tagline}</span>
+                  </span>
+                  <span className="text-sm text-muted">{statusText(s)}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ol>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {hasResults && <ButtonLink href="/discover/results">See my career matches</ButtonLink>}
+          {next && (
+            <ButtonLink href={`/discover/${next}`} variant={hasResults ? "secondary" : "primary"}>
+              {statuses[next].state === "in_progress" ? "Keep going" : `Start ${INSTRUMENTS[next].title.toLowerCase()}`}
+            </ButtonLink>
+          )}
         </div>
+      </section>
+
+      {/* The explorer is for grades 9-12, but a younger student who has saved colleges sees them too. */}
+      {(grade >= 9 || list.length > 0) && (
+        <section>
+          <h2 className="text-lg font-medium">{launching ? "Colleges and applications" : "Colleges and training"}</h2>
+          {deadlines.length > 0 ? (
+            <>
+              <p id="dashboard-deadlines" className="mt-1 text-sm text-muted">
+                Deadlines in the next two weeks:
+              </p>
+              <ul aria-labelledby="dashboard-deadlines" className="mt-3 space-y-2">
+                {deadlines.map(({ entry, deadline, daysLeft }) => (
+                  <li key={entry.id}>
+                    <Link
+                      href={`/applications/${entry.id}`}
+                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border border-border bg-surface p-4 hover:border-accent"
+                    >
+                      <span className="font-medium break-words">{entry.name}</span>
+                      <span className="text-sm text-muted">
+                        {deadlineName(entry.deadlineType)}: <time dateTime={deadline}>{formatDate(deadline)}</time> · {dueText(daysLeft)}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="mt-1 text-sm text-muted">
+              {!list.length
+                ? "Look up colleges and programs by major, place and price, and see what students really pay after grants."
+                : !full
+                  ? `${list.length} on your list. Your deadlines show up here when your family has full access.`
+                  : `${list.length} on your list${launching ? ". No deadlines in the next two weeks." : "."}`}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <ButtonLink href="/colleges" variant="secondary">Explore colleges</ButtonLink>
+            {(list.length > 0 || launching) && (
+              <ButtonLink href={full ? "/applications" : UNLOCK_PATH} variant="secondary">
+                {full ? "My list" : "Unlock my list"}
+              </ButtonLink>
+            )}
+            {launching && <ButtonLink href="/aid" variant="secondary">Paying for college</ButtonLink>}
+          </div>
+        </section>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <h2 className="font-medium">Your class plan</h2>
+          {courses.length ? (
+            <p className="mt-1 text-sm text-muted">
+              {courses.length} {courses.length === 1 ? "class" : "classes"} in your plan
+              {gpa.unweighted !== null && <> · estimated GPA {gpa.unweighted.toFixed(2)}</>}
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-muted">Add your classes to see how they line up with your goals.</p>
+          )}
+          <div className="mt-3">
+            <ButtonLink href={full ? "/plan" : UNLOCK_PATH} variant="secondary">
+              {full ? (courses.length ? "Open my plan" : "Start my plan") : "Unlock my plan"}
+            </ButtonLink>
+          </div>
+        </Card>
+        <Card>
+          <h2 className="font-medium">Ask your counselor</h2>
+          <p className="mt-1 text-sm text-muted">Questions about careers, classes, college, or training? Your AI counselor knows your goals.</p>
+          <div className="mt-3">
+            <ButtonLink href={full ? "/counselor" : UNLOCK_PATH} variant="secondary">
+              {full ? "Start a chat" : "Unlock the counselor"}
+            </ButtonLink>
+          </div>
+        </Card>
       </div>
+
+      <StudentSettings studentId={user.id} grade={user.grade} reminders={reminders} />
+
+      <form action={logoutAction}>
+        <button type="submit" className="min-h-11 text-sm text-muted underline">Sign out</button>
+      </form>
     </div>
   );
-} 
+}

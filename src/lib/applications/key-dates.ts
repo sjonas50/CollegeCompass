@@ -1,0 +1,258 @@
+import { MAX_GRADE, schoolYearOf } from "../auth/age";
+import { formatDollars } from "./aid";
+import { usToday } from "./dates";
+
+// "Key dates this year" for 11th and 12th graders. Built only from facts checked against official
+// sources (checked September 24, 2026). Anything that varies by college is described as a
+// pattern ("often", "check each college"), never as a promise.
+//
+// Sources:
+// [FSA-SPECS] 2027–28 FAFSA Specifications Guide (September 2026 update), Federal Student Aid,
+//   https://fsapartners.ed.gov/knowledge-center/library/handbooks-manuals-or-guides/2026-05-05/2027-28-fafsa-specifications-guide-september-2026-update
+//   (Volume 1: https://fsapartners.ed.gov/sites/default/files/2026-07/2728FSGVol1.pdf, Volume 2:
+//   https://fsapartners.ed.gov/sites/default/files/2026-07/2728FSGVol2FPSScheduleGettingHelp.pdf)
+//   Volume 1: "The application will be available to all applicants no later than October 1, 2026."
+//   Volume 2 (FPS Schedule): "October 1, 2026 (on or before) Federal Student Aid will launch full
+//   functionality of the online 2027–28 FAFSA form, including submission, processing, and
+//   corrections, at the same time to all applicants."
+//   It went live to everyone early, on Sept. 23, 2026 (see VERIFIED_FAFSA).
+// [FSA-DEADLINES] https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines
+//   "states and colleges use FAFSA information to award their own grants, scholarships, and loans.
+//   But, since some aid is limited, you have to meet the deadlines!" / State deadlines: "Each state
+//   has its own deadline." / Colleges: "Each college and career/trade school may have its own
+//   deadline." (2027–28 federal deadline: June 30, 2028.)
+// [CB-TIMELINE] College Board BigFuture, "12th Grade College Application Timeline",
+//   https://bigfuture.collegeboard.org/plan-for-college/apply-to-college/college-application-timeline-12th-grade
+//   "October 1 - FAFSA and CSS Profile Opens." "October 1 is the first day you can file the FAFSA."
+//   "CSS PROFILE is an online application used by certain colleges and scholarship programs."
+//   "January 1- March 1 - Regular applications deadlines are typically around this time."
+//   "Prepare early decision/early action or rolling admission applications as soon as possible."
+// [CB-EARLY] College Board BigFuture, "Early Decision and Early Action Calendar FAQs",
+//   https://bigfuture.collegeboard.org/plan-for-college/apply-to-college/early-decision-and-early-action-calendar
+//   "For most schools, November 1 is the deadline for an early decision application. Other schools
+//   have their early decision application deadline set in mid-November or even later on
+//   December 1." "Generally, early action applications are due in the month of November."
+//   "early action is nonbinding ... you can submit an early action application to multiple schools."
+// [CB-MAY1] College Board BigFuture, "What is the last day to accept college offers?",
+//   https://bigfuture.collegeboard.org/help-center/what-last-day-accept-college-offers
+//   "Most colleges give you until May 1 to make your acceptance decision if you applied under
+//   regular decision or early action, although it is extremely important to double-check with
+//   your college to make sure it doesn't have a different date."
+// [CSS] https://cssprofile.collegeboard.org/ — "CSS Profile is free for families who make up to
+//   $100,000 a year." (checked September 24, 2026, for the 2027–28 CSS Profile). Getting started:
+//   "submit your CSS Profile by midnight Eastern Time of your earliest priority filing date."
+//   Participating colleges: https://profile.collegeboard.org/PPI/participatingInstitutions.aspx
+//
+// Facts that change from year to year (the FAFSA's opening date, the CSS Profile's free-filing
+// limit) are keyed by cycle below. Add a cycle only after checking the official source; until
+// then the page falls back to wording that stays true.
+
+export type KeyDateId = "fafsa" | "css-profile" | "state-aid" | "early-decision" | "early-action" | "regular" | "decision-day";
+
+export type KeyDate = {
+  id: KeyDateId;
+  /** How the date reads on the page: "September 23, 2026", "Often November 1". */
+  when: string;
+  /** First day it applies (YYYY-MM-DD), or null when it's different everywhere. */
+  start: string | null;
+  /** Last day of a range ("January 1 to March 1"); null for a single day. */
+  end: string | null;
+  /** Something that opens (and stays open), rather than a deadline. */
+  opens: boolean;
+  /**
+   * The date was confirmed for this cycle by an official source. Only confirmed openings are
+   * shown as "Open now"; a usual date ("Usually October 1") gets softer wording.
+   */
+  confirmed: boolean;
+  title: string;
+  detail: string;
+  link?: { href: string; label: string; external: boolean };
+};
+
+/** "usually_open": past the usual opening date of a form whose date this year wasn't confirmed. */
+export type KeyDateStatus = "upcoming" | "open_now" | "usually_open" | "passed" | "varies";
+
+/**
+ * FAFSA opening dates confirmed by Federal Student Aid, by application cycle. The 2027–28 form went
+ * live to the general public on Sept. 23, 2026, ahead of the Oct. 1 target:
+ * https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-21/2027-28-fafsa-beta-testing-plan-updated-sept-23-2026
+ */
+const VERIFIED_FAFSA: Record<number, { awardYear: string; opened: string }> = {
+  2026: { awardYear: "2027–28", opened: "2026-09-23" },
+};
+
+/** The CSS Profile's free-filing income limit, confirmed by the College Board, by cycle. [CSS] */
+const VERIFIED_CSS: Record<number, { freeUpTo: number }> = {
+  2026: { freeUpTo: 100_000 },
+};
+
+const LONG = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
+const longDate = (iso: string) => LONG.format(new Date(`${iso}T00:00:00Z`));
+
+/**
+ * The application cycle a date falls in, named by the year it starts. A cycle runs from June
+ * through May: FAFSA and applications in the fall, decisions by spring. Juniors see this year's
+ * cycle as a preview of theirs.
+ */
+export function applicationCycle(now: Date = new Date()): number {
+  const [year, month] = usToday(now).split("-").map(Number);
+  return month >= 6 ? year : year - 1;
+}
+
+/** The key dates for the cycle starting in `cycle` (students starting college the next fall). */
+export function keyDates(cycle: number): KeyDate[] {
+  const next = cycle + 1;
+  const fafsa = VERIFIED_FAFSA[cycle];
+  const css = VERIFIED_CSS[cycle];
+  return [
+    fafsa
+      ? {
+          id: "fafsa",
+          when: longDate(fafsa.opened),
+          start: fafsa.opened,
+          end: null,
+          opens: true,
+          confirmed: true,
+          title: `The ${fafsa.awardYear} FAFSA opens`,
+          detail:
+            "The FAFSA is the free form for federal grants, work-study and student loans. Many states and colleges use it for their own aid, too. Some aid runs out, so it pays to file early.",
+          link: { href: "https://studentaid.gov/h/apply-for-aid/fafsa", label: "The FAFSA on studentaid.gov", external: true },
+        }
+      : {
+          id: "fafsa",
+          when: "Usually October 1",
+          start: `${cycle}-10-01`,
+          end: null,
+          opens: true,
+          confirmed: false,
+          title: "The FAFSA opens for the next school year",
+          detail:
+            "The FAFSA is the free form for federal grants, work-study and student loans. Many states and colleges use it for their own aid, too. Some aid runs out, so it pays to file early. Check studentaid.gov for this year's date.",
+          link: { href: "https://studentaid.gov/h/apply-for-aid/fafsa", label: "The FAFSA on studentaid.gov", external: true },
+        },
+    {
+      id: "css-profile",
+      when: "Usually October 1",
+      start: `${cycle}-10-01`,
+      end: null,
+      opens: true,
+      // The College Board gives the usual date, not this year's, so it's never "Open now". [CB-TIMELINE]
+      confirmed: false,
+      title: "The CSS Profile opens",
+      detail: `Only some colleges and scholarship programs ask for this extra aid form. See if any on your list do, and send it by the earliest priority date. ${
+        css
+          ? `It's free for families who make up to ${formatDollars(css.freeUpTo)} a year.`
+          : "Some families can send it for free, so check if you qualify for a fee waiver."
+      }`,
+      link: {
+        href: "https://profile.collegeboard.org/PPI/participatingInstitutions.aspx",
+        label: "Colleges that use the CSS Profile",
+        external: true,
+      },
+    },
+    {
+      id: "state-aid",
+      when: "Different in each state",
+      start: null,
+      end: null,
+      opens: false,
+      confirmed: false,
+      title: "State aid deadlines",
+      detail: "Each state sets its own FAFSA deadline for state grants, and some come early. Look up your state's date.",
+      link: { href: "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines", label: "State deadlines on studentaid.gov", external: true },
+    },
+    {
+      id: "early-decision",
+      when: "Often November 1",
+      start: `${cycle}-11-01`,
+      end: null,
+      opens: false,
+      confirmed: false,
+      title: "Early decision deadlines",
+      detail:
+        "At most colleges with early decision, it's due November 1. Some use mid-November or December 1. Early decision is binding: if you get in, you agree to go. Check each college's date.",
+      link: {
+        href: "https://bigfuture.collegeboard.org/plan-for-college/apply-to-college/early-decision-and-early-action-calendar",
+        label: "Early deadlines calendar (College Board)",
+        external: true,
+      },
+    },
+    {
+      id: "early-action",
+      when: "Often in November",
+      start: `${cycle}-11-01`,
+      end: `${cycle}-11-30`,
+      opens: false,
+      confirmed: false,
+      title: "Early action deadlines",
+      detail:
+        "Early action is usually due in November. It usually isn't binding, and you can often apply early action to more than one college. Check each college's rules.",
+    },
+    {
+      id: "regular",
+      when: "Often January 1 to March 1",
+      start: `${next}-01-01`,
+      end: `${next}-03-01`,
+      opens: false,
+      confirmed: false,
+      title: "Regular deadlines",
+      detail:
+        "Many regular deadlines fall between January and March, but they vary. Some colleges use rolling admission: they decide as applications come in, until they're full. Check each college's date.",
+    },
+    {
+      id: "decision-day",
+      when: `Often ${longDate(`${next}-05-01`)}`,
+      start: `${next}-05-01`,
+      end: null,
+      opens: false,
+      confirmed: false,
+      title: "Decision day at many colleges",
+      detail:
+        "Most colleges give you until May 1 to say yes or no if you applied regular decision or early action. Compare your aid offers before you decide. Some colleges use a different date, so double-check.",
+      link: { href: "/applications/compare", label: "Compare aid offers", external: false },
+    },
+  ];
+}
+
+export function keyDateStatus(item: Pick<KeyDate, "start" | "end" | "opens" | "confirmed">, today: string): KeyDateStatus {
+  if (!item.start) return "varies";
+  if (item.opens) return today < item.start ? "upcoming" : item.confirmed ? "open_now" : "usually_open";
+  return today > (item.end ?? item.start) ? "passed" : "upcoming";
+}
+
+export type KeyDatesYear = {
+  cycle: number;
+  /** "2026–27". */
+  schoolYear: string;
+  /** Students in this cycle start college in the fall of this year. */
+  startsCollege: number;
+  items: (KeyDate & { status: KeyDateStatus })[];
+};
+
+export function keyDatesFor(now: Date = new Date()): KeyDatesYear {
+  const cycle = applicationCycle(now);
+  const today = usToday(now);
+  return {
+    cycle,
+    schoolYear: `${cycle}–${String(cycle + 1).slice(-2)}`,
+    startsCollege: cycle + 1,
+    items: keyDates(cycle).map((item) => ({ ...item, status: keyDateStatus(item, today) })),
+  };
+}
+
+/**
+ * Key dates for an 11th or 12th grader: seniors get this cycle as their own, juniors (whose turn
+ * is next) get it as a preview. Null for other grades, or when the student's own cycle is over.
+ *
+ * The next cycle starts in June but grades move up in August, so in June and July the student
+ * still shown as a 12th grader has just graduated (null), and the 11th grader is the one applying
+ * this cycle (a senior here).
+ */
+export function keyDatesForStudent(grade: number | null, now: Date = new Date()): { year: KeyDatesYear; senior: boolean } | null {
+  if (grade === null || grade < 11 || grade > MAX_GRADE) return null;
+  const cycle = applicationCycle(now);
+  // The cycle that starts in the fall of the student's senior year.
+  const own = schoolYearOf(now) + (MAX_GRADE - grade);
+  if (own < cycle) return null;
+  return { year: keyDatesFor(now), senior: own === cycle };
+}

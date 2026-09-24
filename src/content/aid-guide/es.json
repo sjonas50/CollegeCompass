@@ -1,0 +1,1735 @@
+{
+  "language": "es",
+  "updated": "2026-09-24",
+  "review": {
+    "status": "draft"
+  },
+  "sections": [
+    {
+      "id": "how-aid-works",
+      "title": "Cómo se paga la universidad o la formación técnica",
+      "summary": "El precio que publica una escuela muchas veces no es lo que pagas: las becas lo bajan, y el work-study (programa de estudio y trabajo) y los préstamos ayudan con el resto.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "En pocas palabras",
+          "items": [
+            "El precio que publica una escuela muchas veces no es lo que pagas. Revisa el precio neto de cada escuela antes de decidir que cuesta demasiado.",
+            "Si estás en 12.º grado, llena lo antes posible la FAFSA (Solicitud Gratuita de Ayuda Federal para Estudiantes), el formulario gratis para pedir ayuda federal. La FAFSA 2027–28, para estudiantes que empiezan en el otoño de 2027, está disponible desde el 23 de septiembre de 2026. Si estás en 11.º grado, la llenarás el próximo otoño.",
+            "Pide prestado solo lo que necesites, y usa préstamos federales antes que préstamos privados. Padres: antes de sacar un préstamo Parent PLUS (préstamo federal para padres), hablen del tema en familia.",
+            "La FAFSA es gratis, y el sitio oficial tiene .gov en su dirección. Nunca le pagues a nadie para que la llene ni para que te busque becas. Ayuda gratis en inglés y español: 1-800-433-3243."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Palabras que debes conocer",
+          "items": [
+            "Costo de asistencia (en inglés, cost of attendance o COA): lo que una escuela calcula que cuesta todo un año. Incluye la matrícula (el cobro por las clases) y las cuotas, más vivienda, comida, libros y transporte, que muchas veces cuestan más que la matrícula. Algunos programas, como un certificado de 18 meses, pueden mostrar el costo para un periodo de otra duración.",
+            "Índice de Ayuda Estudiantil (en inglés, Student Aid Index o SAI): un número que sale de tu FAFSA y que las escuelas usan para decidir tu ayuda. No es una factura ni lo que tu familia tiene que pagar.",
+            "Necesidad económica (en inglés, financial need): el costo de asistencia menos tu SAI.",
+            "Tiempo completo (en inglés, full-time): por lo general, 12 créditos o más por periodo. Las Pell Grants (becas federales Pell) y los préstamos federales pueden ser menores si estudias a tiempo parcial.",
+            "Precio neto (en inglés, net price): el costo de asistencia menos tus becas (grants y scholarships). No restes los préstamos ni el work-study (programa de estudio y trabajo), aunque una oferta de ayuda muestre los préstamos como si fueran descuentos. Muchas universidades tienen una calculadora de precio neto (net price calculator) que te da un cálculo aproximado. Puedes encontrarlas en https://collegecost.ed.gov/net-price"
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Los principales tipos de ayuda",
+          "items": [
+            "Becas (grants y scholarships): dinero que por lo general no tienes que devolver.",
+            "Pell Grant: la beca federal más grande, para estudiantes con mucha necesidad económica que no tienen un título de licenciatura (bachelor's degree). Para 2026–27 (del 1 de julio de 2026 al 30 de junio de 2027), la cantidad máxima de la Pell Grant para un año escolar es de $7,395. Puede que recibas menos, según tu SAI, el costo de tu escuela y si estudias a tiempo completo. Algunos estudiantes que también toman clases de verano pueden recibir más. Puedes recibir la Pell Grant por un total de unos 6 años de estudio a tiempo completo. La cantidad para 2027–28 todavía no se ha anunciado.",
+            "Work-study (programa de estudio y trabajo): un trabajo de medio tiempo para estudiantes con necesidad económica. Primero tienes que encontrar el trabajo, y tu oferta de ayuda muestra lo máximo que puedes ganar. Lo recibes como sueldo, en tus cheques de pago, así que no sirve para pagar tu primera factura. No todas las escuelas lo tienen y el dinero es limitado, así que llena la FAFSA temprano y pregunta en la oficina de ayuda financiera cómo encontrar un trabajo.",
+            "Préstamos federales para estudiantes: dinero que pides prestado y devuelves con intereses (un cobro extra por pedir prestado). La mayoría no pide una revisión de crédito ni un cofirmante (alguien que promete pagar si tú no pagas). La mayoría de los estudiantes que acaban de terminar la preparatoria (high school) pueden pedir prestado hasta $5,500 en su primer año. No tienes que empezar a pagar hasta que dejes la escuela o bajes a menos de medio tiempo, y hay un plan de pagos según tus ingresos. La tasa de interés nunca cambia: 6.52% para préstamos de estudiantes de pregrado (undergraduate) entregados por primera vez en 2026–27. La tasa para el otoño de 2027 todavía no se ha fijado.",
+            "Los préstamos privados de los bancos muchas veces piden un cofirmante y por lo general cuestan más."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Antes de pedir un préstamo",
+          "text": "Los préstamos se tienen que pagar, aunque no termines tus estudios o no encuentres trabajo. Puedes aceptar menos de lo que te ofrece una escuela. Puedes cancelar todo o parte de un préstamo federal en los 120 días después de recibirlo, sin intereses ni cargos. Para los préstamos hechos el 1 de julio de 2027 o después, habrá menos formas de pausar los pagos si pierdes tu trabajo o si el dinero no alcanza."
+        },
+        {
+          "kind": "warning",
+          "heading": "Préstamos Parent PLUS para padres",
+          "text": "Un préstamo Parent PLUS es un préstamo federal que el padre o la madre saca para su hijo o hija estudiante. Está a nombre del padre o la madre, y después no se puede pasar al estudiante. Los abuelos y los tutores legales no pueden sacarlo. Cuesta más que los préstamos para estudiantes: 9.07% de interés para préstamos entregados por primera vez en 2026–27, más un cargo de alrededor del 4% que se descuenta antes de entregar el dinero. La tasa para el otoño de 2027 todavía no se ha fijado. La mayoría de quienes lo piden por primera vez pueden pedir hasta $20,000 al año y $65,000 en total por estudiante. La revisión de crédito solo busca problemas graves, como deudas enviadas a cobranza o una bancarrota reciente, así que la aprobación no significa que los pagos vayan a ser fáciles. Los préstamos Parent PLUS hechos el 1 de julio de 2026 o después no se pueden pagar con planes de pago según los ingresos. ¿Su familia ya tiene préstamos Parent PLUS por un hijo o hija mayor? Un préstamo nuevo puede hacer que los préstamos anteriores tengan que quedarse en el plan de pagos fijos, así que el padre o la madre debe llamar primero a su administrador de préstamos (loan servicer, la compañía que maneja las facturas del préstamo). Si el padre o la madre no puede obtener este préstamo, es posible que el estudiante pueda pedir más dinero con sus propios préstamos federales. Hay más información en la sección \"Pedir prestado con cuidado: así funcionan los préstamos estudiantiles\"."
+        },
+        {
+          "kind": "tip",
+          "heading": "Si el precio sigue siendo muy alto",
+          "text": "No te conformes con firmar préstamos grandes. Si la situación económica de tu familia es muy distinta de lo que aparece en la FAFSA, por ejemplo, si alguien perdió su trabajo o si los ingresos bajaron mucho, pide a la oficina de ayuda financiera que revise tu ayuda. Pregunta en cada escuela si tus becas serán iguales cada año y qué tienes que hacer para conservarlas. Una escuela más barata, o empezar en un colegio comunitario (community college), también puede ayudar."
+        },
+        {
+          "kind": "tip",
+          "heading": "Cuándo llega el dinero",
+          "text": "Cuando le dices que sí a una universidad, puede que tengas que pagar un depósito para la matrícula o la vivienda. Si el dinero no alcanza, pregunta si la escuela puede cancelarlo (en inglés, waive) o dejarte pagarlo más tarde. La ayuda normalmente se entrega al menos una vez por periodo y primero se usa para pagar tu cuenta de la escuela, así que algunos gastos llegan antes que la ayuda. Los estudiantes de primer año que sacan un préstamo federal por primera vez pueden tener que esperar 30 días desde el inicio del periodo para recibir ese dinero. La ayuda que sobre se te debe entregar en un plazo de 14 días, a menos que le pidas a la escuela que la guarde. ¿Necesitas libros antes de que llegue tu ayuda? Pregunta en la oficina de ayuda financiera. Las escuelas deben ayudar a algunos estudiantes a conseguir sus libros a más tardar el séptimo día del periodo."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Cómo conservar tu ayuda",
+          "text": "Llena la FAFSA cada año y mantén un \"progreso académico satisfactorio\" (satisfactory academic progress): mantén buenas calificaciones y termina una parte suficiente de las clases en las que te inscribes. Cada escuela pone sus propias reglas, pero en programas de más de dos años por lo general necesitas por lo menos un promedio de C al final de tu segundo año. Algunas becas tienen sus propias reglas, como un GPA (promedio de calificaciones) mínimo. Puede que tengas que devolver parte de una beca federal si dejas la escuela en la primera parte de un periodo, si pasas de tiempo completo a tiempo parcial o si recibes ayuda de otras fuentes que baja tu necesidad económica. Algunas becas, como la TEACH Grant (beca federal para futuros maestros), se convierten en préstamos si no cumples sus reglas. Habla con la oficina de ayuda financiera antes de darte de baja de una clase o dejar la escuela. Si pierdes tu ayuda, pregunta si puedes apelar (pedirle a la escuela que vuelva a revisar su decisión). Las razones aceptadas por lo general incluyen una enfermedad o lesión tuya, o la muerte de un familiar."
+        },
+        {
+          "kind": "tip",
+          "heading": "Dinero de vuelta al declarar impuestos",
+          "text": "El American Opportunity Tax Credit (Crédito Tributario de Oportunidad Americana) puede bajar hasta $2,500 al año por estudiante los impuestos federales sobre los ingresos de tu familia, por un máximo de 4 años. El estudiante debe estar inscrito por lo menos a medio tiempo y estudiar para obtener un título u otra credencial reconocida. Tu familia puede recibir hasta $1,000 de vuelta aunque no deba impuestos, pero tiene que presentar una declaración de impuestos. Pueden contar la matrícula, las cuotas y los materiales del curso pagados con préstamos, ahorros o el sueldo de un trabajo. Los gastos pagados con becas libres de impuestos, como la Pell Grant, por lo general no cuentan. Guarda el formulario de impuestos 1098-T (Form 1098-T) que te envía tu escuela. A partir de las declaraciones de impuestos de 2026 (que se presentan en 2027), tanto la persona que pide el crédito como el estudiante necesitan un número de Seguro Social válido para trabajar, así que un padre o una madre que solo tiene un ITIN (número de identificación para impuestos que da el IRS) no puede pedirlo. Hay límites de ingresos. Ayuda gratis del IRS para preparar impuestos (VITA): 800-906-9887."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Ayuda para la formación técnica",
+          "text": "La ayuda federal también sirve en colegios comunitarios, escuelas técnicas y escuelas de oficios que la aceptan, así que pregunta. Desde el 1 de julio de 2026, las Workforce Pell Grants (becas Pell para capacitación laboral) pueden ayudar a pagar programas aprobados de capacitación laboral que duran de 8 a poco menos de 15 semanas. En estos programas no puedes recibir préstamos federales ni work-study. Algunos estados pagan la matrícula de colegios comunitarios o técnicos a los estudiantes que califican; un ejemplo es el Tennessee Promise. Estos programas tienen sus propias reglas y fechas límite, y algunos piden la FAFSA. Los programas de aprendizaje registrados (registered apprenticeships) te dan un trabajo pagado desde el primer día mientras te capacitas, y algunos empiezan a los 16 años. Consulta la sección \"Cómo pagar la capacitación técnica\"."
+        },
+        {
+          "kind": "list",
+          "heading": "Antes de pagar un programa técnico, pregunta",
+          "items": [
+            "¿La escuela acepta ayuda federal?",
+            "¿Cuál es el costo total de todo el programa?",
+            "¿Cuántos estudiantes terminan, cuántos consiguen trabajo en ese campo y cuánto ganan? Pide los datos por escrito y compáralos con College Scorecard (sitio del gobierno para comparar escuelas): https://collegescorecard.ed.gov",
+            "¿Hay algún colegio comunitario con un programa parecido? Muchas veces cuesta mucho menos.",
+            "¿Alguien te está presionando para que te inscribas rápido? No firmes nada hasta que lo hayas revisado."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Cómo solicitar la ayuda",
+          "text": "La FAFSA (en inglés, Free Application for Federal Student Aid) es el formulario para pedir ayuda federal, y muchos estados y escuelas también la usan para dar su propia ayuda. Llenas tu primera FAFSA en el otoño de 12.º grado, y después otra vez cada año que sigas estudiando. Algunos estados reparten su ayuda por orden de llegada hasta que se acaba el dinero, y algunas fechas límite estatales caen en enero de 2027. Busca la fecha límite de tu estado en https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines. Algunas universidades y programas de becas también usan un segundo formulario, el CSS Profile (formulario del College Board). Es gratis si los ingresos de tu familia son de $100,000 o menos, y también en algunos otros casos."
+        },
+        {
+          "kind": "list",
+          "heading": "Cómo prepararte para la FAFSA",
+          "items": [
+            "Una cuenta gratis de StudentAid.gov para ti y otra para el padre o la madre que llena tu formulario. A veces los dos padres necesitan una; el formulario te lo dirá. Un padre o una madre sin número de Seguro Social también puede crear una cuenta y llenar su parte.",
+            "Los datos de impuestos de 2025 de tu familia. ¿Tu familia no declaró impuestos? Aun así puedes llenar la FAFSA.",
+            "Todas las personas incluidas en el formulario deben dar permiso para que su información de impuestos se pase directamente desde el IRS. Si uno de tus padres no da su permiso, no puedes recibir ayuda federal.",
+            "¿Estuviste en cuidado de crianza temporal (foster care) o bajo la tutela de un tribunal en algún momento desde que cumpliste 13 años, estás sin hogar o no puedes comunicarte con tus padres de forma segura? Es posible que puedas llenar la FAFSA sin la información de tus padres. Consulta la sección \"Situaciones especiales en la FAFSA\"."
+          ]
+        },
+        {
+          "kind": "tip",
+          "heading": "Ayuda gratis en inglés, español y otros idiomas",
+          "text": "La FAFSA está en inglés y en español, y hay guías en español en https://studentaid.gov/es/resources. La línea de ayuda gratis, 1-800-433-3243, atiende en inglés y en español. Para otros idiomas, llama al 1-833-610-2590 y oprime el 7. ¿No tienes computadora en casa? Usa una computadora de la escuela o de la biblioteca. También puedes imprimir una FAFSA en papel desde StudentAid.gov o pedir una llamando al 1-800-433-3243. No la envíes por correo antes del 1 de octubre de 2026. En línea es más rápido, así que llénala en línea si se acerca una fecha límite. Pregúntale a tu consejero escolar si hay ayuda gratis con la FAFSA en tu escuela."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "La situación migratoria y la ayuda",
+          "text": "Si eres ciudadano de EE. UU. o un no ciudadano elegible (por ejemplo, un residente permanente con green card, un refugiado o una persona a la que ya se le concedió asilo), la situación migratoria de tus padres no afecta tu ayuda federal, y la FAFSA no pregunta por ella. Los estudiantes indocumentados, incluidos quienes tienen DACA (Acción Diferida para los Llegados en la Infancia), no pueden recibir ayuda federal. Tampoco pueden recibirla las personas con TPS (Estatus de Protección Temporal) ni las que tienen visa de estudiante, de visitante o de trabajo. Pero es posible que sí recibas ayuda estatal, ayuda de la escuela o becas privadas. Algunos estados tienen su propio formulario para los estudiantes que no pueden usar la FAFSA, como la California Dream Act Application (solicitud de ayuda estatal de California) o la WASFA (solicitud de ayuda estatal de Washington), así que pregúntale a tu consejero qué formulario usar. Las reglas son distintas en cada estado, y algunos estados las cambiaron en 2025. Consulta la sección \"Situaciones especiales en la FAFSA\". ¿Te preocupa compartir tu información? Antes de decidir, habla con un abogado de inmigración con licencia o con un representante acreditado por el DOJ (una persona capacitada de una organización sin fines de lucro aprobada por el Departamento de Justicia de EE. UU.). La página \"Legal services\" (servicios legales) de USCIS (la agencia federal de inmigración) explica cómo encontrarlos."
+        }
+      ],
+      "sources": [
+        {
+          "title": "Types of Financial Aid: Grants, Work-Study, and Loans — tipos de ayuda financiera (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types"
+        },
+        {
+          "title": "Federal Grants for College or Career/Trade School: becas federales (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/grants"
+        },
+        {
+          "title": "Federal Pell Grants: becas federales Pell (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/grants/pell"
+        },
+        {
+          "title": "TEACH Grants: becas TEACH para futuros maestros (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/grants/teach"
+        },
+        {
+          "title": "Finding and Applying for Scholarships: cómo encontrar y solicitar becas (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/scholarships"
+        },
+        {
+          "title": "Work-Study Jobs: empleos del programa de estudio y trabajo (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/work-study"
+        },
+        {
+          "title": "Federal Student Loans: préstamos federales para estudiantes (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/loans"
+        },
+        {
+          "title": "Federal Versus Private Loans: préstamos federales y privados (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/loans/federal-vs-private"
+        },
+        {
+          "title": "Federal Interest Rates and Fees: tasas de interés y cargos (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/loans/interest-rates"
+        },
+        {
+          "title": "Net Price Calculator Center: calculadoras de precio neto (Departamento de Educación de EE. UU., en inglés)",
+          "url": "https://collegecost.ed.gov/net-price"
+        },
+        {
+          "title": "FAFSA Application Deadlines: fechas límite de la FAFSA (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"
+        },
+        {
+          "title": "Recursos en español (StudentAid.gov)",
+          "url": "https://studentaid.gov/es/resources"
+        }
+      ]
+    },
+    {
+      "id": "fafsa-step-by-step",
+      "title": "La FAFSA, paso a paso (2027–28)",
+      "summary": "Cómo llenar la FAFSA 2027–28, que es gratis: busca tu fecha límite, crea tus cuentas, reúne tus papeles, llénala con tu familia, lee tus resultados, corrige errores y pide ayuda gratis.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "En pocas palabras",
+          "items": [
+            "La FAFSA 2027–28 (Solicitud Gratuita de Ayuda Federal para Estudiantes) se abrió el 23 de septiembre de 2026, para estudios que empiezan en el otoño de 2027. Es gratis y está en inglés y en español. Usa solo fafsa.gov o StudentAid.gov.",
+            "Algunas fechas límite de estados o universidades pueden llegar muy pronto, incluso el 1 de octubre de 2026. Una buena meta: envía la FAFSA a más tardar dos semanas después de que se abre el formulario, y antes de la primera fecha límite de tus universidades o de tu estado.",
+            "Tú y tu padre o madre deben crear sus cuentas de StudentAid.gov con unos días de anticipación. Nunca compartan una contraseña.",
+            "Después de enviar la FAFSA, revisa tu correo electrónico y el portal en línea de cada universidad. Envía de inmediato los papeles que te pidan.",
+            "Ayuda gratis: 1-800-433-3243 (en inglés y en español). Nunca le pagues a nadie por ayuda con la FAFSA."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Busca tu primera fecha límite",
+          "items": [
+            "Las universidades y las escuelas técnicas fijan sus propias fechas límite, y muchas son tempranas. Algunas cuentan la fecha en que se procesa tu FAFSA, no el día en que la envías, así que no esperes al último día. Revisa la página de ayuda financiera de cada escuela para ver sus fechas y formularios.",
+            "¿Vas a solicitar admisión por early decision o early action (solicitar temprano para saber antes si te aceptan)? Tus formularios de ayuda podrían vencer poco después de que se abran, así que revisa las fechas de cada universidad.",
+            "Cada estado tiene su propia fecha límite, y algunos piden otro formulario. En algunos estados, como Illinois y Kentucky, la ayuda se da por orden de llegada hasta que se acabe el dinero. Otros tienen fechas en el invierno o la primavera de 2027. Por ejemplo, la fecha de prioridad de Texas es el 15 de enero de 2027, la de Missouri es el 1 de febrero de 2027 y la de California (para la Cal Grant, una beca estatal) es el 2 de marzo de 2027. Mira la página de fechas límite de la FAFSA en StudentAid.gov.",
+            "Las solicitudes de Tennessee Promise (un programa de becas de Tennessee para colegios comunitarios y escuelas técnicas) vencen el 2 de noviembre de 2026. Pregúntale a tu consejero si tu estado tiene un programa parecido.",
+            "Fecha límite federal: 30 de junio de 2028, a las 11:59 p. m., hora del Centro. Es el último día posible, no una meta.",
+            "¿Se te pasó una fecha límite estatal? Envía la FAFSA de todos modos. Perder esa fecha no afecta tu posibilidad de recibir ayuda federal.",
+            "Algunas universidades y programas de becas también usan el CSS Profile, un segundo formulario de ayuda del College Board (la organización del examen SAT). Es un formulario real, no una estafa. Se abre el 1 de octubre. Es gratis para familias que ganan hasta $100,000 al año, y algunas otras pueden recibir una exención de cuota para no tener que pagarlo."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Quién tiene que aparecer en tu FAFSA",
+          "items": [
+            "Tú y, por lo general, uno o dos de tus padres dan información y firman. En la FAFSA, \"padre o madre\" quiere decir tu padre o madre legal: biológico, adoptivo o reconocido por la ley de tu estado.",
+            "Tus abuelos, tíos, hermanos mayores, padres de crianza temporal (foster parents) y tutores legales no cuentan como padres en la FAFSA, a menos que te hayan adoptado.",
+            "¿Tus padres están casados entre sí? Incluye a los dos, aunque uno viva en otro país, a menos que estén separados. Si declararon juntos sus impuestos de 2025, solo uno de ellos llena la sección de los padres.",
+            "¿Tus padres no están casados, pero viven juntos? Incluye a los dos.",
+            "¿Tus padres están divorciados, separados o nunca se casaron, y viven aparte? Incluye al que te dio más apoyo económico en los últimos 12 meses. Si los dos te dieron lo mismo, o si ninguno te mantiene, incluye al que tiene más ingresos y bienes.",
+            "¿Tienes dudas? Prueba la herramienta Who's My FAFSA Parent? (¿Quién es mi padre o madre para la FAFSA?) en StudentAid.gov.",
+            "Vivir por tu cuenta, pagar tus propios gastos o que tus padres no te incluyan en su declaración de impuestos no cambia quién va en tu formulario.",
+            "¿Vives con un familiar? Por lo general, de todos modos necesitas la información de tus padres. Algunas excepciones son haber estado en cuidado de crianza temporal (foster care) en algún momento desde que cumpliste 13 años, tener un tutor legal nombrado por un tribunal, o estar sin hogar y vivir por tu cuenta."
+          ]
+        },
+        {
+          "kind": "steps",
+          "heading": "Paso 1: Crea tus cuentas",
+          "items": [
+            "Tú y el padre o madre que va a llenar tu formulario necesitan, cada uno, su propia cuenta de StudentAid.gov. Si tus padres están casados y declararon juntos sus impuestos de 2025, por lo general solo uno de ellos necesita una cuenta. Si declararon por separado, o si no están casados pero viven juntos, los dos necesitan una.",
+            "Tu cuenta es tu firma legal. Nunca compartas tu contraseña, ni siquiera con tu familia o con alguien que te esté ayudando. Cada persona puede tener solo una cuenta, así que, si ya tienes una, recupérala en vez de crear otra.",
+            "Crea las cuentas con unos días de anticipación. El Seguro Social tiene que confirmar tus datos, y eso puede tardar de 1 a 3 días. No firmes la FAFSA mientras tu cuenta diga \"Pending\" (pendiente), porque tu información de impuestos no podrá llegar del IRS (la agencia federal de impuestos).",
+            "Escribe tu nombre, tu fecha de nacimiento y tu número de Seguro Social (SSN) exactamente como aparecen en tu tarjeta del Seguro Social. No uses un apodo. Si en tu tarjeta aparecen dos apellidos o un guion, escríbelo igual. Cada persona necesita su propio correo electrónico personal, no uno de la escuela.",
+            "¿No se pudo comprobar tu cuenta con el Seguro Social? Revisa que tu cuenta coincida con tu tarjeta. Si tu nombre cambió (por ejemplo, después de un matrimonio), primero actualízalo con la Administración del Seguro Social. Luego corrígelo en la configuración de tu cuenta o llama al 1-800-433-3243.",
+            "Tú, como estudiante, necesitas un SSN para crear una cuenta y recibir ayuda federal, a menos que seas ciudadano de Micronesia, las Islas Marshall o Palaos.",
+            "Un padre o madre sin SSN también puede crear una cuenta. Solo tiene que marcar la casilla que dice que no tiene SSN. Nunca escriban un ITIN (un número de identificación para impuestos que da el IRS) ni el número de otra persona en lugar del SSN.",
+            "Puede que una compañía de crédito le haga hasta cuatro preguntas a ese padre o madre para confirmar quién es. Si eso no funciona, recibirá un correo electrónico que dice \"Verify Your Identity\" (verifica tu identidad). Debe seguir pronto los pasos del correo: enviar una copia de una identificación, como una licencia de manejo, una identificación del estado o un pasaporte extranjero, junto con un formulario firmado. Mientras espera, puede llenar y firmar su parte de todos modos."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Paso 2: Reúne lo que necesitas",
+          "items": [
+            "Los números de Seguro Social. Si eres extranjero con derecho a participar (eligible noncitizen; por ejemplo, residente permanente con green card, refugiado o asilado), también tu A-Number (número de registro de extranjero).",
+            "Las declaraciones federales de impuestos de 2025 de tu familia y los W-2 (formularios del empleador que muestran el sueldo), incluidos los tuyos si trabajaste. La mayor parte de la información de impuestos llega directo del IRS, pero tenlos a la mano. ¿No declararon impuestos? Aun así puedes enviar la FAFSA.",
+            "¿Tu padre o madre solo declaró impuestos en otro país? Tendrá que escribir las cantidades de esa declaración, convertidas a dólares estadounidenses con el tipo de cambio publicado.",
+            "La manutención de hijos (child support) que haya recibido tu padre o madre.",
+            "El saldo de las cuentas de cheques y de ahorros, el dinero en efectivo y el valor de las inversiones. No cuentes la casa donde viven, las cuentas de jubilación, un negocio familiar con 100 trabajadores de tiempo completo o menos, ni una granja donde vive tu familia.",
+            "Si alguien de tu familia recibió beneficios federales en 2025 o 2026, como SNAP (cupones de alimentos), Medicaid, SSI, TANF, WIC, el Earned Income Tax Credit (crédito tributario por ingreso del trabajo), ayuda federal de vivienda, o almuerzo escolar gratis o a precio reducido (solo si calificaron por sus ingresos, no si tu escuela da comida gratis a todos los estudiantes). Si es así, quizás no tengas que contestar las preguntas sobre ahorros.",
+            "A quiénes mantienen tus padres: a ellos mismos, a ti y a cualquier otra persona que viva con ellos y reciba de ellos más de la mitad de su manutención. Puede ser distinto de lo que pusieron en su declaración de impuestos."
+          ]
+        },
+        {
+          "kind": "steps",
+          "heading": "Paso 3: Llénala con tu familia",
+          "items": [
+            "Entra a fafsa.gov, inicia sesión y elige \"Start New Form\" (empezar un formulario nuevo). Escoge 2027–28, no 2026–27. Cuando el formulario te pregunte quién empieza, elige \"Student\" (estudiante). Así es más rápido y hay menos errores.",
+            "Den su consentimiento. Cada persona en el formulario debe permitir que el IRS envíe su información de impuestos, aunque no haya declarado impuestos o no tenga SSN. Sin consentimiento, no puedes recibir ayuda federal. Dar el consentimiento no obliga a tu padre o madre a pagar tus gastos.",
+            "Pon hasta 20 escuelas en línea, aunque todavía no hayas solicitado admisión en ellas. La FAFSA sirve para universidades de cuatro años, colegios comunitarios (community colleges) y escuelas técnicas y de oficios.",
+            "¿Te interesa una capacitación laboral corta? Las Pell Grants (becas federales que por lo general no se devuelven) ahora pueden ayudar a pagar algunos programas cortos aprobados. Pregúntale a la escuela si el programa está aprobado para Workforce Pell. ¿No encuentras una escuela de capacitación en el buscador de escuelas de la FAFSA? Pregúntale a la escuela si acepta ayuda federal para estudiantes. Lee \"Pell Grants (becas federales Pell) y Workforce Pell\".",
+            "Los programas de aprendizaje registrados (registered apprenticeships) por lo general te pagan mientras aprendes. Si el tuyo incluye clases universitarias, pregunta si Workforce Pell puede ayudarte a pagarlas.",
+            "Invita a tu padre o madre con el correo electrónico de su cuenta de StudentAid.gov. También recibirás un enlace y un código para compartir. Si hace falta el otro padre o madre, o un padrastro o madrastra, el formulario le pedirá a tu padre o madre que lo invite.",
+            "Tu padre o madre entra con su propia cuenta, nunca con la tuya, llena su parte y firma. Tú también firmas.",
+            "No se envía nada hasta que todos firmen. En tu panel (dashboard) de StudentAid.gov, \"Draft\" (borrador) o \"In Progress\" (en proceso) significa que aún no se envió. \"In Review\" (en revisión) o \"Processed\" (procesado) significa que sí se envió. \"Action Required\" (acción necesaria) significa que hay algo que corregir."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Antes de decir que tus padres se niegan",
+          "text": "El formulario pregunta si tus padres se niegan a dar su información. Contesta que sí solo si de verdad es así y no estás en ninguna de las situaciones que se explican abajo. Llenar el formulario no obliga a tu padre o madre a pagar tus gastos. Si contestas que sí, no puedes recibir una Pell Grant ni la mayoría de las otras ayudas federales. Tampoco recibirás un Student Aid Index (índice de ayuda estudiantil), así que podrías perder ayuda estatal y de las universidades. Lo único que podrías recibir es un Direct Unsubsidized Loan (un préstamo federal que acumula intereses mientras estudias), y solo si la universidad lo aprueba. Primero habla con tu consejero o con la oficina de ayuda financiera de una universidad."
+        },
+        {
+          "kind": "list",
+          "heading": "Cuidado de crianza temporal, falta de vivienda o no poder contactar a tus padres",
+          "items": [
+            "Cuidado de crianza temporal: ¿estuviste en foster care o bajo la tutela de un tribunal en algún momento desde que cumpliste 13 años? Dilo en el formulario. No necesitarás la información de tus padres.",
+            "Falta de vivienda: en algún momento de 2026 o después, ¿estuviste sin hogar o a punto de perder tu vivienda, y no vivías con tu padre, tu madre o un tutor? Dilo en el formulario. Estar sin hogar puede ser vivir en un albergue, un motel, un carro o un parque, o quedarte con otras personas porque no tienes adónde ir.",
+            "Lo pueden confirmar el enlace para estudiantes sin hogar de tu distrito escolar (homeless liaison), el director de un albergue o de un programa juvenil, el director de TRIO o GEAR UP (programas federales de preparación universitaria) o la oficina de ayuda financiera de una universidad. Si nadie lo ha confirmado aún, elige \"None of these apply\" (no aplica ninguna), envía el formulario y contacta a la oficina de ayuda financiera de cada universidad.",
+            "¿No puedes contactar a tus padres por una razón grave, o hacerlo te pondría en riesgo? Puedes enviar la FAFSA sin ellos. Luego contacta a la oficina de ayuda financiera de cada universidad.",
+            "Más detalles en \"Situaciones especiales en la FAFSA\"."
+          ]
+        },
+        {
+          "kind": "tip",
+          "heading": "Si en tu familia hay inmigrantes",
+          "text": "Si eres ciudadano de EE. UU. o extranjero con derecho a participar, la situación migratoria de tus padres no afecta tu ayuda federal, y la FAFSA no pregunta por ella. ¿A ti o a tu familia les preocupa compartir información? Lean \"Privacidad e inmigración\" en Situaciones especiales en la FAFSA y, antes de decidir, hablen con un abogado de inmigración con licencia o con un representante acreditado por el DOJ (una persona capacitada de una organización sin fines de lucro aprobada por el Departamento de Justicia de EE. UU.). La página \"Legal services\" de USCIS (la agencia de inmigración de EE. UU.) explica cómo encontrarlos. Ojo: en EE. UU., un notario no es abogado y no puede dar ayuda legal de inmigración. Los estudiantes indocumentados, incluidos los que tienen DACA (Acción Diferida para los Llegados en la Infancia), y los que tienen TPS (Estatus de Protección Temporal) no pueden recibir ayuda federal, pero sí podrían recibir ayuda estatal, de la universidad o privada. Lee \"Si no eres ciudadano de EE. UU.\" en Situaciones especiales en la FAFSA para saber qué formulario usar."
+        },
+        {
+          "kind": "list",
+          "heading": "Paso 4: Después de enviarla",
+          "items": [
+            "La mayoría de los formularios se procesan de inmediato, pero algunos tardan de 1 a 3 días. Después, revisa cada respuesta en tu FAFSA Submission Summary (resumen de tu FAFSA). Si dice 2026–27 y vas a empezar a estudiar en el otoño de 2027, empieza ahora un formulario 2027–28.",
+            "El resumen muestra tu Student Aid Index (SAI, índice de ayuda estudiantil), un número que las escuelas usan para calcular tu ayuda. No es una cantidad de dinero ni una factura, y puede bajar hasta −1500. Un SAI más bajo por lo general quiere decir más ayuda.",
+            "Si tu SAI es 0 o menos, puede que califiques para la cantidad máxima de la Pell Grant.",
+            "¿Te piden pasos adicionales para comprobar quién eres? Hazlos de inmediato. La ayuda no se puede pagar hasta que termines.",
+            "¿Te escogieron para \"verification\" (verificación)? Eso no quiere decir que hayas hecho algo mal. A algunos estudiantes los escogen al azar, y algunas escuelas revisan a todos. Cada universidad te dirá qué necesita, como un comprobante de los ingresos de 2025 o una hoja firmada que diga que tu padre o madre no declaró impuestos. Envíalo de inmediato para que tu ayuda no se retrase. ¿No puedes conseguir un documento? A veces la oficina de ayuda financiera puede aceptar otra cosa.",
+            "Cada escuela envía su propia oferta de ayuda, por lo general después de que te acepten. Si vas a un colegio comunitario o a un programa de capacitación, pregúntale a la oficina de ayuda financiera qué pasos te faltan para recibir tu oferta.",
+            "Las ofertas pueden combinar becas (grants y scholarships, que no se devuelven), work-study (estudio y trabajo: dinero que ganas en un empleo) y préstamos (que se devuelven con intereses). Puedes rechazar un préstamo o aceptar menos. Si una oferta incluye préstamos Parent PLUS (préstamos federales para padres), esa deuda sería de tu padre o madre. Para comparar ofertas, lee \"Cómo leer y comparar ofertas de ayuda financiera\".",
+            "Muchas universidades te piden que decidas a más tardar el 1 de mayo. Revisa la fecha de cada escuela.",
+            "Envía una FAFSA nueva cada año que estés estudiando."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Paso 5: Corrige errores o pide cambios",
+          "items": [
+            "Para corregir un error de escritura, agregar una firma o un consentimiento que falte, o cambiar tus escuelas, elige \"Make a Correction\" (hacer una corrección) en tu resumen. Tus padres solo pueden corregir sus propias secciones. El plazo para hacer correcciones cierra el 12 de septiembre de 2028.",
+            "¿Dijiste por error que tus padres se niegan a dar su información? Cambia esa respuesta a \"No\" para que te consideren para toda la ayuda.",
+            "¿Cambió mucho la situación económica de tu familia, por ejemplo por la pérdida de un trabajo o por gastos médicos grandes? No cambies tus respuestas de la FAFSA. Pídele a la oficina de ayuda financiera de cada universidad una revisión por \"special circumstances\" (circunstancias especiales) y lleva papeles que lo comprueben. Cada universidad decide, y no se garantiza ningún cambio."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Ayuda gratis",
+          "items": [
+            "Federal Student Aid Information Center (Centro de Información de Ayuda Federal para Estudiantes): 1-800-433-3243 (en inglés y en español). TTY para personas sordas o con dificultades auditivas: 1-800-730-8913. Otros idiomas: llama al 1-833-610-2590 y marca el 7.",
+            "Tu consejero escolar, la oficina de ayuda financiera de cualquier universidad, o tu asesor de Upward Bound, Talent Search o GEAR UP. ¿No tienes computadora en casa? Usa una en la escuela o en una biblioteca pública.",
+            "FAFSA en papel: imprímela desde StudentAid.gov o llama al 1-800-433-3243 para pedirla. No la envíes por correo antes del 1 de octubre de 2026. En línea es más rápido, así que, si se acerca una fecha límite, envíala en línea.",
+            "Quien de verdad te ayuda se sienta contigo, pero nunca recibe tu contraseña. Si una página te pide una tarjeta de crédito mientras llenas la FAFSA, no es la página oficial."
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "title": "FAFSA Application Deadlines: fechas límite de la FAFSA (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"
+        },
+        {
+          "title": "2027–28 FAFSA Form: formulario FAFSA 2027–28 (StudentAid.gov, PDF en inglés)",
+          "url": "https://studentaid.gov/sites/default/files/2027-28-fafsa-form.pdf"
+        },
+        {
+          "title": "FAFSA Application: página de la solicitud FAFSA (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/h/apply-for-aid/fafsa"
+        },
+        {
+          "title": "2027–28 FAFSA Beta Testing Plan, Updated Sept. 23, 2026: plan de pruebas beta de la FAFSA (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-21/2027-28-fafsa-beta-testing-plan-updated-sept-23-2026"
+        },
+        {
+          "title": "2027–28 FAFSA Specifications Guide, Vol. 1: guía técnica de la FAFSA (Federal Student Aid, PDF en inglés)",
+          "url": "https://fsapartners.ed.gov/sites/default/files/2026-07/2728FSGVol1.pdf"
+        },
+        {
+          "title": "2027–28 FAFSA Specifications Guide, Vol. 2: FPS Schedule and Getting Help — calendario y ayuda (Federal Student Aid, PDF en inglés)",
+          "url": "https://fsapartners.ed.gov/sites/default/files/2026-07/2728FSGVol2FPSScheduleGettingHelp.pdf"
+        },
+        {
+          "title": "Key Facts About Your StudentAid.gov Account: datos clave sobre tu cuenta (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/articles/key-facts-accounts/"
+        },
+        {
+          "title": "How do I verify my identity if I don't have an SSN? — cómo verificar tu identidad sin SSN (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/help-center/answers/article/verify-identity-create-account-dont-have-ssn"
+        },
+        {
+          "title": "Steps for Students Filling Out the FAFSA Form: pasos para estudiantes (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/articles/fafsa-student-steps/"
+        },
+        {
+          "title": "Completing the FAFSA Form: Steps for Parents — pasos para los padres (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/articles/fafsa-for-parents/"
+        },
+        {
+          "title": "7 Things to Do After Submitting Your FAFSA Form: qué hacer después de enviar la FAFSA (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/articles/things-after-fafsa/"
+        },
+        {
+          "title": "Reporting Parent Information: cómo reportar la información de los padres (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out/parent-info"
+        }
+      ]
+    },
+    {
+      "id": "special-situations",
+      "title": "Situaciones especiales en la FAFSA",
+      "summary": "La FAFSA cuando uno de tus padres no tiene SSN o no declaró impuestos, no eres ciudadano o tienes DACA, has estado en cuidado de crianza o sin hogar, o tus padres se divorciaron o no quieren ayudar.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "En pocas palabras",
+          "items": [
+            "Empieza temprano. Las situaciones especiales toman más tiempo, y algunas ayudas se reparten por orden de llegada.",
+            "Aunque uno de tus padres no tenga número de Seguro Social (SSN), puede llenar la FAFSA (Solicitud Gratuita de Ayuda Federal para Estudiantes). La FAFSA no pregunta por el estatus migratorio de tus padres.",
+            "¿Tus padres viven separados? Pon en la FAFSA al que te dio más apoyo económico en los últimos 12 meses.",
+            "Después de enviarla, comunícate con la oficina de ayuda financiera de cada escuela que pusiste en tu FAFSA. Cada escuela decide por su cuenta.",
+            "Ayuda gratis: 1-800-433-3243, en inglés o español."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "text": "Estas reglas son para la FAFSA 2027–28 (Free Application for Federal Student Aid). Las reglas pueden cambiar, así que confírmalas en StudentAid.gov o con la oficina de ayuda financiera de una escuela."
+        },
+        {
+          "kind": "list",
+          "heading": "Qué padres van en la FAFSA",
+          "items": [
+            "Tus padres legales son tus padres biológicos o adoptivos, o un padre o madre que tu estado reconoce como tal. Si viven juntos, los dos van en la FAFSA, aunque nunca se hayan casado o estén divorciados.",
+            "Si viven separados, pon al que te dio más apoyo económico en los últimos 12 meses, aunque no vivas con esa persona. El consejo anterior de poner \"al padre o la madre con quien vives\" ya no es válido. El apoyo no es solo dinero en efectivo. La manutención de los hijos (child support) cuenta para quien la paga. Si los dos dieron exactamente lo mismo, o ninguno te mantiene, pon al que tiene más ingresos y bienes, como ahorros.",
+            "Si esa persona está casada, tu padrastro o madrastra también va en el formulario. Si la pareja declaró impuestos por separado, tu padrastro o madrastra necesita su propia cuenta de StudentAid.gov y debe dar su consentimiento (permiso para que el IRS, la agencia federal de impuestos, envíe su información de impuestos).",
+            "Los abuelos, otros parientes y los amigos de la familia no cuentan, a menos que te hayan adoptado. ¿Vives con uno de ellos sin una orden judicial? Aun así debes dar la información de tus padres.",
+            "Aunque tu padre o madre viva en otro país, es posible que tenga que ir en tu FAFSA."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Si uno de tus padres no tiene SSN",
+          "items": [
+            "Si eres ciudadano de EE. UU. o extranjero con derecho a participar (\"eligible noncitizen\"), puedes recibir ayuda federal aunque tus padres sean indocumentados. La FAFSA no pregunta por su ciudadanía ni por su estatus migratorio.",
+            "Una excepción: para pedir un préstamo Parent PLUS (un préstamo federal para padres), el padre o la madre debe ser ciudadano de EE. UU. o extranjero con derecho a participar."
+          ]
+        },
+        {
+          "kind": "steps",
+          "heading": "Cómo participa un padre o madre sin SSN",
+          "items": [
+            "Tu padre o madre crea su propia cuenta de StudentAid.gov con un correo electrónico que ninguna otra cuenta use, y marca la casilla que dice que no tiene SSN.",
+            "Responde unas preguntas de identidad de TransUnion, una compañía de crédito. Si eso no funciona, aun así puede llenar la FAFSA de inmediato. No debe crear una segunda cuenta.",
+            "StudentAid.gov le mandará un correo con los siguientes pasos. Tal vez tenga que enviar una copia de una identificación, como licencia de manejo, identificación estatal o pasaporte de otro país. Una matrícula consular junto con un recibo de luz, agua o gas también podría servir.",
+            "Invita a tu padre o madre con el correo electrónico de su cuenta. Escribe su nombre siempre igual, con los mismos apellidos y el mismo guion, si lo tiene.",
+            "En línea, la casilla del SSN de tu padre o madre se deja en blanco (en papel, se llena con ceros). Un ITIN (número de identificación fiscal que da el IRS) va solo en la casilla del ITIN.",
+            "Tu padre o madre debe dar su consentimiento; si no, no puedes recibir ayuda federal. Si el IRS no puede enviar su información de impuestos, tu padre o madre escribe los números de su declaración de impuestos de 2025."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Privacidad e inmigración",
+          "text": "El aviso de privacidad de la FAFSA dice que tu información se usa para decidir la ayuda y que está protegida por la ley federal de privacidad. Pero se puede compartir en algunos casos, por ejemplo con una agencia que investiga una posible violación de la ley. El aviso no promete que la información nunca llegará a las autoridades de inmigración. ¿Te preocupa? Busca pronto consejo gratis y confiable de un abogado de inmigración o de un \"representante acreditado\" (accredited representative: alguien que trabaja en una organización sin fines de lucro y está aprobado por el Departamento de Justicia de EE. UU.): https://www.uscis.gov/scams-fraud-and-misconduct/avoid-scams/legal-services. Cuidado con los \"notarios\". En algunos países, un notario tiene formación en leyes. En EE. UU., un notario público (notary public) no es abogado y no puede ayudar con casos de inmigración. La decisión le corresponde a tu familia. Algunos estados, como Washington, permiten que las familias pidan solo ayuda estatal, con un formulario del estado. Pero un estudiante ciudadano o extranjero con derecho a participar que no llene la FAFSA puede quedarse sin becas federales, y muchas veces también sin becas estatales."
+        },
+        {
+          "kind": "list",
+          "heading": "Si no eres ciudadano de EE. UU.",
+          "items": [
+            "Con una green card (tarjeta de residente permanente), estatus de refugiado o asilado, u otros estatus específicos, podrías ser extranjero con derecho a participar (\"eligible noncitizen\") y recibir ayuda federal. Elige \"Eligible noncitizen\" y escribe tu A-Number (el número de 8 o 9 dígitos que aparece en tus papeles de inmigración). ¿No sabes si eres extranjero con derecho a participar? Pregunta en la oficina de ayuda financiera de una escuela antes de rendirte.",
+            "Los estudiantes indocumentados y los que tienen DACA (Acción Diferida para los Llegados en la Infancia) no pueden recibir ayuda federal, pero podrían recibir ayuda del estado o de la escuela. Pregunta a la agencia de ayuda estudiantil de tu estado o a la oficina de ayuda financiera de una escuela qué formulario usar.",
+            "¿Tienes DACA y SSN, y tu estado pide la FAFSA? Elige \"Neither U.S. citizen nor eligible noncitizen\" (ni ciudadano ni extranjero con derecho a participar). Tus resultados dirán que no puedes recibir ayuda federal. Eso es de esperarse. Los estados y las escuelas aun así pueden usar tu FAFSA.",
+            "¿Eres indocumentado y no tienes SSN? No puedes enviar la FAFSA de ninguna manera. Un formulario estatal podría ser tu única forma de pedir ayuda del estado.",
+            "Pregunta en cada escuela si calificas para la matrícula estatal (in-state tuition, el precio más bajo para residentes del estado). Las reglas cambian de un estado a otro, y también con el tiempo. En 2025, los estudiantes indocumentados perdieron la matrícula estatal en Florida y Texas. No te guíes por lo que le pasó a un hermano o hermana mayor. Pide a cada escuela las reglas de este año.",
+            "Busca becas de las escuelas y becas privadas. Algunas aceptan a estudiantes que no son ciudadanos."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Cuidado de crianza, tutela o sin padres con vida",
+          "text": "¿En algún momento desde que cumpliste 13 años estuviste en cuidado de crianza (foster care), bajo la tutela de un tribunal (ward of the court) o sin padre ni madre con vida? Entonces eres independiente y no das información de tus padres, aunque las cosas hayan cambiado después. También eres independiente si un tribunal de tu estado nombró como tu tutor legal a alguien que no es tu padre o madre, o te declaró menor emancipado (legalmente adulto antes de los 18). Esa decisión debe estar vigente ahora, o justo antes de que cumplieras la mayoría de edad. Si los papeles dicen \"custody\" (custodia) y no \"guardianship\" (tutela), deja esa casilla en blanco y pregunta en la oficina de ayuda financiera. Tu escuela puede pedirte pruebas, como una copia de la decisión del tribunal o una carta de tu trabajador social. ¿Estás o estuviste en cuidado de crianza? Pregunta a tu trabajador social, a la agencia de bienestar infantil de tu estado o a la oficina de ayuda financiera de una escuela por los Education and Training Vouchers (ETV, vales para educación y capacitación), un programa federal que puede ayudar a pagar la universidad o una carrera técnica."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Sin hogar o en riesgo de quedarte sin hogar",
+          "text": "Estar sin hogar significa que no tienes un lugar fijo, regular y adecuado donde vivir: por ejemplo, vives en un albergue, un motel, un carro o un parque, o te quedas con otras personas porque no tienes adónde ir. Si estás en uno de esos lugares porque te fuiste de la casa de un padre o madre que te maltrataba, podrías contar como persona sin hogar aunque ese padre o madre te dejara vivir en su casa. Podrías ser independiente si, en algún momento durante 2026 o después, viviste aparte de tus padres o de tu tutor y estabas sin hogar, o pagabas tus propios gastos y estabas en riesgo de quedarte sin hogar. ¿Estás sin hogar junto con tu padre o madre? Aun así das su información. Cuéntale a la oficina de ayuda financiera de cada escuela lo que está pasando. Tal vez puedan ajustar tu ayuda."
+        },
+        {
+          "kind": "steps",
+          "heading": "Cómo demostrar que eres un joven sin hogar",
+          "items": [
+            "Pide una determinación (una decisión oficial) al enlace para estudiantes sin hogar (homeless liaison) de tu high school o distrito escolar, la persona que ayuda a estudiantes sin vivienda estable. También puede hacerla el director de un albergue, de un programa para jóvenes o de un programa TRIO o GEAR UP (programas federales que ayudan a llegar a la universidad). En la FAFSA, marca quién la hizo.",
+            "¿No tienes una determinación? Elige \"None of these apply\" (no aplica ninguna), envía la FAFSA y comunícate con la oficina de ayuda financiera de cada escuela. La oficina debe decidir, y puede usar una carta que tú escribas o una conversación contigo. No necesitas un reporte de la policía ni de protección infantil.",
+            "Usa una dirección postal donde sepas que te llegará el correo, como la de un pariente o amigo de confianza (pregúntale primero) o la de una escuela."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Si no puedes contactar a tus padres o no quieren ayudar",
+          "text": "Si tus padres se niegan a pagar o a llenar la FAFSA, eso por sí solo no te hace independiente. Si es seguro, habla primero con ellos, o pide a un consejero que lo haga. La FAFSA no compromete a tus padres a ningún préstamo. El número que calcula, llamado Student Aid Index (SAI, o Índice de Ayuda Estudiantil), no es un cobro. Si eso no funciona, o no puedes comunicarte con ellos, hay dos caminos."
+        },
+        {
+          "kind": "list",
+          "heading": "Camino 1: Circunstancias inusuales",
+          "items": [
+            "Podrías calificar si te fuiste de casa por maltrato o amenazas, tus padres te abandonaron, estás alejado de ellos (ya no tienes relación con ellos) o no puedes encontrarlos ni comunicarte con ellos.",
+            "Otras razones: eres refugiado o asilado y estás separado de tus padres, tus padres están desplazados en otro país, eres víctima de trata de personas, o tú o tus padres están en prisión o en la cárcel y el contacto te pondría en riesgo.",
+            "Responde \"Sí\" a la pregunta sobre circunstancias inusuales (unusual circumstances), deja en blanco las secciones de los padres y envía la FAFSA. Serás \"provisionalmente independiente\" (todavía no es definitivo). De inmediato, pregunta a la oficina de ayuda financiera de cada escuela qué necesita.",
+            "La prueba puede ser una carta o llamada de un trabajador social o una agencia de bienestar infantil, un programa contra el maltrato o la violencia, personal de TRIO o GEAR UP, un defensor nombrado por un tribunal o un abogado. ¿No tienes a nadie? Pide una entrevista en la oficina de ayuda financiera."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Camino 2: Tus padres siguen sin querer participar",
+          "items": [
+            "Esta es la última opción. Responde \"Sí\" a la pregunta sobre padres que se niegan a participar. La escuela necesita una nota firmada por tus padres o, si no quieren firmar, una carta de alguien como un maestro o consejero.",
+            "Entonces la escuela podría ofrecerte solo un Direct Unsubsidized Loan (préstamo federal sin subsidio), que tienes que devolver con intereses. Para un estudiante de primer año, el máximo suele ser $5,500 por año.",
+            "No recibirás Pell Grants (becas federales que normalmente no hay que devolver), préstamos con subsidio (subsidized loans: el gobierno paga los intereses mientras estudias) ni work-study (trabajos de medio tiempo para estudiantes). Sin SAI, es posible que tampoco puedas recibir becas del estado ni de la escuela."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Si uno de tus padres no declaró impuestos",
+          "text": "Aun así puedes presentar la solicitud. Tu padre o madre indica que no presentó una declaración de impuestos de EE. UU. de 2025 y elige el motivo. Si los padres que van en tu FAFSA (incluido un padrastro o madrastra, si va en ella) no tenían que declarar porque sus ingresos eran bajos, calificas automáticamente para la cantidad máxima de Pell Grant, si cumples los demás requisitos. Pero lo que se gana en efectivo cuenta como ingreso: quienes trabajan por su cuenta normalmente deben declarar si ganaron $400 o más después de restar sus gastos. Si tu padre o madre ganó dinero en otro país, lo convierte a dólares estadounidenses y lo escribe, y en ese caso no se aplica la cantidad máxima automática de Pell Grant. Tu padre o madre de todos modos tiene que dar su consentimiento."
+        },
+        {
+          "kind": "warning",
+          "heading": "Si uno de tus padres debía declarar y no lo hizo",
+          "text": "No te asustes y no dejes de llenar la FAFSA. Tu escuela podría exigir que tu padre o madre presente la declaración de 2025 y muestre una prueba antes de que recibas ayuda federal, así que la declaración debe presentarse lo antes posible. El IRS tiene sitios de ayuda gratis con los impuestos, llamados VITA, para personas con ingresos bajos o moderados o que hablan poco inglés. Algunos también ayudan a solicitar un ITIN. Llama al 800-906-9887 o visita https://www.irs.gov/individuals/free-tax-return-preparation-for-qualifying-taxpayers"
+        },
+        {
+          "kind": "tip",
+          "heading": "Ayuda gratis y cuidado con las estafas",
+          "text": "Llama al Federal Student Aid Information Center (Centro de Información de Ayuda Federal para Estudiantes) al 1-800-433-3243, en inglés o español. Para otros idiomas, llama al 1-833-610-2590 y marca el 7, o visita https://studentaid.gov/apply-for-aid/fafsa/filling-out/other-languages. Puedes llenar la FAFSA en inglés o en español. Si quieres ayuda en persona, pregunta a tu consejero escolar o a la agencia de ayuda estudiantil de tu estado. La FAFSA siempre es gratis, y las personas que cobran por preparar solicitudes no tienen permiso para llenarla. Usa solo StudentAid.gov o fafsa.gov. Nunca le des a nadie tu nombre de usuario ni tu contraseña de StudentAid.gov, ni siquiera a alguien que te esté ayudando. Nunca pagues para solicitar una beca. En línea es más rápido, así que si falta poco para una fecha límite, llénala en línea. ¿Vas a usar una FAFSA en papel? No la envíes por correo antes del 1 de octubre de 2026."
+        }
+      ],
+      "sources": [
+        {
+          "title": "2027–28 FAFSA Form: formulario FAFSA 2027–28 (StudentAid.gov, PDF en inglés)",
+          "url": "https://studentaid.gov/sites/default/files/2027-28-fafsa-form.pdf"
+        },
+        {
+          "title": "Application and Verification Guide 2026–27, Ch. 1: The Application Process — el proceso de solicitud (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch1-application-process-fafsa-isir"
+        },
+        {
+          "title": "Application and Verification Guide 2026–27, Ch. 2: Filling Out the FAFSA Form — cómo llenar la FAFSA (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch2-filling-out-fafsa-form"
+        },
+        {
+          "title": "Application and Verification Guide 2023–24, Ch. 2: Filling Out the FAFSA Form — cómo llenar la FAFSA (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2023-2024/application-and-verification-guide/ch2-filling-out-fafsa"
+        },
+        {
+          "title": "Application and Verification Guide 2026–27, Ch. 5: Special Cases — casos especiales (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch5-special-cases"
+        },
+        {
+          "title": "FSA Handbook 2026–27, Vol. 1, Ch. 2: U.S. Citizenship and Eligible Noncitizens — requisitos de ciudadanía (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol1/ch2-us-citizenship-eligible-noncitizens"
+        },
+        {
+          "title": "How do I verify my identity if I don't have an SSN? — cómo verificar tu identidad sin SSN (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/help-center/answers/article/verify-identity-create-account-dont-have-ssn"
+        },
+        {
+          "title": "2027–28 Student Aid Index (SAI) and Pell Grant Eligibility Guide: guía del SAI y la beca Pell (Federal Student Aid, PDF en inglés)",
+          "url": "https://fsapartners.ed.gov/sites/default/files/2026-06/2728StudentAidIndexSAIandPellGrantEligibilityGuide.pdf"
+        },
+        {
+          "title": "FSA Handbook 2025–26, Vol. 8, Ch. 4: Annual and Aggregate Loan Limits — límites de préstamos (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2025-2026/vol8/ch4-annual-and-aggregate-loan-limits"
+        },
+        {
+          "title": "FAFSA Support in Other Languages: ayuda con la FAFSA en otros idiomas (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out/other-languages"
+        },
+        {
+          "title": "Avoid Scams: Legal Services — servicios legales de inmigración (USCIS, en inglés)",
+          "url": "https://www.uscis.gov/scams-fraud-and-misconduct/avoid-scams/legal-services"
+        },
+        {
+          "title": "Free Tax Return Preparation for Qualifying Taxpayers: preparación gratis de impuestos (IRS, en inglés)",
+          "url": "https://www.irs.gov/individuals/free-tax-return-preparation-for-qualifying-taxpayers"
+        }
+      ]
+    },
+    {
+      "id": "pell-and-workforce-pell",
+      "title": "Pell Grants (becas federales Pell) y Workforce Pell",
+      "summary": "Una Pell Grant (beca federal Pell) es dinero del gobierno que ayuda a estudiantes con necesidad económica a pagar la universidad o una capacitación laboral, y normalmente no tienes que devolverla.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "En pocas palabras",
+          "items": [
+            "¿Vas a empezar a estudiar justo al terminar high school? Llena la FAFSA (Solicitud Gratuita de Ayuda Federal para Estudiantes) en el otoño de tu último año de high school, y otra vez cada año. El formulario 2027-28 abrió el 23 de septiembre de 2026. Envíalo pronto, porque parte de la ayuda del estado y de las universidades se acaba.",
+            "No cuentes con la beca Pell hasta que aparezca en la oferta de ayuda financiera de una escuela. Si no aparece, llama a la oficina de ayuda financiera.",
+            "¿Te interesa un programa corto de capacitación laboral? Pide a la escuela que te muestre por escrito que el programa está aprobado para Workforce Pell (la beca Pell para programas cortos) y cuánto te quedaría por pagar.",
+            "La FAFSA es gratis y está disponible en español. El sitio oficial termina en .gov. Nunca le pagues a nadie para que la llene. Ayuda gratis en inglés o en español: 1-800-433-3243, o pregúntale a tu consejero escolar."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Quién puede recibirla",
+          "items": [
+            "Tu escuela, ya sea una universidad de cuatro años, un colegio comunitario o una escuela técnica o de oficios, acepta ayuda federal para estudiantes.",
+            "Tienes necesidad económica, según tu FAFSA.",
+            "Todavía no tienes un bachelor's degree (título universitario de cuatro años). Workforce Pell es una excepción; lee más abajo.",
+            "Eres ciudadano de EE. UU. o no ciudadano elegible, por ejemplo, una persona con green card (tarjeta de residencia permanente), una persona refugiada o una persona a quien se le concedió asilo.",
+            "Terminaste high school (diploma, GED, HiSET, otro equivalente de high school aprobado por el estado, o educación en casa). La beca Pell no paga clases universitarias que tomes mientras estás en high school (dual enrollment)."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Si eres indocumentado o tienes DACA",
+          "text": "Los estudiantes indocumentados, incluidos quienes tienen DACA (Acción Diferida para los Llegados en la Infancia), no pueden recibir ayuda federal como la beca Pell, pero es posible que reciban dinero del estado, de la universidad o de becas privadas. Algunos estados, como California, tienen su propia solicitud para estudiantes indocumentados en lugar de la FAFSA. Antes de llenar cualquier formulario, pregúntale a tu consejero o a la oficina de ayuda financiera de la universidad cuál debes usar. No adivines."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Si tus padres son indocumentados",
+          "text": "Si eres ciudadano de EE. UU. o no ciudadano elegible, el estatus migratorio de tus padres no afecta tu ayuda federal, incluida la beca Pell, y la FAFSA no pregunta por eso. Un padre o una madre sin número de Seguro Social (Social Security number) sí puede crear una cuenta en https://studentaid.gov y llenar y firmar su parte de tu FAFSA. Si a tu familia le preocupa compartir su información, lean juntos la parte \"Privacidad e inmigración\" de Situaciones especiales en la FAFSA, y antes de decidir, hablen con un abogado de inmigración con licencia o con un representante acreditado por el DOJ (una persona capacitada que trabaja en una organización sin fines de lucro aprobada por el Departamento de Justicia de EE. UU.). La página \"Legal services\" (servicios legales) de USCIS (la agencia federal de inmigración) explica cómo encontrarlos."
+        },
+        {
+          "kind": "warning",
+          "heading": "La parte de tus padres en la FAFSA",
+          "text": "Cada padre o madre que tiene que aparecer en tu FAFSA debe llenar su parte y dar su consentimiento (aceptar) para que el IRS (la agencia federal de impuestos) comparta su información de impuestos federales, aunque no tenga número de Seguro Social ni haya declarado impuestos en EE. UU. Sin eso, no puedes recibir la beca Pell ni otra ayuda federal. Si tus padres simplemente no quieren ayudar, eso no te permite saltarte su parte. Algunos estudiantes pueden llenar la FAFSA sin sus padres, como quienes estuvieron en foster care (cuidado de crianza) o bajo la tutela de un tribunal en cualquier momento desde los 13 años, o quienes no tienen hogar y viven por su cuenta. También hay un proceso si no puedes comunicarte con tus padres o si no es seguro contactarlos. No dejes su parte en blanco sin más; consulta Situaciones especiales en la FAFSA."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Cuánto dinero",
+          "text": "Para 2026-27, los estudiantes de tiempo completo pueden recibir hasta $7,395 al año. La cantidad mínima es $740. Quienes estudian a tiempo parcial (por lo general, menos de 12 créditos por período) reciben menos. Si tomas clases en un período extra, como el verano, a veces puedes recibir hasta 1.5 veces tu cantidad anual. Las cantidades de 2027-28, para el otoño de 2027, todavía no se han anunciado."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "El dinero que sobra",
+          "text": "La beca Pell paga primero lo que le debes a la escuela. Luego, la escuela te da lo que sobra, que a menudo se llama reembolso (refund), para gastos como libros, comida o renta. Por lo general, la escuela debe dártelo en un plazo de 14 días, a menos que aceptes que lo guarde para cobros futuros. Pregunta en tu escuela cuándo pagan los reembolsos."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Tu SAI y tu beca Pell",
+          "text": "La cantidad que recibes depende sobre todo de tu SAI (Student Aid Index, o Índice de Ayuda Estudiantil), un número que la FAFSA calcula con las finanzas de tu familia. Mientras más bajo sea tu SAI, más dinero de Pell recibes. Para 2026-27, la mayoría de los estudiantes necesitan un SAI de 6,655 o menos. Algunas familias de bajos ingresos pueden recibir el mínimo de $740 con un SAI más alto, pero nadie con un SAI de 14,790 o más puede recibir la beca Pell. La única excepción: si tu padre o tu madre murió en el cumplimiento del deber como militar o como agente de seguridad pública (por ejemplo, policía o bombero), es posible que aun así recibas la beca Pell. Pregunta en la oficina de ayuda financiera. Tu SAI no es una cuenta que tengas que pagar. Incluso puede ser negativo, lo que significa que tienes mucha necesidad económica."
+        },
+        {
+          "kind": "list",
+          "heading": "Cómo conservar tu beca Pell",
+          "items": [
+            "Mantén buenas calificaciones y aprueba suficientes clases. Si no cumples las reglas de avance académico de tu escuela, llamadas Satisfactory Academic Progress (Progreso Académico Satisfactorio), puedes perder la beca Pell. Si te pasa algo difícil, como una enfermedad, pregunta si puedes apelar.",
+            "Habla con la oficina de ayuda financiera antes de dar de baja una clase o de dejar la escuela. Pasar a tiempo parcial puede reducir tu beca Pell. Si dejas de ir a clases a mitad de un período, es posible que tengas que devolver una parte.",
+            "Sigue solicitando becas y avísale a tu escuela de cada una que recibas. En casos poco comunes, las becas de tu estado, de tu escuela o de grupos privados cubren todo el costo anual estimado de la escuela, y entonces no se permite recibir la beca Pell. La escuela puede reducir otras becas para que no pierdas la Pell.",
+            "El límite de por vida es de unos 6 años de estudios de tiempo completo. Los períodos a tiempo parcial cuentan menos. Para ver cuánto has usado, inicia sesión en https://studentaid.gov y revisa \"My Grants\" (Mis becas)."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Workforce Pell para programas cortos",
+          "items": [
+            "A partir del 1 de julio de 2026, Workforce Pell puede ayudar a pagar algunos programas de capacitación laboral que duran de 8 semanas a un poco menos de 15 semanas. Los programas deben cumplir varias reglas, entre ellas tener la aprobación del gobernador de tu estado y del Departamento de Educación de EE. UU.",
+            "Recibes una parte de la cantidad anual de la beca Pell, según la duración del programa. El Departamento de Educación calcula que la beca promedio será de unos $1,710.",
+            "Es solo la beca Pell (no incluye préstamos federales para estudiantes), y usa una parte de tu límite de por vida de la beca Pell.",
+            "Los adultos que ya tienen un bachelor's degree pueden usarla, pero no si tienen un título o certificado de posgrado (como una maestría), ni si están inscritos o fueron aceptados en un programa de posgrado.",
+            "Aun así, tienes que llenar la FAFSA y agregar la escuela."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Es algo muy nuevo",
+          "text": "Las escuelas recién pudieron empezar a pedir la aprobación el 1 de julio de 2026, así que es posible que muchos programas todavía no estén aprobados, y un programa recién creado no puede calificar de inmediato. Que un anuncio diga \"ayuda financiera disponible\" no significa que el programa tenga Workforce Pell. No te inscribas porque te digan que la aprobación \"viene pronto\". Pregunta el precio total y cuántos estudiantes terminan el programa y consiguen trabajo. Si una escuela te presiona para sacar un préstamo privado o un \"income share agreement\" (un préstamo que pagas con una parte de tus ingresos futuros), no te apresures y compara opciones."
+        },
+        {
+          "kind": "tip",
+          "heading": "Otra ayuda para pagar la capacitación laboral",
+          "text": "El American Job Center (centro de empleo público) de tu zona también podría ayudarte a pagar una capacitación laboral. Las personas de bajos ingresos tienen prioridad. Encuentra uno en https://www.careeronestop.org/LocalHelp/AmericanJobCenters/find-american-job-centers.aspx"
+        },
+        {
+          "kind": "steps",
+          "heading": "Cómo solicitarla",
+          "items": [
+            "Entra a https://studentaid.gov para llenar la FAFSA 2027-28, que es para estudios que empiecen entre el 1 de julio de 2027 y el 30 de junio de 2028. Para más detalles, consulta \"La FAFSA, paso a paso\".",
+            "Agrega en tu FAFSA todas las escuelas que estás considerando, incluidos los colegios comunitarios y las escuelas técnicas y de oficios. En la FAFSA en línea puedes agregar hasta 20.",
+            "Si una escuela te pide documentos (a esto se le llama \"verificación\"), envíalos rápido. Si no terminas ese proceso, puedes perder tu beca Pell."
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "title": "Federal Pell Grants: becas federales Pell (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/grants/pell"
+        },
+        {
+          "title": "GEN-26-01: 2026–27 Federal Pell Grant Maximum and Minimum Award Amounts — montos de la beca Pell (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/dear-colleague-letters/2026-01-30/2026-27-federal-pell-grant-maximum-and-minimum-award-amounts"
+        },
+        {
+          "title": "FSA Handbook 2026–27, Vol. 7, Ch. 2: Calculating Pell Grants — cálculo de la beca Pell (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol7/ch2-calculating-pell-grants"
+        },
+        {
+          "title": "Application and Verification Guide 2026–27, Ch. 3: SAI and Pell Grant Eligibility — el SAI y la beca Pell (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch3-student-aid-index-sai-and-pell-grant-eligibility"
+        },
+        {
+          "title": "How Financial Aid Is Calculated: cómo se calcula la ayuda financiera (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/complete-aid-process/how-calculated"
+        },
+        {
+          "title": "FSA Handbook 2026–27, Vol. 7, Ch. 3: Pell Enrollment Intensity and Cost of Attendance — inscripción y costo (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol7/ch3-pell-grant-enrollment-intensity-and-cost-attendance"
+        },
+        {
+          "title": "FSA Handbook 2026–27, Vol. 7, Ch. 7: Initial Calculations, Recalculations and Overawards — recálculos (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol7/ch7-initial-calculations-recalculations-and-overawards"
+        },
+        {
+          "title": "Final Rule: Workforce Pell Grants and Pell Grant Exclusion, 91 FR 29254 — resumen de la regla final (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/federal-registers/2026-05-19/final-accountability-higher-education-and-access-through-demand-driven-workforce-pell-pell-grant-exclusion-relating-other-grant-aid-and-workforce-pell-grants"
+        },
+        {
+          "title": "Final Rule: Workforce Pell Grants and Pell Grant Exclusion, 91 FR 29254 — texto completo de la regla final (GovInfo, en inglés)",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2026-05-19/html/2026-10013.htm"
+        },
+        {
+          "title": "GENERAL-26-32: Effective Dates for Workforce Pell and Pell Ineligibility Provisions — fechas de vigencia (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-06-04/effective-dates-workforce-pell-and-federal-pell-grant-ineligibility-provisions"
+        },
+        {
+          "title": "GENERAL-26-44: State Workforce Pell Certification Form Available — formulario estatal de certificación (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-01/eligible-workforce-programs-state-workforce-pell-certification-form-available"
+        },
+        {
+          "title": "American Job Center Finder: buscador de centros de empleo (CareerOneStop, Departamento de Trabajo de EE. UU., en inglés)",
+          "url": "https://www.careeronestop.org/LocalHelp/AmericanJobCenters/find-american-job-centers.aspx"
+        }
+      ]
+    },
+    {
+      "id": "state-aid-and-promise-programs",
+      "title": "Ayuda estatal y programas Promise",
+      "summary": "Tu estado puede darte más ayuda: subvenciones, matrícula gratis en colegios comunitarios o técnicos, becas por mérito o inscripción temprana, pero cada programa tiene sus reglas y fechas límite.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "En pocas palabras",
+          "items": [
+            "Llena pronto la FAFSA 2027-28 (Solicitud Gratuita de Ayuda Federal para Estudiantes). Abrió el 23 de septiembre de 2026.",
+            "Revisa ya las fechas límite de tu estado. Algunos estados y universidades tienen fechas límite muy tempranas, incluso el 1 de octubre de 2026, y algunos estados dan ayuda solo hasta que se acaba el dinero.",
+            "¿Se te pasó una fecha límite estatal? Llena la FAFSA de todos modos. Perder una fecha límite estatal no cambia si puedes recibir ayuda federal. Luego pregunta en la oficina de ayuda de tu estado y en la oficina de ayuda financiera de tu universidad si todavía queda dinero. Algunos programas tienen una fecha límite posterior para ciertos estudiantes.",
+            "Muchos programas de \"matrícula gratis\" pagan solo la matrícula. Puede que todavía necesites dinero para libros, herramientas, transporte, comida y vivienda. Compara las escuelas según el costo total después de restar toda tu ayuda.",
+            "La FAFSA siempre es gratis y está en inglés y en español. Ten cuidado con cualquier empresa que cobre por buscar subvenciones o llenar formularios. Nunca compartas con nadie tu nombre de usuario ni tu contraseña de StudentAid.gov, tampoco con empresas.",
+            "Ayuda gratis: tu consejero escolar, los eventos sobre la FAFSA en tu escuela y el Federal Student Aid Information Center (centro de información de ayuda federal para estudiantes) al 1-800-433-3243. Muchas bibliotecas públicas tienen computadoras y Wi-Fi gratis."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Si estás en el último año de secundaria (generación 2027): revisa estas fechas ya",
+          "items": [
+            "Tennessee Promise (todos los pasos son obligatorios): Presenta tu solicitud a más tardar el 2 de noviembre de 2026. Asiste a una reunión obligatoria en diciembre de 2026 o enero de 2027. En la primavera de 2027, solicita admisión a un colegio comunitario, a un colegio de tecnología aplicada o a otra escuela elegible. Llena la FAFSA a más tardar el 1 de abril de 2027.",
+            "Tennessee Promise (continuación): Haz 16 horas de servicio comunitario a más tardar el 1 de agosto de 2027 (cuentan las horas hechas desde el 1 de agosto de 2025) e inscríbete a tiempo completo. ¿No puedes estudiar a tiempo completo? Habla con la oficina de ayuda financiera de la escuela antes de que empiece el período de clases.",
+            "Oklahoma's Promise (para familias cuyo ingreso bruto ajustado, una cifra de la declaración de impuestos, es menor de $60,000 a $80,000, según el tamaño de la familia): Si estás en el último año, puedes presentar la solicitud hasta el 31 de diciembre de 2026. Debes entregar los documentos a más tardar el 1 de febrero de 2027. Tienes que terminar las clases requeridas y, ya en la universidad, los ingresos de tus padres deben ser de $100,000 o menos cada año. No paga cuotas ni libros.",
+            "21st Century Scholars de Indiana (Becarios del Siglo 21): Completa las 12 actividades del Scholar Success Program (el plan de actividades para becarios), gradúate con un GPA (promedio de calificaciones) de al menos 2.5 y el tipo de diploma requerido, y llena la FAFSA a más tardar el 15 de abril de cada año.",
+            "College Bound de Washington (Rumbo a la Universidad): Llena la FAFSA o la WASFA (la solicitud de ayuda estatal de Washington) cada año y empieza la universidad o un colegio técnico a más tardar un año después de graduarte. ¿Vas directo a una universidad de cuatro años? Necesitas un GPA de al menos 2.0. Los ingresos de tu familia se revisan cada año mientras estás en la universidad (límite para 2027-28: $95,500 para una familia de cuatro personas).",
+            "Texas: Llena la FAFSA a más tardar el 15 de enero de 2027 para tener prioridad (la primera oportunidad de recibir ayuda estatal). Missouri: fecha límite de prioridad, 1 de febrero de 2027; fecha límite final, 1 de abril de 2027. Illinois y Kentucky: la ayuda se reparte hasta que se acaba el dinero, así que presenta la solicitud temprano.",
+            "California: Para la Cal Grant (una subvención estatal de California) necesitas tu FAFSA o tu CADAA (California Dream Act Application, la solicitud de la Ley Dream de California) y tu GPA certificado por tu escuela a más tardar el 2 de marzo de 2027. Casi todas las escuelas envían el GPA, pero verifícalo. Más o menos una semana después de presentar la solicitud, crea una cuenta en WebGrants 4 Students (la cuenta de ayuda estatal de California) y revisa que tu GPA esté ahí. Los estudiantes de colegios comunitarios de California tienen hasta el 2 de septiembre de 2027, pero lo mejor es cumplir con la fecha del 2 de marzo.",
+            "¿Empiezas un programa antes del 1 de julio de 2027? Necesitas la FAFSA 2026-27. Está abierta hasta el 30 de junio de 2027, pero algunas fechas límite estatales de 2026-27 ya pasaron. ¿Empiezas en el verano de 2027? Pregunta en la oficina de ayuda financiera de la escuela de qué año es el formulario que debes llenar (2026-27 o 2027-28)."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Tipos de ayuda estatal",
+          "items": [
+            "Subvenciones estatales (dinero que por lo general no tienes que devolver): Muchas veces se basan en la necesidad económica. Algunas también pagan formación para el trabajo, como certificados (programas cortos de capacitación laboral) o programas de aprendizaje (apprenticeships).",
+            "Programas Promise: Ayudan a pagar la matrícula en colegios comunitarios o técnicos. Los programas de \"último dólar\" pagan solo la matrícula (y a veces las cuotas obligatorias) que tus otras subvenciones no cubren. Si otras subvenciones ya cubren tu matrícula, puede que el programa te dé poco o nada.",
+            "Becas por mérito: Algunos estados pagan parte o toda la matrícula para residentes del estado a los estudiantes que cumplen requisitos de calificaciones, clases, resultados de exámenes u horas de voluntariado o de trabajo. Algunas, como Bright Futures de Florida, piden su propia solicitud. La beca Gold Seal Vocational de Florida es para programas de formación técnica. Pregúntale a tu consejero cuanto antes qué necesitas."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Cuándo hay que devolver una subvención",
+          "text": "A veces hay que devolver el dinero de una subvención. Si dejas de estudiar a mitad de un período de clases, puede que tengas que devolver parte del dinero de una subvención federal. Estudiar a tiempo parcial puede reducir tu subvención, y las subvenciones estatales tienen sus propias reglas. Habla con la oficina de ayuda financiera antes de darte de baja de alguna clase. Algunas subvenciones, como la TEACH Grant federal (una subvención para futuros maestros), se convierten en préstamos si después no cumples con el trabajo requerido."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Inscripción temprana: inscribirte es el primer paso",
+          "text": "Te inscribes en la escuela intermedia o en la secundaria (middle school o high school) y prometes cumplir algunas reglas, como mantener buenas calificaciones. Para recibir el dinero, debes cumplir esas promesas, llenar la FAFSA (o el formulario de tu estado) a partir de tu último año de secundaria y, ya en la universidad, seguir dentro del límite de ingresos. ¿Se te pasó el período para inscribirte? Es algo común y no es tu culpa. Pregúntale a tu consejero si te inscribieron automáticamente, y revisa las otras ayudas de tu estado."
+        },
+        {
+          "kind": "tip",
+          "heading": "Hermanos y hermanas menores",
+          "text": "Ayúdalos a inscribirse a tiempo. Indiana: a más tardar el 30 de junio del año en que cursan 8.º grado. Oklahoma: de 8.º a 11.º grado. En Indiana y Washington, muchos estudiantes quedan inscritos por medio del formulario de comidas escolares gratis o a precio reducido, así que hay que llenarlo cada año si la escuela lo pide. Si tu escuela da comidas gratis a todos, puede que no recoja estos formularios, así que pregúntale al consejero escolar cómo se inscriben los estudiantes. Ni tú ni tus padres tienen que ser ciudadanos de EE. UU. para solicitar comidas escolares."
+        },
+        {
+          "kind": "steps",
+          "heading": "Encuentra los programas de tu estado",
+          "items": [
+            "Busca tu estado en la tabla de 2027-28 de la página FAFSA Deadlines (fechas límite de la FAFSA) de StudentAid.gov: https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines",
+            "Busca la agencia de educación superior de tu estado (no la oficina de las escuelas de kínder a 12.º grado, o K-12). Usa el enlace \"state grant agency\" (agencia estatal de subvenciones) en la página \"Types of Aid\" (tipos de ayuda) de StudentAid.gov.",
+            "En el sitio web de esa agencia, anota el formulario y la fecha límite de cada programa. Algunos piden un formulario adicional. Las fechas límite cambian cada año, así que revísalas cada otoño.",
+            "Pregúntale a tu consejero y a la oficina de ayuda financiera de cada universidad sobre la ayuda estatal y local. Las universidades también pueden tener sus propias fechas límite.",
+            "Anota cada fecha límite en un calendario con un recordatorio dos semanas antes, y guarda una captura de pantalla o el número de confirmación de cada formulario. Revisa tu correo electrónico y tu cuenta de ayuda estatal por si te piden más información, y responde rápido."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Si tus padres no son ciudadanos de EE. UU.",
+          "text": "Si eres ciudadano de EE. UU. o un no ciudadano elegible (por ejemplo, si tienes green card, estatus de refugiado o asilo ya otorgado), el estatus migratorio de tus padres no afecta tu ayuda federal. La FAFSA no pregunta por el estatus migratorio de tus padres, y un padre o una madre sin número de Seguro Social puede crear una cuenta de StudentAid.gov y llenar su parte. ¿Te preocupa compartir información? Lee \"Privacidad e inmigración\" en la sección \"Situaciones especiales en la FAFSA\", y habla con un abogado de inmigración con licencia o con un representante acreditado por el DOJ (una persona capacitada de una organización sin fines de lucro aprobada por el Departamento de Justicia de EE. UU.) antes de decidir."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Si no puedes recibir ayuda federal",
+          "text": "Los estudiantes indocumentados, incluidos los beneficiarios de DACA (Acción Diferida para los Llegados en la Infancia), no pueden recibir ayuda federal, pero algunos estados tienen sus propios formularios de ayuda. La CADAA de California es para estudiantes indocumentados, beneficiarios de DACA y estudiantes con visa U o TPS (Estatus de Protección Temporal) que cumplen las reglas de la ley AB 540 de California. Por lo general, eso quiere decir haber estudiado al menos 3 años en California y haberse graduado de una secundaria (high school) de California (o tener el equivalente). La agencia de ayuda estatal de California dice que no comparte la información de la CADAA con el gobierno federal ni la usa para hacer cumplir las leyes de inmigración. Para los formularios de otros estados, lee la sección \"Situaciones especiales en la FAFSA\". Las reglas pueden cambiar cada año, así que consulta con la oficina de ayuda de tu estado."
+        },
+        {
+          "kind": "warning",
+          "heading": "Los formularios estatales son solo para ayuda estatal",
+          "text": "La CADAA y el formulario de ayuda estatal de Washington, la WASFA, sirven solo para pedir ayuda del estado y de la universidad. A algunos estudiantes que podrían llenar la FAFSA, como un estudiante ciudadano cuyos padres son indocumentados, quizás se les permita usar estos formularios. Pero si usas uno en lugar de la FAFSA, pierdes la Pell Grant federal (una subvención federal para estudiantes con necesidad económica) y el resto de la ayuda federal. Habla con tu consejero o con la oficina de ayuda financiera de una universidad antes de elegir."
+        },
+        {
+          "kind": "list",
+          "heading": "Jóvenes en cuidado de crianza y jóvenes sin hogar",
+          "items": [
+            "En la FAFSA: Si estuviste en cuidado de crianza (foster care) o bajo la tutela de un tribunal en cualquier momento desde que cumpliste 13 años, no incluyes la información de tus padres. Lo mismo puede aplicarse si no tienes hogar y no vives con tu padre, tu madre o un tutor. Lee la sección \"Situaciones especiales en la FAFSA\".",
+            "Education and Training Vouchers (ETV, vales para educación y capacitación): Por medio de un programa federal llamado Chafee, los estados ofrecen hasta $5,000 al año a muchos jóvenes que están o estuvieron en cuidado de crianza. Pregúntale a tu trabajador social o al programa de vida independiente de tu estado.",
+            "La Chafee Grant for Foster Youth de California (una subvención para jóvenes en cuidado de crianza) pide su propia solicitud, y el dinero es limitado, así que preséntala temprano.",
+            "Passport to Careers de Washington (Pasaporte a las Carreras) ayuda a ir a la universidad o a hacer un programa de aprendizaje a jóvenes que estuvieron en cuidado de crianza y a jóvenes sin hogar que viven sin sus padres o tutores.",
+            "Los estudiantes en cuidado de crianza pueden unirse a 21st Century Scholars de Indiana incluso cuando ya están en la secundaria (high school). Washington inscribe automáticamente en College Bound a los estudiantes que están en el sistema de cuidado de crianza del estado."
+          ]
+        },
+        {
+          "kind": "tip",
+          "heading": "¿Vas a estudiar en otro estado?",
+          "text": "Muchos programas estatales son solo para estudiantes que viven y estudian en el estado. Pregunta si tu ayuda se puede usar en otro estado, y pregunta por los acuerdos regionales que bajan la matrícula para estudiantes de otros estados: el Western Undergraduate Exchange (WUE) en el Oeste, el Midwest Student Exchange Program en el Medio Oeste, el Academic Common Market en el Sur y el Tuition Break de Nueva Inglaterra. ¿Te mudaste hace poco, o tus padres viven en estados diferentes? Pregunta cómo decide tu estado quién se considera residente."
+        }
+      ],
+      "sources": [
+        {
+          "title": "FAFSA Application Deadlines: fechas límite de la FAFSA (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"
+        },
+        {
+          "title": "2027–28 FAFSA Form: formulario FAFSA 2027–28 (StudentAid.gov, PDF en inglés)",
+          "url": "https://studentaid.gov/sites/default/files/2027-28-fafsa-form.pdf"
+        },
+        {
+          "title": "FAFSA Application: página de la solicitud FAFSA (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/h/apply-for-aid/fafsa"
+        },
+        {
+          "title": "2027–28 FAFSA Beta Testing Plan, Updated Sept. 23, 2026: plan de pruebas beta de la FAFSA (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-21/2027-28-fafsa-beta-testing-plan-updated-sept-23-2026"
+        },
+        {
+          "title": "34 CFR 600.2: Definitions — definiciones oficiales (eCFR, en inglés)",
+          "url": "https://www.ecfr.gov/current/title-34/subtitle-B/chapter-VI/part-600/subpart-A/section-600.2"
+        },
+        {
+          "title": "Types of Financial Aid: Grants, Work-Study, and Loans — tipos de ayuda financiera (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types"
+        },
+        {
+          "title": "Federal Grants for College or Career/Trade School: becas federales (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/grants"
+        },
+        {
+          "title": "FAFSA Help: ayuda con la FAFSA (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out/help"
+        },
+        {
+          "title": "How to Avoid Scholarship and Financial Aid Scams: cómo evitar estafas de becas (FTC, en inglés)",
+          "url": "https://consumer.ftc.gov/articles/how-avoid-scholarship-and-financial-aid-scams"
+        },
+        {
+          "title": "Undocumented Students and the FAFSA Form: estudiantes indocumentados (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out/undocumented-students"
+        },
+        {
+          "title": "Eligibility for Non-U.S. Citizens: requisitos para quienes no son ciudadanos (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/eligibility/requirements/non-us-citizens"
+        },
+        {
+          "title": "Avoid Scams: Legal Services — servicios legales de inmigración (USCIS, en inglés)",
+          "url": "https://www.uscis.gov/scams-fraud-and-misconduct/avoid-scams/legal-services"
+        }
+      ]
+    },
+    {
+      "id": "css-profile-and-fee-waivers",
+      "title": "El CSS Profile y las exenciones de cuotas",
+      "summary": "Algunas universidades piden otro formulario de ayuda, el CSS Profile, y si calificas, las exenciones de cuotas pueden hacer gratis ese formulario, el SAT o el ACT y muchas solicitudes de admisión.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "En pocas palabras",
+          "items": [
+            "Solo algunas universidades usan el CSS Profile (un formulario de ayuda financiera de College Board). Nunca reemplaza la FAFSA (Solicitud Gratuita de Ayuda Federal para Estudiantes).",
+            "Se abre el 1 de octubre. Cada universidad pone su propia fecha límite, así que anótalas todas.",
+            "Para muchos estudiantes es gratis. El formulario revisa por ti si calificas.",
+            "¿Estás en 11.º o 12.º grado? Pregúntale a tu consejero escolar por las exenciones de cuotas del SAT, del ACT (exámenes de admisión) y de las solicitudes a universidades.",
+            "¿Eres indocumentado, no tienes contacto con uno de tus padres o estás en cuidado de crianza temporal (foster care)? Habla con la oficina de ayuda financiera de cada universidad antes de empezar."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "¿Qué es?",
+          "text": "El CSS Profile es un formulario en línea de College Board, la organización que administra el SAT. Algunas universidades y programas de becas lo usan para dar su propia ayuda económica. No reemplaza la FAFSA, que necesitas para recibir ayuda federal. Si una universidad pide los dos formularios, llena los dos."
+        },
+        {
+          "kind": "steps",
+          "heading": "¿Lo necesitas?",
+          "items": [
+            "Busca cada universidad en la lista de College Board: https://profile.collegeboard.org/PPI/participatingInstitutions.aspx",
+            "Mira la columna \"CSS Profile – Domestic Students\" (estudiantes de EE. UU.). Si dice No, esa escuela no usa el formulario para estudiantes de EE. UU. Después, revisa el sitio web de ayuda financiera de la universidad para confirmarlo."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "text": "¿Vas a ir a un colegio comunitario o a un programa de formación técnica? Lo más probable es que no lo necesites, pero de todos modos llena la FAFSA. No taches una universidad de tu lista por este formulario. Pedirlo no es señal de que esa universidad vaya a costar más."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Cuándo hay que enviarlo",
+          "text": "College Board dice que se abre el 1 de octubre de cada año, así que debería abrirse el 1 de octubre de 2026 para el otoño de 2027. Cada escuela pone su propia fecha límite, y algunas llegan pronto, así que anótalas todas desde ahora. Si una universidad pide los dos formularios, revisa la fecha límite de cada uno. Si solicitas por early decision o early action (solicitar antes para recibir la respuesta antes), la fecha límite puede ser poco después de que se abra. Envíalo antes de la medianoche, hora del Este, del día de tu fecha límite prioritaria más temprana (la fecha que cuenta como a tiempo para la ayuda). Si vives en el oeste del país, en Alaska o en Hawái, envíalo más temprano ese día. ¿Agregaste una universidad después? Envía el formulario otra vez."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Cómo llenarlo",
+          "text": "Ten a la mano las declaraciones de impuestos federales más recientes de tus padres (con todos los anexos, o schedules) y sus formularios W-2, los talones de pago de este año, los registros de ingresos no sujetos a impuestos y de beneficios, y los estados de cuenta del banco y registros de bienes. Tú, el estudiante, empiezas el formulario en tu propia cuenta de College Board. Tus padres llenan sus partes ahí, excepto el padre o la madre sin custodia (lee más abajo). Padres: respondan las preguntas de \"Student Status\" (situación del estudiante) sobre su hijo o hija, no sobre ustedes. ¿Tienes más de una cuenta de College Board? Antes de empezar, llama al servicio al cliente de CSS Profile al (866) 630-9305 para que puedan encontrar tu exención de cuotas del SAT. ¿Encontraste un error después de enviarlo? Puedes corregirlo una sola vez con \"Correct Your CSS Profile\" en tu panel (dashboard)."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Después de enviarlo",
+          "text": "Revisa tu panel para ver los siguientes pasos. Algunas universidades piden copias de documentos, como declaraciones de impuestos, por medio de IDOC, el servicio de College Board para subir documentos. College Board te avisa por correo electrónico si necesitas usar IDOC. Sube los documentos con tiempo, porque el proceso puede tardar unos 10 días hábiles. A los padres que no tienen que declarar impuestos les pueden pedir una Non-Tax Filer Statement (declaración de que no presentan impuestos) y comprobantes de cualquier salario. Si declaran impuestos en otro país, sube esos documentos oficiales de impuestos con una traducción al inglés. Puedes escribir la traducción en los mismos documentos. Avísale a la oficina de ayuda financiera de cada universidad sobre situaciones importantes que el formulario no toma en cuenta, como gastos médicos muy altos, la pérdida de un empleo o dinero que tu familia envía a familiares en otro país."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Costo y exenciones de cuotas",
+          "text": "Si tu formulario no es gratis, cuesta $25 por la primera universidad y $16 por cada una que agregues. Si estudias para tu primer título universitario (pregrado), es gratis si tus padres viven en EE. UU. o en un territorio de EE. UU. y se cumple una de estas condiciones:"
+        },
+        {
+          "kind": "list",
+          "items": [
+            "El ingreso bruto ajustado de tu familia (AGI, un número de la declaración de impuestos federales de tus padres) es de $100,000 o menos.",
+            "Calificaste para una exención de cuotas del SAT. Usa la misma cuenta de College Board que usaste para el SAT.",
+            "Tienes menos de 24 años y eres huérfano o estás bajo la tutela de una corte (un juez te puso bajo el cuidado del estado)."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "text": "¿No puedes pagar? No dejes de llenar el formulario. Algunas universidades tienen sus propias exenciones de cuotas, así que pregunta en cada una antes de la fecha límite. Si un desastre natural cambió mucho la situación económica de tu familia, comunícate con el servicio al cliente de CSS Profile antes de enviar el formulario."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Padres que viven separados",
+          "text": "Si tus padres están divorciados o separados, el padre o la madre que te da más de la mitad de tu apoyo económico llena tu formulario principal. Puede que no sea con quien vives la mayor parte del tiempo. ¿Te apoyan por partes iguales? Elige al que tenga más ingresos y bienes. Si eres ciudadano de EE. UU. o residente permanente, elige al mismo padre o madre que llena tu FAFSA. Solo uno de tus padres debe decir que da más de la mitad; si no, tu formulario se va a retrasar. Incluye a todos tus padres, también a padrastros, madrastras y a la pareja de tu padre o de tu madre."
+        },
+        {
+          "kind": "paragraph",
+          "text": "Algunas universidades también piden un formulario de tu otro padre o madre (el padre o la madre sin custodia, o noncustodial parent). Esa persona crea su propia cuenta de College Board. Para esa persona es gratis si vive en EE. UU. y el AGI de su familia es de $100,000 o menos, pero tu exención de cuotas del SAT no la cubre."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Sin contacto con uno de tus padres",
+          "text": "¿No tienes contacto con tu otro padre o madre, o no es seguro tenerlo? Puedes pedirle a cada universidad que no te exija incluir a esa persona, con el formulario que la universidad te indique. Las universidades pueden pedir documentos de la corte o una carta de alguien como un consejero. Por lo general no basta con que uno de tus padres simplemente se niegue a llenar el formulario. Empieza con tiempo. Nunca deberías tener que comunicarte con uno de tus padres si no es seguro para ti."
+        },
+        {
+          "kind": "paragraph",
+          "text": "¿Estás en cuidado de crianza temporal, no tienes hogar y vives por tu cuenta, o no tienes contacto con ninguno de tus padres? Antes de empezar, pregúntale a la oficina de ayuda financiera de cada universidad cómo responder las preguntas sobre tus padres. Algunas respuestas son difíciles de corregir después de enviar el formulario."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Inmigración y ciudadanía",
+          "text": "A partir del formulario 2026-27, el CSS Profile no pregunta por la ciudadanía. La solicitud de admisión de una universidad todavía podría preguntarlo. Las reglas de las exenciones de cuotas dependen de dónde viven tus padres y de los ingresos de tu familia, no de la ciudadanía. Los estudiantes indocumentados, incluidos los beneficiarios de DACA (Acción Diferida para los Llegados en la Infancia), no pueden recibir ayuda federal, pero podrían recibir ayuda de la universidad, del estado o de fuentes privadas. Pregúntale a cada oficina de ayuda financiera qué formularios debes llenar. Puedes hacer preguntas generales sin dar tu nombre. Si tú o uno de tus padres no tienen número de Seguro Social, antes de empezar llama al servicio al cliente de CSS Profile o a la universidad y pregunta cómo responder esas preguntas. Si eres ciudadano de EE. UU. o no ciudadano elegible, el estatus migratorio de tus padres no afecta tu ayuda federal. ¿Te preocupa compartir información? Lee \"Privacidad e inmigración\" en la sección \"Situaciones especiales en la FAFSA\"."
+        },
+        {
+          "kind": "tip",
+          "heading": "Ayuda en español",
+          "text": "Llama a CSS Profile al 844-202-0524 y marca el 6. Para IDOC, llama al 866-897-9881 y marca el 7. El horario es de lunes a viernes, de 9 a.m. a 6 p.m., hora del Este. College Board también tiene una página sobre el CSS Profile en español. Es posible que el formulario en sí solo esté en inglés, así que un consejero o un familiar bilingüe puede ayudarte a llenarlo."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Exenciones de cuotas para el SAT y el ACT",
+          "text": "Son para estudiantes de 11.º y 12.º grado. Antes de pagar un examen, revisa si tus universidades lo piden y si tu escuela lo ofrece gratis en un día de clases. Consigue tu exención antes de inscribirte."
+        },
+        {
+          "kind": "list",
+          "heading": "Quién califica para una exención de cuotas del SAT (basta con cumplir una)",
+          "items": [
+            "Recibes o puedes recibir almuerzo escolar gratis o a precio reducido, o los ingresos de tu familia están dentro de los límites para el almuerzo gratis o a precio reducido.",
+            "Estás en un programa para estudiantes de familias de bajos ingresos, como Upward Bound (un programa federal que prepara para la universidad), o tu familia recibe asistencia pública (beneficios del gobierno).",
+            "No tienes hogar, eres huérfano o estás bajo la tutela del estado, o vives en un hogar de crianza temporal o en una vivienda pública que el gobierno federal ayuda a pagar."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "text": "Una exención de cuotas del SAT te da dos SAT gratis, envíos gratis de tus puntajes a todas las universidades que quieras y un CSS Profile gratis. Si estás en 12.º grado y ya tomaste el SAT, tampoco pagas la cuota de solicitud en las universidades que aceptan la exención de cuotas del SAT. Pídele un código a tu consejero, o usa el formulario en línea de College Board por lo menos 1–2 semanas antes de la fecha límite de inscripción. Si usas el formulario en línea, vas a necesitar a un adulto que pueda confirmar que calificas. Solo puedes recibir esta exención una vez en la vida. Los códigos vencen cada agosto, así que ingresa el tuyo en tu cuenta My SAT poco después de recibirlo. Un SAT gratis en la escuela no es una exención de cuotas, así que de todos modos pregunta si calificas."
+        },
+        {
+          "kind": "paragraph",
+          "text": "Las reglas del ACT son parecidas. Tu consejero revisa si calificas y te da un código. Recibes hasta dos exámenes gratis (incluidas las partes opcionales de ciencias y de escritura), envíos gratis de tus puntajes a tu escuela secundaria y a hasta seis universidades, más envíos adicionales gratis después de que salgan los puntajes, y un curso de preparación en línea gratis. También puedes pedirles a las universidades, no a ACT, que no te cobren la cuota de solicitud o que te dejen pagarla más tarde."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Cómo solicitar admisión sin pagar",
+          "text": "La Common App, una solicitud en línea que aceptan muchas universidades, tiene su propia exención de cuotas. Podrías calificar si cumples alguno de los requisitos de la lista de la exención del SAT, si recibiste o podrías recibir una exención de cuotas del SAT o del ACT o una Pell Grant (dinero federal para estudiantes con mucha necesidad económica), o si tienes una declaración de apoyo de alguien como un miembro del personal de tu escuela. Pídela en tu perfil de Common App antes de enviar tu solicitud y luego avísale a tu consejero, que tiene que confirmarla. ¿No puedes comunicarte con tu consejero? Comunícate con la oficina de admisiones de cada universidad. Algunas universidades no aceptan esta exención."
+        },
+        {
+          "kind": "paragraph",
+          "text": "Pregúntale también a tu consejero por el formulario de exención de cuotas de NACAC (una asociación nacional de consejeros universitarios). Un consejero lo firma y tú lo envías a hasta cuatro universidades. Cada universidad decide si lo acepta. También puedes pedir una exención de cuotas en cada oficina de admisiones."
+        },
+        {
+          "kind": "tip",
+          "heading": "¿No sabes si calificas?",
+          "text": "Fíjate en la situación de tu familia, no en la de tu escuela. Si tu escuela les da almuerzo gratis a todos, eso por sí solo no decide si calificas. De julio de 2026 a junio de 2027, en la mayoría de los estados, una familia de cuatro personas puede tener ingresos de hasta $61,050 al año antes de impuestos y aun así calificar para almuerzo gratis o a precio reducido. Los límites son más altos en Alaska y Hawái. Es normal preguntarle a tu consejero."
+        },
+        {
+          "kind": "warning",
+          "heading": "Pide una exención solo si de verdad calificas",
+          "text": "College Board advierte que dar información falsa para conseguir una exención de cuotas del SAT puede hacer que bloqueen tu cuenta, que no te dejen tomar el SAT ni los exámenes AP (de cursos avanzados) y que cancelen tus puntajes."
+        }
+      ],
+      "sources": [
+        {
+          "title": "About CSS Profile: información sobre el CSS Profile (College Board, en inglés)",
+          "url": "https://cssprofile.collegeboard.org/about"
+        },
+        {
+          "title": "Why do I need to complete the CSS Profile? — por qué llenar el CSS Profile (College Board, en inglés)",
+          "url": "https://cssprofile.collegeboard.org/help-center/why-do-i-need-complete-css-profile"
+        },
+        {
+          "title": "2027–28 CSS Profile Participating Institutions: instituciones que usan el CSS Profile (College Board, en inglés)",
+          "url": "https://profile.collegeboard.org/PPI/participatingInstitutions.aspx"
+        },
+        {
+          "title": "How do I know if my school requires the CSS Profile? — cómo saber si tu escuela lo pide (College Board, en inglés)",
+          "url": "https://cssprofile.collegeboard.org/help-center/how-do-i-know-if-my-school-requires-css-profile"
+        },
+        {
+          "title": "CSS Profile: Getting Started — cómo empezar (College Board, en inglés)",
+          "url": "https://cssprofile.collegeboard.org/getting-started"
+        },
+        {
+          "title": "Complete the CSS Profile Application: cómo completar la solicitud (College Board, en inglés)",
+          "url": "https://cssprofile.collegeboard.org/complete-application"
+        },
+        {
+          "title": "How do I add additional schools to the CSS Profile? — cómo agregar más escuelas (College Board, en inglés)",
+          "url": "https://cssprofile.collegeboard.org/help-center/how-do-i-add-additional-schools-css-profile"
+        },
+        {
+          "title": "What documents do I need to complete the CSS Profile? — documentos que necesitas (College Board, en inglés)",
+          "url": "https://cssprofile.collegeboard.org/help-center/what-documents-do-i-need-complete-css-profile"
+        },
+        {
+          "title": "Eligibility for Non-U.S. Citizens: requisitos para quienes no son ciudadanos (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/eligibility/requirements/non-us-citizens"
+        },
+        {
+          "title": "Federal Pell Grants: becas federales Pell (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/grants/pell"
+        },
+        {
+          "title": "Child Nutrition Programs: Income Eligibility Guidelines, 2026–27 — límites de ingresos para comidas escolares (USDA, en inglés)",
+          "url": "https://www.fns.usda.gov/schoolmeals/fr-040926"
+        },
+        {
+          "title": "Poverty Guidelines: guías federales de pobreza (Departamento de Salud y Servicios Humanos de EE. UU., en inglés)",
+          "url": "https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines"
+        }
+      ]
+    },
+    {
+      "id": "scholarships-and-scams",
+      "title": "Becas y cómo evitar estafas",
+      "summary": "Las becas son dinero gratis para la universidad o la formación técnica: aquí verás dónde buscarlas sin pagar nada, cómo solicitarlas y cómo reconocer y reportar una estafa.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "En pocas palabras",
+          "items": [
+            "Si estás en 12.º grado, envía la FAFSA, que es gratis, a principios del otoño. Algunos estados dan ayuda solo hasta que se acabe el dinero.",
+            "Hay fechas límite para becas durante todo el año, y algunas vencen un año antes de que empieces a estudiar. Federal Student Aid (Ayuda Federal para Estudiantes) recomienda solicitar becas en el verano entre 11.º y 12.º grado. Si estás en 12.º grado, algunas fechas límite son este otoño, así que empieza a buscar ya.",
+            "Nunca pagues por solicitar una beca ni por llenar la FAFSA. Nunca compartas tu contraseña de StudentAid.gov.",
+            "Si ganas una beca, avísale a la oficina de ayuda financiera de la universidad o escuela técnica a la que vas a ir. La escuela podría reducir otra ayuda que te ofreció."
+          ]
+        },
+        {
+          "kind": "tip",
+          "heading": "Empieza con la FAFSA",
+          "text": "La FAFSA (Solicitud Gratuita de Ayuda Federal para Estudiantes) es el formulario gratuito para solicitar las Pell Grants (Becas Federales Pell), que pueden ayudarte a pagar la universidad o una escuela técnica (lee «Pell Grants (becas federales Pell) y Workforce Pell»). Las subvenciones (grants), como las Pell Grants, son dinero que no tienes que devolver. Los estados y las universidades también usan la FAFSA para dar sus propias subvenciones y becas. La FAFSA 2027–28 es para estudiantes que empiezan a estudiar en el otoño de 2027, y StudentAid.gov dice que ya está disponible. Algunas fechas límite estatales y de universidades son desde el 1 de octubre de 2026, y la fecha de prioridad de Texas es el 15 de enero de 2027, así que si estás en 12.º grado, envíala a principios del otoño. Revisa las fechas límite en StudentAid.gov."
+        },
+        {
+          "kind": "list",
+          "heading": "Dónde buscar becas",
+          "items": [
+            "Tu consejero escolar. Pídele la lista de becas locales.",
+            "La oficina de ayuda financiera de cada universidad o escuela técnica que te interese. Pregunta qué becas ofrece la escuela.",
+            "CareerOneStop Scholarship Finder, un buscador de becas gratis del Departamento de Trabajo de EE. UU. (para formación técnica, filtra por «Vocational»), y BigFuture Scholarship Search, el buscador de becas del College Board.",
+            "La agencia de ayuda financiera de tu estado, la oficina estatal que da subvenciones estatales para estudiar. Busca en internet el nombre de tu estado junto con «student aid» (ayuda para estudiantes).",
+            "Negocios locales, grupos comunitarios y los lugares donde trabajan tus padres.",
+            "Si eres estudiante indígena americano o nativo de Alaska: la página de becas del Bureau of Indian Education (Oficina de Educación Indígena) y tu tribu."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Investiga una escuela antes de inscribirte",
+          "text": "Hay estafadores que hasta han creado sitios web de escuelas falsas. Solo puedes recibir ayuda federal si estudias en una escuela acreditada, lo que quiere decir que un grupo reconocido revisó su calidad. Busca la escuela en College Navigator, en https://nces.ed.gov/collegenavigator. Luego busca en internet su nombre junto con las palabras en inglés «review», «complaint» y «scam» (reseña, queja y estafa)."
+        },
+        {
+          "kind": "list",
+          "heading": "Si tú o tus padres no son ciudadanos de EE. UU.",
+          "items": [
+            "Muchas personas que no son ciudadanas de EE. UU. pueden recibir ayuda federal, como quienes tienen green card (residentes permanentes), los refugiados y las personas que recibieron asilo. Consulta la lista de «extranjeros con derecho a participar» (eligible noncitizens) en StudentAid.gov.",
+            "Si tú eres ciudadano de EE. UU. o extranjero con derecho a participar, el estatus migratorio de tus padres no afecta tu ayuda federal, y la FAFSA no pregunta sobre eso. Los padres que no tienen número de Seguro Social sí pueden llenar su parte.",
+            "Los estudiantes indocumentados, incluidos los que tienen DACA (Deferred Action for Childhood Arrivals, o Acción Diferida para los Llegados en la Infancia), no pueden recibir ayuda federal, pero es posible que puedan recibir ayuda estatal, ayuda de la universidad o becas privadas. El formulario de ayuda que debes usar y las reglas de la matrícula para residentes del estado (in-state tuition) dependen de tu estado, y algunos estados cambiaron sus reglas en 2025. Pregunta en cada universidad.",
+            "Antes de solicitar una beca privada, revisa que no pida ciudadanía de EE. UU. ni número de Seguro Social. Immigrants Rising tiene una lista de becas que no piden prueba de ciudadanía. TheDream.US ofrece becas para estudiantes inmigrantes, con o sin DACA, que cumplan sus requisitos.",
+            "Tú decides qué contar sobre tu estatus migratorio en tus ensayos y formularios."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Cómo conseguir ayuda de inmigración de forma segura",
+          "text": "Esta guía no puede darte asesoría legal de inmigración. Si a tu familia le preocupa compartir información, primero hablen con un abogado de inmigración con licencia o con un representante acreditado por el DOJ (una persona capacitada de una organización sin fines de lucro aprobada por el Departamento de Justicia de EE. UU.). La parte «Privacidad e inmigración» de la sección «Situaciones especiales en la FAFSA» explica cómo encontrarlos. En EE. UU., un «notario» o «notario público» no es abogado y no puede dar asesoría legal de inmigración."
+        },
+        {
+          "kind": "steps",
+          "heading": "Cómo hacer una buena solicitud",
+          "items": [
+            "Usa un correo electrónico personal que vayas a seguir usando después de la preparatoria (high school).",
+            "Anota cada fecha límite y lo que pide cada beca, como un ensayo, cartas de recomendación de tus maestros o tu historial académico (transcript), que es el registro oficial de tus clases y calificaciones. Las fechas límite pueden cambiar, así que revisa el sitio web de cada beca.",
+            "Pide tu historial académico con tiempo, y las cartas de recomendación unas semanas antes de la fecha límite.",
+            "Asegúrate de cumplir los requisitos, llena todas las partes y escribe tus propios ensayos.",
+            "Si una beca pide formularios de impuestos y tu familia no declara impuestos, pregúntale a quien da la beca qué puedes enviar en su lugar.",
+            "Llena la FAFSA, o el formulario estatal que te indique tu escuela, cada año que estés estudiando.",
+            "Sigue solicitando becas cada año después de la preparatoria. Algunas son para estudiantes que ya están en la universidad o en un programa de formación técnica."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Si ganas una beca",
+          "text": "¡Felicidades! Cada vez que ganes una beca, avísale a la oficina de ayuda financiera de la universidad o escuela técnica a la que vas a ir. Toda tu ayuda sumada no puede ser mayor que tu costo de asistencia (cost of attendance), que es el cálculo que hace la escuela de lo que cuesta estudiar un año: matrícula, cuotas, vivienda, comida, libros y otros gastos. Por eso, la escuela podría reducir otra ayuda, como los préstamos. Antes de aceptar, pregúntale a la escuela qué ayuda va a reducir. Además, si las subvenciones y becas de tu estado, de tu escuela y de grupos privados suman todo tu costo de asistencia o más, ese año no puedes recibir una Pell Grant. Aunque una beca pague toda la matrícula, tal vez no cubra la vivienda, la comida y los libros. Pregúntale a quien da la beca si se renueva cada año y qué tienes que hacer para conservarla."
+        },
+        {
+          "kind": "tip",
+          "heading": "Las becas y los impuestos",
+          "text": "El dinero de becas que usas para la matrícula, las cuotas y los libros y materiales obligatorios normalmente está libre de impuestos. El dinero que usas para vivienda, comida o viajes puede contar como ingreso. Guarda las cartas en las que te avisan que ganaste cada beca."
+        },
+        {
+          "kind": "warning",
+          "heading": "Nunca pagues por la FAFSA ni por una beca",
+          "text": "Llena la FAFSA solo en StudentAid.gov. Está prohibido que alguien te cobre por llenarla, así que nunca pagues por ayuda con la FAFSA. Puedes recibir ayuda gratis de tu consejero, de la oficina de ayuda financiera de una universidad o del Federal Student Aid Information Center (Centro de Información de Ayuda Federal para Estudiantes) al 1-800-433-3243 (en inglés o español). Ten cuidado con los «ayudantes» que cobran y ponen información falsa sobre los ingresos en el formulario. Tú y tu familia son responsables de lo que dice tu FAFSA, y dar información falsa puede resultar en multas muy altas. Si una compañía te pide un «cargo de procesamiento» u otro pago por adelantado para darte una beca, aléjate."
+        },
+        {
+          "kind": "tip",
+          "heading": "Dos cuotas reales que muchos estudiantes no tienen que pagar",
+          "text": "Las solicitudes de admisión a universidades y el CSS Profile, un formulario de ayuda del College Board que usan algunas universidades, pueden costar dinero. Muchos estudiantes reciben una exención de pago (fee waiver) y no tienen que pagar estas cuotas. El CSS Profile es gratis si el ingreso bruto ajustado de tu familia (adjusted gross income, el ingreso anual que aparece en la declaración de impuestos) es de $100,000 o menos, o si recibiste una exención de pago del SAT. Si tienes que pagar, págale solo a la universidad o al College Board."
+        },
+        {
+          "kind": "list",
+          "heading": "Señales de alerta de estafa según la FTC (la agencia del gobierno que combate las estafas)",
+          "items": [
+            "«Beca garantizada, o le devolvemos su dinero».",
+            "Te piden el número de tu tarjeta o de tu cuenta bancaria para «reservar» una beca.",
+            "«Eres finalista» de un concurso en el que nunca participaste.",
+            "Te presionan para que te inscribas o pagues ahora mismo.",
+            "Te piden pagar con una tarjeta de regalo, una transferencia de dinero, una aplicación de pago o criptomonedas.",
+            "Te mandan un cheque y luego te piden que devuelvas parte del dinero. El cheque es falso.",
+            "Usan un nombre que suena oficial, dicen que son del gobierno o te amenazan, por ejemplo, con arrestarte o deportarte."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Protégete",
+          "items": [
+            "Nunca compartas tu nombre de usuario ni tu contraseña de StudentAid.gov, ni siquiera con tu familia o con alguien que te esté ayudando. El Departamento de Educación de EE. UU. y sus socios nunca te van a pedir tu contraseña.",
+            "El estudiante y cada padre o madre que llene la FAFSA necesitan su propia cuenta. Un correo electrónico o un número de teléfono solo se puede usar para una cuenta. Padres: no creen la cuenta de su hijo o hija ni entren en ella.",
+            "Si un sitio de la FAFSA te pide una tarjeta de crédito, no es el sitio oficial.",
+            "Nunca des información personal por teléfono o por internet, a menos que tú hayas iniciado el contacto."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Si crees que te estafaron",
+          "text": "No es tu culpa, y mientras más rápido actúes, mejor. Comunícate con el banco, la compañía de la tarjeta, la aplicación de pago, la compañía de transferencias de dinero o la compañía de la tarjeta de regalo que usaste para pagar, y pide que reviertan el pago. Si compartiste tus datos de acceso a StudentAid.gov, cambia tu contraseña. Si no puedes entrar, llama al 1-800-433-3243. Reporta la estafa a la FTC en https://reportefraude.ftc.gov (en inglés: https://reportfraud.ftc.gov) y también a la oficina del fiscal general de tu estado (attorney general), la oficina estatal que recibe quejas por estafas."
+        }
+      ],
+      "sources": [
+        {
+          "title": "Finding and Applying for Scholarships: cómo encontrar y solicitar becas (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/scholarships"
+        },
+        {
+          "title": "Avoiding Student Aid Scams: cómo evitar estafas (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/resources/scams"
+        },
+        {
+          "title": "Cómo evitar estafas relacionadas con la ayuda para estudiantes (StudentAid.gov)",
+          "url": "https://studentaid.gov/es/resources/scams"
+        },
+        {
+          "title": "Avoiding Fake Schools: cómo evitar escuelas falsas (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/resources/scams/avoiding-fake-schools"
+        },
+        {
+          "title": "FAFSA Application Deadlines: fechas límite de la FAFSA (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/fafsa-deadlines"
+        },
+        {
+          "title": "2027–28 FAFSA Form: formulario FAFSA 2027–28 (StudentAid.gov, PDF en inglés)",
+          "url": "https://studentaid.gov/sites/default/files/2027-28-fafsa-form.pdf"
+        },
+        {
+          "title": "Filling Out the FAFSA Form: cómo llenar el formulario FAFSA (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/filling-out"
+        },
+        {
+          "title": "Key Facts About Your StudentAid.gov Account: datos clave sobre tu cuenta (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/articles/key-facts-accounts/"
+        },
+        {
+          "title": "Federal Grants for College or Career/Trade School: becas federales (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/grants"
+        },
+        {
+          "title": "Federal Pell Grants: becas federales Pell (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/grants/pell"
+        },
+        {
+          "title": "Public Law 119-21, sec. 83004: texto de la ley (GovInfo, en inglés)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm"
+        },
+        {
+          "title": "Eligibility for Non-U.S. Citizens: requisitos para quienes no son ciudadanos (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/eligibility/requirements/non-us-citizens"
+        }
+      ]
+    },
+    {
+      "id": "loans-wisely",
+      "title": "Pedir prestado con cuidado: así funcionan los préstamos estudiantiles",
+      "summary": "Cómo funcionan los préstamos federales para estudiantes, los Parent PLUS para padres y los privados, cómo pedir solo lo que necesitas y cómo se pagan con las nuevas reglas federales.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "En pocas palabras",
+          "items": [
+            "Usa primero las subvenciones y las becas. Después, si hace falta, pide préstamos federales a tu nombre, y solo lo que necesites.",
+            "El Parent PLUS (préstamo federal para padres) es una deuda de tu padre o madre, y el pago no baja si sus ingresos bajan. Háblenlo primero en familia.",
+            "Las reglas de los préstamos federales cambiaron mucho en 2025 y 2026. Revisa StudentAid.gov o pregunta en la oficina de ayuda financiera de la universidad.",
+            "¿El pago es demasiado alto? Llama a tu administrador de préstamos (la empresa que te manda los cobros del préstamo) antes de atrasarte en un pago."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Préstamos federales para estudiantes",
+          "items": [
+            "No revisan tu crédito ni necesitas historial de crédito. Tú firmas el préstamo y tú lo pagas, aunque tengas menos de 18 años. Si falleces, el préstamo se cancela, así que su familia nunca tendrá que pagarlo. También se puede cancelar si quedas con una discapacidad total y permanente.",
+            "Los Direct Subsidized Loans (préstamos subsidiados) son para estudiantes de pregrado (que todavía no tienen un título universitario) con necesidad económica. La necesidad económica es el costo de la escuela menos tu Student Aid Index, un número que la FAFSA (Solicitud Gratuita de Ayuda Federal para Estudiantes) calcula con las finanzas de su familia. El gobierno paga los intereses (el costo extra de pedir prestado) mientras estudias al menos medio tiempo y durante seis meses después de que dejes de estudiar.",
+            "Los Direct Unsubsidized Loans (préstamos no subsidiados) no requieren necesidad económica. Los intereses se acumulan todo el tiempo, incluso mientras estudias.",
+            "Los estudiantes dependientes (los que dan información de sus padres en la FAFSA) pueden pedir prestados $5,500 el primer año, $6,500 el segundo y $7,500 por año del tercer año en adelante, hasta $31,000 en total.",
+            "Los estudiantes independientes pueden pedir prestados de $9,500 a $12,500 al año, hasta $57,500 en total. Eres independiente si, por ejemplo, tienes 24 años o más, estás casado o casada, eres veterano o veterana de las Fuerzas Armadas o mantienes a un hijo o hija.",
+            "También puedes contar como independiente si estuviste en foster care (hogar de crianza temporal) o bajo la tutela de un tribunal en cualquier momento desde que cumpliste 13 años, si un tribunal estableció una tutela legal para ti, o si estás sin hogar o en riesgo de quedarte sin hogar y no vives con tu padre, tu madre o un tutor. Lee la sección de esta guía sobre situaciones especiales en la FAFSA y avísale a tu consejero escolar o a la oficina de ayuda financiera de la universidad.",
+            "Debes estudiar al menos medio tiempo (más o menos la mitad de una carga completa de clases) en un programa que otorgue un título o certificado, en una universidad o escuela técnica que participe en el programa de préstamos federales. Si estudias menos de tiempo completo, tu límite es más bajo.",
+            "Costo: 6.52% de interés fijo para préstamos cuyo primer desembolso (la primera entrega del dinero) sea entre el 1 de julio de 2026 y el 30 de junio de 2027. Se descuenta un cargo de 1.057% antes de que tu escuela reciba el dinero: de $5,500, a tu escuela le llegan unos $5,442, pero tú debes $5,500. Las tasas para el otoño de 2027 todavía no se han fijado."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Préstamos Parent PLUS",
+          "items": [
+            "Un préstamo Parent PLUS está a nombre de tu padre o madre. Tu padre o madre tiene que pagarlo, y no se puede pasar a tu nombre más adelante.",
+            "Pueden pedirlo tu padre o tu madre biológicos o adoptivos, o tu padrastro o madrastra si aparece en tu FAFSA. Los abuelos y los tutores legales no pueden, a menos que te hayan adoptado. Si te está criando un abuelo, una abuela u otro familiar, habla con la oficina de ayuda financiera de la universidad.",
+            "Tu padre o madre lo solicita después de que tu FAFSA esté completa, normalmente en StudentAid.gov. No importa si tiene poco o ningún historial de crédito. La revisión de crédito busca problemas graves, como un default (incumplimiento de pago) o una bancarrota en los últimos cinco años.",
+            "Si se lo niegan, tu padre o madre todavía puede obtenerlo con un aval (alguien que se compromete a pagar si tu padre o madre no paga) o si demuestra que hubo razones especiales para sus problemas de crédito. En cualquiera de los dos casos, también debe completar una asesoría sobre crédito.",
+            "Límites: si empiezas la universidad el 1 de julio de 2026 o después, entre todos tus padres pueden pedir como máximo $20,000 al año y $65,000 en total para ti. El préstamo no puede ser mayor que tu costo de asistencia (el costo total estimado de estudiar) menos otras ayudas, y tu escuela puede fijar un límite más bajo. Si tus padres pagan una parte, eso no les permite pedir más.",
+            "Costo: 9.07% de interés fijo más un cargo de 4.228%, para préstamos cuyo primer desembolso sea entre el 1 de julio de 2026 y el 30 de junio de 2027. Las tasas para el otoño de 2027 todavía no se han fijado.",
+            "Si tu padre o madre lo solicita, puede aplazar los pagos mientras estudias al menos medio tiempo y durante seis meses después. Mientras tanto, los intereses siguen acumulándose.",
+            "¿Tus padres ya tienen préstamos Parent PLUS por un hermano o hermana mayor? Pedir un préstamo nuevo, o juntar los anteriores en uno solo (consolidarlos), puede limitar también los planes de pago de los préstamos anteriores. Antes de hacerlo, tu padre o madre debe llamar a su administrador de préstamos.",
+            "Si a tu padre o madre le niegan el préstamo y no lo consigue de otra forma, tal vez puedas pedir hasta $4,000 más al año ($5,000 después de tus primeros dos años) en préstamos no subsidiados. Lo decide la oficina de ayuda financiera. A veces tu padre o madre no tiene que solicitarlo primero, por ejemplo, si está en prisión, no se sabe dónde está, solo recibe ingresos de beneficios públicos o por discapacidad, o no puede recibir ayuda federal por su situación migratoria. No cuenta como razón que tus padres ya hayan llegado al límite del PLUS ni que no quieran pedir prestado."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Antes de que tu padre o madre pida prestado",
+          "text": "El Parent PLUS puede ser fácil de conseguir y difícil de pagar. Nadie revisa si los pagos caben en el presupuesto de su familia. El pago es fijo: no baja si tu padre o madre gana menos o se jubila, y el Public Service Loan Forgiveness (condonación de préstamos por trabajar en el servicio público) no está disponible. Si no se paga, el gobierno puede quitarle a tu padre o madre parte de su sueldo, de su reembolso de impuestos y hasta de su Seguro Social. Ejemplo: $65,000 al 9.07% durante 20 años son unos $588 al mes, o unos $141,000 en total."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Préstamos privados",
+          "text": "Los préstamos privados de bancos, cooperativas de crédito y otras empresas muchas veces piden historial de crédito o un codeudor (alguien que promete pagar si tú no pagas). Suelen costar más, su tasa puede subir y no tienen los beneficios federales, como pagos según tus ingresos. Si los usas, que sea como último recurso. Ten cuidado con las escuelas técnicas o vocacionales caras que te presionan para sacarlos o para firmar 'income share agreements' (acuerdos en los que pagas una parte de lo que ganes en el futuro). Lee la sección de esta guía sobre cómo pagar la capacitación para un oficio o carrera."
+        },
+        {
+          "kind": "steps",
+          "heading": "Pide prestado solo lo que necesitas",
+          "items": [
+            "Llena la FAFSA (el formulario gratuito de ayuda federal) cada año. Así es como obtienes préstamos federales.",
+            "En cada oferta de ayuda, deja fuera los préstamos, incluido el Parent PLUS, para ver cuánto te cuesta de verdad cada escuela.",
+            "Pide prestado solo lo que falte después de las subvenciones, las becas y lo que su familia pueda pagar.",
+            "Pregunta en la oficina de ayuda financiera por un plan de pagos de matrícula (colegiatura). Muchas escuelas te dejan pagar en mensualidades sin intereses.",
+            "No tienes que aceptar todos los préstamos que te ofrecen. Al aceptar tu ayuda, puedes rechazar un préstamo o aceptar una cantidad menor. Si después necesitas más, puedes pedir que lo aumenten.",
+            "Antes de que se entregue tu primer préstamo federal, completa la orientación obligatoria sobre préstamos (entrance counseling: unos 30 minutos en línea, en una sola sesión) y firma el contrato del préstamo (Master Promissory Note) en StudentAid.gov, con tu propia cuenta. El dinero del préstamo no se puede entregar hasta que termines las dos cosas, así que no lo dejes para después. Si tu padre o madre pide un Parent PLUS, tiene que firmar su propio contrato. ¿No tienes internet en casa? Usa una computadora de la escuela o de la biblioteca, o pide ayuda en la oficina de ayuda financiera.",
+            "El dinero del préstamo que te sobre sigue siendo dinero prestado. Úsalo solo para gastos de la escuela, o devuélvelo.",
+            "¿Cambiaste de opinión? Por lo general puedes cancelar todo o parte de un préstamo dentro de los 14 o 30 días siguientes al aviso por escrito de la escuela de que se entregó el dinero. Después de ese plazo, todavía puedes devolverlo dentro de los 120 días siguientes a la entrega, sin pagar intereses ni cargos. Pregunta en la oficina de ayuda financiera cómo hacerlo.",
+            "¿Necesitas más que tus propios préstamos federales (hasta $27,000 en cuatro años si eres dependiente)? Detente y vuelve a revisar tus opciones. Si los ingresos de su familia bajaron o tienen gastos grandes, como cuentas médicas, pide a la oficina de ayuda financiera que vuelva a revisar tu caso. Compara las ofertas de otras escuelas y piensa en un community college (universidad comunitaria de dos años), una universidad pública de tu estado o seguir viviendo en casa. Para saber de un crédito tributario, lee \"Dinero de vuelta al declarar impuestos\" en la sección de esta guía sobre cómo se paga la universidad o la capacitación."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Cómo se pagan los préstamos",
+          "items": [
+            "Los pagos suelen empezar seis meses después de que te gradúes, dejes la escuela o empieces a estudiar menos de medio tiempo. Habla con la oficina de ayuda financiera antes de darte de baja de una clase o retirarte de la escuela. Estudiar menos de medio tiempo puede hacer que empiecen a contar tus seis meses, y retirarte puede significar que tengas que devolver ayuda o que le debas dinero a la escuela.",
+            "Tiered Standard Plan (plan estándar por niveles): el mismo pago cada mes durante 10 a 25 años, según cuánto debas. Ejemplo: $27,000 al 6.52% son unos $236 al mes durante 15 años, o unos $42,400 en total.",
+            "Repayment Assistance Plan (RAP, plan de ayuda para el pago): tu pago se basa en tus ingresos y en cuántas personas dependen de ti, y puede ser de solo $10 al mes. Si haces cada pago completo y a tiempo, se cancelan los intereses que tu pago no cubra. Después de 30 años de pagos que califican, se perdona lo que quede (tal vez tengas que pagar impuestos por esa cantidad).",
+            "Public Service Loan Forgiveness (condonación por servicio público): después de 120 pagos que califican (unos 10 años) mientras trabajas tiempo completo para el gobierno o para una organización sin fines de lucro que califique, se perdona lo que quede y no pagas impuestos por esa cantidad. Para los préstamos nuevos, solo cuentan los pagos del RAP. Las reglas sobre qué empleadores califican pueden cambiar."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Si tu pago es demasiado alto",
+          "text": "Llama a tu administrador de préstamos antes de atrasarte en un pago y pregunta por el RAP. En los préstamos otorgados el 1 de julio de 2027 o después, no podrás pausar los pagos por haber perdido el trabajo ni por falta de dinero, y las pausas generales por problemas de dinero tienen un límite de 9 meses en cualquier período de 2 años. ¿No sabes quién es tu administrador? Entra a tu cuenta en StudentAid.gov o llama al Federal Student Aid Information Center (centro de información de ayuda federal) al 1-800-433-3243. Nunca compartas tu usuario ni tu contraseña de StudentAid.gov, y nunca le pagues a una empresa para que te ayude. Tu administrador y StudentAid.gov te ayudan gratis."
+        },
+        {
+          "kind": "warning",
+          "heading": "Si te atrasas en los pagos",
+          "text": "Con 90 días de atraso, tu administrador de préstamos avisa a las agencias de crédito (empresas que registran si la gente paga sus cuentas a tiempo). Después de 270 días sin pagar, el préstamo entra en default (incumplimiento oficial de pago). Entonces te pueden quitar parte de tu sueldo, de tu reembolso de impuestos y hasta de tu Seguro Social, y ya no podrás recibir más ayuda federal para estudiantes. Programas como la rehabilitación de préstamos pueden poner al día un préstamo en default, así que llama a tu administrador de inmediato."
+        },
+        {
+          "kind": "list",
+          "heading": "Si tú o tus padres son indocumentados",
+          "items": [
+            "Los ciudadanos estadounidenses y los no ciudadanos elegibles (como los residentes permanentes con green card, los refugiados y los asilados) pueden recibir préstamos federales, aunque sus padres sean indocumentados. La FAFSA no pregunta por la situación migratoria de los padres. Los padres sin número de Seguro Social sí pueden crear una cuenta de StudentAid.gov y llenar su parte de la FAFSA.",
+            "Si tu padre o madre no es ciudadano ni tiene un estatus migratorio elegible, no puede recibir un Parent PLUS, pero tú tal vez puedas pedir más prestado (lee Préstamos Parent PLUS, más arriba).",
+            "Los estudiantes indocumentados, incluidos los que tienen DACA (Acción Diferida para los Llegados en la Infancia), no pueden recibir préstamos federales, pero tal vez califiquen para ayuda estatal o de la universidad. Algunos estados tienen su propio formulario, como la CA Dream Act Application en California. Pregunta a tu consejero escolar o a la oficina de ayuda financiera de la universidad qué formulario usar.",
+            "Esta guía no puede dar consejos legales. Si tienes dudas o preocupaciones sobre inmigración, lee la parte \"Privacidad e inmigración\" en la sección de esta guía sobre situaciones especiales en la FAFSA. Antes de presentar la solicitud, habla con un abogado de inmigración con licencia o con un representante acreditado por el DOJ (una persona capacitada de una organización sin fines de lucro aprobada por el Departamento de Justicia de EE. UU.). La página \"Legal services\" (servicios legales) de USCIS (el Servicio de Ciudadanía e Inmigración de EE. UU.) explica cómo encontrarlos."
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "title": "Direct Subsidized and Direct Unsubsidized Loans: préstamos subsidiados y no subsidiados (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/loans/subsidized-unsubsidized"
+        },
+        {
+          "title": "Federal Interest Rates and Fees: tasas de interés y cargos (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/loans/interest-rates"
+        },
+        {
+          "title": "Direct PLUS Loans for Parents: préstamos PLUS para padres (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/loans/plus/parent"
+        },
+        {
+          "title": "One Big Beautiful Bill Act: Important Definitions — definiciones importantes (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/announcements-events/big-updates/definitions"
+        },
+        {
+          "title": "Accepting Financial Aid: cómo aceptar la ayuda financiera (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/complete-aid-process/accept-aid"
+        },
+        {
+          "title": "Receiving Financial Aid: cómo recibir la ayuda financiera (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/complete-aid-process/receive-aid"
+        },
+        {
+          "title": "Entrance Counseling: orientación inicial sobre préstamos (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/entrance-counseling"
+        },
+        {
+          "title": "Master Promissory Note: pagaré maestro (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/mpn"
+        },
+        {
+          "title": "Student Loan Forbearance: suspensión temporal de pagos (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/manage-loans/lower-payments/get-temporary-relief/forbearance"
+        },
+        {
+          "title": "Student Loan Delinquency and Default: atrasos e incumplimiento de pago (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/manage-loans/default"
+        },
+        {
+          "title": "Student Loan Discharge and Forgiveness: cancelación y condonación de préstamos (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/manage-loans/forgiveness-cancellation"
+        },
+        {
+          "title": "Avoiding Student Aid Scams: cómo evitar estafas (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/resources/scams"
+        }
+      ]
+    },
+    {
+      "id": "comparing-aid-offers",
+      "title": "Cómo leer y comparar ofertas de ayuda financiera",
+      "summary": "Cómo leer cada oferta de ayuda, calcular tu precio neto real, aceptar solo lo que necesitas y decidir a más tardar en la fecha límite de tu escuela (a menudo, el 1 de mayo).",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "En pocas palabras",
+          "items": [
+            "Compara los precios netos: el costo total menos solamente las subvenciones y becas.",
+            "Acepta primero las subvenciones y becas. Pide préstamos al final, y solo lo que necesites.",
+            "Termina la verificación lo antes posible para que no retengan tu ayuda federal.",
+            "¿La oferta no alcanza o cambió la situación económica de tu familia? Pide a la oficina de ayuda financiera de cada escuela que la vuelva a revisar.",
+            "La mayoría de las universidades te piden que decidas a más tardar el 1 de mayo. Revisa la fecha de cada escuela."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Qué es una oferta de ayuda",
+          "text": "Una oferta de ayuda (en inglés, aid offer o award letter) muestra lo que una universidad o una escuela técnica o vocacional te puede dar o prestar para un año escolar. Llega después de que te aceptan, por correo electrónico, por correo postal o en el portal en línea de la escuela. Activa enseguida tu cuenta del portal y tu correo electrónico de cada escuela, y revísalos cada semana para ver tu oferta y cualquier solicitud de documentos. ¿Pasaron unas semanas y no te ha llegado la oferta? Asegúrate de que la escuela aparezca en tu formulario FAFSA en StudentAid.gov (si no está, agrégala) y luego llama a la oficina de ayuda financiera. Pregunta si pueden revisar la oferta con tu familia por teléfono o videollamada, en español o en otro idioma. El consejero de tu escuela secundaria (high school) también te puede ayudar."
+        },
+        {
+          "kind": "list",
+          "heading": "Separa la ayuda por tipo",
+          "items": [
+            "Ayuda gratuita (gift aid): subvenciones y becas, que por lo general no tienes que devolver. Pero si dejas de ir a todas tus clases al principio de un período escolar, es posible que tengas que devolver parte del dinero de una subvención federal. Antes de darte de baja de una clase, aunque sea solo una, pregunta en la oficina de ayuda financiera.",
+            "Work-Study (programa de estudio y trabajo): el pago de un trabajo de tiempo parcial que por lo general tienes que buscar por tu cuenta. La oferta muestra lo máximo que puedes ganar, no un trabajo garantizado. Ese dinero no se descuenta de tu factura por adelantado, así que planea usarlo para libros y gastos del día a día.",
+            "Préstamos federales para estudiantes: se devuelven con intereses. Los préstamos subsidiados (Subsidized) no acumulan intereses mientras estudias por lo menos a medio tiempo (más o menos la mitad de una carga completa de clases); los no subsidiados (Unsubsidized) sí. Si estás en primer año y tus padres están incluidos en tu FAFSA, por lo general puedes pedir hasta $5,500 al año, o menos si estudias a tiempo parcial.",
+            "Otros préstamos: Parent PLUS (un préstamo federal a nombre de tu padre o tu madre), además de préstamos privados, estatales o de la escuela."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Palabras que puedes ver en una oferta",
+          "items": [
+            "Préstamos: cualquier línea que diga loan (préstamo), Direct, Stafford, PLUS, private (privado) o institutional (de la escuela).",
+            "SAI (Student Aid Index o Índice de Ayuda Estudiantil): no es lo que te van a cobrar, sino un número que las escuelas usan para calcular tu ayuda.",
+            "Unmet need o gap (necesidad no cubierta o brecha): por lo general, la parte que tu familia todavía tiene que cubrir.",
+            "En inglés verás \"aid offer\" o \"award letter\" (oferta de ayuda), \"grant\" (subvención), \"scholarship\" (beca) y \"loan\" (préstamo). Si la oferta viene en español, un grant puede aparecer como \"beca\" o como \"subvención\"."
+          ]
+        },
+        {
+          "kind": "steps",
+          "heading": "Calcula tu precio neto",
+          "items": [
+            "Usa el mismo plan para todas las escuelas: tiempo completo o tiempo parcial, y dónde vas a vivir. Si estudias a tiempo parcial, la Pell Grant (beca federal Pell) y los préstamos federales son más pequeños.",
+            "Empieza con el costo de asistencia (cost of attendance o COA), el cálculo que hace la escuela de todo lo que cuesta un año. Incluye vivienda y comida aunque vivas en casa. ¿La oferta solo muestra lo que te va a cobrar la escuela? Pide el COA.",
+            "Resta solo las subvenciones y becas. Lo que queda es tu precio neto.",
+            "Multiplícalo por los años que dura el programa (si es un certificado corto, usa el costo de todo el programa). Pregunta cuánto podrían subir los costos, y suma los préstamos de todo el programa.",
+            "Pregunta si cada subvención se renueva todos los años y qué necesitas para conservarla, como ciertas calificaciones, tomar suficientes clases y llenar una FAFSA nueva cada año."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Un préstamo no es un descuento",
+          "text": "Algunas ofertas cuentan los préstamos como parte de la \"ayuda total\" (total aid) o los restan del costo, y así una escuela parece más barata de lo que es. Todo préstamo, incluido el Parent PLUS, se tiene que devolver con intereses."
+        },
+        {
+          "kind": "steps",
+          "heading": "Acepta solo lo que necesitas",
+          "items": [
+            "Sigue las instrucciones de tu oferta. Acepta primero las subvenciones y becas, y luego el Work-Study si vas a trabajar.",
+            "Pide préstamos al final, y solo lo que necesites. Puedes aceptar todo el préstamo, pedir menos o rechazarlo. Si ahora aceptas menos, puedes pedir más después. Algunas escuelas dan por aceptado un préstamo a menos que lo rechaces.",
+            "Acepta primero tus propios préstamos federales (los subsidiados y luego los no subsidiados), y después el Parent PLUS. Los préstamos privados, que por lo general tienen peores condiciones, van al final.",
+            "¿Es tu primer préstamo federal para estudiantes? Solo lo recibes después de completar la entrance counseling (una orientación corta sobre cómo devolverlo) y de firmar la Master Promissory Note (el contrato del préstamo).",
+            "¿La ayuda es más de lo que te cobra la escuela? Recibes la diferencia, normalmente en un plazo de 14 días. Muchas escuelas lo llaman reembolso (refund), pero el dinero de un préstamo sigue siendo un préstamo. El dinero del préstamo que no necesites lo puedes devolver dentro de 120 días sin pagar intereses ni cargos."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Antes de que tu padre o tu madre pida un préstamo Parent PLUS",
+          "items": [
+            "Es un préstamo a nombre de tu padre o tu madre, y después no se puede pasar a tu nombre. Que se lo aprueben no quiere decir que tu familia pueda pagarlo.",
+            "Para estudiantes que empiecen sus estudios a partir del 1 de julio de 2026, entre todos los padres pueden pedir como máximo $20,000 al año y $65,000 en total por estudiante.",
+            "Los préstamos Parent PLUS otorgados a partir del 1 de julio de 2026 solo tienen pagos mensuales fijos, no un plan basado en los ingresos. Pedir uno nuevo puede hacer que los Parent PLUS anteriores también queden con pagos fijos, así que tu padre o tu madre debe llamar primero al administrador de esos préstamos (la empresa que le cobra esos préstamos).",
+            "¿Le negaron el préstamo a tu padre o tu madre? Avísale a la oficina de ayuda financiera. Es posible que puedas pedir más dinero en préstamos federales a tu nombre. Consulta \"Pedir prestado con cuidado: así funcionan los préstamos estudiantiles\"."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Si la oferta no alcanza",
+          "items": [
+            "Pide a la oficina de ayuda financiera que vuelva a revisar tu oferta, y pregunta si tomarían en cuenta una mejor oferta de otra escuela.",
+            "Pregunta si hay más subvenciones, Work-Study o un plan de pagos mensuales sin intereses.",
+            "Pregunta si tu estado o tu universidad tiene un programa de matrícula gratuita (consulta \"Ayuda estatal y programas Promise\").",
+            "Sigue solicitando becas locales. Nunca pagues para presentar una solicitud ni para que te ayuden con los trámites de la ayuda federal, y nunca compartas tu nombre de usuario ni tu contraseña de StudentAid.gov, ni siquiera con alguien que te esté ayudando.",
+            "Empezar en un colegio comunitario (community college) y transferirte después es un camino sólido. Si una escuela cuesta más de lo que tu familia puede pagar, elegir otra es una decisión financiera inteligente, no un fracaso."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Si cambió la situación económica de tu familia",
+          "text": "La FAFSA usa la información de impuestos de un año anterior. Si las cosas cambiaron, pide a la oficina de ayuda financiera de cada escuela una revisión por \"circunstancias especiales\" (special circumstances). Algunas razones pueden ser:"
+        },
+        {
+          "kind": "list",
+          "items": [
+            "La pérdida de un trabajo, o menos ingresos o ahorros",
+            "Gastos médicos que el seguro no cubrió",
+            "Gastos de cuidado de niños, o alguien con una discapacidad grave en tu hogar",
+            "La pérdida de tu vivienda",
+            "Un hermano, una hermana, tu padre o tu madre que también esté en la universidad",
+            "La matrícula de una escuela privada para un hermano o una hermana menor",
+            "El fallecimiento de uno de tus padres o un divorcio (estos son solo ejemplos, así que pregunta)"
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "text": "Envía pronto una carta corta con documentos que lo demuestren, o pregunta qué otra cosa aceptan. La aprobación no está garantizada y lo que apruebe una escuela no vale para las demás, así que pregunta en cada una."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Si te seleccionan para verificación",
+          "text": "La verificación es el proceso para comprobar que la información de tu FAFSA es correcta. No significa que hayas hecho algo malo. Si el Departamento de Educación te selecciona, tu FAFSA Submission Summary (el resumen de tu FAFSA) en StudentAid.gov muestra un asterisco (*) junto a tu SAI. Una escuela también te puede seleccionar, así que revisa los mensajes de todas las escuelas. Cada una te dirá qué enviar, cómo y para qué fecha. Si uno de tus padres no presentó declaración de impuestos, le pagan en efectivo, no tiene número de Seguro Social o ganó dinero en otro país, pregunta en la oficina de ayuda financiera qué documentos aceptan. No envíes formularios de impuestos ni números de Seguro Social por correo electrónico normal."
+        },
+        {
+          "kind": "warning",
+          "heading": "Termina la verificación cuanto antes",
+          "text": "Mientras no termines la verificación, la escuela puede retener tu ayuda federal. Si nunca la terminas, pierdes tu Pell Grant de ese año, tienes que devolver el dinero de Pell o de FSEOG (otra subvención federal) que hayas recibido, y no puedes recibir más préstamos federales (incluido el Parent PLUS) ni Work-Study. Termínala aunque no recibas una Pell Grant. ¿Te está costando conseguir un documento? Avísale enseguida a la oficina de ayuda financiera."
+        },
+        {
+          "kind": "tip",
+          "heading": "Si no puedes incluir a tus padres",
+          "text": "¿No puedes comunicarte con tus padres, o tener contacto con ellos te pondría en peligro? Es posible que puedas recibir ayuda sin su información. Indícalo en el formulario FAFSA y luego comunícate con la oficina de ayuda financiera de cada escuela. Consulta \"Situaciones especiales en la FAFSA\"."
+        },
+        {
+          "kind": "tip",
+          "heading": "Si no puedes recibir ayuda federal",
+          "text": "Los estudiantes indocumentados, incluidos los beneficiarios de DACA (Acción Diferida para los Llegados en la Infancia), no pueden recibir ayuda federal, así que sus ofertas pueden mostrar solo ayuda estatal, ayuda de la escuela o becas privadas. Pregunta en cada escuela qué formulario debes llenar. Si eres ciudadano estadounidense o no ciudadano elegible (eligible noncitizen), el estatus migratorio de tus padres no afecta tu ayuda federal. ¿Te preocupa compartir información? Consulta \"Privacidad e inmigración\" en \"Situaciones especiales en la FAFSA\" para encontrar asesoría legal de confianza."
+        },
+        {
+          "kind": "tip",
+          "heading": "Programas técnicos y vocacionales",
+          "text": "Algunos programas cortos pueden calificar para la Workforce Pell Grant, una Pell Grant para capacitación laboral. Consulta \"Pell Grants (becas federales Pell) y Workforce Pell\". Antes de pedir un préstamo para una escuela técnica o vocacional, asegúrate de que acepte ayuda federal. Revisa cuántos estudiantes terminan y cuánto ganan en https://collegescorecard.ed.gov. Ten cuidado si una escuela te presiona para sacar préstamos privados o de la escuela."
+        },
+        {
+          "kind": "tip",
+          "heading": "Becas externas",
+          "text": "Avísale a la escuela que elijas de cada beca externa que recibas (las que no vienen de la escuela). Eso puede reducir otra ayuda, así que pregunta en cada escuela qué ayuda reducen primero. Lo mejor es que reduzcan los préstamos o el Work-Study, no las subvenciones. Regla nueva: si las subvenciones estatales, de la escuela y privadas cubren todo tu costo de asistencia, no puedes recibir también una Pell Grant."
+        },
+        {
+          "kind": "list",
+          "heading": "Decide a más tardar el 1 de mayo",
+          "items": [
+            "La mayoría de las universidades te piden que decidas a más tardar el 1 de mayo si presentaste tu solicitud por decisión regular (regular decision) o por acción temprana (early action). Los colegios comunitarios y los programas técnicos pueden tener otras fechas, así que revisa la fecha de cada escuela.",
+            "Dile que sí a una sola escuela: envía sus formularios y cualquier depósito, y luego avísales a las demás que no vas a asistir.",
+            "¿Te cuesta pagar el depósito? Pregunta si la escuela te lo puede perdonar (waive) o dejar que lo pagues más tarde. ¿Se acerca la fecha límite y todavía esperas una oferta o el resultado de la verificación? Pide más tiempo.",
+            "¿Presentaste tu solicitud por decisión temprana (Early Decision, que te compromete a asistir) y la ayuda no alcanza? Comunícate enseguida con las oficinas de admisión y de ayuda financiera de la escuela."
+          ]
+        },
+        {
+          "kind": "steps",
+          "heading": "Después de decir que sí: tu lista para el verano",
+          "items": [
+            "Revisa el portal y el correo electrónico de la escuela cada semana y completa cada tarea pendiente, como enviar tu expediente académico final de la escuela secundaria (final transcript) y tu registro de vacunas. No te pueden entregar la ayuda hasta que termines la verificación y, si es tu primer préstamo federal, la entrance counseling y la Master Promissory Note.",
+            "Inscríbete en tus clases y pregunta cuántos créditos necesitas para mantener cada subvención. Para los préstamos federales tienes que estudiar por lo menos a medio tiempo.",
+            "¿Ya tienes seguro médico, como Medicaid? Si la escuela les cobra su seguro médico a todos los estudiantes, pregunta si puedes rechazarlo (waive) y cuál es la fecha límite para hacerlo.",
+            "Pregunta cuándo vence tu primera factura y si tu ayuda llegará antes de esa fecha. Si estás en primer año y es tu primer préstamo federal, es posible que no lo recibas hasta 30 días después del inicio del período. ¿Necesitas comprar los libros antes? Pregunta en la oficina de ayuda financiera.",
+            "¿No puedes pagar una factura? Antes de la fecha de vencimiento, pregunta en la oficina de ayuda financiera por un plan de pagos o subvenciones de emergencia. No dejes de inscribirte sin antes pedir ayuda."
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "title": "Do You Need Money for College or Career School? — folleto sobre la ayuda federal (StudentAid.gov, PDF en inglés)",
+          "url": "https://studentaid.gov/sites/default/files/do-you-need-money.pdf"
+        },
+        {
+          "title": "How to Review and Correct Your FAFSA Form: cómo revisar y corregir tu FAFSA (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/apply-for-aid/fafsa/review-and-correct"
+        },
+        {
+          "title": "Accepting Financial Aid: cómo aceptar la ayuda financiera (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/complete-aid-process/accept-aid"
+        },
+        {
+          "title": "Receiving Financial Aid: cómo recibir la ayuda financiera (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/complete-aid-process/receive-aid"
+        },
+        {
+          "title": "Direct Subsidized and Direct Unsubsidized Loans: préstamos subsidiados y no subsidiados (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/loans/subsidized-unsubsidized"
+        },
+        {
+          "title": "Direct PLUS Loans for Parents: préstamos PLUS para padres (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/loans/plus/parent"
+        },
+        {
+          "title": "Federal Pell Grants: becas federales Pell (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/types/grants/pell"
+        },
+        {
+          "title": "Public Law 119-21: texto de la ley (GovInfo, en inglés)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-119publ21/html/PLAW-119publ21.htm"
+        },
+        {
+          "title": "FSA Handbook 2026–27, Vol. 6, Ch. 2: Federal Work-Study Program — programa federal de estudio y trabajo (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol6/ch2-federal-work-study-program"
+        },
+        {
+          "title": "Application and Verification Guide 2026–27, Ch. 4: Verification, Updates and Corrections — verificación (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch4-verification-updates-and-corrections"
+        },
+        {
+          "title": "Application and Verification Guide 2026–27, Ch. 5: Special Cases — casos especiales (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch5-special-cases"
+        },
+        {
+          "title": "Eligibility for Non-U.S. Citizens: requisitos para quienes no son ciudadanos (StudentAid.gov, en inglés)",
+          "url": "https://studentaid.gov/understand-aid/eligibility/requirements/non-us-citizens"
+        }
+      ]
+    },
+    {
+      "id": "training-programs-and-apprenticeships",
+      "title": "Cómo pagar la capacitación técnica",
+      "summary": "La capacitación técnica es una decisión inteligente, no un plan B: programas de aprendizaje, becas y centros de empleo ayudan a pagarla, y revisar bien te protege de programas que prometen demasiado.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "En pocas palabras",
+          "items": [
+            "Un Registered Apprenticeship (programa de aprendizaje registrado) te paga desde el primer día. Busca uno en https://www.apprenticeship.gov/apprenticeship-job-finder.",
+            "Llena la FAFSA (Solicitud Gratuita de Ayuda Federal para Estudiantes) lo antes posible en https://studentaid.gov.",
+            "El community college (colegio comunitario) suele costar poco. En promedio, las becas cubren la matrícula y las cuotas de quienes empiezan la universidad por primera vez y estudian a tiempo completo, pero solo si las solicitas.",
+            "Esta semana, pregúntale a tu consejero escolar por los programas de community college gratis (llamados “Promise”). En algunos, la solicitud vence en el otoño del último año de high school. Por ejemplo, la generación de 2027 debe solicitar Tennessee Promise a más tardar el 2 de noviembre de 2026.",
+            "Antes de inscribirte, pide que te confirmen por escrito si tu programa califica para la beca Pell (Pell Grant) y de cuánto sería."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Empieza ya, en high school",
+          "items": [
+            "Toma clases de educación técnica y profesional (CTE) y pregunta por los programas de aprendizaje para jóvenes (youth apprenticeships). En algunos, empiezas a aprender en un trabajo pagado desde los 16 años.",
+            "Termina high school u obtén el GED (un certificado equivalente al diploma de high school). Necesitas uno de los dos para la mayor parte de la ayuda federal. Si no tienes ninguno, pregunta en un community college por los programas de ruta profesional con “ability to benefit” (capacidad para beneficiarse), que te permiten recibir ayuda federal mientras te preparas para el GED."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Programas de aprendizaje: te pagan por aprender",
+          "text": "Un programa de aprendizaje (apprenticeship) es un trabajo de verdad que incluye clases. Un Registered Apprenticeship, aprobado por el Departamento de Trabajo de EE. UU. o por una agencia estatal, te paga desde el primer día."
+        },
+        {
+          "kind": "list",
+          "items": [
+            "El patrocinador (el empleador o grupo que dirige el programa) no está obligado a pagarte las horas de clase. Pregunta si te las pagan y si tendrás que pagar algo por clases, libros o herramientas.",
+            "La edad mínima federal es de 16 años, pero algunos programas piden 18. Los patrocinadores pueden agregar requisitos, como diploma o GED, un examen de matemáticas o licencia de manejo. Pregunta qué pide cada uno y cuándo acepta solicitudes.",
+            "Asegúrate de que sea un Registered Apprenticeship. Ten cuidado si alguien te pide pagar una cuota grande para conseguir un puesto de aprendiz."
+          ]
+        },
+        {
+          "kind": "tip",
+          "heading": "Costos además de la matrícula",
+          "text": "Libros, herramientas, uniformes, cuotas de exámenes, revisión de antecedentes, vacunas y transporte: todo suma. Pide una lista de todos los costos antes de inscribirte. La ayuda suele pagarse en partes, así que pregunta cuándo llegará y si la escuela puede ayudarte con los gastos que tengas que pagar antes de que llegue."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Becas Pell",
+          "text": "La beca Pell (Pell Grant) es dinero federal que no tienes que devolver. Se puede usar en muchos community colleges y escuelas de oficios si la escuela participa en la ayuda federal y tu programa dura lo suficiente. Para una beca Pell regular, un programa de certificado por lo general necesita al menos 600 horas reloj (horas de clase y de laboratorio), o 16 créditos semestrales, y al menos 15 semanas. Los associate degrees (títulos de dos años) también califican. Para 2026-27, la cantidad máxima es de $7,395 por un año completo de estudio a tiempo completo. Los programas más cortos y los estudiantes a tiempo parcial reciben menos. El Congreso fija la cantidad para 2027-28."
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Workforce Pell para programas cortos",
+          "text": "Desde el 1 de julio de 2026, las becas Workforce Pell (becas Pell para capacitación laboral corta) pueden ayudar a pagar programas aprobados de 8 a poco menos de 15 semanas (de 150 a 599 horas reloj). Puede que todavía haya pocos programas aprobados, y quienes estudian en ellos no pueden recibir préstamos federales. Se espera que la beca promedio sea de unos $1,710. No cuentes con ella hasta que la escuela te lo confirme por escrito. Consulta “Pell Grants (becas federales Pell) y Workforce Pell”."
+        },
+        {
+          "kind": "steps",
+          "heading": "Cómo solicitar ayuda",
+          "items": [
+            "¿Tu capacitación empieza antes del 1 de julio de 2027? Usa la FAFSA 2026-27, abierta hasta el 30 de junio de 2027. ¿Empieza el 1 de julio de 2027 o después? Usa la FAFSA 2027-28, abierta desde el 23 de septiembre de 2026. ¿Es un programa de verano? Pregúntale a la escuela cuál usar.",
+            "Llénala lo antes posible, porque algunas becas estatales se dan por orden de llegada. Incluye todas las escuelas que estés considerando (hasta 20 en línea; puedes cambiar la lista después). ¿Todavía no estás en tu último año de high school? Por lo general, la llenarás en el otoño de ese último año.",
+            "Ayuda gratis: 1-800-433-3243 (en inglés o español), o 1-833-610-2590 y luego marca el 7 para otros idiomas. Para cuentas, documentos e información de tus padres, consulta “La FAFSA, paso a paso”."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Si tienes que pedir prestado",
+          "items": [
+            "Primero busca becas, programas de aprendizaje y ayuda de los centros de empleo. Si tienes que pedir prestado, usa préstamos federales para estudiantes (se solicitan con la FAFSA) antes que otros préstamos.",
+            "Cuando una escuela diga que vas a “recibir ayuda federal”, pregunta cuánto es beca y cuánto es préstamo. Algunos programas de 300 a 599 horas reloj califican para préstamos federales, pero no para la beca Pell.",
+            "Ten mucho cuidado con los préstamos privados, los préstamos de la propia escuela y los planes de pago que cobran intereses. Una agencia federal dice que un income share agreement (un acuerdo para pagar una parte de tus ingresos futuros durante cierto tiempo) es un crédito, igual que un préstamo.",
+            "El préstamo Parent PLUS (préstamo federal para padres) está a nombre de tu papá o tu mamá. Esa persona tiene que pagarlo, aunque tú no termines el programa.",
+            "Antes de firmar, pregunta cuánto deberás en total y cuánto al mes. Regla práctica: no pidas prestado en total más de lo que esperas ganar en tu primer año de trabajo."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "American Job Centers",
+          "text": "Los American Job Centers (centros públicos de empleo) pueden ayudar a pagar la capacitación gracias a una ley llamada WIOA (Ley de Innovación y Oportunidades de la Fuerza Laboral). Este dinero para capacitación puede ayudar a adultos de 18 años o más, a personas que perdieron su trabajo por un recorte de personal y a jóvenes de 16 a 24 años que no están estudiando y enfrentan obstáculos, como no tener vivienda, estar en foster care (cuidado de crianza temporal), ser padre o madre, o tener una discapacidad. Los estudiantes de 14 a 21 años que son de familias de bajos ingresos y enfrentan obstáculos pueden recibir tutorías, trabajos de verano o experiencia laboral pagada."
+        },
+        {
+          "kind": "list",
+          "items": [
+            "El dinero para capacitación del centro de empleo funciona como un vale (un crédito que solo puedes usar en capacitación) para programas de la lista aprobada de tu estado. Pídele la lista al centro.",
+            "Los centros usan primero otras becas y te pueden pedir que solicites la beca Pell.",
+            "Los centros también pueden ayudar con transporte y cuidado de niños. Si el dinero paga clases de un programa de aprendizaje, también puede cubrir herramientas, libros y uniformes. Cada área pone sus propias reglas.",
+            "Casi todos los hombres de 18 a 25 años deben inscribirse en el Selective Service (Sistema de Servicio Selectivo) en https://www.sss.gov. Esta inscripción es un requisito para recibir ayuda del centro de empleo.",
+            "Busca un centro en https://www.careeronestop.org o llama al 1-877-US-2JOBS (1-877-872-5627). Los centros deben darte ayuda gratis con el idioma, como un intérprete."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Otras formas de pagar",
+          "items": [
+            "Si estuviste en foster care, pregúntale a tu trabajador social por el Education and Training Voucher (un vale para estudios y capacitación de hasta $5,000 al año) y si en tu estado los jóvenes que estuvieron en foster care no pagan matrícula.",
+            "Algunos empleadores pagan la capacitación. Pregunta cuando solicites trabajo.",
+            "Pregúntale a tu consejero escolar por becas para programas de oficios. Nunca pagues por solicitar una beca.",
+            "Si estudias al menos a medio tiempo en una capacitación que lleva a un certificado u otra credencial reconocida, tu familia podría recibir dinero de vuelta al declarar impuestos con el American Opportunity Tax Credit (un crédito fiscal por estudios). Consulta “Dinero de vuelta al declarar impuestos”."
+          ]
+        },
+        {
+          "kind": "list",
+          "heading": "Familias inmigrantes",
+          "items": [
+            "Si eres ciudadano de EE. UU. o no ciudadano elegible (eligible noncitizen), el estatus migratorio de tus padres no afecta tu ayuda federal, y la FAFSA no pregunta por él. Tu papá o tu mamá puede llenar su parte aunque no tenga número de Seguro Social.",
+            "Los residentes permanentes (con green card), los refugiados, los asilados y algunos otros no ciudadanos pueden recibir ayuda federal. Los beneficiarios de DACA (Acción Diferida para los Llegados en la Infancia) no pueden, pero la FAFSA podría ayudarles a conseguir ayuda del estado o de la escuela.",
+            "Si no tienes número de Seguro Social, no puedes llenar la FAFSA, pero algunos estados tienen su propio formulario de ayuda. Pregúntale a tu consejero escolar.",
+            "¿Te preocupa compartir información? Lee “Privacidad e inmigración” en la sección “Situaciones especiales en la FAFSA” de esta guía, y habla con un abogado de inmigración con licencia o con un representante acreditado por el DOJ (una persona capacitada y aprobada por el Departamento de Justicia) antes de decidir.",
+            "Los centros de empleo no pueden discriminarte por tu estatus de ciudadanía si eres ciudadano o un inmigrante con permiso para trabajar en EE. UU. Las reglas para inmigrantes en algunos programas de educación y empleo han estado cambiando, así que pregunta en cada programa qué requisitos tiene ahora."
+          ]
+        },
+        {
+          "kind": "warning",
+          "heading": "Programas que prometen demasiado",
+          "text": "Señales de alerta: te presionan para inscribirte hoy mismo; te “garantizan” un trabajo; prometen sueldos o empleos, pero no quieren ponerlo por escrito; insisten en que firmes papeles de préstamos antes de que veas tus becas; te piden tu usuario o contraseña de StudentAid.gov; o te dicen que tus créditos se podrán transferir sin mostrarte qué escuelas los aceptan. ¿No te dan documentos para leer antes de comprometerte? No te inscribas."
+        },
+        {
+          "kind": "steps",
+          "heading": "Revisa un programa antes de firmar",
+          "items": [
+            "Busca la escuela en https://collegescorecard.ed.gov para ver el costo, la tasa de graduación, cuánto ganan y cuánto deben sus graduados, y si tiene fines de lucro (for-profit, es decir, que funciona para ganar dinero para sus dueños).",
+            "Asegúrate de que esté acreditada (revisada por una organización aprobada). Algunas escuelas falsas inventan su propia agencia acreditadora, así que verifica la acreditación en https://ope.ed.gov/dapip/. La ayuda federal solo sirve en escuelas acreditadas.",
+            "Si el trabajo requiere una licencia estatal, pregunta si el programa te permite presentar el examen en tu estado y qué porcentaje de estudiantes lo aprueba. Si tienes antecedentes penales, antes de pagar cualquier cosa pregunta si eso podría impedirte obtener la licencia.",
+            "Pide por escrito qué porcentaje de estudiantes termina y consigue trabajo en ese campo, cuánto deben los graduados recientes y si puedes cancelar y recuperar tu dinero."
+          ]
+        },
+        {
+          "kind": "tip",
+          "heading": "Si una escuela te engañó",
+          "text": "Denúncialo en https://reportfraud.ftc.gov y ante la oficina del fiscal general (attorney general) de tu estado. Si usaste ayuda federal, también presenta una queja en https://studentaid.gov/feedback-center/. Si tu escuela cerró antes de que terminaras, o si te engañó, es posible que te cancelen tus préstamos federales para estudiantes. Llama al 1-800-4-FED-AID."
+        }
+      ],
+      "sources": [
+        {
+          "title": "Career Seekers: aprendizajes para quienes buscan empleo (Apprenticeship.gov, en inglés)",
+          "url": "https://www.apprenticeship.gov/career-seekers"
+        },
+        {
+          "title": "Apprenticeship Requirements Reference Guide: requisitos de los programas de aprendizaje (Apprenticeship.gov, PDF en inglés)",
+          "url": "https://www.apprenticeship.gov/sites/default/files/apprenticeship-requirements-reference-guide.pdf"
+        },
+        {
+          "title": "Apprenticeship for Young People: aprendizajes para jóvenes (Apprenticeship.gov, en inglés)",
+          "url": "https://www.apprenticeship.gov/educators/apprenticeship-for-young-people"
+        },
+        {
+          "title": "Apprenticeship Job Finder: buscador de empleos de aprendizaje (Apprenticeship.gov, en inglés)",
+          "url": "https://www.apprenticeship.gov/apprenticeship-job-finder"
+        },
+        {
+          "title": "34 CFR 668.8: Eligible Program — programas que califican para ayuda federal (eCFR, en inglés)",
+          "url": "https://www.ecfr.gov/current/title-34/section-668.8"
+        },
+        {
+          "title": "GEN-26-01: 2026–27 Federal Pell Grant Maximum and Minimum Award Amounts — montos de la beca Pell (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/dear-colleague-letters/2026-01-30/2026-27-federal-pell-grant-maximum-and-minimum-award-amounts"
+        },
+        {
+          "title": "Final Rule: Workforce Pell Grants and Pell Grant Exclusion, 91 FR 29254 — regla final (Federal Register, en inglés)",
+          "url": "https://www.federalregister.gov/documents/2026/05/19/2026-10013/accountability-in-higher-education-and-access-through-demand-driven-workforce-pell-pell-grant"
+        },
+        {
+          "title": "2027–28 FAFSA Beta Testing Plan, Updated Sept. 23, 2026: plan de pruebas beta de la FAFSA (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-07-21/2027-28-fafsa-beta-testing-plan-updated-sept-23-2026"
+        },
+        {
+          "title": "Application and Verification Guide 2026–27, Ch. 1: The Application Process — el proceso de solicitud (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch1-application-process-fafsa-isir"
+        },
+        {
+          "title": "Application and Verification Guide 2026–27, Ch. 2: Filling Out the FAFSA Form — cómo llenar la FAFSA (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/application-and-verification-guide/ch2-filling-out-fafsa-form"
+        },
+        {
+          "title": "FSA Handbook 2026–27, Vol. 1, Ch. 1: School-Determined Requirements — requisitos que determina la escuela (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol1/ch1-school-determined-requirements"
+        },
+        {
+          "title": "FSA Handbook 2026–27, Vol. 1, Ch. 2: U.S. Citizenship and Eligible Noncitizens — requisitos de ciudadanía (Federal Student Aid, en inglés)",
+          "url": "https://fsapartners.ed.gov/knowledge-center/fsa-handbook/2026-2027/vol1/ch2-us-citizenship-eligible-noncitizens"
+        },
+        {
+          "title": "American Job Center Finder: buscador de centros de empleo (CareerOneStop, Departamento de Trabajo de EE. UU., en inglés)",
+          "url": "https://www.careeronestop.org/LocalHelp/AmericanJobCenters/find-american-job-centers.aspx"
+        }
+      ]
+    }
+  ]
+}
