@@ -13,7 +13,7 @@ const OUTCOME_HINTS: Record<SafetyReviewOutcome, string> = {
   escalated: "You passed it on under the follow-up policy, for example to a safety lead or emergency services.",
 };
 
-export function ReviewForm({ eventId }: { eventId: string }) {
+export function ReviewForm({ eventId, familyRef }: { eventId: string; familyRef: string }) {
   const [state, action, pending, values] = useFormAction<FormState>(reviewSafetyEventAction, undefined);
   const noteErrors = state?.errors?.note;
   return (
@@ -41,8 +41,9 @@ export function ReviewForm({ eventId }: { eventId: string }) {
           Note
         </label>
         <p id="note-hint" className="text-sm text-muted">
-          What you did and why, for whoever looks at this next. Needed unless no action was needed. It stays with
-          this event and is deleted with the student&apos;s account.
+          What you did and why, for whoever looks at this next. Needed unless no action was needed. Refer to the
+          family as {familyRef}, never by name or email. The note stays with this event and is deleted with the
+          student&apos;s account.
         </p>
         <textarea
           key={values.note ?? ""}

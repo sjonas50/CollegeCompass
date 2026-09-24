@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
-import { CATEGORY_LABELS, SEVERITIES, SEVERITY_LABELS, formatAgo, sourceLabel } from "@/lib/admin/format";
+import { CATEGORY_LABELS, RULES_ALONE_REASONS, SEVERITIES, SEVERITY_LABELS, formatAgo, sourceLabel } from "@/lib/admin/format";
 import {
   QUEUE_FILTERS,
   type QueueFilter,
@@ -90,8 +90,10 @@ export default async function SafetyQueuePage({ searchParams }: PageProps<"/admi
           <ul className="space-y-3" aria-label={FILTER_LABELS[filter]}>
             {rows.map((row) => (
               <li key={row.id}>
+                {/* Opening an event is audited, so never load one before the reviewer clicks it. */}
                 <Link
                   href={`/admin/safety/${row.id}`}
+                  prefetch={false}
                   className={`block rounded-xl border bg-surface p-4 hover:border-accent ${
                     row.timing.state === "waiting" && row.timing.overdue ? "border-danger" : "border-border"
                   }`}
@@ -104,8 +106,8 @@ export default async function SafetyQueuePage({ searchParams }: PageProps<"/admi
                   <span className="mt-2 block text-sm text-muted">
                     Flagged {formatAgo(row.createdAt, now)} · {row.gradeBand} · {row.sources.map(sourceLabel).join(", ") || "No tier recorded"}
                   </span>
-                  {row.modelUnavailable && (
-                    <span className="mt-1 block text-sm font-medium">AI model unavailable: keyword rules alone decided</span>
+                  {row.rulesAlone && (
+                    <span className="mt-1 block text-sm font-medium">{RULES_ALONE_REASONS[row.modelTier]}: keyword rules alone decided</span>
                   )}
                   <span className="mt-1 block text-sm">
                     <TimingText timing={row.timing} outcome={row.reviewOutcome} now={now} />

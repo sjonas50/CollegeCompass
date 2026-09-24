@@ -131,6 +131,12 @@ function DailyChart({ daily }: { daily: CostReport["daily"] }) {
   );
 }
 
+function deletedFamiliesText(count: number) {
+  return count === 1
+    ? "Includes 1 reviewed event from a family that has since deleted their account."
+    : `Includes ${n(count)} reviewed events from families that have since deleted their accounts.`;
+}
+
 function SafetySection({ stats }: { stats: SafetyMonthStats }) {
   const onTimeShare = stats.reviewed ? ` (${formatPercent((stats.reviewedOnTime / stats.reviewed) * 100)})` : "";
   return (
@@ -163,6 +169,11 @@ function SafetySection({ stats }: { stats: SafetyMonthStats }) {
           </dl>
         </>
       )}
+      <p className="mt-3 text-xs text-muted">
+        {stats.fromDeletedAccounts > 0 && `${deletedFamiliesText(stats.fromDeletedAccounts)} `}
+        When a family deletes their account, events someone already reviewed stay in these numbers. Events deleted before
+        anyone reviewed them aren&apos;t counted.
+      </p>
     </Card>
   );
 }
@@ -207,8 +218,14 @@ export default async function CostsPage({ searchParams }: PageProps<"/admin/cost
           {monthLabel(month)}
         </h2>
         <dl className="grid grid-cols-2 gap-3">
-          <StatTile label="Total AI spend" value={formatUsd(report.totalMicros)} detail={`${n(report.calls)} AI calls`} />
-          <StatTile label="Students using AI" value={n(report.activeStudents)} />
+          <StatTile
+            label="Total AI spend"
+            value={formatUsd(report.totalMicros)}
+            detail={`${n(report.calls)} AI calls${
+              report.deletedAccountsMicros > 0 ? `. ${formatUsd(report.deletedAccountsMicros)} of it came from accounts deleted since.` : ""
+            }`}
+          />
+          <StatTile label="Students using AI" value={n(report.activeStudents)} detail="Only students who still have an account." />
           <StatTile
             label="Average per student"
             value={report.averageMicros === null ? "—" : formatUsd(report.averageMicros)}
@@ -220,7 +237,7 @@ export default async function CostsPage({ searchParams }: PageProps<"/admin/cost
             detail={ofBudget(report.medianMicros, report.budgetMicros)}
           />
         </dl>
-        <p className="text-xs text-muted">Averages count only students who used AI this month.</p>
+        <p className="text-xs text-muted">Per-student numbers count only students who used AI this month and still have an account.</p>
       </section>
 
       <Card>

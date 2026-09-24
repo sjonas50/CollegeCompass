@@ -32,10 +32,14 @@ export type SpendBreakdown = {
 export type CostReport = {
   month: string;
   budgetMicros: number;
+  /** Everything spent this month, including by accounts deleted since. */
   totalMicros: number;
   calls: number;
-  /** Students with any AI use this month. */
+  /** The part of totalMicros spent by accounts deleted since (their usage is kept, unlinked). */
+  deletedAccountsMicros: number;
+  /** Students with any AI use this month who still have an account. */
   activeStudents: number;
+  /** Per-student average and median, over activeStudents only. */
   averageMicros: number | null;
   medianMicros: number | null;
   /** From NEAR_BUDGET_SHARE up to (not including) the budget, highest first. */
@@ -84,6 +88,8 @@ export async function costReport(
 
   const totalMicros = perStudent.reduce((t, s) => t + s.micros, 0);
   // Rows of deleted students (no user) count toward totals but not as anyone's spend.
+  const deletedAccountsMicros = perStudent.find((s) => s.userId === null)?.micros ?? 0;
+  const studentsMicros = totalMicros - deletedAccountsMicros;
   const spends = perStudent
     .flatMap((s) => (s.userId ? [{ userId: s.userId, micros: s.micros }] : []))
     .map((s) => ({ shortId: studentShortId(s.userId), micros: s.micros, percentOfBudget: budgetMicros ? (s.micros / budgetMicros) * 100 : 0 }))
@@ -106,8 +112,9 @@ export async function costReport(
     budgetMicros,
     totalMicros,
     calls: features.reduce((t, f) => t + f.calls, 0),
+    deletedAccountsMicros,
     activeStudents: spends.length,
-    averageMicros: spends.length ? totalMicros / spends.length : null,
+    averageMicros: spends.length ? studentsMicros / spends.length : null,
     medianMicros: median(spends.map((s) => s.micros)),
     nearBudget: spends.filter((s) => s.micros >= budgetMicros * NEAR_BUDGET_SHARE && s.micros < budgetMicros),
     overBudget: spends.filter((s) => s.micros >= budgetMicros),

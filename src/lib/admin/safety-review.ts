@@ -1,9 +1,11 @@
+import { createHash } from "node:crypto";
 import { and, asc, count, desc, eq, gte, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 import type { Db } from "@/db";
 import {
   type SafetyReviewOutcome,
+  auditLog,
   counselorConversations,
   counselorMessages,
   parentStudentLinks,
@@ -14,9 +16,31 @@ import type { SafetyCategory } from "@/lib/ai/safety/types";
 import { audit } from "@/lib/audit";
 import { currentGrade } from "@/lib/auth/age";
 import { assertAdmin } from "./access";
-import { type EventSeverity, REVIEW_NOTE_MAX, REVIEW_OUTCOMES, SEVERITIES, gradeBandLabel, median, monthRange } from "./format";
+import {
+  type EventSeverity,
+  type ModelTier,
+  REVIEW_NOTE_MAX,
+  REVIEW_OUTCOMES,
+  SEVERITIES,
+  gradeBandLabel,
+  isRulesAloneMarker,
+  median,
+  modelTierOf,
+  monthRange,
+  rulesAlone,
+} from "./format";
 
 const HOUR_MS = 60 * 60_000;
+
+/**
+ * A stable reference for a family ("H-1a2b3c4d") that staff can put in review notes, tickets and
+ * chat instead of a name. It comes from the household id (or the student's own id if they have no
+ * household), which is random, so the reference can't be turned back into anything. It stays the
+ * same unless the student moves to another household (accepting a parent invite can do that).
+ */
+export function familyReference(householdOrUserId: string): string {
+  return `H-${createHash("sha256").update(`family:${householdOrUserId}`).digest("hex").slice(0, 8)}`;
+}
 
 // ---------------------------------------------------------------------------
 // Review targets
@@ -69,10 +93,12 @@ export type QueueRow = {
   id: string;
   severity: EventSeverity;
   category: SafetyCategory;
-  /** The classifier tiers that flagged the message ("rules", "model", "rate_limited"). */
+  /** The classifier tiers that flagged the message ("rules", "model"). */
   sources: string[];
-  /** True when the AI model tier couldn't run and keyword rules alone decided. */
-  modelUnavailable: boolean;
+  /** Whether the AI model rated the message, and if not, why. */
+  modelTier: ModelTier;
+  /** True when the model couldn't be used and keyword rules alone decided (read these with extra care). */
+  rulesAlone: boolean;
   createdAt: Date;
   /** The student's grade band when the message was sent. Never the name. */
   gradeBand: string;
@@ -106,12 +132,14 @@ type EventRow = {
 };
 
 function toQueueRow(row: EventRow, now: Date): QueueRow {
+  const modelTier = modelTierOf(row.sources);
   return {
     id: row.id,
     severity: row.severity,
     category: row.category,
-    sources: row.sources.filter((s) => s !== "model_unavailable"),
-    modelUnavailable: row.sources.includes("model_unavailable"),
+    sources: row.sources.filter((s) => !isRulesAloneMarker(s)),
+    modelTier,
+    rulesAlone: rulesAlone(modelTier),
     createdAt: row.createdAt,
     gradeBand: gradeBandLabel(currentGrade({ grade: row.grade, gradeSchoolYear: row.gradeSchoolYear }, row.createdAt)),
     reviewedAt: row.reviewedAt,
@@ -194,12 +222,25 @@ export type SafetyEventDetail = QueueRow & {
   reviewNote: string | null;
   /** The staff member who reviewed it (null if not reviewed, or their account is gone). */
   reviewerName: string | null;
+  /** The family's reference for notes and follow-up, never a name. See familyReference. */
+  familyRef: string;
 };
 
 const reviewer = alias(users, "reviewer");
 
-/** An event's details for staff. Leaves out who the student is; see revealSafetyContext. */
-export async function getSafetyEvent(
+/** What a staff view of an event showed, for the audit log. Never anything personal. */
+type Revealed = "excerpt" | "conversation" | "parent_contact";
+
+function auditView(db: Db, actorId: string, subjectUserId: string, eventId: string, revealed: Revealed) {
+  return audit(db, "admin.viewed_safety_event", { actorUserId: actorId, subjectUserId, metadata: { eventId, revealed } });
+}
+
+/**
+ * Opens an event for staff: the student's own words (the excerpt) and any review note. It leaves
+ * out who the student is (see revealSafetyContext), but the words and notes can identify them, so
+ * every open is audited, with the event id only, before anything is returned.
+ */
+export async function openSafetyEvent(
   db: Db,
   actorId: string,
   eventId: string,
@@ -210,6 +251,8 @@ export async function getSafetyEvent(
   const [row] = await db
     .select({
       ...eventColumns,
+      userId: safetyEvents.userId,
+      householdId: users.householdId,
       excerpt: safetyEvents.excerpt,
       reviewNote: safetyEvents.reviewNote,
       reviewerName: reviewer.displayName,
@@ -219,7 +262,14 @@ export async function getSafetyEvent(
     .leftJoin(reviewer, eq(reviewer.id, safetyEvents.reviewedByUserId))
     .where(eq(safetyEvents.id, eventId));
   if (!row) return null;
-  return { ...toQueueRow(row, now), excerpt: row.excerpt, reviewNote: row.reviewNote, reviewerName: row.reviewerName };
+  await auditView(db, actorId, row.userId, eventId, "excerpt");
+  return {
+    ...toQueueRow(row, now),
+    excerpt: row.excerpt,
+    reviewNote: row.reviewNote,
+    reviewerName: row.reviewerName,
+    familyRef: familyReference(row.householdId ?? row.userId),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -230,6 +280,8 @@ export async function getSafetyEvent(
 export const CONTEXT_WINDOW = 6;
 // The event is written while the message is being handled, so the stored message is seconds away.
 const MATCH_WINDOW_MS = 10 * 60_000;
+/** Excerpts keep the first 1,000 characters; a shorter one is the whole message. */
+const EXCERPT_MAX = 1000;
 
 export type ContextMessage = {
   id: string;
@@ -237,9 +289,30 @@ export type ContextMessage = {
   kind: "chat" | "support" | "notice";
   content: string;
   createdAt: Date;
-  /** The message this event was raised for. */
+  /** The message this event was raised for (for a best guess, the likely one). */
   flagged: boolean;
 };
+
+/**
+ * The conversation around the flagged message:
+ * - linked: the event names its conversation, and the message was found in it.
+ * - best_guess: the event isn't linked to a conversation (recorded on a path that doesn't link, or
+ *   the student deleted the conversation), so this is a saved message with the same words, sent
+ *   around the same time. It may not be the flagged one.
+ * - not_saved: the message was sent while the counselor was locked, so it was never saved.
+ * - not_found: no saved message matches (for example, the student deleted the conversation).
+ */
+export type ConversationContext =
+  | {
+      state: "linked" | "best_guess";
+      concernFlagged: boolean;
+      messages: ContextMessage[];
+      /** Messages before and after the ones shown. */
+      earlier: number;
+      later: number;
+    }
+  | { state: "not_saved" }
+  | { state: "not_found" };
 
 export type SafetyContext = {
   student: {
@@ -249,19 +322,13 @@ export type SafetyContext = {
     /** At least one parent or guardian account is linked. */
     linkedParent: boolean;
   };
-  /** Null when the message isn't in a saved conversation (for example, the student deleted it). */
-  conversation: {
-    concernFlagged: boolean;
-    messages: ContextMessage[];
-    /** Messages before and after the ones shown. */
-    earlier: number;
-    later: number;
-  } | null;
+  conversation: ConversationContext;
 };
 
 /**
  * Reveals who the student is and the conversation around a flagged message, for follow-up.
- * Every call is audited (with the event id only) before anything is returned.
+ * Every call is audited (the event id and what was shown, nothing personal) before anything is
+ * returned.
  */
 export async function revealSafetyContext(
   db: Db,
@@ -278,6 +345,7 @@ export async function revealSafetyContext(
       excerpt: safetyEvents.excerpt,
       createdAt: safetyEvents.createdAt,
       conversationId: safetyEvents.conversationId,
+      sources: safetyEvents.sources,
       displayName: users.displayName,
       parentManaged: users.parentManaged,
     })
@@ -286,7 +354,7 @@ export async function revealSafetyContext(
     .where(eq(safetyEvents.id, eventId));
   if (!event) return null;
 
-  await audit(db, "admin.viewed_safety_event", { actorUserId: actorId, subjectUserId: event.userId, metadata: { eventId } });
+  await auditView(db, actorId, event.userId, eventId, "conversation");
 
   const [[link], conversation] = await Promise.all([
     db
@@ -303,16 +371,24 @@ export async function revealSafetyContext(
 }
 
 /**
- * Finds the student's stored message that the event's excerpt was cut from (the closest in time,
- * if they sent the same words twice), and the messages around it.
+ * Finds the student's stored message the event was raised for, and the messages around it. A
+ * linked event is looked up only in its own conversation. An unlinked one is matched by its words
+ * and time (the closest, if they sent the same words twice) and marked as a best guess.
  */
 async function conversationAround(
   db: Db,
-  event: { userId: string; excerpt: string; createdAt: Date; conversationId: string | null },
+  event: { userId: string; excerpt: string; createdAt: Date; conversationId: string | null; sources: string[] },
   window: number,
-): Promise<SafetyContext["conversation"]> {
-  // A 1,000-character excerpt can end in half an emoji, which the database stores as U+FFFD.
+): Promise<ConversationContext> {
+  // Messages sent while the counselor is locked are screened but never saved, so a text match could
+  // only find a different message.
+  if (event.sources.includes("locked")) return { state: "not_saved" };
+
+  // Only a full-length excerpt was cut short; a shorter one must match the whole message. A cut can
+  // end in half an emoji, which the database stores as U+FFFD.
   const prefix = event.excerpt.endsWith("�") ? event.excerpt.slice(0, -1) : event.excerpt;
+  const sameWords =
+    event.excerpt.length >= EXCERPT_MAX ? sql`starts_with(${counselorMessages.content}, ${prefix})` : eq(counselorMessages.content, event.excerpt);
   const at = event.createdAt.toISOString();
   const [match] = await db
     .select({ conversationId: counselorMessages.conversationId, seq: counselorMessages.seq, concernFlagged: counselorConversations.concernFlagged })
@@ -321,17 +397,16 @@ async function conversationAround(
     .where(
       and(
         eq(counselorConversations.userId, event.userId),
-        // Events recorded since the link existed name their conversation; older ones are matched by text and time.
         event.conversationId ? eq(counselorMessages.conversationId, event.conversationId) : undefined,
         eq(counselorMessages.role, "user"),
-        sql`starts_with(${counselorMessages.content}, ${prefix})`,
+        sameWords,
         gte(counselorMessages.createdAt, new Date(event.createdAt.getTime() - MATCH_WINDOW_MS)),
         lte(counselorMessages.createdAt, new Date(event.createdAt.getTime() + MATCH_WINDOW_MS)),
       ),
     )
     .orderBy(sql`abs(extract(epoch from (${counselorMessages.createdAt} - ${at}::timestamptz)))`, asc(counselorMessages.seq))
     .limit(1);
-  if (!match) return null;
+  if (!match) return { state: "not_found" };
 
   const columns = {
     id: counselorMessages.id,
@@ -355,11 +430,53 @@ async function conversationAround(
   ]);
   const messages = [...before.reverse(), ...after].map(({ seq, ...m }) => ({ ...m, flagged: seq === match.seq }));
   return {
+    state: event.conversationId ? "linked" : "best_guess",
     concernFlagged: match.concernFlagged,
     messages,
     earlier: counts.before - before.length,
     later: counts.after - Math.max(0, after.length - 1),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Parent contact (audited)
+// ---------------------------------------------------------------------------
+
+export type ParentContact = {
+  /** The family's reference, to use in notes instead of names. */
+  familyRef: string;
+  /** A parent created and controls this account (the child was under 13 at signup). */
+  parentManaged: boolean;
+  /** Each linked parent's email, earliest link first. Empty when no parent is linked. */
+  parents: { email: string | null }[];
+};
+
+const parentUser = alias(users, "parent");
+
+/**
+ * Reveals how to reach the student's linked parents, for follow-up under the parent-notification
+ * policy. Every call is audited (the event id and what was shown, never the email) before anything
+ * is returned.
+ */
+export async function revealParentContact(db: Db, actorId: string, eventId: string): Promise<ParentContact | null> {
+  await assertAdmin(db, actorId);
+  if (!z.uuid().safeParse(eventId).success) return null;
+  const [event] = await db
+    .select({ userId: safetyEvents.userId, householdId: users.householdId, parentManaged: users.parentManaged })
+    .from(safetyEvents)
+    .innerJoin(users, eq(users.id, safetyEvents.userId))
+    .where(eq(safetyEvents.id, eventId));
+  if (!event) return null;
+
+  await auditView(db, actorId, event.userId, eventId, "parent_contact");
+
+  const parents = await db
+    .select({ email: parentUser.email })
+    .from(parentStudentLinks)
+    .innerJoin(parentUser, eq(parentUser.id, parentStudentLinks.parentUserId))
+    .where(eq(parentStudentLinks.studentUserId, event.userId))
+    .orderBy(asc(parentStudentLinks.createdAt), asc(parentUser.email));
+  return { familyRef: familyReference(event.householdId ?? event.userId), parentManaged: event.parentManaged, parents };
 }
 
 // ---------------------------------------------------------------------------
@@ -384,7 +501,9 @@ export type ReviewResult = { ok: true } | { ok: false; error: "not_found" | "alr
 
 /**
  * Records a staff review. The first review stands: a second reviewer (or a double submit) gets
- * "already_reviewed" instead of overwriting it. The audit entry holds only the outcome.
+ * "already_reviewed" instead of overwriting it. The audit entry holds the outcome and what the
+ * monthly numbers need (severity and times, never the note or the message), so a review still
+ * counts after the family deletes their account and the event goes with it.
  */
 export async function reviewSafetyEvent(
   db: Db,
@@ -400,12 +519,16 @@ export async function reviewSafetyEvent(
     .update(safetyEvents)
     .set({ reviewedAt: now, reviewedByUserId: actorId, reviewOutcome: outcome, reviewNote: note || null })
     .where(and(eq(safetyEvents.id, eventId), isNull(safetyEvents.reviewedAt)))
-    .returning({ userId: safetyEvents.userId });
+    .returning({ userId: safetyEvents.userId, severity: safetyEvents.severity, createdAt: safetyEvents.createdAt });
   if (!updated) {
     const [exists] = await db.select({ id: safetyEvents.id }).from(safetyEvents).where(eq(safetyEvents.id, eventId));
     return { ok: false, error: exists ? "already_reviewed" : "not_found" };
   }
-  await audit(db, "safety.reviewed", { actorUserId: actorId, subjectUserId: updated.userId, metadata: { outcome } });
+  await audit(db, "safety.reviewed", {
+    actorUserId: actorId,
+    subjectUserId: updated.userId,
+    metadata: { eventId, outcome, severity: updated.severity, flaggedAt: updated.createdAt.toISOString(), reviewedAt: now.toISOString() },
+  });
   return { ok: true };
 }
 
@@ -425,15 +548,49 @@ export type SafetyMonthStats = {
   waiting: number;
   /** Still waiting and past the target. */
   overdue: number;
+  /** Reviewed events (counted above) whose family has since deleted their account. */
+  fromDeletedAccounts: number;
 };
+
+type StatsRow = { severity: EventSeverity; createdAt: Date; reviewedAt: Date | null };
+
+/**
+ * Reviewed events flagged in [start, end) whose family deleted their account (the event went with
+ * it), rebuilt from the review's audit entry. Reviews saved before the entry held these fields
+ * can't be counted.
+ */
+async function deletedReviewedEvents(db: Db, start: Date, end: Date): Promise<StatsRow[]> {
+  const field = (name: string) => sql<string | null>`${auditLog.metadata}->>${name}`;
+  const flaggedAt = sql`(${field("flaggedAt")})::timestamptz`;
+  const rows = await db
+    .select({ severity: field("severity"), flaggedAt: field("flaggedAt"), reviewedAt: field("reviewedAt") })
+    .from(auditLog)
+    .where(
+      and(
+        eq(auditLog.action, "safety.reviewed"),
+        sql`${flaggedAt} >= ${start.toISOString()}::timestamptz`,
+        sql`${flaggedAt} < ${end.toISOString()}::timestamptz`,
+        sql`not exists (select 1 from ${safetyEvents} where ${safetyEvents.id}::text = ${field("eventId")})`,
+      ),
+    );
+  return rows.flatMap((r) =>
+    SEVERITIES.includes(r.severity as EventSeverity) && r.flaggedAt && r.reviewedAt
+      ? [{ severity: r.severity as EventSeverity, createdAt: new Date(r.flaggedAt), reviewedAt: new Date(r.reviewedAt) }]
+      : [],
+  );
+}
 
 export async function safetyMonthStats(db: Db, actorId: string, month: string, now: Date = new Date()): Promise<SafetyMonthStats> {
   await assertAdmin(db, actorId);
   const { start, end } = monthRange(month);
-  const rows = await db
-    .select({ severity: safetyEvents.severity, createdAt: safetyEvents.createdAt, reviewedAt: safetyEvents.reviewedAt })
-    .from(safetyEvents)
-    .where(and(gte(safetyEvents.createdAt, start), lt(safetyEvents.createdAt, end)));
+  const [live, deleted] = await Promise.all([
+    db
+      .select({ severity: safetyEvents.severity, createdAt: safetyEvents.createdAt, reviewedAt: safetyEvents.reviewedAt })
+      .from(safetyEvents)
+      .where(and(gte(safetyEvents.createdAt, start), lt(safetyEvents.createdAt, end))),
+    deletedReviewedEvents(db, start, end),
+  ]);
+  const rows: StatsRow[] = [...live, ...deleted];
   const stats: SafetyMonthStats = {
     total: rows.length,
     bySeverity: Object.fromEntries(SEVERITIES.map((s) => [s, 0])) as Record<EventSeverity, number>,
@@ -443,6 +600,7 @@ export async function safetyMonthStats(db: Db, actorId: string, month: string, n
     reviewedLate: 0,
     waiting: 0,
     overdue: 0,
+    fromDeletedAccounts: deleted.length,
   };
   const took: number[] = [];
   for (const row of rows) {

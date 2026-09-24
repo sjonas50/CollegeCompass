@@ -2,12 +2,13 @@ import { and, eq, like } from "drizzle-orm";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { revealSafetyContextAction, reviewSafetyEventAction } from "@/app/actions/admin";
+import { revealParentContactAction, revealSafetyContextAction, reviewSafetyEventAction } from "@/app/actions/admin";
 import CostsPage from "@/app/admin/costs/page";
 import AdminLayout from "@/app/admin/layout";
 import AdminHome from "@/app/admin/page";
 import SafetyEventPage from "@/app/admin/safety/[id]/page";
 import { ContextView } from "@/app/admin/safety/[id]/context-reveal";
+import { ParentContactView } from "@/app/admin/safety/[id]/parent-contact-reveal";
 import SafetyQueuePage from "@/app/admin/safety/page";
 import { type Db, createTestDb, schema } from "@/db";
 import { authenticate } from "@/lib/accounts";
@@ -15,8 +16,12 @@ import { AdminRequiredError } from "@/lib/admin/access";
 import { costReport, studentShortId } from "@/lib/admin/costs";
 import { createAdminUser } from "@/lib/admin/create-admin";
 import {
+  type SafetyContext,
+  familyReference,
   listSafetyQueue,
+  openSafetyEvent,
   queueSummary,
+  revealParentContact,
   revealSafetyContext,
   reviewSafetyEvent,
   reviewTiming,
@@ -161,6 +166,7 @@ describe("staff-only access", () => {
   };
   const actions: Record<string, () => Promise<unknown>> = {
     reveal: () => revealSafetyContextAction(undefined, form({ eventId })),
+    parentContact: () => revealParentContactAction(undefined, form({ eventId })),
     review: () => reviewSafetyEventAction(undefined, form({ eventId, outcome: "escalated", note: "Called the safety lead" })),
   };
 
@@ -188,6 +194,7 @@ describe("staff-only access", () => {
       expect(await thrown(async () => render(run())), name).toBeNull();
     }
     expect(await actions.reveal()).toMatchObject({ context: { student: { displayName: "Maya" } } });
+    expect(await actions.parentContact()).toMatchObject({ contact: { parents: [] } });
     expect(await redirectOf(actions.review)).toBe(`/admin/safety/${eventId}?reviewed=1`);
   });
 
@@ -195,7 +202,9 @@ describe("staff-only access", () => {
     for (const actor of [student.id, parent.id, crypto.randomUUID(), "not-a-uuid"]) {
       await expect(listSafetyQueue(db, actor)).rejects.toBeInstanceOf(AdminRequiredError);
       await expect(queueSummary(db, actor)).rejects.toBeInstanceOf(AdminRequiredError);
+      await expect(openSafetyEvent(db, actor, eventId)).rejects.toBeInstanceOf(AdminRequiredError);
       await expect(revealSafetyContext(db, actor, eventId)).rejects.toBeInstanceOf(AdminRequiredError);
+      await expect(revealParentContact(db, actor, eventId)).rejects.toBeInstanceOf(AdminRequiredError);
       await expect(reviewSafetyEvent(db, actor, eventId, { outcome: "no_action", note: "" })).rejects.toBeInstanceOf(AdminRequiredError);
       await expect(costReport(db, actor, "2026-09")).rejects.toBeInstanceOf(AdminRequiredError);
       await expect(safetyMonthStats(db, actor, "2026-09")).rejects.toBeInstanceOf(AdminRequiredError);
@@ -270,11 +279,12 @@ describe("safety review queue", () => {
       severity: "high",
       category: "abuse",
       sources: ["rules"],
-      modelUnavailable: true,
+      modelTier: "unavailable",
+      rulesAlone: true,
       gradeBand: "Grades 11–12",
       timing: { state: "waiting", overdue: true },
     });
-    expect(byId.get(ids.imminentNew)).toMatchObject({ gradeBand: "Grades 7–8", modelUnavailable: false, timing: { state: "waiting", overdue: false } });
+    expect(byId.get(ids.imminentNew)).toMatchObject({ gradeBand: "Grades 7–8", modelTier: "ran", rulesAlone: false, timing: { state: "waiting", overdue: false } });
     expect(byId.get(ids.reviewedEarlier)).toMatchObject({ reviewOutcome: "no_action", timing: { state: "reviewed", onTime: false } });
     expect(byId.get(ids.reviewedRecently)?.timing).toMatchObject({ state: "reviewed", onTime: true });
     for (const row of rows) {
@@ -360,6 +370,14 @@ describe("safety event detail", () => {
     return conv;
   }
 
+  const eventPage = (id: string) =>
+    render(SafetyEventPage({ params: Promise.resolve({ id }), searchParams: Promise.resolve({}) } as PageProps<"/admin/safety/[id]">));
+  const shown = (context: SafetyContext | null) => {
+    const found = context?.conversation;
+    return found && "messages" in found ? found : null;
+  };
+  const flaggedPairs = (context: SafetyContext | null) => shown(context)?.messages.map((m) => [m.content, m.flagged]) ?? null;
+
   it("shows the excerpt and details without the student's name", async () => {
     const event = await addEvent(student.id, { excerpt: "Nobody would notice\nif I was gone", createdAt: ago(2) });
     await signIn(admin.id);
@@ -376,8 +394,8 @@ describe("safety event detail", () => {
     expect(t).toContain("Show conversation context");
     expect(t).toContain("Save review");
     expect(t).not.toContain("Maya");
-    // Opening the page isn't a reveal.
-    expect(await auditRows("admin.viewed_safety_event")).toHaveLength(0);
+    // Opening the page is audited (the excerpt can identify the student), but it isn't a reveal.
+    expect((await auditRows("admin.viewed_safety_event")).map((a) => a.metadata)).toEqual([{ eventId: event.id, revealed: "excerpt" }]);
   });
 
   it("returns not-found for unknown or malformed ids", async () => {
@@ -389,7 +407,7 @@ describe("safety event detail", () => {
   });
 
   it("reveals the student and the messages around the flagged one, and audits it with the event id only", async () => {
-    await conversation([
+    const conv = await conversation([
       ["user", "hi", 20],
       ["assistant", "Hi! What's on your mind?", 19],
       ["user", "school is a lot", 10],
@@ -398,12 +416,12 @@ describe("safety event detail", () => {
       ["assistant", "You matter. Call or text 988.", 2, "support"],
       ["user", "ok", 1],
     ]);
-    const event = await addEvent(student.id, { createdAt: new Date(NOW.getTime() - 2 * 60_000 + 500) });
+    const event = await addEvent(student.id, { conversationId: conv.id, createdAt: new Date(NOW.getTime() - 2 * 60_000 + 500) });
 
     const context = await revealSafetyContext(db, admin.id, event.id);
     expect(context?.student).toEqual({ displayName: "Maya", parentManaged: true, linkedParent: false });
-    expect(context?.conversation?.concernFlagged).toBe(true);
-    expect(context?.conversation?.messages.map((m) => [m.content, m.flagged])).toEqual([
+    expect(context?.conversation).toMatchObject({ state: "linked", concernFlagged: true });
+    expect(flaggedPairs(context)).toEqual([
       ["hi", false],
       ["Hi! What's on your mind?", false],
       ["school is a lot", false],
@@ -415,22 +433,22 @@ describe("safety event detail", () => {
     expect(context?.conversation).toMatchObject({ earlier: 0, later: 0 });
 
     const narrow = await revealSafetyContext(db, admin.id, event.id, { window: 1 });
-    expect(narrow?.conversation?.messages.map((m) => m.content)).toEqual(["That sounds hard.", "I don't want to be here anymore", "You matter. Call or text 988."]);
+    expect(shown(narrow)?.messages.map((m) => m.content)).toEqual(["That sounds hard.", "I don't want to be here anymore", "You matter. Call or text 988."]);
     expect(narrow?.conversation).toMatchObject({ earlier: 3, later: 1 });
 
     const audits = await auditRows("admin.viewed_safety_event");
     expect(audits).toHaveLength(2);
     for (const a of audits) {
-      expect(a).toMatchObject({ actorUserId: admin.id, subjectUserId: student.id, metadata: { eventId: event.id } });
-      expect(Object.keys(a.metadata ?? {})).toEqual(["eventId"]);
+      expect(a).toMatchObject({ actorUserId: admin.id, subjectUserId: student.id });
+      expect(a.metadata).toEqual({ eventId: event.id, revealed: "conversation" });
     }
   });
 
   it("notes a linked parent, and renders the context for staff", async () => {
     const parent = await makeUser("parent");
     await db.insert(schema.parentStudentLinks).values({ parentUserId: parent.id, studentUserId: student.id });
-    await conversation([["user", "I don't want to be here anymore", 5]]);
-    const event = await addEvent(student.id, { createdAt: ago(5 / 60) });
+    const conv = await conversation([["user", "I don't want to be here anymore", 5]]);
+    const event = await addEvent(student.id, { conversationId: conv.id, createdAt: ago(5 / 60) });
     const context = await revealSafetyContext(db, admin.id, event.id);
     expect(context?.student.linkedParent).toBe(true);
     const t = text(renderToStaticMarkup(ContextView({ context: context! })));
@@ -460,7 +478,8 @@ describe("safety event detail", () => {
 
     const event = await addEvent(student.id, { excerpt: "I want to disappear", createdAt: ago(1 / 60) });
     const context = await revealSafetyContext(db, admin.id, event.id);
-    expect(context?.conversation?.messages.map((m) => m.content)).toEqual(["I want to disappear", "Reply a minute ago"]);
+    expect(context?.conversation.state).toBe("best_guess");
+    expect(shown(context)?.messages.map((m) => m.content)).toEqual(["I want to disappear", "Reply a minute ago"]);
   });
 
   it("matches a long message whose 1,000-character excerpt cut an emoji in half", async () => {
@@ -469,13 +488,13 @@ describe("safety event detail", () => {
     const event = await addEvent(student.id, { excerpt: long.slice(0, 1000), createdAt: ago(1 / 60) });
     expect(event.excerpt.endsWith("�")).toBe(true);
     const context = await revealSafetyContext(db, admin.id, event.id);
-    expect(context?.conversation?.messages).toEqual([expect.objectContaining({ content: long, flagged: true })]);
+    expect(shown(context)?.messages).toEqual([expect.objectContaining({ content: long, flagged: true })]);
   });
 
   it("still reveals the student when the conversation was deleted, and audits nothing for a missing event", async () => {
     const event = await addEvent(student.id, { createdAt: ago(1) });
     const context = await revealSafetyContext(db, admin.id, event.id);
-    expect(context).toEqual({ student: { displayName: "Maya", parentManaged: true, linkedParent: false }, conversation: null });
+    expect(context).toEqual({ student: { displayName: "Maya", parentManaged: true, linkedParent: false }, conversation: { state: "not_found" } });
     expect(text(renderToStaticMarkup(ContextView({ context: context! })))).toContain("We couldn't find this message in a saved conversation");
 
     expect(await revealSafetyContext(db, admin.id, crypto.randomUUID())).toBeNull();
@@ -488,12 +507,12 @@ describe("safety event detail", () => {
     });
   });
 
-  it("records a review once, with only the outcome in the audit log", async () => {
+  it("records a review once, with no note or names in the audit log", async () => {
     const event = await addEvent(student.id, { createdAt: ago(3) });
-    const result = await reviewSafetyEvent(db, admin.id, event.id, { outcome: "followed_up", note: "Checked in with Maya's mom per policy." }, NOW);
+    const result = await reviewSafetyEvent(db, admin.id, event.id, { outcome: "followed_up", note: "Emailed the parent of H-0a1b2c3d per policy." }, NOW);
     expect(result).toEqual({ ok: true });
     const [row] = await db.select().from(schema.safetyEvents).where(eq(schema.safetyEvents.id, event.id));
-    expect(row).toMatchObject({ reviewedAt: NOW, reviewedByUserId: admin.id, reviewOutcome: "followed_up", reviewNote: "Checked in with Maya's mom per policy." });
+    expect(row).toMatchObject({ reviewedAt: NOW, reviewedByUserId: admin.id, reviewOutcome: "followed_up", reviewNote: "Emailed the parent of H-0a1b2c3d per policy." });
 
     const otherAdmin = await makeUser("admin", { displayName: "Sam" });
     expect(await reviewSafetyEvent(db, otherAdmin.id, event.id, { outcome: "no_action", note: "" })).toEqual({ ok: false, error: "already_reviewed" });
@@ -503,8 +522,15 @@ describe("safety event detail", () => {
 
     const audits = await auditRows("safety.reviewed");
     expect(audits).toHaveLength(1);
-    expect(audits[0]).toMatchObject({ actorUserId: admin.id, subjectUserId: student.id, metadata: { outcome: "followed_up" } });
-    expect(Object.keys(audits[0].metadata ?? {})).toEqual(["outcome"]);
+    expect(audits[0]).toMatchObject({ actorUserId: admin.id, subjectUserId: student.id });
+    expect(audits[0].metadata).toEqual({
+      eventId: event.id,
+      outcome: "followed_up",
+      severity: "high",
+      flaggedAt: ago(3).toISOString(),
+      reviewedAt: NOW.toISOString(),
+    });
+    expect(JSON.stringify(audits[0].metadata)).not.toMatch(/Emailed|H-0a1b2c3d|Maya|want to be here/);
   });
 
   it("validates the review form and shows the saved review", async () => {
@@ -549,6 +575,172 @@ describe("safety event detail", () => {
     expect(await db.select().from(schema.safetyEvents)).toHaveLength(0);
     const [audit] = await auditRows("safety.reviewed");
     expect(audit).toMatchObject({ subjectUserId: null, metadata: { outcome: "escalated" } });
+  });
+
+
+  it("audits opening an event, since the page shows the student's own words and staff notes", async () => {
+    const event = await addEvent(student.id, { createdAt: ago(2) });
+    await signIn(admin.id);
+    await eventPage(event.id);
+    const audits = await auditRows("admin.viewed_safety_event");
+    expect(audits).toHaveLength(1);
+    expect(audits[0]).toMatchObject({ actorUserId: admin.id, subjectUserId: student.id, metadata: { eventId: event.id, revealed: "excerpt" } });
+    expect(Object.keys(audits[0].metadata ?? {}).sort()).toEqual(["eventId", "revealed"]);
+
+    // Nothing is logged for an event that doesn't exist.
+    expect(await thrown(() => eventPage(crypto.randomUUID()))).toBeInstanceOf(NotFound);
+    expect(await auditRows("admin.viewed_safety_event")).toHaveLength(1);
+
+    // The staff home page says what's logged, and no more.
+    const home = text(await render(AdminHome()));
+    expect(home).toContain("Opening a safety event, and anything you show on it, is logged.");
+    expect(home).not.toContain("Everything you open here is logged");
+  });
+
+  it("gives staff a family reference, and the linked parents' emails only through an audited reveal", async () => {
+    const parent = await makeUser("parent", { email: "rosa.parent@example.com", householdId: student.householdId });
+    const second = await makeUser("parent", { email: "second.parent@example.com" });
+    await db.insert(schema.parentStudentLinks).values([
+      { parentUserId: parent.id, studentUserId: student.id },
+      { parentUserId: second.id, studentUserId: student.id },
+    ]);
+    const event = await addEvent(student.id, { createdAt: ago(2) });
+    const ref = familyReference(student.householdId!);
+    expect(ref).toMatch(/^H-[0-9a-f]{8}$/);
+    expect(familyReference(student.householdId!)).toBe(ref);
+    expect(familyReference(second.householdId!)).not.toBe(ref);
+
+    await signIn(admin.id);
+    const t = text(await eventPage(event.id));
+    expect(t).toContain(`Family reference ${ref}`);
+    expect(t).toContain(`Refer to the family as ${ref}`);
+    expect(t).toContain("Show parent contact");
+    expect(t).not.toMatch(/@example\.com|Rosa|Maya/);
+    const viewsBefore = (await auditRows("admin.viewed_safety_event")).length;
+
+    const contact = await revealParentContact(db, admin.id, event.id);
+    expect(contact).toEqual({
+      familyRef: ref,
+      parentManaged: true,
+      parents: [{ email: "rosa.parent@example.com" }, { email: "second.parent@example.com" }],
+    });
+    const shown = text(renderToStaticMarkup(ParentContactView({ contact: contact! })));
+    expect(shown).toContain(ref);
+    expect(shown).toContain("rosa.parent@example.com");
+    expect(shown).toContain("second.parent@example.com");
+
+    const audits = await auditRows("admin.viewed_safety_event");
+    expect(audits).toHaveLength(viewsBefore + 1);
+    const reveal = audits.find((a) => a.metadata?.revealed === "parent_contact");
+    expect(reveal).toMatchObject({ actorUserId: admin.id, subjectUserId: student.id, metadata: { eventId: event.id, revealed: "parent_contact" } });
+    expect(Object.keys(reveal?.metadata ?? {}).sort()).toEqual(["eventId", "revealed"]);
+
+    expect(await revealParentContactAction(undefined, form({ eventId: event.id }))).toMatchObject({ contact: { familyRef: ref } });
+    expect(await revealParentContactAction(undefined, form({ eventId: crypto.randomUUID() }))).toEqual({
+      message: expect.stringContaining("couldn't find this event"),
+    });
+
+    // A student with no linked parent.
+    const alone = await makeUser("student", { displayName: "Ana" });
+    const none = await revealParentContact(db, admin.id, (await addEvent(alone.id)).id);
+    expect(none).toEqual({ familyRef: familyReference(alone.householdId!), parentManaged: false, parents: [] });
+    expect(text(renderToStaticMarkup(ParentContactView({ contact: none! })))).toContain("No parent is linked");
+    expect(await revealParentContact(db, admin.id, crypto.randomUUID())).toBeNull();
+    expect(await revealParentContact(db, admin.id, "nope")).toBeNull();
+
+    // Staff only.
+    await expect(revealParentContact(db, parent.id, event.id)).rejects.toBeInstanceOf(AdminRequiredError);
+    await signIn(parent.id);
+    expect(await redirectOf(() => revealParentContactAction(undefined, form({ eventId: event.id })))).toBe("/parent");
+  });
+
+  it("uses the event's own conversation, and never marks a different message as the flagged one", async () => {
+    // A linked event shows its own conversation, even when the same words were sent again elsewhere, closer in time.
+    const own = await conversation([
+      ["user", "I want to disappear", 3],
+      ["assistant", "Linked reply", 3],
+    ]);
+    await conversation([
+      ["user", "I want to disappear", 1],
+      ["assistant", "Closer reply", 1],
+    ]);
+    const linked = await addEvent(student.id, { excerpt: "I want to disappear", conversationId: own.id, createdAt: ago(3 / 60) });
+    const linkedContext = await revealSafetyContext(db, admin.id, linked.id);
+    expect(linkedContext?.conversation).toMatchObject({ state: "linked" });
+    expect(flaggedPairs(linkedContext)).toEqual([
+      ["I want to disappear", true],
+      ["Linked reply", false],
+    ]);
+    expect(text(renderToStaticMarkup(ContextView({ context: linkedContext! })))).not.toContain("best guess");
+
+    // The student deletes the conversation. A later message that only starts with the same words isn't a match.
+    const deleted = await conversation([
+      ["user", "i can't do this anymore", 20],
+      ["assistant", "A reply", 20],
+    ]);
+    const orphan = await addEvent(student.id, { excerpt: "i can't do this anymore", conversationId: deleted.id, createdAt: ago(20 / 60) });
+    await db.delete(schema.counselorConversations).where(eq(schema.counselorConversations.id, deleted.id));
+    await conversation([
+      ["user", "i can't do this anymore, this group project is too much. how do I tell my teacher?", 15],
+      ["assistant", "B reply", 15],
+    ]);
+    const orphanContext = await revealSafetyContext(db, admin.id, orphan.id);
+    expect(orphanContext?.conversation).toEqual({ state: "not_found" });
+    expect(text(renderToStaticMarkup(ContextView({ context: orphanContext! })))).toContain("We couldn't find this message");
+
+    // An event that was never linked is matched by its exact text and time, and marked as a best guess.
+    await conversation([
+      ["user", "nobody would care", 30],
+      ["assistant", "Guess reply", 30],
+    ]);
+    const unlinked = await addEvent(student.id, { excerpt: "nobody would care", createdAt: ago(30 / 60) });
+    const guess = await revealSafetyContext(db, admin.id, unlinked.id);
+    expect(guess?.conversation).toMatchObject({ state: "best_guess" });
+    expect(flaggedPairs(guess)).toEqual([
+      ["nobody would care", true],
+      ["Guess reply", false],
+    ]);
+    const guessText = text(renderToStaticMarkup(ContextView({ context: guess! })));
+    expect(guessText).toContain("best guess");
+    expect(guessText).toContain("Likely match");
+    expect(guessText).not.toContain("Flagged message");
+
+    // Sent while the counselor was locked: never saved, so nothing is matched by text.
+    await conversation([
+      ["user", "I want to kill myself in minecraft so I respawn at home, how?", 45],
+      ["user", "I want to kill myself", 44],
+    ]);
+    const locked = await addEvent(student.id, { excerpt: "I want to kill myself", sources: ["rules", "locked"], createdAt: ago(40 / 60) });
+    const lockedContext = await revealSafetyContext(db, admin.id, locked.id);
+    expect(lockedContext?.conversation).toEqual({ state: "not_saved" });
+    const lockedText = text(renderToStaticMarkup(ContextView({ context: lockedContext! })));
+    expect(lockedText).toContain("sent while the counselor was locked");
+    expect(lockedText).not.toContain("deleted");
+  });
+
+  it("labels events that keyword rules alone rated, and says why the AI model didn't run", async () => {
+    const cases: [sources: string[], tier: string, flaggedBy: string, modelTier: string, queueNote: string | null][] = [
+      [["model"], "ran", "AI model", "Ran normally", null],
+      [["rules"], "not_needed", "Keyword rules", "Not asked: the keyword rules found a clear high-risk phrase.", null],
+      [["rules", "model_unavailable"], "unavailable", "Keyword rules", "Didn't run: the AI model was unavailable.", "AI model unavailable: keyword rules alone decided"],
+      [["rules", "rate_limited"], "rate_limited", "Keyword rules", "Didn't run: the student was sending messages very fast.", "Sent while rate-limited: keyword rules alone decided"],
+      [["rules", "locked"], "locked", "Keyword rules", "Didn't run: sent while the counselor was locked.", "Sent while the counselor was locked: keyword rules alone decided"],
+    ];
+    await signIn(admin.id);
+    for (const [sources, tier, flaggedBy, modelTier, queueNote] of cases) {
+      const event = await addEvent(student.id, { sources, createdAt: ago(1) });
+      const page = text(await eventPage(event.id));
+      expect(page, sources.join()).toContain(`Flagged by ${flaggedBy} AI model tier ${modelTier}`);
+      if (queueNote) expect(page, sources.join()).toContain("the rating may be off in either direction");
+      else expect(page, sources.join()).not.toContain("off in either direction");
+
+      const { rows } = await listSafetyQueue(db, admin.id, { now: NOW });
+      expect(rows.find((r) => r.id === event.id)).toMatchObject({ modelTier: tier, rulesAlone: queueNote !== null });
+      const queue = text(await render(SafetyQueuePage({ params: Promise.resolve({}), searchParams: Promise.resolve({}) } as PageProps<"/admin/safety">)));
+      if (queueNote) expect(queue, sources.join()).toContain(queueNote);
+      else expect(queue, sources.join()).not.toContain("keyword rules alone decided");
+      await db.update(schema.safetyEvents).set({ reviewedAt: NOW, reviewOutcome: "no_action" }).where(eq(schema.safetyEvents.id, event.id));
+    }
   });
 });
 
@@ -661,6 +853,7 @@ describe("AI cost dashboard", () => {
       reviewedLate: 1,
       waiting: 1,
       overdue: 1,
+      fromDeletedAccounts: 0,
     });
 
     await signIn(admin.id);
@@ -692,6 +885,76 @@ describe("AI cost dashboard", () => {
     // A future or malformed month shows the current one.
     const fallback = text(await render(CostsPage({ params: Promise.resolve({}), searchParams: Promise.resolve({ month: "2031-01" }) } as PageProps<"/admin/costs">)));
     expect(fallback).toContain("September 2026");
+  });
+
+  it("keeps a deleted student's spend in the month's totals, and says who the student counts cover", async () => {
+    const before = await costReport(db, admin.id, "2026-09", { now: NOW, budgetUsd: 3 });
+    expect(before.deletedAccountsMicros).toBe(0);
+    await db.delete(schema.users).where(eq(schema.users.id, a));
+    const after = await costReport(db, admin.id, "2026-09", { now: NOW, budgetUsd: 3 });
+    expect(after).toMatchObject({ totalMicros: 5_720_000, calls: 6, activeStudents: 2, deletedAccountsMicros: 3_100_000, overBudget: [] });
+    expect(after.byFeature).toEqual(before.byFeature);
+    expect(after.byModel).toEqual(before.byModel);
+    expect(after.daily).toEqual(before.daily);
+    // Per-student figures cover only students who still have an account.
+    expect(after.averageMicros).toBeCloseTo((2_500_000 + 120_000) / 2);
+    expect(after.medianMicros).toBe((2_500_000 + 120_000) / 2);
+
+    await signIn(admin.id);
+    const t = text(await render(CostsPage({ params: Promise.resolve({}), searchParams: Promise.resolve({ month: "2026-09" }) } as PageProps<"/admin/costs">)));
+    expect(t).toContain("Total AI spend $5.72 6 AI calls. $3.10 of it came from accounts deleted since.");
+    expect(t).toContain("Students using AI 2 Only students who still have an account.");
+    expect(t).toContain("Per-student numbers count only students who used AI this month and still have an account.");
+    const home = text(await render(AdminHome()));
+    expect(home).toContain("$5.72 in total, including $3.10 from deleted accounts");
+    expect(home).toContain("2 students with an account used AI");
+  });
+
+  it("keeps reviewed safety events in a month's numbers after the family deletes their account", async () => {
+    const at = (iso: string) => new Date(iso);
+    const leaving = await makeUser("student");
+    const staying = await makeUser("student");
+    const late = await addEvent(leaving.id, { severity: "imminent", createdAt: at("2026-09-02T10:00:00Z") });
+    await reviewSafetyEvent(db, admin.id, late.id, { outcome: "followed_up", note: "Emailed the parent." }, at("2026-09-05T10:00:00Z"));
+    const onTime = await addEvent(staying.id, { severity: "high", createdAt: at("2026-09-03T10:00:00Z") });
+    await reviewSafetyEvent(db, admin.id, onTime.id, { outcome: "no_action", note: "" }, at("2026-09-03T12:00:00Z"));
+    await addEvent(leaving.id, { severity: "medium", createdAt: at("2026-09-20T10:00:00Z") });
+
+    const before = await safetyMonthStats(db, admin.id, "2026-09", NOW);
+    expect(before).toMatchObject({ total: 3, reviewed: 2, reviewedOnTime: 1, reviewedLate: 1, fromDeletedAccounts: 0 });
+
+    await db.delete(schema.users).where(eq(schema.users.id, leaving.id));
+    const after = await safetyMonthStats(db, admin.id, "2026-09", NOW);
+    // The reviewed event stays; the one nobody reviewed goes with the account.
+    expect(after).toEqual({
+      total: 2,
+      bySeverity: { imminent: 1, high: 1, medium: 0, low: 0 },
+      reviewed: 2,
+      medianReviewMs: before.medianReviewMs,
+      reviewedOnTime: 1,
+      reviewedLate: 1,
+      waiting: 0,
+      overdue: 0,
+      fromDeletedAccounts: 1,
+    });
+    expect((await safetyMonthStats(db, admin.id, "2026-08", NOW)).total).toBe(0);
+    expect((await safetyMonthStats(db, admin.id, "2026-10", NOW)).total).toBe(0);
+
+    // The audit entry holds only what these numbers need: no note, no names, no message text.
+    const [audit] = (await auditRows("safety.reviewed")).filter((row) => row.metadata?.eventId === late.id);
+    expect(audit.metadata).toEqual({
+      eventId: late.id,
+      outcome: "followed_up",
+      severity: "imminent",
+      flaggedAt: "2026-09-02T10:00:00.000Z",
+      reviewedAt: "2026-09-05T10:00:00.000Z",
+    });
+
+    await signIn(admin.id);
+    const t = text(await render(CostsPage({ params: Promise.resolve({}), searchParams: Promise.resolve({ month: "2026-09" }) } as PageProps<"/admin/costs">)));
+    expect(t).toContain("Reviewed within the target 1 (50%) 1 after the target");
+    expect(t).toContain("Includes 1 reviewed event from a family that has since deleted their account.");
+    expect(t).toContain("Events deleted before anyone reviewed them aren't counted.");
   });
 });
 

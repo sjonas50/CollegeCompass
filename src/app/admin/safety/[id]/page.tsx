@@ -3,11 +3,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, Notice, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
-import { CATEGORY_LABELS, OUTCOME_LABELS, SEVERITY_LABELS, formatAgo, formatDateTime, sourceLabel } from "@/lib/admin/format";
-import { getSafetyEvent } from "@/lib/admin/safety-review";
+import {
+  CATEGORY_LABELS,
+  MODEL_TIER_LABELS,
+  OUTCOME_LABELS,
+  SEVERITY_LABELS,
+  formatAgo,
+  formatDateTime,
+  sourceLabel,
+} from "@/lib/admin/format";
+import { openSafetyEvent } from "@/lib/admin/safety-review";
 import { requireUser } from "@/lib/auth/dal";
 import { OverdueBadge, SeverityBadge, TimingText } from "../../ui";
 import { ContextReveal } from "./context-reveal";
+import { ParentContactReveal } from "./parent-contact-reveal";
 import { ReviewForm } from "./review-form";
 
 export const metadata: Metadata = { title: "Safety event" };
@@ -19,7 +28,8 @@ export default async function SafetyEventPage({ params, searchParams }: PageProp
   const { id } = await params;
   const { reviewed } = await searchParams;
   const now = new Date();
-  const event = await getSafetyEvent(await getDb(), admin.id, id, now);
+  // Opening an event shows the student's own words and staff notes, so it's audited in the lib.
+  const event = await openSafetyEvent(await getDb(), admin.id, id, now);
   if (!event) notFound();
   const { timing } = event;
 
@@ -59,12 +69,16 @@ export default async function SafetyEventPage({ params, searchParams }: PageProp
           <dd>{event.sources.map(sourceLabel).join(", ") || "No tier recorded"}</dd>
           <dt className="text-muted">AI model tier</dt>
           <dd>
-            {event.modelUnavailable
-              ? "Unavailable. Keyword rules alone decided, so the rating may be off in either direction."
-              : "Ran normally"}
+            {MODEL_TIER_LABELS[event.modelTier]}
+            {event.rulesAlone && " Keyword rules alone decided, so the rating may be off in either direction."}
           </dd>
           <dt className="text-muted">Student</dt>
           <dd>{event.gradeBand}</dd>
+          <dt className="text-muted">Family reference</dt>
+          <dd>
+            <span className="font-mono">{event.familyRef}</span>
+            <span className="text-muted"> · use this, never a name, in notes, tickets and chat</span>
+          </dd>
           <dt className="text-muted">Review target</dt>
           <dd>{formatDateTime(timing.dueAt)}</dd>
         </dl>
@@ -74,6 +88,13 @@ export default async function SafetyEventPage({ params, searchParams }: PageProp
         <h2 className="font-medium">Conversation context</h2>
         <div className="mt-2">
           <ContextReveal eventId={event.id} />
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="font-medium">Parent contact</h2>
+        <div className="mt-2">
+          <ParentContactReveal eventId={event.id} />
         </div>
       </Card>
 
@@ -92,7 +113,7 @@ export default async function SafetyEventPage({ params, searchParams }: PageProp
               <dd className="break-words whitespace-pre-wrap">{event.reviewNote ?? "No note."}</dd>
             </dl>
           ) : (
-            <ReviewForm eventId={event.id} />
+            <ReviewForm eventId={event.id} familyRef={event.familyRef} />
           )}
         </div>
       </Card>

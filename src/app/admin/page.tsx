@@ -20,7 +20,10 @@ export default async function AdminHome() {
 
   return (
     <div className="space-y-6">
-      <PageHeading title={`Hi, ${admin.displayName}`} lead="Staff tools. Everything you open here is logged." />
+      <PageHeading
+        title={`Hi, ${admin.displayName}`}
+        lead="Staff tools. Opening a safety event, and anything you show on it, is logged. The other staff pages show no student names or messages."
+      />
       <div className="grid gap-4 sm:grid-cols-2">
         <Card className={summary.overdue > 0 ? "border-danger" : ""}>
           <h2 className="font-medium">Safety review</h2>
@@ -44,7 +47,11 @@ export default async function AdminHome() {
         <Card>
           <h2 className="font-medium">AI costs, {monthLabel(month)}</h2>
           <p className="mt-1 text-sm">
-            {formatUsd(costs.totalMicros)} across {costs.activeStudents} {costs.activeStudents === 1 ? "student" : "students"}
+            {formatUsd(costs.totalMicros)} in total
+            {costs.deletedAccountsMicros > 0 && `, including ${formatUsd(costs.deletedAccountsMicros)} from deleted accounts`}
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            {costs.activeStudents} {costs.activeStudents === 1 ? "student" : "students"} with an account used AI
           </p>
           {costs.overBudget.length > 0 && (
             <p className="mt-1 text-sm text-muted">

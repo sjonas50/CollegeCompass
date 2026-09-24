@@ -8,6 +8,7 @@ import {
   formatUsd,
   gradeBandLabel,
   median,
+  modelTierOf,
   monthKeyOf,
   monthLabel,
   monthRange,
@@ -103,6 +104,19 @@ describe("labels", () => {
   it("names classifier sources and passes unknown ones through", () => {
     expect(sourceLabel("rules")).toBe("Keyword rules");
     expect(sourceLabel("rate_limited")).toBe("Sent while rate-limited (rules only)");
+    expect(sourceLabel("locked")).toBe("Sent while the counselor was locked (rules only)");
     expect(sourceLabel("something_new")).toBe("something_new");
+  });
+
+  it("says whether the AI model rated a message, and why not", () => {
+    expect(modelTierOf(["model"])).toBe("ran");
+    expect(modelTierOf(["rules", "model"])).toBe("ran");
+    // The rules found a clear high-risk phrase, so the model wasn't asked.
+    expect(modelTierOf(["rules"])).toBe("not_needed");
+    expect(modelTierOf(["rules", "model_unavailable"])).toBe("unavailable");
+    expect(modelTierOf(["model_unavailable"])).toBe("unavailable");
+    expect(modelTierOf(["rules", "rate_limited"])).toBe("rate_limited");
+    expect(modelTierOf(["rules", "locked"])).toBe("locked");
+    expect(modelTierOf([])).toBe("unknown");
   });
 });

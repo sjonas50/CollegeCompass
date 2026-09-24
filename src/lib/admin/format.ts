@@ -33,11 +33,63 @@ const SOURCE_LABELS: Record<string, string> = {
   model: "AI model",
   model_unavailable: "AI model unavailable",
   rate_limited: "Sent while rate-limited (rules only)",
+  locked: "Sent while the counselor was locked (rules only)",
 };
 
 export function sourceLabel(source: string): string {
   return SOURCE_LABELS[source] ?? source;
 }
+
+/**
+ * Whether the AI model rated a flagged message, and if not, why.
+ * - ran: the model rated it.
+ * - not_needed: the keyword rules found a clear high-risk phrase, so the model wasn't asked.
+ * - unavailable, rate_limited, locked: the model couldn't be used, so keyword rules alone decided
+ *   (an outage, a student sending messages very fast, or past the locked counselor's screening cap).
+ * - unknown: no tier was recorded.
+ */
+export type ModelTier = "ran" | "not_needed" | "unavailable" | "rate_limited" | "locked" | "unknown";
+
+/** Markers in an event's sources that say keyword rules alone decided, and why. */
+const RULES_ALONE_MARKERS: Record<string, ModelTier> = {
+  locked: "locked",
+  rate_limited: "rate_limited",
+  model_unavailable: "unavailable",
+};
+
+export function isRulesAloneMarker(source: string): boolean {
+  return source in RULES_ALONE_MARKERS;
+}
+
+export function modelTierOf(sources: readonly string[]): ModelTier {
+  const marker = sources.find(isRulesAloneMarker);
+  if (marker) return RULES_ALONE_MARKERS[marker];
+  if (sources.includes("model")) return "ran";
+  if (sources.includes("rules")) return "not_needed";
+  return "unknown";
+}
+
+/** True when keyword rules alone rated the message because the model couldn't be used. */
+export function rulesAlone(tier: ModelTier): boolean {
+  return tier === "unavailable" || tier === "rate_limited" || tier === "locked";
+}
+
+/** What the event page says about the AI model tier. */
+export const MODEL_TIER_LABELS: Record<ModelTier, string> = {
+  ran: "Ran normally",
+  not_needed: "Not asked: the keyword rules found a clear high-risk phrase. Check whether it's even more urgent than rated.",
+  unavailable: "Didn't run: the AI model was unavailable.",
+  rate_limited: "Didn't run: the student was sending messages very fast.",
+  locked: "Didn't run: sent while the counselor was locked.",
+  unknown: "Not recorded",
+};
+
+/** The queue's short reason, for events keyword rules alone decided. */
+export const RULES_ALONE_REASONS: Partial<Record<ModelTier, string>> = {
+  unavailable: "AI model unavailable",
+  rate_limited: "Sent while rate-limited",
+  locked: "Sent while the counselor was locked",
+};
 
 export const OUTCOME_LABELS: Record<SafetyReviewOutcome, string> = {
   no_action: "No action needed",

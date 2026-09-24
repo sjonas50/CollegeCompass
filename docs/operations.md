@@ -13,11 +13,33 @@ Two rules apply to everything here:
 
 ## Every weekday (about 15 minutes)
 
-1. **Safety review queue** (`/admin`). Work oldest first, imminent and high before medium. For
-   each event, record an outcome (no action, followed up, or escalated) with a short note, and
-   follow the parent-notification policy the lawyer signed off. Events marked
-   `model_unavailable` were rated by the keyword rules alone because the AI model was down; read
-   them with extra care. Target times are in the pilot checklist.
+1. **Safety review queue** (`/admin/safety`, or "Open the queue" on `/admin`). Start at the top:
+   the most severe events come first, and the longest waiting first within each level. The review
+   targets are at the top of the page (imminent and high within 24 hours, medium within 3 days),
+   and late events have an "Overdue" badge. For each event:
+   - **Open it.** The page shows what the student wrote, the details, and the event's **family
+     reference** (`H-` and 8 characters). Opening an event is logged.
+   - **Check "AI model tier".** "Didn't run" means keyword rules alone rated the message, because
+     the AI model was unavailable, the student was sending messages very fast, or the counselor
+     was locked. The queue row says the same thing ("...: keyword rules alone decided"). The
+     rating may be off in either direction, so read these with extra care. "Not asked" means the
+     rules found a clear high-risk phrase; check whether it's even more urgent than rated.
+   - **Only if you need it, "Show conversation context".** It shows the student's first name,
+     whether a parent manages the account, and the messages around this one. If the event isn't
+     linked to a conversation, the page shows its best guess, labeled "Likely match". Don't treat
+     a best guess as the flagged message. Messages sent while the counselor was locked were never
+     saved, so there's nothing to show.
+   - **To reach a parent, "Show parent contact".** It shows each linked parent's email, or says no
+     parent is linked. Follow the parent-notification policy the lawyer signed off.
+   - Each time you show the context or the parent contact, it's logged.
+   - **Record what you did:** no action needed, followed up, or escalated. A note is needed
+     unless no action was needed. In the note, refer to the family by its reference (for example
+     `H-1a2b3c4d`), never by name or email. The first review saved stands; the page tells a second
+     reviewer someone already did it.
+
+   The monthly numbers are on the AI costs page (`/admin/costs`), under "Safety reviews". When a
+   family deletes their account, events someone already reviewed stay in those numbers; events
+   nobody reviewed yet are deleted with the account and drop out.
 2. **Alerts.** Check the uptime monitor (`/api/health`) and the error-monitoring service. Anything
    new gets looked at today.
 3. **Logs.** Search the Vercel logs for `[safety]`, `[email]` and `[reminders]`. A few
