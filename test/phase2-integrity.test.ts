@@ -40,7 +40,9 @@ describe("grade advancement where it's applied", () => {
     expect((await listChildren(db, parent.value.userId, later))[0].grade).toBe(8);
 
     await db.insert(schema.weeklySteps).values({ userId: teen.value.userId, weekStart: "2026-10-05", text: "Make an FSA ID" });
-    const [r] = await buildWeeklyReminders(db, "http://localhost:3000", later);
+    const reminders = await buildWeeklyReminders(db, "http://localhost:3000", later);
+    // Pick by student, not position: batch order follows random UUIDs.
+    const r = reminders.find((x) => x.userId === teen.value.userId)!;
     // She's now in 12th grade, so the email lists 12th-grade milestones timely in October.
     const timely = MILESTONES.find((m) => m.grade === 12 && m.months.includes(10))!;
     expect(r.email.text).toContain(timely.title);
