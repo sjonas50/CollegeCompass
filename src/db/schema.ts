@@ -169,9 +169,9 @@ export const aiUsage = pgTable(
   "ai_usage",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    // Kept, unlinked, when the student is deleted: the row holds no content, and spend history for
+    // past months shouldn't change.
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     feature: text("feature").notNull(),
     model: text("model").notNull(),
     inputTokens: integer("input_tokens").notNull(),
@@ -712,6 +712,9 @@ export const billingAccounts = pgTable("billing_accounts", {
     .primaryKey()
     .references(() => households.id, { onDelete: "cascade" }),
   stripeCustomerId: text("stripe_customer_id").notNull().unique(),
+  // The parent whose card the Stripe customer holds. Only they can use it (portal, checkout); set
+  // to null when they delete their account, after which the plan is left to end.
+  payerUserId: uuid("payer_user_id").references(() => users.id, { onDelete: "set null" }),
   stripeSubscriptionId: text("stripe_subscription_id").unique(),
   status: subscriptionStatusEnum("status"),
   plan: text("plan").$type<"monthly" | "annual">(),
@@ -747,3 +750,20 @@ export const parentInvites = pgTable(
   },
   (t) => [index("parent_invites_student_idx").on(t.studentUserId)],
 );
+
+/**
+ * Stripe clean-up that failed and must be retried (cancelling or deleting a family's customer when
+ * their account is deleted). Holds only Stripe ids, never who they belonged to. Retried by the
+ * daily sweep until it succeeds.
+ */
+export const stripeCleanup = pgTable("stripe_cleanup", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  action: text("action").$type<"delete_customer" | "cancel_at_period_end">().notNull(),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  attempts: integer("attempts").notNull().default(0),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+  // The last error's name only.
+  lastError: text("last_error"),
+  createdAt: createdAt(),
+});

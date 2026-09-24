@@ -83,7 +83,9 @@ export async function costReport(
   ]);
 
   const totalMicros = perStudent.reduce((t, s) => t + s.micros, 0);
+  // Rows of deleted students (no user) count toward totals but not as anyone's spend.
   const spends = perStudent
+    .flatMap((s) => (s.userId ? [{ userId: s.userId, micros: s.micros }] : []))
     .map((s) => ({ shortId: studentShortId(s.userId), micros: s.micros, percentOfBudget: budgetMicros ? (s.micros / budgetMicros) * 100 : 0 }))
     .sort((a, b) => b.micros - a.micros || a.shortId.localeCompare(b.shortId));
   const breakdown = (rows: typeof features) =>
