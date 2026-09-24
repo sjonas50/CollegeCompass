@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { StudentNav } from "@/components/site-nav";
+import { getCurrentUser } from "@/lib/auth/dal";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -14,7 +16,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const user = await getCurrentUser();
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
@@ -22,10 +25,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <header className="border-b border-border bg-surface">
-          <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-            <Link href="/" className="font-semibold tracking-tight">
-              College Compass
-            </Link>
+          <div className="mx-auto max-w-3xl px-4 py-2">
+            <div className="flex min-h-11 items-center justify-between">
+              <Link href={user ? (user.role === "parent" ? "/parent" : "/dashboard") : "/"} className="font-semibold tracking-tight">
+                College Compass
+              </Link>
+            </div>
+            {user?.role === "student" && <StudentNav />}
           </div>
         </header>
         <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">

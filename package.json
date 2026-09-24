@@ -14,7 +14,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "data:load": "tsx scripts/load-reference.ts",
     "eval:safety": "tsx scripts/eval-safety.ts",
-    "check:matching": "tsx scripts/check-matching.ts"
+    "check:matching": "tsx scripts/check-matching.ts",
+    "eval:counselor": "tsx scripts/eval-counselor.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
