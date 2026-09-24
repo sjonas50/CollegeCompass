@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
+import { requireFullAccess } from "@/lib/access/guard";
 import { compareAidOffer, hasAidOffer } from "@/lib/applications/aid";
 import { deadlineWindow, usToday } from "@/lib/applications/dates";
 import { listMode, scorecardPrice } from "@/lib/applications/display";
@@ -19,6 +20,7 @@ const linkClass = "inline-flex min-h-11 items-center underline underline-offset-
 
 export default async function EntryPage({ params }: PageProps<"/applications/[id]">) {
   const student = await requireUser(["student"]);
+  await requireFullAccess(student);
   const { id } = await params;
   // Only the signed-in student's own entries; anyone else's id is simply "not found".
   const entry = await getEntryWithScorecard(await getDb(), student.id, id);

@@ -1,7 +1,8 @@
 import { and, eq, or, sql } from "drizzle-orm";
 import * as z from "zod";
 import type { Db } from "@/db";
-import { consentRecords, households, parentStudentLinks, users } from "@/db/schema";
+import { accessGrants, consentRecords, households, parentStudentLinks, users } from "@/db/schema";
+import { auditTrialStarted, trialGrant } from "./access/service";
 import { audit } from "./audit";
 import { MAX_GRADE, MIN_GRADE, currentGrade, isAllowedGrade, isPlausibleStudentBirthDate, isUnder13, schoolYearOf } from "./auth/age";
 import { hashPassword, verifyPassword } from "./auth/password";
@@ -92,9 +93,12 @@ export async function registerStudent(
         gradeSchoolYear: schoolYearOf(today),
       })
       .returning({ id: users.id });
+    // Every new household starts with a free trial, timed from the household's creation.
+    await tx.insert(accessGrants).values(trialGrant(household.id, household.createdAt));
     return user.id;
   });
   await audit(db, "account.created", { subjectUserId: userId, metadata: { role: "student" } });
+  await auditTrialStarted(db, userId);
   return { ok: true, value: { userId } };
 }
 
@@ -117,9 +121,11 @@ export async function registerParent(
         displayName: input.displayName,
       })
       .returning({ id: users.id });
+    await tx.insert(accessGrants).values(trialGrant(household.id, household.createdAt));
     return user.id;
   });
   await audit(db, "account.created", { subjectUserId: userId, metadata: { role: "parent" } });
+  await auditTrialStarted(db, userId);
   return { ok: true, value: { userId } };
 }
 

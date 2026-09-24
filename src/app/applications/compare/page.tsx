@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import { GIFT_AID_NOTE, WORK_STUDY_NOTE } from "@/lib/applications/aid";
 import { aidOfferLines, scorecardPrice } from "@/lib/applications/display";
 import { type AidOfferRow, listAidOffers, lowestNetPriceIds } from "@/lib/applications/service";
+import { requireFullAccess } from "@/lib/access/guard";
 import { requireUser } from "@/lib/auth/dal";
 import { AidOfferLinesList, AidWarnings, LOWEST_BADGE } from "../aid-offer-card";
 
@@ -130,6 +131,7 @@ function CompareTable({ rows, lowest }: { rows: AidOfferRow[]; lowest: Set<strin
 
 export default async function CompareAidPage() {
   const student = await requireUser(["student"]);
+  await requireFullAccess(student);
   const rows = await listAidOffers(await getDb(), student.id);
   const lowest = lowestNetPriceIds(rows);
 

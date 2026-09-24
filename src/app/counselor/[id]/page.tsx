@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import * as z from "zod";
 import { getDb } from "@/db";
+import { accessFor } from "@/lib/access/guard";
 import { requireUser } from "@/lib/auth/dal";
 import { getMemory } from "@/lib/counselor/memory";
 import { getOwnedConversation, listConversations, listMessages } from "@/lib/counselor/conversations";
@@ -12,6 +13,8 @@ export const metadata: Metadata = { title: "Counselor" };
 
 export default async function ConversationPage({ params, searchParams }: PageProps<"/counselor/[id]">) {
   const student = await requireUser(["student"]);
+  // Locked: /counselor shows why, with crisis help and the list of chats to delete.
+  if (!(await accessFor(student)).full) redirect("/counselor");
   const { id } = await params;
   const { memory } = await searchParams;
   if (!z.uuid().safeParse(id).success) notFound();

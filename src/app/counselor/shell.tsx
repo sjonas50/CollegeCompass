@@ -12,12 +12,15 @@ export function CounselorShell({
   activeId,
   memoryCleared,
   hasMemory,
+  locked = false,
 }: {
   children: React.ReactNode;
   conversations: Convo[];
   activeId?: string;
   memoryCleared?: boolean;
   hasMemory: boolean;
+  /** No full access: past conversations are listed (to delete) but can't be opened. */
+  locked?: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -41,12 +44,16 @@ export function CounselorShell({
           <ul className="mt-3 divide-y divide-border">
             {conversations.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-1">
-                <Link
-                  href={`/counselor/${c.id}`}
-                  className={`inline-flex min-h-11 min-w-0 items-center truncate ${c.id === activeId ? "font-medium" : ""} underline-offset-2 hover:underline`}
-                >
-                  {c.title ?? "Conversation"}
-                </Link>
+                {locked ? (
+                  <span className="inline-flex min-h-11 min-w-0 items-center truncate">{c.title ?? "Conversation"}</span>
+                ) : (
+                  <Link
+                    href={`/counselor/${c.id}`}
+                    className={`inline-flex min-h-11 min-w-0 items-center truncate ${c.id === activeId ? "font-medium" : ""} underline-offset-2 hover:underline`}
+                  >
+                    {c.title ?? "Conversation"}
+                  </Link>
+                )}
                 <ConfirmButton
                   action={deleteConversationAction}
                   fields={{ conversationId: c.id }}

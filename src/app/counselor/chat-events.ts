@@ -37,6 +37,8 @@ export const CLIENT_NOTICES = {
   badRequest: "That message couldn't be sent. Try removing any unusual characters and send it again.",
   server: "Something went wrong on our end. Try again in a moment.",
   signedOut: "Your session ended. Sign in again to keep chatting.",
+  locked:
+    "Chatting with the counselor is part of full access, and your family's access isn't on right now. If you're going through something hard, call or text 988 any time.",
 };
 
 export const startTurn = (replyId: string): Turn => ({ replyId, reply: "", support: null, notice: null, done: false });
@@ -84,9 +86,24 @@ export function applyEvent(step: Step, event: ServerEvent): Step {
   }
 }
 
+/** The counselor API's 402 body when the family doesn't have full access (see lockedCounselorReply). */
+export type AccessRequired = { message?: unknown; support?: unknown; unlock?: { href?: unknown; label?: unknown } } | null;
+
+/**
+ * The family's access ran out. Crisis resources come first when the message needed them;
+ * otherwise the notice says why (with the 988 line) and links to how to unlock.
+ */
+export function accessRequired(step: Step, body: AccessRequired): Step {
+  if (typeof body?.support === "string" && body.support) return applyEvent(step, { type: "support", text: body.support });
+  const text = typeof body?.message === "string" && body.message ? body.message : CLIENT_NOTICES.locked;
+  // Only our own unlock page, whatever the body says.
+  return showNotice(step, text, { href: "/account/access", label: typeof body?.unlock?.label === "string" ? body.unlock.label : "See how to unlock it" });
+}
+
 /** A request that failed before streaming started. */
 export function httpFailure(step: Step, status: number): Step {
   if (status === 401) return showNotice(step, CLIENT_NOTICES.signedOut, { href: "/login?next=/counselor", label: "Sign in" });
+  if (status === 402) return accessRequired(step, null);
   return showNotice(step, status === 400 || status === 413 ? CLIENT_NOTICES.badRequest : CLIENT_NOTICES.server);
 }
 

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Card } from "@/components/ui";
 import { WeeklyStepsCard } from "@/components/weekly-steps";
 import { getDb } from "@/db";
+import { requireFullAccess } from "@/lib/access/guard";
 import { MAX_GRADE, MIN_GRADE } from "@/lib/auth/age";
 import { requireUser } from "@/lib/auth/dal";
 import {
@@ -47,6 +48,7 @@ function headerLead(grade: number | null, now: Date) {
 
 export default async function RoadmapPage({ searchParams }: PageProps<"/roadmap">) {
   const student = await requireUser(["student"]);
+  await requireFullAccess(student);
   const now = new Date();
   const db = await getDb();
   const [progress, week, params] = await Promise.all([

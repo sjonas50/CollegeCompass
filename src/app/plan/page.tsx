@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
+import { requireFullAccess } from "@/lib/access/guard";
 import { gradeBand } from "@/lib/auth/age";
 import { requireUser } from "@/lib/auth/dal";
 import { collegePrepChecklist } from "@/lib/courses/checklist";
@@ -26,6 +27,7 @@ const LEAD = {
 
 export default async function PlanPage() {
   const student = await requireUser(["student"]);
+  await requireFullAccess(student);
   const db = await getDb();
   // The student's grade today. Above 12 means they've graduated: senior year still shows first,
   // but it's "last year", and classes added to it default to finished.

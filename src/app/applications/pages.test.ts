@@ -54,11 +54,14 @@ async function signIn(grade: number | null, role: SessionUser["role"] = "student
       { unitId: 100002, name: "Lakeside Community College", avgNetPrice: -800 },
     ]);
   }
+  // A household with full access: the list pages need it (gating has its own tests in src/lib/access).
+  const [household] = await db.insert(schema.households).values({}).returning();
+  await db.insert(schema.accessGrants).values({ householdId: household.id, kind: "comp", endsAt: null });
   const [user] = await db
     .insert(schema.users)
-    .values({ role, displayName: "Sam", passwordHash: "x", grade: role === "student" ? grade : null, gradeSchoolYear: 2026 })
+    .values({ role, householdId: household.id, displayName: "Sam", passwordHash: "x", grade: role === "student" ? grade : null, gradeSchoolYear: 2026 })
     .returning({ id: schema.users.id });
-  state.user = { id: user.id, role, displayName: "Sam", username: null, householdId: null, parentManaged: false, grade };
+  state.user = { id: user.id, role, displayName: "Sam", username: null, householdId: household.id, parentManaged: false, grade };
   return { db, id: user.id };
 }
 

@@ -4,7 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui";
-import { type ChatMessage, type ServerEvent, type Turn, announcement as announce, applyEvent, finishTurn, httpFailure, startTurn } from "./chat-events";
+import {
+  type AccessRequired,
+  type ChatMessage,
+  type ServerEvent,
+  type Turn,
+  accessRequired,
+  announcement as announce,
+  applyEvent,
+  finishTurn,
+  httpFailure,
+  startTurn,
+} from "./chat-events";
 import { chatLinks } from "./chat-links";
 import { supportActions } from "./support-actions";
 
@@ -266,6 +277,12 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId, text: trimmed }),
       });
+      if (res.status === 402) {
+        // The family's access ended while this page was open.
+        const body = (await res.json().catch(() => null)) as AccessRequired;
+        apply((s) => accessRequired(s, body));
+        return;
+      }
       if (!res.ok || !res.body) {
         apply((s) => httpFailure(s, res.status));
         return;

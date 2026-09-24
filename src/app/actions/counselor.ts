@@ -7,6 +7,10 @@ import { requireUser } from "@/lib/auth/dal";
 import { deleteConversation } from "@/lib/counselor/conversations";
 import { clearMemory } from "@/lib/counselor/memory";
 
+// No full-access check here on purpose: deleting conversations and erasing the counselor's notes
+// are privacy controls, and those are always free. The locked counselor page still lists past
+// conversations so a student can delete them.
+
 /** The counselor page the student was on: /counselor or /counselor/<id>, else /counselor. */
 function returnPath(formData: FormData) {
   const raw = formData.get("returnTo");

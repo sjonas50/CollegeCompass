@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ButtonLink, Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
+import { requireFullAccess } from "@/lib/access/guard";
 import { hasAidOffer } from "@/lib/applications/aid";
 import { usToday } from "@/lib/applications/dates";
 import { listMode, plural } from "@/lib/applications/display";
@@ -21,6 +22,7 @@ const linkClass = "inline-flex min-h-11 items-center underline underline-offset-
 
 export default async function ApplicationsPage({ searchParams }: PageProps<"/applications">) {
   const student = await requireUser(["student"]);
+  await requireFullAccess(student);
   const { removed } = await searchParams;
   const now = new Date();
   const today = usToday(now);

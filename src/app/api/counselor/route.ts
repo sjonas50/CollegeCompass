@@ -1,6 +1,8 @@
 import { after } from "next/server";
 import * as z from "zod";
 import { getDb } from "@/db";
+import { lockedCounselorReply } from "@/lib/access/counselor";
+import { accessFor } from "@/lib/access/guard";
 import { screenWithRulesOnly } from "@/lib/ai/safety";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { counselorExtraTools } from "@/lib/counselor/extra-tools";
@@ -24,6 +26,21 @@ export async function POST(req: Request) {
   if (!parsed.success) return Response.json({ error: "Invalid message" }, { status: 400 });
 
   const student = { id: user.id, grade: user.grade, displayName: user.displayName, username: user.username };
+  // The counselor needs full access. Without it: 402 with a message the chat shows, after the same
+  // safety screening every message gets, so crisis resources are never locked away. If the check
+  // itself fails (say, a database outage), the request goes on to the stream below, whose error
+  // handling still screens the message for a crisis.
+  const locked = await accessFor(user).then(
+    (access) => !access.full,
+    (error) => {
+      console.error("[counselor] access check failed", error instanceof Error ? error.name : "unknown");
+      return false;
+    },
+  );
+  if (locked) {
+    const body = await lockedCounselorReply(await getDb(), student, parsed.data.text);
+    return Response.json(body, { status: 402, headers: { "Cache-Control": "no-store" } });
+  }
   const knownNames = [user.displayName, user.username].filter((n): n is string => Boolean(n));
   let conversationId = parsed.data.conversationId;
 

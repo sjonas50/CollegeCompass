@@ -5,12 +5,14 @@ import {
   assessmentAttempts,
   assessmentResponses,
   assessmentResults,
+  billingAccounts,
   careerMatches,
   collegeList,
   consentRecords,
   counselorConversations,
   counselorMemory,
   counselorMessages,
+  households,
   matchRuns,
   northStarGoals,
   parentStudentLinks,
@@ -21,8 +23,11 @@ import {
   users,
   weeklySteps,
 } from "@/db/schema";
+import { exportHouseholdAccess } from "./access/service";
 import { isLinkedParent } from "./accounts";
 import { audit } from "./audit";
+import { deleteStripeCustomer } from "./billing/checkout";
+import { type Stripe, getStripe } from "./billing/stripe";
 
 /**
  * Everything we hold about a student, for a parent's (or the student's own) export request.
@@ -32,7 +37,7 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
   if (requesterId !== studentId && !(await isLinkedParent(db, requesterId, studentId))) {
     return null;
   }
-  const [profile] = await db
+  const [student] = await db
     .select({
       id: users.id,
       displayName: users.displayName,
@@ -44,10 +49,12 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
       remindersEnabled: users.remindersEnabled,
       parentManaged: users.parentManaged,
       createdAt: users.createdAt,
+      householdId: users.householdId,
     })
     .from(users)
     .where(and(eq(users.id, studentId), eq(users.role, "student")));
-  if (!profile) return null;
+  if (!student) return null;
+  const { householdId, ...profile } = student;
 
   const [consents, usage, safety, attempts, responses, results, runs, matches, goals] = await Promise.all([
     db
@@ -114,6 +121,8 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
   ]);
 
   const planning = await exportPlanningData(db, studentId);
+  // Phase 4: the household's access (shared by everyone in it): trial, free access and any plan.
+  const householdAccess = await exportHouseholdAccess(db, householdId);
   // Phase 3: colleges and programs on the student's list, with deadlines, checklist, aid offers and notes.
   const listRows = await db
     .select()
@@ -137,31 +146,41 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
     northStars: goals,
     ...planning,
     collegeList: listRows.map(({ userId: _userId, ...entry }) => entry),
+    householdAccess,
   };
 }
 
 /**
- * Permanently deletes a student and everything tied to them. Sessions, AI usage and safety
- * events cascade; consent records and audit entries keep no link back to the child.
+ * How deletion reaches Stripe. Defaults to the configured client (none without STRIPE_SECRET_KEY);
+ * tests pass one with a fake HTTP layer.
  */
-export async function deleteStudent(db: Db, requesterId: string, studentId: string) {
+export type DeletionDeps = { stripe?: Stripe | null };
+
+/**
+ * Permanently deletes a student and everything tied to them. Sessions, AI usage and safety
+ * events cascade; consent records and audit entries keep no link back to the child. If the
+ * student was the last person in their household, the household goes too (see deleteEmptyHousehold).
+ */
+export async function deleteStudent(db: Db, requesterId: string, studentId: string, deps: DeletionDeps = {}) {
   if (requesterId !== studentId && !(await isLinkedParent(db, requesterId, studentId))) {
     return false;
   }
   const deleted = await db
     .delete(users)
     .where(and(eq(users.id, studentId), eq(users.role, "student")))
-    .returning({ id: users.id });
+    .returning({ id: users.id, householdId: users.householdId });
   if (deleted.length === 0) return false;
   await audit(db, "student.deleted", { actorUserId: requesterId === studentId ? null : requesterId });
+  await deleteEmptyHousehold(db, deleted[0].householdId, deps);
   return true;
 }
 
 /**
  * Deletes a parent account. Children the parent created under COPPA consent go with it;
- * teens who own their own accounts are only unlinked.
+ * teens who own their own accounts are only unlinked. A household with teens left in it keeps its
+ * access and billing account; an empty one is deleted.
  */
-export async function deleteParentAccount(db: Db, parentId: string) {
+export async function deleteParentAccount(db: Db, parentId: string, deps: DeletionDeps = {}) {
   const children = await db
     .select({ id: users.id, parentManaged: users.parentManaged })
     .from(parentStudentLinks)
@@ -169,12 +188,48 @@ export async function deleteParentAccount(db: Db, parentId: string) {
     .where(eq(parentStudentLinks.parentUserId, parentId));
   const managedIds = children.filter((c) => c.parentManaged).map((c) => c.id);
 
-  await db.transaction(async (tx) => {
-    if (managedIds.length > 0) await tx.delete(users).where(inArray(users.id, managedIds));
-    await tx.delete(users).where(and(eq(users.id, parentId), eq(users.role, "parent")));
+  const removed = await db.transaction(async (tx) => {
+    const kids =
+      managedIds.length > 0
+        ? await tx.delete(users).where(inArray(users.id, managedIds)).returning({ householdId: users.householdId })
+        : [];
+    const parent = await tx
+      .delete(users)
+      .where(and(eq(users.id, parentId), eq(users.role, "parent")))
+      .returning({ householdId: users.householdId });
+    return [...parent, ...kids];
   });
   await audit(db, "parent.deleted", { metadata: { childrenDeleted: managedIds.length } });
+  for (const householdId of new Set(removed.map((r) => r.householdId))) {
+    await deleteEmptyHousehold(db, householdId, deps);
+  }
   return { childrenDeleted: managedIds.length };
+}
+
+/**
+ * Deletes a household nobody belongs to anymore. Its access grants and billing account cascade.
+ * Its Stripe customer is deleted first, which cancels any subscription so the family isn't billed
+ * again; if Stripe can't be reached, the error's name is logged and the local data is deleted
+ * anyway. Returns whether the household was deleted.
+ */
+export async function deleteEmptyHousehold(db: Db, householdId: string | null, deps: DeletionDeps = {}): Promise<boolean> {
+  if (!householdId) return false;
+  const [member] = await db.select({ id: users.id }).from(users).where(eq(users.householdId, householdId)).limit(1);
+  if (member) return false;
+
+  const [billing] = await db
+    .select({ stripeCustomerId: billingAccounts.stripeCustomerId })
+    .from(billingAccounts)
+    .where(eq(billingAccounts.householdId, householdId));
+  if (billing) {
+    const stripe = deps.stripe === undefined ? getStripe() : deps.stripe;
+    let stripeDeleted = false;
+    if (stripe) stripeDeleted = await deleteStripeCustomer(stripe, billing.stripeCustomerId);
+    else console.error("[billing] couldn't delete a Stripe customer", "StripeNotConfigured");
+    await audit(db, "billing.customer_deleted", { metadata: { stripeDeleted } });
+  }
+  await db.delete(households).where(eq(households.id, householdId));
+  return true;
 }
 
 /** Phase 2 data: courses, roadmap progress, weekly steps, counselor conversations and memory. */

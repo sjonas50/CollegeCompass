@@ -11,10 +11,11 @@ import {
   entryFormInput,
   formErrors,
 } from "@/lib/applications/validation";
+import { requireFullAccess } from "@/lib/access/guard";
 import { requireUser } from "@/lib/auth/dal";
 
-// Thin wrappers: sign-in check, then the service (which validates and scopes everything to the
-// signed-in student). Entry ids from forms are never trusted on their own.
+// Thin wrappers: sign-in and access checks, then the service (which validates and scopes everything
+// to the signed-in student). Entry ids from forms are never trusted on their own.
 
 export type ListFormState = { ok?: boolean; message?: string; errors?: FieldErrors } | undefined;
 
@@ -32,6 +33,7 @@ function revalidateList(entryId?: string) {
 /** "Add to my list" on a college's page. */
 export async function addCollegeAction(_prev: AddCollegeState, formData: FormData): Promise<AddCollegeState> {
   const student = await requireUser(["student"]);
+  await requireFullAccess(student);
   const unitId = UnitIdSchema.safeParse(formData.get("unitId"));
   if (!unitId.success) return { status: "not_found", message: "We couldn't find that college. Try refreshing the page." };
 
@@ -51,6 +53,7 @@ export async function addCollegeAction(_prev: AddCollegeState, formData: FormDat
 /** A college or program that isn't in our search, like an apprenticeship. */
 export async function addCustomEntryAction(_prev: ListFormState, formData: FormData): Promise<ListFormState> {
   const student = await requireUser(["student"]);
+  await requireFullAccess(student);
   const res = await addCustom(await getDb(), student.id, customEntryFormInput(formData));
   if (!res.ok) {
     if (res.error === "invalid") return { errors: res.errors };
@@ -62,6 +65,7 @@ export async function addCustomEntryAction(_prev: ListFormState, formData: FormD
 
 export async function updateEntryAction(_prev: ListFormState, formData: FormData): Promise<ListFormState> {
   const student = await requireUser(["student"]);
+  await requireFullAccess(student);
   const entryId = String(formData.get("entryId") ?? "");
   const res = await updateEntry(await getDb(), student.id, entryId, entryFormInput(formData));
   if (!res.ok) {
@@ -76,6 +80,7 @@ export async function updateEntryAction(_prev: ListFormState, formData: FormData
 
 export async function removeEntryAction(_prev: ListFormState, formData: FormData): Promise<ListFormState> {
   const student = await requireUser(["student"]);
+  await requireFullAccess(student);
   const res = await removeEntry(await getDb(), student.id, String(formData.get("entryId") ?? ""));
   if (!res.ok) return { message: NOT_FOUND };
   revalidateList();
