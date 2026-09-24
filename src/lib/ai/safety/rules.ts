@@ -12,7 +12,15 @@ const RULES: Rule[] = [
   { category: "self_harm", severity: "imminent", pattern: /\bsuicide note\b|\bgoodbye (letter|note)s?\b/ },
   { category: "self_harm", severity: "high", pattern: /\b(kill(ing|ed)?|hurt(ing)?|cut(ting)?|hang(ing|ed)?|harm(ing|ed)?|burn(ing|ed)?)\s+myself\b/ },
   { category: "self_harm", severity: "high", pattern: /\b(want|wanna|wish)(ed)?\s+(to\s+)?(die|be dead|disappear forever|not wake up)\b|\bwish i (was|were) dead\b/ },
-  { category: "self_harm", severity: "high", pattern: /\bend(ing)? my (own )?life\b|\bsuicidal\b|\bself[- ]harm(ing)?\b/ },
+  { category: "self_harm", severity: "high", pattern: /\bend(ing)? my (own )?life\b/ },
+  // First-person statements are high; bare topic words ("helping teens with suicidal thoughts",
+  // "research on self-harm") are medium so the model tier decides.
+  {
+    category: "self_harm",
+    severity: "high",
+    pattern: /\b(i'?m|i am|i feel|feeling|been|getting|get|i have|having|had)\s+((so|really|kinda|kind of|pretty|super|very)\s+)?suicidal\b|\bmy suicidal (thoughts|feelings)\b|\bi('ve| have)?\s*(been\s+)?self[- ]harm(ing|ed)?\b|\bi self[- ]harm\b/,
+  },
+  { category: "self_harm", severity: "medium", pattern: /\bsuicidal\b|\bself[- ]harm(ing)?\b/ },
   { category: "self_harm", severity: "high", pattern: /\b(don'?t|do not) want to (be alive|live|exist)( anymore)?\b|\bno reason to live\b|\bbetter off (dead|without me)\b/ },
   { category: "self_harm", severity: "medium", pattern: /\bsuicide\b/ },
 
