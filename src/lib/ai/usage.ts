@@ -23,26 +23,28 @@ export async function recordUsage(db: Db, userId: string, feature: AiFeature, mo
 }
 
 type UsageEntry = TokenUsage & { model?: string | null; type?: string };
+type BilledMessage = { model?: string | null; usage: TokenUsage & { iterations?: UsageEntry[] | null } };
 
 /**
- * Records a response's usage, charging each attempt at the model that actually served it. With
- * refusal fallbacks, `usage.iterations` lists every attempt (including `fallback_message`), and the
- * top-level model may not be the one that answered.
+ * Each billed attempt in a response, with the model that ran it. With refusal fallbacks,
+ * `usage.iterations` lists every attempt (including `fallback_message`), and the top-level usage
+ * and model cover only the one that answered.
  */
-export async function recordMessageUsage(
-  db: Db,
-  userId: string,
-  feature: AiFeature,
-  requestedModel: string,
-  message: { model?: string | null; usage: TokenUsage & { iterations?: UsageEntry[] | null } },
-) {
+function billedAttempts(requestedModel: string, message: BilledMessage): { model: string; usage: TokenUsage }[] {
   const iterations = message.usage.iterations?.filter((i) => typeof i.input_tokens === "number") ?? [];
-  if (iterations.length === 0) {
-    await recordUsage(db, userId, feature, message.model ?? requestedModel, message.usage);
-    return;
-  }
-  for (const it of iterations) {
-    await recordUsage(db, userId, feature, it.model ?? message.model ?? requestedModel, it);
+  if (iterations.length === 0) return [{ model: message.model ?? requestedModel, usage: message.usage }];
+  return iterations.map((it) => ({ model: it.model ?? message.model ?? requestedModel, usage: it }));
+}
+
+/** A response's cost in millionths of a dollar, each attempt priced at the model that ran it. */
+export function messageCostMicros(requestedModel: string, message: BilledMessage): number {
+  return billedAttempts(requestedModel, message).reduce((total, a) => total + costMicros(a.model, a.usage), 0);
+}
+
+/** Records a response's usage, charging each attempt at the model that actually ran it. */
+export async function recordMessageUsage(db: Db, userId: string, feature: AiFeature, requestedModel: string, message: BilledMessage) {
+  for (const a of billedAttempts(requestedModel, message)) {
+    await recordUsage(db, userId, feature, a.model, a.usage);
   }
 }
 

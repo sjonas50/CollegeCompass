@@ -104,7 +104,9 @@ export default async function InstrumentPage({ params }: PageProps<"/discover/[i
         </div>
       </Card>
       <p className="mt-4 text-sm">
-        <Link href="/dashboard" className="underline">Back to dashboard</Link>
+        <Link href="/dashboard" className="inline-flex min-h-11 items-center underline underline-offset-2">
+          Back to dashboard
+        </Link>
       </p>
     </>
   );

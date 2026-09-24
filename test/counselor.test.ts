@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
 import { registerStudent } from "@/lib/accounts";
 import { env } from "@/env";
@@ -8,7 +8,7 @@ import { listMessages } from "@/lib/counselor/conversations";
 import { deleteConversation, listConversations } from "@/lib/counselor/conversations";
 import { MAX_MEMORY_NOTES, MEMORY_BATCH, clearMemory, getMemory, updateMemory } from "@/lib/counselor/memory";
 import { historyStart } from "@/lib/counselor/respond";
-import { NOTICES, type CounselorEvent, respond } from "@/lib/counselor/respond";
+import { NOTICES, type CounselorEvent, cleanMessage, respond } from "@/lib/counselor/respond";
 
 const now = new Date("2026-09-23T12:00:00Z");
 let db: Db;
@@ -29,7 +29,7 @@ type Verdict = { category: string; severity: string };
 type Iteration = { text: string; stop?: string; throwAfterText?: boolean };
 
 /**
- * Fake Anthropic client: `parse` answers the safety classifier (and memory), `toolRunner` streams
+ * Fake Anthropic client: `create` answers the safety classifier (and memory), `toolRunner` streams
  * scripted iterations. Records every request it receives and whether generation was aborted.
  */
 function fakeClient(opts: {
@@ -42,21 +42,26 @@ function fakeClient(opts: {
 }) {
   const calls = {
     runnerParams: [] as { messages: { content: unknown }[]; system: { text: string }[] }[],
-    parseParams: [] as { system: string; messages: { content: string }[] }[],
+    structuredParams: [] as { system: string; messages: { content: string }[] }[],
     aborted: false,
   };
   const iterations: Iteration[] = opts.iterations ?? [{ text: opts.reply ?? "Great question! Let's look at biology classes.", stop: opts.stop }];
   const client = {
     beta: {
       messages: {
-        parse: async (params: { system: string; messages: { content: string }[] }) => {
-          calls.parseParams.push(params);
-          if (params.system.includes("private notes")) {
-            return { stop_reason: "end_turn", parsed_output: { notes: opts.memory ?? [] }, usage: { input_tokens: 10, output_tokens: 10 } };
-          }
+        // Structured-output calls: the safety classifier and memory updates.
+        create: async (params: { model: string; system: string; messages: { content: string }[] }) => {
+          calls.structuredParams.push(params);
+          const reply = (output: unknown, usage: object) => ({
+            stop_reason: output ? "end_turn" : "refusal",
+            model: params.model,
+            content: output ? [{ type: "text", text: JSON.stringify(output) }] : [],
+            usage,
+          });
+          if (params.system.includes("private notes")) return reply({ notes: opts.memory ?? [] }, { input_tokens: 10, output_tokens: 10 });
           await new Promise((r) => setTimeout(r, opts.safetyDelayMs ?? 0));
           const v = opts.verdict === undefined ? { category: "none", severity: "none" } : opts.verdict;
-          return { stop_reason: v ? "end_turn" : "refusal", parsed_output: v ? { ...v, rationale: "t" } : null, usage: { input_tokens: 10, output_tokens: 5 } };
+          return reply(v && { ...v, rationale: "t" }, { input_tokens: 10, output_tokens: 5 });
         },
         toolRunner: (params: never, options: { signal: AbortSignal }) => {
           calls.runnerParams.push(params);
@@ -101,6 +106,13 @@ async function collect(gen: AsyncGenerator<CounselorEvent>) {
 
 const text = (events: CounselorEvent[]) => events.filter((e) => e.type === "delta").map((e) => (e as { text: string }).text).join("");
 
+describe("cleanMessage", () => {
+  it("turns page breaks into newlines and drops other control characters", () => {
+    expect(cleanMessage(" a\u000Bb\u000Cc\u0000d\u0007e\u007F\r\nf\rg\th ")).toBe("a\nb\ncde\nf\ng\th");
+    expect(cleanMessage("\u0000\u0001 ")).toBe("");
+  });
+});
+
 describe("counselor respond", () => {
   it("streams a reply after screening and stores both messages", async () => {
     const { client } = fakeClient({});
@@ -132,7 +144,7 @@ describe("counselor respond", () => {
     const id = (events[0] as { id: string }).id;
     const second = fakeClient({});
     await collect(respond(db, student, { conversationId: id, text: "ok. can we talk about classes" }, { client: second.client, now }));
-    expect(second.calls.runnerParams[0].system[1].text).toContain("shared something concerning");
+    expect(second.calls.runnerParams[0].system[2].text).toContain("shared something concerning");
     // The support message is part of the history the counselor sees.
     expect(JSON.stringify(second.calls.runnerParams[0].messages)).toContain("988");
   });
@@ -179,7 +191,7 @@ describe("counselor respond", () => {
     expect(events.find((e) => e.type === "notice")).toEqual({ type: "notice", text: NOTICES.refusal });
   });
 
-  it("rate-limits bursts before any model call or write, but still gives crisis help", async () => {
+  it("rate-limits bursts but still screens every message in full", async () => {
     const { client } = fakeClient({});
     let id: string | undefined;
     for (let i = 0; i < 20; i++) {
@@ -191,16 +203,73 @@ describe("counselor respond", () => {
     const msgsBefore = (await db.select().from(schema.counselorMessages)).length;
     const limited = await collect(respond(db, student, { text: "one more" }, { client: counted.client, now }));
     expect(limited).toEqual([{ type: "notice", text: NOTICES.rateLimited }, { type: "done", messageId: null }]);
-    expect(counted.calls.parseParams).toHaveLength(0);
-    expect(counted.calls.runnerParams).toHaveLength(0);
+    expect(counted.calls.structuredParams).toHaveLength(1); // screened
+    expect(counted.calls.runnerParams).toHaveLength(0); // no counselor reply
     expect(await db.select().from(schema.counselorConversations)).toHaveLength(convsBefore);
     expect(await db.select().from(schema.counselorMessages)).toHaveLength(msgsBefore);
-    const crisis = fakeClient({ verdict: { category: "self_harm", severity: "imminent" } });
-    const urgent = await collect(respond(db, student, { conversationId: id, text: "going to end it tonight" }, { client: crisis.client, now }));
+
+    // Indirect language only the model catches still gets help, and the exchange is kept.
+    const crisis = fakeClient({ verdict: { category: "self_harm", severity: "high" } });
+    const urgent = await collect(respond(db, student, { conversationId: id, text: "i dont want to be here anymore" }, { client: crisis.client, now }));
     expect(urgent[0].type).toBe("support");
-    expect(crisis.calls.parseParams).toHaveLength(0); // keyword rules only
+    expect(urgent.at(-1)).toMatchObject({ type: "done", messageId: expect.any(String) });
+    expect(crisis.calls.runnerParams).toHaveLength(0);
+    const msgs = await listMessages(db, id!);
+    expect(msgs.slice(-2).map((m) => [m.role, m.kind])).toEqual([["user", "chat"], ["assistant", "support"]]);
+    const [conv] = await db.select().from(schema.counselorConversations).where(sql`id = ${id}`);
+    expect(conv.concernFlagged).toBe(true);
+    const [event] = await db.select().from(schema.safetyEvents);
+    expect(event.sources).toEqual(["model"]);
+  });
+
+  it("falls back to keyword rules past the screening cap, and still records the crisis", async () => {
+    const { client } = fakeClient({});
+    for (let i = 0; i < 20 + 60; i++) await collect(respond(db, student, { text: `question ${i}` }, { client, now }));
+    const crisis = fakeClient({ verdict: { category: "self_harm", severity: "imminent" } });
+    const urgent = await collect(respond(db, student, { text: "going to end it tonight" }, { client: crisis.client, now }));
+    expect(urgent[0].type).toBe("support");
+    expect(crisis.calls.structuredParams).toHaveLength(0); // keyword rules only
+    const conversation = urgent.find((e) => e.type === "conversation") as { id: string };
+    const msgs = await listMessages(db, conversation.id);
+    expect(msgs.map((m) => [m.role, m.kind])).toEqual([["user", "chat"], ["assistant", "support"]]);
     const [event] = await db.select().from(schema.safetyEvents);
     expect(event.sources).toEqual(["rules", "rate_limited"]);
+  });
+
+  it("reuses the conversation's student context within a session and rebuilds it after a break", async () => {
+    const first = fakeClient({});
+    const events = await collect(respond(db, student, { text: "hi" }, { client: first.client, now }));
+    const id = (events[0] as { id: string }).id;
+    const saved = first.calls.runnerParams[0].system[1].text;
+    await db.insert(schema.counselorMemory).values({ userId: student.id, notes: ["Wants to study marine biology"] });
+
+    const second = fakeClient({});
+    await collect(respond(db, student, { conversationId: id, text: "and then?" }, { client: second.client, now }));
+    expect(second.calls.runnerParams[0].system[1].text).toBe(saved);
+
+    await db.execute(sql`update counselor_conversations set updated_at = now() - interval '2 hours' where id = ${id}`);
+    const third = fakeClient({});
+    await collect(respond(db, student, { conversationId: id, text: "back again" }, { client: third.client, now }));
+    expect(third.calls.runnerParams[0].system[1].text).toContain("marine biology");
+  });
+
+  it("turns a failed context lookup into an error notice, with no unhandled rejection or logged ids", async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (e: unknown) => unhandled.push(e);
+    process.on("unhandledRejection", onUnhandled);
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await db.execute(sql`drop table weekly_steps cascade`);
+      const { client } = fakeClient({ safetyDelayMs: 30 });
+      const events = await collect(respond(db, student, { text: "hello" }, { client, now }));
+      await new Promise((r) => setTimeout(r, 20));
+      expect(events.find((e) => e.type === "notice")).toEqual({ type: "notice", text: NOTICES.error });
+      expect(unhandled).toEqual([]);
+      expect(JSON.stringify(logged.mock.calls)).not.toContain(student.id);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+      logged.mockRestore();
+    }
   });
 
   it("sends crisis resources even when recording the safety event fails", async () => {
@@ -248,6 +317,27 @@ describe("counselor respond", () => {
     expect(stored.at(-1)).toMatchObject({ kind: "notice", content: NOTICES.refusal });
   });
 
+  it("takes back a refused draft on screen, keeping text from earlier tool rounds", async () => {
+    const { client } = fakeClient({ iterations: [{ text: "Let me check your plan.", stop: "tool_use" }, { text: "REFUSED-DRAFT", stop: "refusal" }] });
+    const events = await collect(respond(db, student, { text: "something odd" }, { client, now }));
+    const tail = events.slice(events.findIndex((e) => e.type === "replace"));
+    expect(tail.map((e) => e.type)).toEqual(["replace", "notice", "done"]);
+    expect(tail[0]).toEqual({ type: "replace", text: "Let me check your plan.\n\n" });
+  });
+
+  it("marks a reply cut off when the runner fails after a tool round", async () => {
+    const { client } = fakeClient({ iterations: [{ text: "Let me look at your course plan.", stop: "tool_use" }, { text: "", throwAfterText: true }] });
+    const events = await collect(respond(db, student, { text: "what should I take?" }, { client, now }));
+    expect(events.some((e) => e.type === "replace")).toBe(false);
+    expect(events.find((e) => e.type === "notice")).toEqual({ type: "notice", text: NOTICES.error });
+    const conv = events[0] as { id: string };
+    expect((await listMessages(db, conv.id)).map((m) => [m.kind, m.content])).toEqual([
+      ["chat", "what should I take?"],
+      ["chat", "Let me look at your course plan.\n\n"],
+      ["notice", NOTICES.error],
+    ]);
+  });
+
   it("scrubs names from the safety screen, earlier turns, and step text in the context", async () => {
     const withName = { ...student, username: "mayalopez" };
     const first = fakeClient({});
@@ -280,6 +370,24 @@ describe("counselor memory", () => {
   });
 });
 
+describe("counselor memory privacy", () => {
+  it("never sends the student's name, username or contact details to the memory model", async () => {
+    const withName = { ...student, username: "mayalopez" };
+    const { client, calls } = fakeClient({ memory: ["Wants to study biology"] });
+    let id: string | undefined;
+    for (let i = 0; i < MEMORY_BATCH / 2; i++) {
+      const text = i === 0 ? "I'm Maya (mayalopez), email me at maya.l@example.com or call 555-123-4567" : `I love biology ${i}`;
+      const events = await collect(respond(db, withName, { conversationId: id, text }, { client, now }));
+      id = (events[0] as { id: string }).id;
+    }
+    await updateMemory(db, student.id, id!, { client, knownNames: ["Maya", "mayalopez"] });
+    const memoryCall = calls.structuredParams.find((p) => p.system.includes("private notes"));
+    expect(memoryCall).toBeTruthy();
+    expect(JSON.stringify(memoryCall)).not.toMatch(/maya|example\.com|555-123-4567/i);
+    expect(JSON.stringify(memoryCall)).toContain("I love biology 1");
+  });
+});
+
 describe("counselor memory safeguards", () => {
   async function chat(client: never, n: number) {
     let id: string | undefined;
@@ -295,9 +403,9 @@ describe("counselor memory safeguards", () => {
     const id = await chat(client, MEMORY_BATCH / 2);
     const tokens = (env().AI_MONTHLY_BUDGET_USD / 25) * 1_000_000;
     await recordUsage(db, student.id, "counselor", "claude-opus-5", { input_tokens: 0, output_tokens: tokens });
-    const before = calls.parseParams.length;
+    const before = calls.structuredParams.length;
     expect(await updateMemory(db, student.id, id, { client, now })).toBeNull();
-    expect(calls.parseParams.length).toBe(before);
+    expect(calls.structuredParams.length).toBe(before);
   });
 
   it("enforces the note limits itself and scrubs the transcript", async () => {
@@ -307,7 +415,7 @@ describe("counselor memory safeguards", () => {
     const notes = await updateMemory(db, student.id, id, { client, knownNames: ["Maya"], now });
     expect(notes).toHaveLength(MAX_MEMORY_NOTES);
     expect(notes!.every((n) => n.length <= 140)).toBe(true);
-    const memoryCall = calls.parseParams.find((p) => p.system.includes("private notes"));
+    const memoryCall = calls.structuredParams.find((p) => p.system.includes("private notes"));
     expect(JSON.stringify(memoryCall)).not.toContain("Maya");
   });
 

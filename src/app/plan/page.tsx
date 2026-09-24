@@ -79,7 +79,7 @@ export default async function PlanPage() {
       {middleSchool && gpaCard}
 
       <p className="text-sm">
-        <Link href="/dashboard" className="underline">
+        <Link href="/dashboard" className="inline-flex min-h-11 items-center underline underline-offset-2">
           Back to dashboard
         </Link>
       </p>

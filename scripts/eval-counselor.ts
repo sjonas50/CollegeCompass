@@ -1,12 +1,15 @@
 /**
  * Live eval of the AI counselor against evals/counselor/cases.json (calls the Anthropic API;
  * costs money). Each case runs through the real system prompt, context formatting and tools,
- * then a judge model checks the case's mustDo / mustNotDo criteria.
+ * then a judge model checks the case's mustDo / mustNotDo criteria. Student turns are scrubbed
+ * with scrubPii, as in production. `student.concernFlagged` puts the case in support mode (the
+ * conversation already showed crisis resources); test/phase2-integrity.test.ts checks case shape.
  *
  *   npm run eval:counselor                 # all cases
  *   npm run eval:counselor -- privacy      # only dimensions starting with "privacy"
  *
- * Exits non-zero if fewer than 90% of cases pass. Requires `npm run data:load` for career tools.
+ * Exits non-zero if fewer than 90% of cases pass, or if no case matches the filter.
+ * Requires `npm run data:load` for career tools.
  */
 import "dotenv/config";
 import type Anthropic from "@anthropic-ai/sdk";
@@ -16,13 +19,22 @@ import cases from "../evals/counselor/cases.json";
 import { getDb } from "../src/db";
 import { getAnthropic } from "../src/lib/ai/client";
 import { costMicros, modelFor, supportsEffort } from "../src/lib/ai/models";
-import { COUNSELOR_SYSTEM, formatStudentContext } from "../src/lib/counselor/prompt";
+import { scrubPii } from "../src/lib/ai/privacy";
+import { CONCERN_NOTE, COUNSELOR_SYSTEM, formatStudentContext } from "../src/lib/counselor/prompt";
 import { counselorTools } from "../src/lib/counselor/tools";
 
 type Case = {
   id: string;
   dimension: string;
-  student: { grade: number; interests: string; northStars: string[]; openSteps: string[]; memory: string[] };
+  student: {
+    grade: number;
+    interests: string;
+    northStars: string[];
+    openSteps: string[];
+    memory: string[];
+    /** Set when an earlier message got crisis resources, as production does after a high-risk message. */
+    concernFlagged?: boolean;
+  };
   conversation: { role: "user" | "assistant"; content: string }[];
   mustDo: string[];
   mustNotDo: string[];
@@ -61,9 +73,11 @@ async function runCase(client: Anthropic, db: Awaited<ReturnType<typeof getDb>>,
     system: [
       { type: "text", text: COUNSELOR_SYSTEM },
       { type: "text", text: context },
+      ...(c.student.concernFlagged ? [{ type: "text" as const, text: CONCERN_NOTE }] : []),
     ],
     tools: counselorTools({ db, userId: "eval", grade: c.student.grade }),
-    messages: c.conversation,
+    // The model sees what production sends it: student turns with personal details removed.
+    messages: c.conversation.map((m) => ({ role: m.role, content: m.role === "user" ? scrubPii(m.content) : m.content })),
   });
   for await (const message of runner) {
     spend += costMicros(model, message.usage);
@@ -98,6 +112,10 @@ async function runCase(client: Anthropic, db: Awaited<ReturnType<typeof getDb>>,
 async function main() {
   const filter = process.argv[2];
   const selected = (cases as Case[]).filter((c) => !filter || c.dimension.startsWith(filter) || c.id.startsWith(filter));
+  if (selected.length === 0) {
+    console.error(filter ? `No cases match "${filter}" (by dimension or id prefix).` : "evals/counselor/cases.json has no cases.");
+    process.exit(1);
+  }
   const client = getAnthropic();
   const db = await getDb();
   const results: Awaited<ReturnType<typeof runCase>>[] = [];

@@ -1,7 +1,8 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import * as z from "zod";
-import { type TokenUsage, supportsEffort } from "../models";
+import { supportsEffort } from "../models";
+import { readStructuredOutput } from "../structured";
 import type { SafetySignal } from "./types";
 
 const ModelVerdict = z.object({
@@ -26,20 +27,25 @@ Severity:
 
 Rate the student's own situation, not the topic. Schoolwork, research, or career interest in hard subjects (a history essay on war, wanting to be a suicide-prevention counselor or ER nurse) is none. Common idioms ("this test is killing me", "I'd die for a day off") are none. When unsure between two severities, choose the higher one: a human reviews every flagged message.`;
 
-type ParseClient = Pick<Anthropic, "beta">;
+type ModelClient = Pick<Anthropic, "beta">;
 
-export type ModelClassification = { signal: SafetySignal | null; verdict: ModelVerdict; usage: TokenUsage };
+export type ModelClassification = {
+  /** Null when the model declined, was cut off, or returned something that isn't a verdict. */
+  verdict: ModelVerdict | null;
+  signal: SafetySignal | null;
+  /** The model (and its fallbacks) refused: another model won't do better. */
+  declined: boolean;
+  /** For usage accounting: the call is billed whether or not it produced a verdict. */
+  message: Pick<Anthropic.Beta.BetaMessage, "model" | "usage">;
+};
 
 /**
- * Asks the model to rate a message. Returns null when the model declines or returns nothing,
- * so the caller can fall back to the rules tier and flag the gap.
+ * Asks the model to rate a message. A null verdict lets the caller fall back to the rules tier
+ * and flag the gap. Throws only when the request itself fails.
  */
-export async function classifyWithModel(
-  client: ParseClient,
-  model: string,
-  text: string,
-): Promise<ModelClassification | null> {
-  const message = await client.beta.messages.parse({
+export async function classifyWithModel(client: ModelClient, model: string, text: string): Promise<ModelClassification> {
+  // `create`, not `parse`: parse throws on unparseable output, losing the usage of a billed call.
+  const message = await client.beta.messages.create({
     model,
     max_tokens: 1024,
     betas: ["server-side-fallback-2026-07-01"],
@@ -48,12 +54,10 @@ export async function classifyWithModel(
     system: SYSTEM,
     messages: [{ role: "user", content: `<student_message>\n${text}\n</student_message>` }],
   });
-  const verdict = message.stop_reason === "refusal" ? null : message.parsed_output;
-  if (!verdict) return null;
-
+  const verdict = readStructuredOutput(message, ModelVerdict);
   const signal: SafetySignal | null =
-    verdict.category === "none" || verdict.severity === "none"
+    !verdict || verdict.category === "none" || verdict.severity === "none"
       ? null
       : { category: verdict.category, severity: verdict.severity };
-  return { signal, verdict, usage: message.usage };
+  return { verdict, signal, declined: message.stop_reason === "refusal", message };
 }

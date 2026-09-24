@@ -35,7 +35,7 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
               <div>
                 <h2 className="font-medium">{child.displayName}</h2>
                 <p className="text-sm text-muted">
-                  {child.grade !== null && child.grade > 12 ? "Finished high school" : `Grade ${child.grade}`}
+                  {child.grade === null ? "Grade not set" : child.grade > 12 ? "Finished high school" : `Grade ${child.grade}`}
                   {child.username && <> · signs in as <span className="font-mono">{child.username}</span></>}
                 </p>
               </div>
@@ -53,7 +53,6 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
               <div className="mt-3 space-y-4">
                 <form action={setChildGradeAction} className="flex flex-wrap items-end gap-3">
                   <input type="hidden" name="studentId" value={child.id} />
-                  <input type="hidden" name="shownGrade" value={child.grade ?? ""} />
                   <div>
                     <label htmlFor={`grade-${child.id}`} className="block text-sm">{gradeQuestion().label}</label>
                     <GradeSettingSelect id={`grade-${child.id}`} grade={child.grade} />

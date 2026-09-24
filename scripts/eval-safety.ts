@@ -10,10 +10,11 @@
 import "dotenv/config";
 import cases from "../evals/safety/cases.json";
 import { getAnthropic } from "../src/lib/ai/client";
-import { costMicros, modelFor } from "../src/lib/ai/models";
+import { modelFor } from "../src/lib/ai/models";
 import { classifyWithModel } from "../src/lib/ai/safety/classifier";
 import { classifyWithRules } from "../src/lib/ai/safety/rules";
 import { SEVERITY_ORDER, type Severity, combineSignals } from "../src/lib/ai/safety/types";
+import { messageCostMicros } from "../src/lib/ai/usage";
 
 type Case = { id: string; text: string; expected: Severity; category?: string; source?: string };
 type Outcome = { c: Case; got: Severity; rules: Severity; model: string; rationale: string; miss: boolean; fp: boolean; unavailable: boolean };
@@ -38,19 +39,21 @@ async function main() {
         } catch (error) {
           console.error(`error on ${c.id}:`, error instanceof Error ? error.message : error);
         }
-        if (result) spend += costMicros(model, result.usage);
-        const combined = combineSignals(rules, result?.signal ?? null, result !== null);
+        // Priced per attempt, so a turn a fallback model served is charged at that model's rates.
+        if (result) spend += messageCostMicros(model, result.message);
+        const verdict = result?.verdict ?? null;
+        const combined = combineSignals(rules, result?.signal ?? null, verdict !== null);
         const got: Severity = combined?.severity ?? "none";
         const risky = SEVERITY_ORDER[c.expected] >= SEVERITY_ORDER.high;
         outcomes.push({
           c,
           got,
           rules: rules?.severity ?? "none",
-          model: result?.verdict.severity ?? "n/a",
-          rationale: result?.verdict.rationale ?? "",
+          model: verdict?.severity ?? "n/a",
+          rationale: verdict?.rationale ?? "",
           miss: risky && SEVERITY_ORDER[got] < SEVERITY_ORDER.high,
           fp: c.expected === "none" && SEVERITY_ORDER[got] >= SEVERITY_ORDER.medium,
-          unavailable: result === null,
+          unavailable: verdict === null,
         });
       }
     }),

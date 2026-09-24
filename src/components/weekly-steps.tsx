@@ -1,7 +1,8 @@
 import "server-only";
-import { WeeklyStepsList } from "@/app/roadmap/weekly-steps-list";
+import { type StepIdeas, WeeklyStepsList } from "@/app/roadmap/weekly-steps-list";
 import { Card } from "@/components/ui";
 import { getDb } from "@/db";
+import { MAX_GRADE } from "@/lib/auth/age";
 import { requireUser } from "@/lib/auth/dal";
 import { monthName } from "@/lib/roadmap";
 import { STEP_TEXT_MAX, weeklyStepsView } from "@/lib/steps";
@@ -17,10 +18,12 @@ function weekLabel(weekStart: string) {
  * Must be rendered for a student (it calls requireUser(["student"])).
  *
  * `linkToRoadmap` (default true) points the empty state at /roadmap; the roadmap page itself
- * turns it off.
+ * turns it off. Graduates have no roadmap milestones, so their empty state only asks for their own.
  */
 export async function WeeklyStepsCard({ linkToRoadmap = true }: { linkToRoadmap?: boolean }) {
   const student = await requireUser(["student"]);
+  const graduated = student.grade !== null && student.grade > MAX_GRADE;
+  const ideas: StepIdeas = graduated ? "own" : linkToRoadmap ? "roadmap" : "below";
   const { weekStart, steps, stats, max } = await weeklyStepsView(await getDb(), student.id);
   const headingId = "weekly-steps-heading";
   return (
@@ -36,7 +39,7 @@ export async function WeeklyStepsCard({ linkToRoadmap = true }: { linkToRoadmap?
         stats={stats}
         max={max}
         maxLength={STEP_TEXT_MAX}
-        linkToRoadmap={linkToRoadmap}
+        ideas={ideas}
         headingId={headingId}
       />
     </Card>

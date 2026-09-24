@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
 import { registerStudent } from "../accounts";
@@ -109,6 +110,13 @@ describe("planSummary", () => {
     await db.insert(schema.occupationInterests).values([{ occupationCode: "29-1141.00", interest: "S", score: 7 }]);
     await db.insert(schema.majors).values([{ cipCode: "51.3801", title: "Registered Nursing/Registered Nurse" }]);
     await db.insert(schema.cipSocLinks).values([{ cipCode: "51.3801", socCode: "29-1141" }]);
+  });
+
+  it("scrubs the student's username from course names", async () => {
+    await db.update(schema.users).set({ username: "anarocks" }).where(eq(schema.users.id, ana));
+    await add(ana, { name: "anarocks study hall" });
+    const summary = await planSummary(db, ana);
+    expect(JSON.stringify(summary)).not.toContain("anarocks");
   });
 
   it("summarizes an empty plan", async () => {

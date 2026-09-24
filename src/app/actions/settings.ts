@@ -5,22 +5,37 @@ import * as z from "zod";
 import { getDb } from "@/db";
 import { isLinkedParent, setStudentGrade } from "@/lib/accounts";
 import { requireUser } from "@/lib/auth/dal";
-import { setRemindersEnabled } from "@/lib/reminders";
+import { setOwnRemindersEnabled, setRemindersEnabled } from "@/lib/reminders";
 
-// An empty value means "leave it as is" (the select shows "Finished high school" for graduates).
 const Grade = z.coerce.number().int().min(6).max(12);
+
+/**
+ * The grade picked in a settings grade form (GradeSettingSelect), or null for "no change": an
+ * empty value (the "keep as is" option) or the grade the form showed (`shownGrade`). Comparing
+ * with what was shown, not with today's grade, means a page loaded before grades advance in August
+ * and saved after can't move the student back a year.
+ */
+function pickedGrade(formData: FormData): number | null {
+  const raw = formData.get("grade");
+  if (typeof raw !== "string" || raw === "") return null;
+  const grade = Grade.safeParse(raw);
+  if (!grade.success) return null;
+  const shown = formData.get("shownGrade");
+  return typeof shown === "string" && shown !== "" && Number(shown) === grade.data ? null : grade.data;
+}
 
 export async function setMyGradeAction(formData: FormData) {
   const student = await requireUser(["student"]);
-  const grade = Grade.safeParse(formData.get("grade") || undefined);
-  if (grade.success && grade.data !== student.grade) await setStudentGrade(await getDb(), student.id, grade.data);
+  const grade = pickedGrade(formData);
+  if (grade !== null && grade !== student.grade) await setStudentGrade(await getDb(), student.id, grade);
   redirect("/dashboard?settings=saved");
 }
 
+/** Refused for reminders that go to a parent: only the parent changes those, on /parent. */
 export async function setMyRemindersAction(formData: FormData) {
   const student = await requireUser(["student"]);
-  await setRemindersEnabled(await getDb(), student.id, formData.get("enabled") === "on");
-  redirect("/dashboard?settings=saved");
+  const saved = await setOwnRemindersEnabled(await getDb(), student.id, formData.get("enabled") === "on");
+  redirect(saved ? "/dashboard?settings=saved" : "/dashboard");
 }
 
 async function linkedChild(formData: FormData) {
@@ -32,12 +47,11 @@ async function linkedChild(formData: FormData) {
   return { db, studentId: studentId.data };
 }
 
-/** Parents correct a linked child's grade. Unchanged or empty values do nothing. */
+/** Parents correct a linked child's grade. "Keep as is" and unchanged values do nothing. */
 export async function setChildGradeAction(formData: FormData) {
   const { db, studentId } = await linkedChild(formData);
-  const grade = Grade.safeParse(formData.get("grade") || undefined);
-  const shown = Number(formData.get("shownGrade"));
-  if (grade.success && grade.data !== shown) await setStudentGrade(db, studentId, grade.data);
+  const grade = pickedGrade(formData);
+  if (grade !== null) await setStudentGrade(db, studentId, grade);
   redirect("/parent?saved=1");
 }
 

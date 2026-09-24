@@ -8,6 +8,11 @@ import { useFormAction } from "@/components/use-form-action";
 
 export type WeeklyStepItem = { id: string; text: string; status: "open" | "done"; milestoneId: string | null };
 export type WeeklyStepStats = { stepsCompleted: number; weeksWithProgress: number };
+/**
+ * Where the empty state points for step ideas: a link to /roadmap, the "Add to this week" buttons
+ * below (on the roadmap page), or nowhere (graduates, who have no roadmap milestones).
+ */
+export type StepIdeas = "roadmap" | "below" | "own";
 
 type Change = { type: "toggle"; id: string; done: boolean } | { type: "remove"; id: string };
 
@@ -32,14 +37,14 @@ export function WeeklyStepsList({
   stats,
   max,
   maxLength,
-  linkToRoadmap,
+  ideas,
   headingId,
 }: {
   steps: WeeklyStepItem[];
   stats: WeeklyStepStats;
   max: number;
   maxLength: number;
-  linkToRoadmap: boolean;
+  ideas: StepIdeas;
   headingId: string;
 }) {
   const [shown, change] = useOptimistic(steps, applyChange);
@@ -87,12 +92,16 @@ export function WeeklyStepsList({
       {shown.length === 0 ? (
         <div className="mt-3 space-y-3">
           <p>Pick one to three small things to do this week. Little steps add up to big plans.</p>
-          {linkToRoadmap ? (
+          {ideas === "roadmap" ? (
             <ButtonLink href="/roadmap" variant="secondary">
               Find ideas on your roadmap
             </ButtonLink>
           ) : (
-            <p className="text-sm text-muted">Tap “Add to this week” on anything below, or write your own.</p>
+            <p className="text-sm text-muted">
+              {ideas === "below"
+                ? "Tap “Add to this week” on anything below, or write your own."
+                : "Add your own steps below for whatever comes next for you."}
+            </p>
           )}
         </div>
       ) : (
@@ -143,7 +152,7 @@ export function WeeklyStepsList({
       )}
 
       <p className="mt-4 text-sm">{statsText(stats)}</p>
-      {linkToRoadmap && shown.length > 0 && (
+      {ideas === "roadmap" && shown.length > 0 && (
         <p className="mt-1 text-sm">
           <Link href="/roadmap" className="inline-flex min-h-11 items-center underline underline-offset-2">
             Open your roadmap

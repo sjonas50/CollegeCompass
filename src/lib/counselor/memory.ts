@@ -7,6 +7,7 @@ import { counselorConversations, counselorMemory } from "@/db/schema";
 import { getAnthropic } from "../ai/client";
 import { modelFor, supportsEffort } from "../ai/models";
 import { scrubPii } from "../ai/privacy";
+import { readStructuredOutput } from "../ai/structured";
 import { BudgetExceededError, assertWithinBudget, recordMessageUsage } from "../ai/usage";
 import { listMessages } from "./conversations";
 
@@ -63,7 +64,8 @@ export async function updateMemory(
     .join("\n");
   const client = opts.client ?? getAnthropic();
   const model = modelFor("counselor");
-  const message = await client.beta.messages.parse({
+  // `create`, not `parse`: parse throws on unparseable output before the billed usage is recorded.
+  const message = await client.beta.messages.create({
     model,
     max_tokens: 2000,
     betas: ["server-side-fallback-2026-07-01"],
@@ -78,23 +80,26 @@ export async function updateMemory(
     ],
   });
   await recordMessageUsage(db, userId, "counselor", model, message);
-  const parsed = message.stop_reason === "refusal" ? null : message.parsed_output?.notes;
-  if (!parsed) return null;
+  const parsed = readStructuredOutput(message, MemoryUpdate)?.notes;
   const notes = parsed
-    .map((n) => n.trim())
+    ?.map((n) => n.trim())
     .filter(Boolean)
     .slice(0, MAX_MEMORY_NOTES)
     .map((n) => (n.length > MAX_NOTE_CHARS ? `${n.slice(0, MAX_NOTE_CHARS - 1)}…` : n));
 
-  await db
-    .insert(counselorMemory)
-    .values({ userId, notes })
-    .onConflictDoUpdate({ target: counselorMemory.userId, set: { notes, updatedAt: new Date() } });
+  if (notes) {
+    await db
+      .insert(counselorMemory)
+      .values({ userId, notes })
+      .onConflictDoUpdate({ target: counselorMemory.userId, set: { notes, updatedAt: new Date() } });
+  }
+  // Advance even without usable notes (refusal, cut off, malformed): each batch is billed once,
+  // instead of re-sending a growing transcript after every later turn. The notes just miss it.
   await db
     .update(counselorConversations)
     .set({ memoryProcessedCount: messages.length })
     .where(eq(counselorConversations.id, conversationId));
-  return notes;
+  return notes ?? null;
 }
 
 export async function clearMemory(db: Db, userId: string) {

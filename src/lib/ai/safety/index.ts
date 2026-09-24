@@ -4,7 +4,7 @@ import { safetyEvents } from "@/db/schema";
 import { getAnthropic } from "../client";
 import { modelFor } from "../models";
 import { scrubPii } from "../privacy";
-import { recordUsage } from "../usage";
+import { recordMessageUsage } from "../usage";
 import { classifyWithModel } from "./classifier";
 import { supportResponse } from "./responses";
 import { classifyWithRules } from "./rules";
@@ -54,14 +54,17 @@ export async function assessMessage(
     const modelId = modelFor(feature);
     try {
       const result = await classifyWithModel(client, modelId, scrubPii(text, opts.knownNames));
-      if (!result) break; // declined: don't retry, flag the gap
-      model = result.signal;
-      degraded = false;
-      // A failed usage write must not throw away the model's verdict.
-      await recordUsage(db, userId, "safety", modelId, result.usage).catch((error) =>
+      // Billed with or without a verdict. A failed usage write must not throw away the verdict.
+      await recordMessageUsage(db, userId, "safety", modelId, result.message).catch((error) =>
         console.error("[safety] failed to record usage", error instanceof Error ? error.name : "unknown"),
       );
-      break;
+      if (result.verdict) {
+        model = result.signal;
+        degraded = false;
+        break;
+      }
+      if (result.declined) break; // declined: don't retry, flag the gap
+      console.error(`[safety] ${feature} model returned no verdict`); // cut off or malformed: try the backup
     } catch (error) {
       console.error(`[safety] ${feature} model failed`, error instanceof Error ? error.name : "unknown");
     }

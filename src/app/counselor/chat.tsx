@@ -1,17 +1,12 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui";
+import { type ChatMessage, type ServerEvent, type Turn, announcement as announce, applyEvent, finishTurn, httpFailure, startTurn } from "./chat-events";
 import { supportActions } from "./support-actions";
 
-export type ChatMessage = {
-  id: string;
-  role: "user" | "assistant";
-  kind: "chat" | "support" | "notice";
-  content: string;
-  pending?: boolean;
-  link?: { href: string; label: string };
-};
+export type { ChatMessage };
 
 const STARTERS = [
   "What careers might fit my interests?",
@@ -107,9 +102,8 @@ function subscribePointer(onChange: () => void) {
   return () => mq.removeEventListener("change", onChange);
 }
 
-function nearBottom() {
-  return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 160;
-}
+// Streamed text follows the end of the chat while the student is within this distance of it.
+const FOLLOW_PX = 160;
 
 export function Chat({ conversationId: initialId, initialMessages }: { conversationId?: string; initialMessages: ChatMessage[] }) {
   const [messages, setMessages] = useState(initialMessages);
@@ -124,22 +118,57 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
     () => true,
   );
   const endRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const follow = useRef(true);
+  const autoScrolling = useRef(false);
+  const composing = useRef(false);
   const lastCount = useRef(initialMessages.length);
   const sendCount = useRef(0);
 
+  // A chat started here moves its URL to /counselor/<id> without a navigation. Tapping Counselor in
+  // the nav goes back to /counselor without remounting this component, so start a fresh chat.
+  const pathname = usePathname();
+  const [seenPath, setSeenPath] = useState(pathname);
+  if (pathname !== seenPath) {
+    setSeenPath(pathname);
+    if (!initialId && pathname === "/counselor" && conversationId) {
+      setMessages([]);
+      setConversationId(undefined);
+      setAnnouncement("");
+    }
+  }
+
+  // How far the end of the chat sits below the top of the sticky message box (negative: above it).
+  function endOverlap() {
+    const end = endRef.current?.getBoundingClientRect().bottom ?? 0;
+    const formTop = formRef.current?.getBoundingClientRect().top ?? window.innerHeight;
+    return end - Math.min(formTop, window.innerHeight);
+  }
+
   useEffect(() => {
-    const onScroll = () => (follow.current = nearBottom());
+    const onScroll = () => {
+      // Our own scrolling isn't the student moving away.
+      if (autoScrolling.current) {
+        autoScrolling.current = false;
+        return;
+      }
+      follow.current = endOverlap() <= FOLLOW_PX;
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
-    // Always scroll when a message is added; while text streams in, only if they're at the bottom.
+    // Always scroll when a message is added; while text streams in, only if they're following.
     const added = messages.length !== lastCount.current;
     lastCount.current = messages.length;
-    if (added || follow.current) endRef.current?.scrollIntoView({ block: "end" });
+    if (!added && !follow.current) return;
+    const overlap = endOverlap() + 12;
+    if (overlap > 0) {
+      autoScrolling.current = true;
+      window.scrollBy({ top: overlap });
+    }
   }, [messages]);
 
   async function send(raw: string) {
@@ -156,23 +185,27 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
       { id: `u-${replyId}`, role: "user", kind: "chat", content: trimmed },
       { id: replyId, role: "assistant", kind: "chat", content: "", pending: true },
     ]);
-    const update = (fn: (m: ChatMessage) => ChatMessage) => setMessages((ms) => ms.map((m) => (m.id === replyId ? fn(m) : m)));
+    // The turn's progress doesn't depend on the message list, so it's tracked here and the list
+    // updater stays pure. Each change applies to the latest list, so a reset from the nav drops
+    // this turn's output.
+    let turn = startTurn(replyId);
+    const apply = (fn: (s: { messages: ChatMessage[]; turn: Turn }) => { messages: ChatMessage[]; turn: Turn }) => {
+      const before = turn;
+      turn = fn({ messages: [], turn: before }).turn;
+      setMessages((ms) => fn({ messages: ms, turn: before }).messages);
+    };
 
-    let reply = "";
-    let final: { kind: ChatMessage["kind"]; text: string } | null = null;
+    let broken = false;
     try {
       const res = await fetch("/api/counselor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId, text: trimmed }),
       });
-      if (res.status === 401) {
-        setInput(trimmed);
-        final = { kind: "notice", text: "Your session ended. Sign in again to keep chatting." };
-        update((m) => ({ ...m, kind: "notice", content: final!.text, link: { href: "/login?next=/counselor", label: "Sign in" }, pending: false }));
+      if (!res.ok || !res.body) {
+        apply((s) => httpFailure(s, res.status));
         return;
       }
-      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -184,39 +217,24 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
         buffer = lines.pop() ?? "";
         for (const line of lines) {
           if (!line.trim()) continue;
-          const event = JSON.parse(line) as { type: string; id?: string; text?: string };
-          if (event.type === "conversation" && event.id && !conversationId) {
-            setConversationId(event.id);
-            window.history.replaceState(null, "", `/counselor/${event.id}`);
-          } else if (event.type === "delta") {
-            reply += event.text;
-            update((m) => ({ ...m, content: m.content + event.text }));
-          } else if (event.type === "support") {
-            final = { kind: "support", text: event.text ?? "" };
-            update((m) => ({ ...m, kind: "support", content: event.text ?? "", pending: false }));
-          } else if (event.type === "notice") {
-            // A notice after partial text is shown as its own line under the reply.
-            const text = event.text ?? "";
-            final = { kind: "notice", text };
-            if (reply) {
-              setMessages((ms) => [...ms, { id: `n-${replyId}`, role: "assistant", kind: "notice", content: text }]);
-            } else {
-              update((m) => ({ ...m, kind: "notice", content: text, pending: false }));
+          const event = JSON.parse(line) as ServerEvent;
+          if (event.type === "conversation") {
+            if (!conversationId) {
+              setConversationId(event.id);
+              window.history.replaceState(null, "", `/counselor/${event.id}`);
             }
-          }
+          } else apply((s) => applyEvent(s, event));
         }
       }
     } catch {
-      if (!reply) setInput(trimmed);
-      final = { kind: "notice", text: "Couldn't reach the counselor. Check your connection and try again." };
-      update((m) => (reply ? m : { ...m, kind: "notice", content: final!.text, pending: false }));
+      broken = true;
     } finally {
-      update((m) => ({ ...m, pending: false }));
+      const restore = finishTurn({ messages: [], turn }, broken).restoreInput;
+      apply((s) => finishTurn(s, broken));
+      // Put the message back unless they've started typing another one.
+      if (restore) setInput((prev) => (prev.trim() ? prev : trimmed));
       setBusy(false);
-      const f = final as { kind: ChatMessage["kind"]; text: string } | null;
-      setAnnouncement(
-        f?.kind === "support" ? `Important: ${f.text}` : reply ? `Counselor replied: ${reply}${f ? ` ${f.text}` : ""}` : f?.text ?? "",
-      );
+      setAnnouncement(announce(turn));
       if (!document.activeElement || document.activeElement === document.body) inputRef.current?.focus({ preventScroll: true });
     }
   }
@@ -262,13 +280,14 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
         {messages.map((m) => (
           <Bubble key={m.id} m={m} />
         ))}
-        <div ref={endRef} className="scroll-mb-40" />
+        <div ref={endRef} />
       </div>
       <p role="status" className="sr-only">
         {announcement}
       </p>
 
       <form
+        ref={formRef}
         onSubmit={(e) => {
           e.preventDefault();
           send(input);
@@ -283,8 +302,13 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value.slice(0, MAX_CHARS))}
+          onCompositionStart={() => (composing.current = true)}
+          onCompositionEnd={() => (composing.current = false)}
           onKeyDown={(e) => {
-            if (e.key !== "Enter" || e.shiftKey || !enterSends || e.nativeEvent.isComposing) return;
+            // Enter that confirms an IME character isn't a send. Safari reports it as keyCode 229
+            // after compositionend has already fired.
+            const ime = e.nativeEvent.isComposing || composing.current || e.keyCode === 229;
+            if (e.key !== "Enter" || e.shiftKey || !enterSends || ime) return;
             e.preventDefault();
             send(input);
           }}

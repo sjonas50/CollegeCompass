@@ -3,7 +3,9 @@ import { type Db, createTestDb, schema } from "@/db";
 import { registerParent } from "@/lib/accounts";
 import { assessMessage } from "@/lib/ai/safety";
 import { env } from "@/env";
+import { costMicros } from "@/lib/ai/models";
 import { BudgetExceededError, assertWithinBudget, recordUsage } from "@/lib/ai/usage";
+import { fallbackUsage, stubAnthropic } from "./anthropic-stub";
 
 let db: Db;
 let userId: string;
@@ -14,16 +16,17 @@ beforeEach(async () => {
   userId = res.value.userId;
 });
 
-/** A stand-in for the Anthropic client that returns a fixed verdict and records what it was sent. */
+/** A stand-in for the Anthropic client that returns a fixed verdict (null: refuses) and records what it was sent. */
 function fakeClient(verdict: { category: string; severity: string } | null, sent: string[] = []) {
   return {
     beta: {
       messages: {
-        parse: async (params: { messages: { content: string }[] }) => {
+        create: async (params: { model: string; messages: { content: string }[] }) => {
           sent.push(params.messages[0].content);
           return {
+            model: params.model,
             stop_reason: verdict ? "end_turn" : "refusal",
-            parsed_output: verdict ? { ...verdict, rationale: "test" } : null,
+            content: verdict ? [{ type: "text", text: JSON.stringify({ ...verdict, rationale: "test" }) }] : [],
             usage: { input_tokens: 500, output_tokens: 50 },
           };
         },
@@ -96,10 +99,11 @@ describe("safety model backup", () => {
     const flaky = {
       beta: {
         messages: {
-          parse: async (params: { model: string }) => {
+          create: async (params: { model: string }) => {
             models.push(params.model);
             if (models.length === 1) throw new Error("overloaded");
-            return { stop_reason: "end_turn", parsed_output: { category: "self_harm", severity: "high", rationale: "t" }, usage: { input_tokens: 10, output_tokens: 5 } };
+            const text = JSON.stringify({ category: "self_harm", severity: "high", rationale: "t" });
+            return { model: params.model, stop_reason: "end_turn", content: [{ type: "text", text }], usage: { input_tokens: 10, output_tokens: 5 } };
           },
         },
       },
@@ -110,9 +114,44 @@ describe("safety model backup", () => {
   });
 
   it("degrades to rules only when both models fail", async () => {
-    const down = { beta: { messages: { parse: async () => { throw new Error("outage"); } } } } as never;
+    const down = { beta: { messages: { create: async () => { throw new Error("outage"); } } } } as never;
     const result = await assessMessage(db, userId, "been cutting again", { client: down });
     expect(result).toMatchObject({ severity: "high", degraded: true, sources: ["rules"] });
+  });
+});
+
+describe("safety usage accounting", () => {
+  it("records a verdict cut off at max_tokens, then tries the backup model", async () => {
+    const { client, requests } = stubAnthropic(() => ({ stop_reason: "max_tokens", text: '{"category":"self_harm","sev' }));
+    const result = await assessMessage(db, userId, "been cutting again", { client });
+    expect(result).toMatchObject({ severity: "high", degraded: true, sources: ["rules"] });
+    expect(requests.map((r) => r.model)).toEqual(["claude-opus-5", "claude-sonnet-5"]);
+    const rows = await db.select().from(schema.aiUsage);
+    expect(rows.map((r) => [r.feature, r.model])).toEqual([["safety", "claude-opus-5"], ["safety", "claude-sonnet-5"]]);
+  });
+
+  it("records a refusal whose text isn't JSON, without retrying", async () => {
+    const { client, requests } = stubAnthropic(() => ({ stop_reason: "refusal", text: "I can't help with that." }));
+    const result = await assessMessage(db, userId, "my dad hits me", { client });
+    expect(result).toMatchObject({ severity: "high", category: "abuse", degraded: true });
+    expect(requests).toHaveLength(1);
+    expect(await db.select().from(schema.aiUsage)).toHaveLength(1);
+  });
+
+  it("charges each fallback attempt at the model that ran it", async () => {
+    const { client } = stubAnthropic((body) => ({
+      text: JSON.stringify({ category: "self_harm", severity: "high", rationale: "t" }),
+      model: "claude-opus-4-8",
+      usage: fallbackUsage(body.model, "claude-opus-4-8"),
+    }));
+    const result = await assessMessage(db, userId, "I won't be around by then anyway", { client });
+    expect(result).toMatchObject({ severity: "high", degraded: false, sources: ["model"] });
+    const rows = await db.select().from(schema.aiUsage);
+    expect(rows.map((r) => r.model).sort()).toEqual(["claude-opus-4-8", "claude-opus-5"]);
+    expect(rows.reduce((s, r) => s + r.costMicros, 0)).toBe(
+      costMicros("claude-opus-5", { input_tokens: 1000, output_tokens: 400 }) +
+        costMicros("claude-opus-4-8", { input_tokens: 1000, output_tokens: 200 }),
+    );
   });
 });
 

@@ -1,25 +1,18 @@
 import { after } from "next/server";
 import * as z from "zod";
 import { getDb } from "@/db";
+import { screenWithRulesOnly } from "@/lib/ai/safety";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { counselorExtraTools } from "@/lib/counselor/extra-tools";
 import { updateMemory } from "@/lib/counselor/memory";
-import { MAX_MESSAGE_CHARS, respond } from "@/lib/counselor/respond";
+import { MAX_MESSAGE_CHARS, cleanMessage, respond } from "@/lib/counselor/respond";
 
 // Safety screening plus a streamed reply with tool calls can take a while.
 export const maxDuration = 60;
 
-// Control characters (other than tab and newlines) can't be stored in Postgres text columns.
-const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
-
 const Body = z.object({
   conversationId: z.uuid().optional(),
-  text: z
-    .string()
-    .trim()
-    .min(1)
-    .max(MAX_MESSAGE_CHARS)
-    .refine((t) => !CONTROL_CHARS.test(t), "Invalid characters"),
+  text: z.string().transform(cleanMessage).pipe(z.string().min(1).max(MAX_MESSAGE_CHARS)),
 });
 
 /** Streams counselor events as newline-delimited JSON. */
@@ -30,10 +23,8 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Invalid message" }, { status: 400 });
 
-  const db = await getDb();
   const student = { id: user.id, grade: user.grade, displayName: user.displayName, username: user.username };
   const knownNames = [user.displayName, user.username].filter((n): n is string => Boolean(n));
-  const extraTools = await counselorExtraTools(db, student);
   let conversationId = parsed.data.conversationId;
 
   // Resolves once respond() has fully finished (including crisis flagging), even if the client
@@ -41,6 +32,9 @@ export async function POST(req: Request) {
   let finished!: () => void;
   const done = new Promise<void>((resolve) => (finished = resolve));
   const clientGone = new AbortController();
+  // Set when crisis resources went out. That turn is kept out of memory even if flagging the
+  // conversation failed.
+  let supported = false;
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -54,14 +48,22 @@ export async function POST(req: Request) {
         }
       };
       try {
+        const db = await getDb();
+        const extraTools = await counselorExtraTools(db, student);
         for await (const event of respond(db, student, parsed.data, { extraTools, signal: clientGone.signal })) {
           if (event.type === "conversation") conversationId = event.id;
+          if (event.type === "support") supported = true;
           send(event);
         }
       } catch (error) {
         // Never log error messages here: database errors include query parameters (the student's text).
         console.error("[counselor] request failed", error instanceof Error ? error.name : "unknown");
-        send({ type: "notice", text: "Sorry, something went wrong. Please try again." });
+        // Whatever failed, a message that plainly signals a crisis still gets crisis resources, and
+        // resources already sent are never followed by an error.
+        if (!supported) {
+          const screen = screenWithRulesOnly(parsed.data.text);
+          send(screen.supportMessage ? { type: "support", text: screen.supportMessage } : { type: "notice", text: "Sorry, something went wrong. Please try again." });
+        }
         send({ type: "done", messageId: null });
       } finally {
         finished();
@@ -80,9 +82,9 @@ export async function POST(req: Request) {
 
   after(async () => {
     await done;
-    if (!conversationId) return;
+    if (!conversationId || supported) return;
     try {
-      await updateMemory(db, user.id, conversationId, { knownNames });
+      await updateMemory(await getDb(), user.id, conversationId, { knownNames });
     } catch (error) {
       console.error("[counselor] memory update failed", error instanceof Error ? error.name : "unknown");
     }

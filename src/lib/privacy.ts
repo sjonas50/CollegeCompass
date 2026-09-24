@@ -191,7 +191,7 @@ async function exportPlanningData(db: Db, studentId: string) {
       .innerJoin(counselorConversations, eq(counselorConversations.id, counselorMessages.conversationId))
       .where(eq(counselorConversations.userId, studentId)),
     db.select({ notes: counselorMemory.notes, updatedAt: counselorMemory.updatedAt }).from(counselorMemory).where(eq(counselorMemory.userId, studentId)),
-    db.select({ weekStart: reminderSends.weekStart, sentAt: reminderSends.sentAt }).from(reminderSends).where(eq(reminderSends.userId, studentId)),
+    db.select({ weekStart: reminderSends.weekStart, claimedAt: reminderSends.claimedAt, sentAt: reminderSends.sentAt }).from(reminderSends).where(eq(reminderSends.userId, studentId)),
   ]);
   return {
     courses: courses.map(({ userId: _userId, ...c }) => c),

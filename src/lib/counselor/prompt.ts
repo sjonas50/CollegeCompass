@@ -57,8 +57,11 @@ export type StudentContextData = {
   topMatches?: string[];
   steps?: { text: string; done: boolean }[];
   memory?: string[];
-  concernFlagged?: boolean;
 };
+
+/** Its own system block, since a conversation can enter support mode after its context is saved. */
+export const CONCERN_NOTE =
+  "Earlier in this conversation the student shared something concerning and was given crisis resources. Be gentle and supportive, check how they're doing, keep encouraging them to reach a trusted adult, and don't push planning tasks unless they bring them up.";
 
 /** Formats the private per-student context block (pure, so evals use the exact same text). */
 export function formatStudentContext(d: StudentContextData): string {
@@ -82,11 +85,6 @@ export function formatStudentContext(d: StudentContextData): string {
       : "- No steps picked for this week yet.",
   );
   if (d.memory?.length) lines.push(`- Notes from earlier conversations: ${d.memory.join(" | ")}`);
-  if (d.concernFlagged) {
-    lines.push(
-      "- Earlier in this conversation the student shared something concerning and was given crisis resources. Be gentle and supportive, check how they're doing, keep encouraging them to reach a trusted adult, and don't push planning tasks unless they bring them up.",
-    );
-  }
   return lines.join("\n");
 }
 
@@ -97,7 +95,7 @@ export function formatStudentContext(d: StudentContextData): string {
 export async function buildStudentContext(
   db: Db,
   student: { id: string; grade: number | null },
-  opts: { concernFlagged?: boolean; now?: Date; knownNames?: string[] } = {},
+  opts: { now?: Date; knownNames?: string[] } = {},
 ): Promise<string> {
   const now = opts.now ?? new Date();
   const [interests, personality, values, run, stars, steps, memory] = await Promise.all([
@@ -124,6 +122,5 @@ export async function buildStudentContext(
     // Step text is typed by the student, so it's scrubbed like any other message.
     steps: steps.map((s) => ({ text: scrubPii(s.text, opts.knownNames), done: s.status === "done" })),
     memory: memory[0]?.notes,
-    concernFlagged: opts.concernFlagged,
   });
 }

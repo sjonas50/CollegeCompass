@@ -14,16 +14,23 @@ import {
   flagConversation,
   getOwnedConversation,
   listMessages,
+  saveConversationContext,
 } from "./conversations";
-import { COUNSELOR_SYSTEM, buildStudentContext } from "./prompt";
+import { CONCERN_NOTE, COUNSELOR_SYSTEM, buildStudentContext } from "./prompt";
 import { type ToolContext, counselorTools } from "./tools";
 
 export const MAX_MESSAGE_CHARS = 2000;
 export const RATE_LIMIT = { count: 20, windowMs: 10 * 60_000 };
+/** Safety screening for messages past RATE_LIMIT. */
+export const SCREEN_LIMIT = { count: 60, windowMs: 10 * 60_000 };
+/** How long a conversation keeps its saved student context (see studentContext). */
+const CONTEXT_REUSE_MS = 60 * 60_000;
 
 export type CounselorEvent =
   | { type: "conversation"; id: string }
   | { type: "delta"; text: string }
+  /** Replaces the streamed reply, e.g. to take back a draft that ended in a refusal. */
+  | { type: "replace"; text: string }
   | { type: "support"; text: string }
   | { type: "notice"; text: string }
   | { type: "done"; messageId: string | null };
@@ -38,6 +45,18 @@ type Deps = {
   /** Aborted when the client disconnects; stops generation. */
   signal?: AbortSignal;
 };
+
+/**
+ * Normalizes a student's message: vertical tabs and form feeds become newlines, and other control
+ * characters (which Postgres rejects or that render as nothing) are removed.
+ */
+export function cleanMessage(text: string): string {
+  return text
+    .replace(/\r\n?/g, "\n")
+    .replace(/[\u000B\u000C]/g, "\n")
+    .replace(/[\u0000-\u0008\u000E-\u001F\u007F]/g, "")
+    .trim();
+}
 
 export const NOTICES = {
   unavailable: "The counselor isn't available right now. Please try again a little later.",
@@ -84,6 +103,8 @@ class TextQueue {
   }
 }
 
+type Conversation = NonNullable<Awaited<ReturnType<typeof getOwnedConversation>>>;
+
 type GenerationResult = {
   /** Text the student may keep (a refused attempt's text is excluded). */
   text: string;
@@ -120,33 +141,58 @@ export async function* respond(
   input: { conversationId?: string; text: string },
   deps: Deps = {},
 ): AsyncGenerator<CounselorEvent> {
-  const text = input.text.trim().slice(0, MAX_MESSAGE_CHARS);
+  const text = cleanMessage(input.text).slice(0, MAX_MESSAGE_CHARS);
   if (!text) return;
   const knownNames = [student.displayName, student.username].filter((n): n is string => Boolean(n));
 
-  // Rate limit first: a limited request makes no model calls and writes nothing, but a message
-  // that plainly signals a crisis still gets help (keyword rules only).
+  // Rate limit first: a limited request gets no counselor reply. It is still screened in full, so a
+  // student in crisis gets help however many messages they've sent. Screening has its own, higher
+  // cap; past that, keyword rules alone decide.
   if (!(await consumeRateLimit(db, `counselor:${student.id}`, RATE_LIMIT.count, RATE_LIMIT.windowMs, deps.now))) {
-    const screen = screenWithRulesOnly(text);
-    if (screen.supportMessage) {
-      yield { type: "support", text: screen.supportMessage };
-      // Record it for human review, capped so this path can't be used to flood the queue.
-      if (screen.category && (await consumeRateLimit(db, `safety-record:${student.id}`, 20, 24 * 60 * 60_000, deps.now))) {
+    const screened = await safely("rate-limit screening cap", () =>
+      consumeRateLimit(db, `safety-screen:${student.id}`, SCREEN_LIMIT.count, SCREEN_LIMIT.windowMs, deps.now),
+    );
+    // A failed cap check errs toward screening.
+    const screen = screened !== false ? await assessMessage(db, student.id, text, { client: deps.client, knownNames }) : screenWithRulesOnly(text);
+    if (!screen.supportMessage) {
+      yield { type: "notice", text: NOTICES.rateLimited };
+      yield { type: "done", messageId: null };
+      return;
+    }
+    yield { type: "support", text: screen.supportMessage };
+    // Keep the exchange so the student sees it and the next turn stays in support mode. When rules
+    // alone decided, the writes are capped so this path can't be used to flood the review queue.
+    const record =
+      screened !== false ||
+      (await safely("safety record cap", () => consumeRateLimit(db, `safety-record:${student.id}`, 20, 24 * 60 * 60_000, deps.now))) !== false;
+    let messageId: string | null = null;
+    if (record) {
+      if (screened === false && screen.category) {
+        const category = screen.category;
         await safely("record rate-limited safety event", () =>
           db.insert(safetyEvents).values({
             userId: student.id,
-            category: screen.category!,
+            category,
             severity: screen.severity === "imminent" ? "imminent" : "high",
             sources: ["rules", "rate_limited"],
             excerpt: text.slice(0, 1000),
           }),
         );
       }
-      yield { type: "done", messageId: null };
-      return;
+      const conv = await safely("open conversation", async () =>
+        (input.conversationId ? await getOwnedConversation(db, student.id, input.conversationId) : null) ??
+        (await createConversation(db, student.id, text)),
+      );
+      if (conv) {
+        yield { type: "conversation", id: conv.id };
+        await safely("store user message", () => appendMessage(db, conv.id, { role: "user", content: text }));
+        await safely("flag conversation", () => flagConversation(db, conv.id));
+        messageId = await safely("store support message", () =>
+          appendMessage(db, conv.id, { role: "assistant", kind: "support", content: screen.supportMessage! }),
+        );
+      }
     }
-    yield { type: "notice", text: NOTICES.rateLimited };
-    yield { type: "done", messageId: null };
+    yield { type: "done", messageId };
     return;
   }
 
@@ -163,7 +209,10 @@ export async function* respond(
   const onClientAbort = () => abort.abort();
   deps.signal?.addEventListener("abort", onClientAbort);
   let settled = false;
+  // Never rejects (generate turns failures into outcomes), so an early return can't leave an
+  // unhandled rejection behind.
   const generation = generate(conversation, history)
+    .catch((): GenerationResult => ({ text: "", outcome: "error" }))
     .finally(() => {
       settled = true;
       queue.close();
@@ -176,7 +225,7 @@ export async function* respond(
       abort.abort();
       // Crisis resources go out first; nothing below may keep them from the student.
       yield { type: "support", text: safety.supportMessage };
-      await generation.catch(() => undefined);
+      await generation;
       await safely("flag conversation", () => flagConversation(db, conversation.id));
       const id = await safely("store support message", () =>
         appendMessage(db, conversation.id, { role: "assistant", kind: "support", content: safety.supportMessage! }),
@@ -185,8 +234,14 @@ export async function* respond(
       return;
     }
 
-    for await (const delta of queue.drain()) yield { type: "delta", text: delta };
+    let shown = "";
+    for await (const delta of queue.drain()) {
+      shown += delta;
+      yield { type: "delta", text: delta };
+    }
     const result = await generation;
+    // The student saw every delta; the stored reply may be shorter (a refused attempt is dropped).
+    if (result.text !== shown) yield { type: "replace", text: result.text };
 
     let messageId: string | null = null;
     if (result.text.trim()) {
@@ -219,10 +274,7 @@ export async function* respond(
     deps.signal?.removeEventListener("abort", onClientAbort);
   }
 
-  async function generate(
-    conv: { id: string; concernFlagged: boolean },
-    prior: Awaited<ReturnType<typeof listMessages>>,
-  ): Promise<GenerationResult> {
+  async function generate(conv: Conversation, prior: Awaited<ReturnType<typeof listMessages>>): Promise<GenerationResult> {
     let client: Anthropic;
     try {
       await assertWithinBudget(db, student.id, deps.now);
@@ -233,7 +285,6 @@ export async function* respond(
     }
 
     const model = modelFor("counselor");
-    const context = await buildStudentContext(db, student, { concernFlagged: conv.concernFlagged, now: deps.now, knownNames });
     const window = prior.filter((m) => m.kind !== "notice");
     const messages: Anthropic.Beta.BetaMessageParam[] = window
       .slice(historyStart(window.length))
@@ -247,6 +298,7 @@ export async function* respond(
     let inProgress = "";
     let lastStop: string | null = null;
     try {
+      const context = await studentContext(conv);
       const runner = client.beta.messages.toolRunner(
         {
           model,
@@ -261,6 +313,7 @@ export async function* respond(
           system: [
             { type: "text", text: COUNSELOR_SYSTEM, cache_control: { type: "ephemeral" } },
             { type: "text", text: context },
+            ...(conv.concernFlagged ? [{ type: "text" as const, text: CONCERN_NOTE }] : []),
           ],
           tools: counselorTools({ db, userId: student.id, grade: student.grade, extra: deps.extraTools }),
           messages,
@@ -282,7 +335,9 @@ export async function* respond(
         if (message.stop_reason === "refusal") return { text: kept, outcome: "refusal" };
         kept += inProgress;
         inProgress = "";
-        if (message.stop_reason === "max_tokens") return { text: kept, outcome: "incomplete" };
+        if (message.stop_reason === "max_tokens" || message.stop_reason === "model_context_window_exceeded") {
+          return { text: kept, outcome: "incomplete" };
+        }
         // Separate text written before and after a tool call.
         if (message.stop_reason === "tool_use" && kept && !/\s$/.test(kept)) {
           kept += "\n\n";
@@ -297,5 +352,18 @@ export async function* respond(
       console.error("[counselor] generation failed", error instanceof Anthropic.APIError ? `${error.status} ${error.name}` : error instanceof Error ? error.name : "unknown");
       return { text: kept + inProgress, outcome: "error" };
     }
+  }
+
+  /**
+   * The student context for this conversation. Within a session it is reused byte-for-byte, so a
+   * step checked off or a memory update doesn't invalidate the cached prompt; after a break (when
+   * the cache has expired anyway) it is rebuilt from current data.
+   */
+  async function studentContext(conv: Conversation): Promise<string> {
+    // updatedAt comes from the database clock, so this compares against real time, not deps.now.
+    if (conv.context && Date.now() - conv.updatedAt.getTime() < CONTEXT_REUSE_MS) return conv.context;
+    const context = await buildStudentContext(db, student, { now: deps.now, knownNames });
+    await safely("save context", () => saveConversationContext(db, conv.id, context));
+    return context;
   }
 }

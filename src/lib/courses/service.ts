@@ -129,9 +129,9 @@ export type PlanSummary = {
 export async function planSummary(db: Db, userId: string): Promise<PlanSummary> {
   const [courses, [user]] = await Promise.all([
     listCourses(db, userId),
-    db.select({ displayName: users.displayName }).from(users).where(eq(users.id, userId)),
+    db.select({ displayName: users.displayName, username: users.username }).from(users).where(eq(users.id, userId)),
   ]);
-  const knownNames = user ? [user.displayName] : [];
+  const knownNames = [user?.displayName, user?.username].filter((n): n is string => Boolean(n));
   const gpa = computeGpa(courses);
   const checklist = collegePrepChecklist(courses);
   const suggestions = await courseSuggestions(db, userId, courses);

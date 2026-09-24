@@ -3,11 +3,13 @@ import { type Db, createTestDb, schema } from "@/db";
 import { registerStudent } from "@/lib/accounts";
 import { INTEREST_ITEMS, type Riasec } from "@/lib/assessments/instruments";
 import { completeAttempt, saveResponses, startOrResumeAttempt } from "@/lib/assessments/service";
+import { costMicros } from "@/lib/ai/models";
 import { getCareer, searchCareers } from "@/lib/careers";
 import { MAX_NORTH_STARS, addNorthStar, listNorthStars } from "@/lib/goals";
 import { explainLatestMatches } from "@/lib/matching/explain";
 import { computeMatches, latestMatchRun, loadOccupationProfiles } from "@/lib/matching/service";
 import { deleteStudent, exportStudentData } from "@/lib/privacy";
+import { fallbackUsage, stubAnthropic } from "./anthropic-stub";
 
 const now = new Date("2026-09-23T12:00:00Z");
 let db: Db;
@@ -54,11 +56,17 @@ async function completeInterests() {
   return computeMatches(db, userId);
 }
 
+/** A stand-in for the Anthropic client that returns fixed output (null: refuses). */
 function fakeClient(output: unknown) {
   return {
     beta: {
       messages: {
-        parse: async () => ({ stop_reason: output ? "end_turn" : "refusal", parsed_output: output, usage: { input_tokens: 800, output_tokens: 300 } }),
+        create: async (params: { model: string }) => ({
+          model: params.model,
+          stop_reason: output ? "end_turn" : "refusal",
+          content: output ? [{ type: "text", text: JSON.stringify(output) }] : [],
+          usage: { input_tokens: 800, output_tokens: 300 },
+        }),
       },
     },
   } as never;
@@ -101,6 +109,43 @@ describe("discover flow", () => {
       "Combines figuring things out and hands-on work, which lines up with your investigative and realistic interests.",
     );
     expect((await latestMatchRun(db, userId))?.explanation).toBeNull();
+  });
+
+  it("records usage when the explanation is cut off at max_tokens, and falls back to the template", async () => {
+    await completeInterests();
+    const { client } = stubAnthropic(() => ({
+      stop_reason: "max_tokens",
+      text: '{"overview":"You love figuring things out.","careers":[{"code":"19-2031.00","why":"Chem',
+      usage: { input_tokens: 800, output_tokens: 4000 },
+    }));
+    const explanation = await explainLatestMatches(db, userId, { now, client });
+    expect(explanation?.source).toBe("template");
+    expect(await db.select().from(schema.aiUsage)).toMatchObject([{ feature: "explain", inputTokens: 800, outputTokens: 4000 }]);
+    expect((await latestMatchRun(db, userId))?.explanation).toBeNull();
+  });
+
+  it("records usage when the model refuses with non-JSON text", async () => {
+    await completeInterests();
+    const { client } = stubAnthropic(() => ({ stop_reason: "refusal", text: "I can't help with that." }));
+    expect((await explainLatestMatches(db, userId, { now, client }))?.source).toBe("template");
+    expect(await db.select().from(schema.aiUsage)).toHaveLength(1);
+  });
+
+  it("charges each fallback attempt at the model that ran it", async () => {
+    await completeInterests();
+    const { client, requests } = stubAnthropic((body) => ({
+      text: JSON.stringify({ overview: "You love figuring things out.", careers: [{ code: "19-2031.00", why: "Chemists experiment." }] }),
+      model: "claude-opus-4-8",
+      usage: fallbackUsage(body.model, "claude-opus-4-8"),
+    }));
+    expect((await explainLatestMatches(db, userId, { now, client }))?.source).toBe("ai");
+    const requested = requests[0].model;
+    const rows = await db.select().from(schema.aiUsage);
+    expect(rows.map((r) => r.model).sort()).toEqual([requested, "claude-opus-4-8"].sort());
+    expect(rows.reduce((s, r) => s + r.costMicros, 0)).toBe(
+      costMicros(requested, { input_tokens: 1000, output_tokens: 400 }) +
+        costMicros("claude-opus-4-8", { input_tokens: 1000, output_tokens: 200 }),
+    );
   });
 
   it("limits students to two north stars", async () => {

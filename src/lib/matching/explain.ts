@@ -10,7 +10,8 @@ import { latestResult } from "../assessments/service";
 import { getAnthropic } from "../ai/client";
 import { modelFor, supportsEffort } from "../ai/models";
 import { toAiContext } from "../ai/privacy";
-import { assertWithinBudget, recordUsage } from "../ai/usage";
+import { readStructuredOutput } from "../ai/structured";
+import { assertWithinBudget, recordMessageUsage } from "../ai/usage";
 import { currentGrade } from "../auth/age";
 import { latestMatchRun, loadOccupationProfiles } from "./service";
 import { pathwayFor } from "./match";
@@ -126,7 +127,8 @@ export async function explainLatestMatches(db: Db, userId: string, opts: Options
       })),
     };
 
-    const message = await client.beta.messages.parse({
+    // `create`, not `parse`: parse throws on unparseable output before the billed usage is recorded.
+    const message = await client.beta.messages.create({
       model,
       max_tokens: 4000,
       betas: ["server-side-fallback-2026-07-01"],
@@ -135,8 +137,8 @@ export async function explainLatestMatches(db: Db, userId: string, opts: Options
       system: SYSTEM,
       messages: [{ role: "user", content: `Explain these results to the student:\n${JSON.stringify(facts, null, 2)}` }],
     });
-    await recordUsage(db, userId, "explain", model, message.usage);
-    const parsed = message.stop_reason === "refusal" ? null : message.parsed_output;
+    await recordMessageUsage(db, userId, "explain", model, message);
+    const parsed = readStructuredOutput(message, Explanation);
     if (!parsed) return fallback;
 
     // Keep only careers we asked about, in our order; fill any the model skipped from the template.

@@ -44,3 +44,19 @@ describe("recordMessageUsage", () => {
     ]);
   });
 });
+
+describe("messageCostMicros", () => {
+  it("sums each attempt at its own model, or prices the served model when there are no iterations", async () => {
+    const { messageCostMicros } = await import("./usage");
+    const declined = { input_tokens: 1000, output_tokens: 400 };
+    const rescue = { input_tokens: 1000, output_tokens: 200 };
+    expect(
+      messageCostMicros("claude-opus-5-5", {
+        model: "claude-opus-5",
+        usage: { ...rescue, iterations: [{ type: "message", model: "claude-opus-5-5", ...declined }, { type: "fallback_message", model: "claude-opus-5", ...rescue }] },
+      }),
+    ).toBe(costMicros("claude-opus-5-5", declined) + costMicros("claude-opus-5", rescue));
+    // Sticky routing: no iterations, but a different model answered than the one requested.
+    expect(messageCostMicros("claude-opus-5-5", { model: "claude-opus-5", usage: rescue })).toBe(costMicros("claude-opus-5", rescue));
+  });
+});
