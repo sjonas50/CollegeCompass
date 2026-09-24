@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 // Kept in sync with src/lib/auth/cookies.ts; proxy code shouldn't import server modules.
 const SESSION_COOKIE = "cc_session";
 const SESSION_COOKIE_MAX_AGE = 30 * 24 * 60 * 60;
-const PROTECTED_PREFIXES = ["/dashboard", "/parent", "/discover", "/plan", "/roadmap", "/counselor"];
+const PROTECTED_PREFIXES = ["/dashboard", "/parent", "/discover", "/plan", "/roadmap", "/counselor", "/applications"];
 // Parent consent links must work before the parent has an account.
 const PUBLIC_EXCEPTIONS = ["/parent/consent/"];
 

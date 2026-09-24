@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import type { Db } from "@/db";
 import {
   aiUsage,
@@ -6,6 +6,7 @@ import {
   assessmentResponses,
   assessmentResults,
   careerMatches,
+  collegeList,
   consentRecords,
   counselorConversations,
   counselorMemory,
@@ -113,6 +114,12 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
   ]);
 
   const planning = await exportPlanningData(db, studentId);
+  // Phase 3: colleges and programs on the student's list, with deadlines, checklist, aid offers and notes.
+  const listRows = await db
+    .select()
+    .from(collegeList)
+    .where(eq(collegeList.userId, studentId))
+    .orderBy(asc(collegeList.createdAt), asc(collegeList.id));
 
   await audit(db, "student.exported", { actorUserId: requesterId, subjectUserId: studentId });
   return {
@@ -129,6 +136,7 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
     careerMatches: runs.map((r) => ({ ...r, matches: matches.filter((m) => m.runId === r.id) })),
     northStars: goals,
     ...planning,
+    collegeList: listRows.map(({ userId: _userId, ...entry }) => entry),
   };
 }
 
