@@ -194,10 +194,10 @@ async function exportPlanningData(db: Db, studentId: string) {
     db.select({ weekStart: reminderSends.weekStart, sentAt: reminderSends.sentAt }).from(reminderSends).where(eq(reminderSends.userId, studentId)),
   ]);
   return {
-    courses: courses.map(({ userId: _u, ...c }) => c),
+    courses: courses.map(({ userId: _userId, ...c }) => c),
     roadmapProgress: milestones,
-    weeklySteps: steps.map(({ userId: _u, ...s }) => s),
-    counselorConversations: conversations.map(({ userId: _u, ...c }) => ({
+    weeklySteps: steps.map(({ userId: _userId, ...s }) => s),
+    counselorConversations: conversations.map(({ userId: _userId, ...c }) => ({
       ...c,
       messages: messages.filter((m) => m.conversationId === c.id),
     })),
