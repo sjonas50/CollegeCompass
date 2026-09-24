@@ -1,0 +1,53 @@
+{
+  "language": "es",
+  "updated": "2026-09-23",
+  "review": { "status": "draft" },
+  "sections": [
+    {
+      "id": "how-aid-works",
+      "title": "Cómo funciona la ayuda financiera (provisional)",
+      "summary": "TEXTO PROVISIONAL: aquí irá una oración sobre cómo funciona la ayuda financiera.",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "text": "TEXTO PROVISIONAL. La guía real, con datos verificados, reemplazará toda esta sección. Explicará las subvenciones, las becas, el programa de estudio y trabajo y los préstamos en palabras sencillas. La información oficial está en https://studentaid.gov."
+        },
+        {
+          "kind": "list",
+          "heading": "Lista provisional",
+          "items": ["TEXTO PROVISIONAL: primer elemento.", "TEXTO PROVISIONAL: segundo elemento.", "TEXTO PROVISIONAL: tercer elemento."]
+        },
+        {
+          "kind": "tip",
+          "text": "TEXTO PROVISIONAL: aquí irá un consejo útil."
+        }
+      ],
+      "sources": [{ "title": "FUENTE PROVISIONAL: Ayuda Federal para Estudiantes", "url": "https://studentaid.gov" }]
+    },
+    {
+      "id": "comparing-aid-offers",
+      "title": "Cómo comparar ofertas de ayuda (provisional)",
+      "summary": "TEXTO PROVISIONAL: aquí irá una oración sobre cómo comparar ofertas de ayuda.",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "text": "TEXTO PROVISIONAL. La guía real, con datos verificados, reemplazará toda esta sección. Mostrará cómo comparar las ofertas de ayuda de distintas escuelas y programas."
+        },
+        {
+          "kind": "steps",
+          "heading": "Pasos provisionales",
+          "items": ["TEXTO PROVISIONAL: primer paso.", "TEXTO PROVISIONAL: segundo paso.", "TEXTO PROVISIONAL: tercer paso."]
+        },
+        {
+          "kind": "warning",
+          "heading": "Advertencia provisional",
+          "text": "TEXTO PROVISIONAL: aquí irá algo a lo que hay que prestar atención."
+        }
+      ],
+      "sources": [
+        { "title": "FUENTE PROVISIONAL: Ayuda Federal para Estudiantes", "url": "https://studentaid.gov" },
+        { "title": "FUENTE PROVISIONAL: Oficina para la Protección Financiera del Consumidor", "url": "https://www.consumerfinance.gov/paying-for-college/" }
+      ]
+    }
+  ]
+}

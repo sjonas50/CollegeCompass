@@ -1,0 +1,53 @@
+{
+  "language": "en",
+  "updated": "2026-09-23",
+  "review": { "status": "draft" },
+  "sections": [
+    {
+      "id": "how-aid-works",
+      "title": "How financial aid works (placeholder)",
+      "summary": "PLACEHOLDER: one sentence about how financial aid works will go here.",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "text": "PLACEHOLDER TEXT. The real, fact-checked guide will replace this whole section. It will explain grants, scholarships, work-study and loans in plain words. Official information is at https://studentaid.gov."
+        },
+        {
+          "kind": "list",
+          "heading": "Placeholder list",
+          "items": ["PLACEHOLDER: first list item.", "PLACEHOLDER: second list item.", "PLACEHOLDER: third list item."]
+        },
+        {
+          "kind": "tip",
+          "text": "PLACEHOLDER: a helpful tip will go here."
+        }
+      ],
+      "sources": [{ "title": "PLACEHOLDER source: Federal Student Aid", "url": "https://studentaid.gov" }]
+    },
+    {
+      "id": "comparing-aid-offers",
+      "title": "Comparing aid offers (placeholder)",
+      "summary": "PLACEHOLDER: one sentence about comparing aid offers will go here.",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "text": "PLACEHOLDER TEXT. The real, fact-checked guide will replace this whole section. It will show how to compare aid offers from different schools and programs."
+        },
+        {
+          "kind": "steps",
+          "heading": "Placeholder steps",
+          "items": ["PLACEHOLDER: step one.", "PLACEHOLDER: step two.", "PLACEHOLDER: step three."]
+        },
+        {
+          "kind": "warning",
+          "heading": "Placeholder warning",
+          "text": "PLACEHOLDER: something to be careful about will go here."
+        }
+      ],
+      "sources": [
+        { "title": "PLACEHOLDER source: Federal Student Aid", "url": "https://studentaid.gov" },
+        { "title": "PLACEHOLDER source: Consumer Financial Protection Bureau", "url": "https://www.consumerfinance.gov/paying-for-college/" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+/*
+ * Printing the financial aid guide: families often print the FAFSA steps to fill in at a kitchen
+ * table or bring to a counselor. Every rule is scoped to pages that contain the guide
+ * ([data-aid-guide]), because stylesheets can stay loaded after navigating to other pages.
+ * The guide's own navigation hides itself with Tailwind's print:hidden; these rules handle the
+ * site-wide header, footer and skip link, and force dark ink on white paper.
+ */
+@media print {
+  :root:has([data-aid-guide]) {
+    --background: #ffffff;
+    --surface: #ffffff;
+    --foreground: #000000;
+    --muted: #333333;
+    --border: #999999;
+    --accent: #000000;
+    --accent-soft: #ffffff;
+    --danger: #000000;
+    --danger-soft: #ffffff;
+  }
+
+  body:has([data-aid-guide]) > a[href="#main"],
+  body:has([data-aid-guide]) > header,
+  body:has([data-aid-guide]) > footer {
+    display: none !important;
+  }
+
+  body:has([data-aid-guide]) > main {
+    max-width: none;
+    padding: 0;
+  }
+
+  [data-aid-guide] {
+    max-width: none;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  [data-aid-guide] h1,
+  [data-aid-guide] h2 {
+    break-after: avoid;
+  }
+}
