@@ -34,6 +34,9 @@ change settings.
 | `npm run data:check-scorecard` | Checks loaded college and program data against the live College Scorecard API for 12 test schools |
 | `npm run check:matching` | Checks career matches for test students of every interest type against the real data |
 | `npm run eval:safety` | Live eval of the safety classifier (calls the Anthropic API; costs money) |
+| `npm run eval:counselor` | Live eval of the AI counselor (calls the Anthropic API; costs money) |
+| `npm run admin:create` | Creates a staff account for `/admin` (see [The first admin](#8-the-first-admin)) |
+| `npm run access:grant` | Gives a household comp or sponsored access (see [`docs/operations.md`](docs/operations.md)) |
 
 ## Reference data
 
@@ -96,8 +99,9 @@ Stripe for payments. Before real families sign up, work through
 [`docs/operations.md`](docs/operations.md).
 
 `src/env.ts` checks the configuration on the first request. In production it refuses to start
-without `DATABASE_URL`, `CRON_SECRET`, a real email transport and a real consent verifier. A
-misconfigured deploy still builds, but every request fails, and `/api/health` returns 503.
+without `DATABASE_URL`, `CRON_SECRET`, an `https://` `APP_URL`, a real email transport and sender
+address, and a real consent verifier. A misconfigured deploy still builds, but every request fails,
+and `/api/health` returns 503.
 
 ### 1. Database
 
@@ -143,7 +147,7 @@ commercial, so move to Pro before you turn on Stripe checkout for real families.
 | `CONSENT_REQUEST_TTL_DAYS` | No | Days a parent consent link stays valid (default 7, 1–30). Expired requests and the parent's email are deleted by the daily sweep. |
 | `EMAIL_TRANSPORT` | Yes | `resend` in production. `log` (the default) prints emails to the console and is refused in production. |
 | `RESEND_API_KEY` | Yes, with Resend | A Resend API key with sending access only. |
-| `EMAIL_FROM` | Yes | The sender, like `College Compass <hello@mail.example.org>`. Must use the domain you verified in Resend. |
+| `EMAIL_FROM` | Yes | The sender: an address, alone or with a name, like `College Compass <hello@mail.example.org>`. Must use the domain you verified in Resend. Checked in every environment; with Resend, `localhost` and domains without a dot are refused. |
 | `CRON_SECRET` | Yes | At least 16 random characters (`openssl rand -hex 32`). Vercel sends it with every cron call; the cron routes reject calls without it. |
 | `ANTHROPIC_API_KEY` | Yes, for AI | Without it, safety screening uses the keyword rules only and the AI counselor and career explanations are off. |
 | `AI_MODEL_SAFETY` | No | Model for the safety check (default `claude-opus-5`). Run the safety eval before changing it. |
@@ -153,7 +157,7 @@ commercial, so move to Pro before you turn on Stripe checkout for real families.
 | `TRIAL_DAYS` | No | Length of every new household's free trial (default 14). |
 | `FREE_ACCESS_MONTHS` | No | How long a free-access grant lasts before the family renews it (default 12). |
 | `STRIPE_SECRET_KEY` | No | Turns on paid checkout. Without Stripe keys, families use the trial and free access only. |
-| `STRIPE_WEBHOOK_SECRET` | With Stripe | Signing secret of the webhook endpoint (`whsec_...`). |
+| `STRIPE_WEBHOOK_SECRET` | With Stripe | Signing secret of the webhook endpoint (`whsec_...`). On your computer, use the one `stripe listen` prints (see [Payments](#7-payments-stripe)). |
 | `STRIPE_PRICE_MONTHLY` | With Stripe | Price id (`price_...`) of the monthly family plan. |
 | `STRIPE_PRICE_ANNUAL` | No | Price id of the annual family plan. |
 | `NODE_ENV` | Set by Vercel | `production` on Vercel (previews too), which turns on the checks above. |
@@ -190,21 +194,30 @@ Student data is never touched. Do the same for the Preview database.
 
 | Route | Schedule (UTC) | What it does |
 | --- | --- | --- |
-| `/api/cron/sweep` | Daily, 09:00 | Deletes expired parent consent requests (and the parent's email with them), expired sessions and old rate-limit rows. |
+| `/api/cron/sweep` | Daily, 09:00 | Deletes expired parent consent requests (and the parent's email with them), expired sessions, old rate-limit rows, and Stripe event ids older than 30 days. |
 | `/api/cron/weekly-reminders` | Mondays, 13:00 | Sends each student (or a younger student's parent) a weekly look back and ahead. |
 
 **Hobby vs Pro.** Hobby allows one run a day per job and may start it any time within the hour.
-The weekly reminders then get one run a week: it stops starting new emails after about
-4.5 minutes, and anything that didn't go out that week (including failed sends) is not retried
-unless you run the job again by hand. That is plenty for a pilot of 10–20 families. On Pro, change the schedule to hourly on Mondays
-(`"0 13-18 * * 1"`), so later runs finish a big week and retry failures. Re-runs never send
-anything twice.
+The weekly reminders then get one run a week: it stops starting new emails after 4 minutes, and
+anything that didn't go out that week (including failed sends) is not retried unless you run the
+job again by hand. That is plenty for a pilot of 10–20 families; the Monday check in
+[`docs/operations.md`](docs/operations.md) does the re-run. On Pro, change the schedule to hourly
+on Mondays (`"0 13-18 * * 1"`), so later runs finish a big week and retry failures.
+
+Re-runs never send a reminder twice. Each one is claimed in the database before it's sent, and
+Resend gets the same idempotency key for it on every run, so even an email whose answer got lost
+goes out once. (Resend remembers keys for 24 hours, so re-run the same day.)
 
 To run a job by hand (for example after an outage):
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/cron/sweep
+curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/cron/weekly-reminders
 ```
+
+The reminders job answers with its counts, `{ sent, skipped, failed, uncertain, more }`, and logs
+the same counts in one line, like `[reminders] run sent=12 skipped=0 failed=0 uncertain=0 more=false`
+(a warning when something is left to send). It never logs addresses.
 
 ### 6. Email (Resend)
 
@@ -222,12 +235,23 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/cron/sweep
    `RESEND_API_KEY` and `EMAIL_FROM`.
 6. Send yourself a test: request parent consent on the site with your own address.
 
-How sending works (`src/lib/email.ts`): each attempt times out after 10 seconds. A server error,
-timeout or network error gets one retry after a second, with the same idempotency key, so a
-retry never sends a duplicate. Other errors (a bad address, a bad key, a quota) fail right away.
-Failures are logged as `[email] resend send failed: status=... code=...`, never with the
-recipient, subject or body. Resend allows 10 requests a second per team by default; the weekly
-reminders send at most 5 at a time.
+How sending works (`src/lib/email.ts`):
+
+- **Pace.** Resend allows 10 requests a second per team. Every request from a server waits its
+  turn so that at most 8 start each second, which leaves room for another server sending at the
+  same moment. The weekly reminders go through the same line.
+- **Retries.** Each email gets up to 3 tries, all with the same idempotency key, so Resend never
+  sends it twice. Each try times out after 10 seconds. A server error, timeout or network error is
+  tried again after a second. A rate limit (`429`) is tried again after the wait Resend asks for.
+  If Resend says it's still working on the same email (`409 concurrent_idempotent_requests`,
+  which follows a timeout), we wait 3 seconds and ask again, and Resend answers with the first
+  try's result. Other errors (a bad address, a bad key, a used-up quota) fail right away.
+- **Uncertain sends.** When no try gets a clear answer (they time out, or Resend is still working
+  on it), the email may still arrive. Parent consent links and parent invitations then stay valid
+  (they expire on their own), and the student is told the email may take a few minutes. Weekly
+  reminders count it as `uncertain`, and a re-run the same day is safe.
+- **Logs.** Failures are logged as `[email] resend send failed: status=... code=...` (or
+  `resend send uncertain`), never with the recipient, subject or body.
 
 ### 7. Payments (Stripe)
 
@@ -253,12 +277,26 @@ Set this up in test mode first (test keys for Preview), then again in live mode 
    the billing period. Turn off quantity changes. Add your privacy policy and terms links, and set
    the default return link to `https://YOUR_DOMAIN/account`.
 4. Set the statement descriptor to something parents will recognize, like `COLLEGE COMPASS`.
-5. Test locally with the Stripe CLI:
-   `stripe listen --forward-to localhost:3000/api/stripe/webhook`, then
-   `stripe trigger checkout.session.completed`.
+5. **Test on your computer** with the Stripe CLI and test-mode keys. (Events made up by
+   `stripe trigger` don't belong to a household, so the app ignores them. Use a real test-mode
+   Checkout instead.)
+   1. In `.env.local`, set `STRIPE_SECRET_KEY` (`sk_test_...`) and `STRIPE_PRICE_MONTHLY` (a
+      test-mode price).
+   2. Run `stripe login` once, then leave this running:
+      `stripe listen --forward-to localhost:3000/api/stripe/webhook`.
+      It prints a signing secret (`whsec_...`). Put that one in `STRIPE_WEBHOOK_SECRET` in
+      `.env.local` (not the Dashboard endpoint's secret: that one only works for events sent to
+      the endpoint), then restart `npm run dev`.
+   3. Sign up as a parent, open **Plan and billing** (`/account/billing`), choose a plan, and pay
+      with the test card `4242 4242 4242 4242` (any future date, any CVC, any ZIP).
+   4. The `stripe listen` window should show each event answered with `[200]`. A `[400]` means
+      `STRIPE_WEBHOOK_SECRET` isn't the secret `stripe listen` printed.
+   5. **Plan and billing** shows the plan as active. To check a change that only the webhook
+      brings, choose **Manage billing**, cancel the plan, go back, and refresh: the page should
+      say the plan is set to end.
 
-We store only Stripe's customer and subscription ids for a household. Card details stay with
-Stripe.
+For each household we keep Stripe's customer and subscription ids, the plan and its status, and
+which parent pays. Card details stay with Stripe.
 
 ### 8. The first admin
 
@@ -307,8 +345,9 @@ after a form post.) Watch the reports for a week, then enforce it.
 ## Operations
 
 - [`docs/operations.md`](docs/operations.md): daily and weekly routines (safety review queue,
-  AI costs, evals), yearly updates (reference data, the aid guide, key dates) and what to do in an
-  incident (AI outage, budget limits, email failures).
+  weekly reminders, AI costs, evals), yearly updates (reference data, the aid guide, key dates),
+  giving a family comp or sponsored access, and what to do in an incident (AI outage, budget
+  limits, email failures).
 - [`docs/pilot-checklist.md`](docs/pilot-checklist.md): what has to be true before the pilot
   starts, and how to bring on the first 10–20 families.
 

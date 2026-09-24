@@ -2,6 +2,18 @@ import * as z from "zod";
 
 const CONSENT_VERIFIERS = ["dev_attestation"] as const;
 
+// "Name <address>" or a bare address. The name can't hold angle brackets or line breaks.
+const SENDER = /^(?:[^<>\u0000-\u001f\u007f]*<([^<>\s]+)>|([^<>\s]+))$/;
+const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
+const ADDRESS = new RegExp(`^[^\\s@<>()[\\]\\\\,;:"]{1,64}@(${DOMAIN_LABEL}(?:\\.${DOMAIN_LABEL})*)$`, "i");
+
+/** The sender address's domain, lowercased, or null when EMAIL_FROM isn't a sender address. */
+function senderDomainOf(from: string): string | null {
+  const sender = SENDER.exec(from);
+  const address = ADDRESS.exec(sender?.[1] ?? sender?.[2] ?? "");
+  return address ? address[1].toLowerCase() : null;
+}
+
 const EnvSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -15,7 +27,8 @@ const EnvSchema = z
     CONSENT_VERIFIER: z.enum(CONSENT_VERIFIERS).default("dev_attestation"),
     CONSENT_REQUEST_TTL_DAYS: z.coerce.number().int().min(1).max(30).default(7),
 
-    EMAIL_FROM: z.string().default("College Compass <no-reply@localhost>"),
+    // The sender: an address, alone or with a name ("College Compass <hello@mail.example.org>").
+    EMAIL_FROM: z.string().trim().default("College Compass <no-reply@localhost>"),
     // "log" prints emails to the server console (development only); "resend" sends through Resend.
     EMAIL_TRANSPORT: z.enum(["log", "resend"]).default("log"),
     RESEND_API_KEY: z.string().optional(),
@@ -42,6 +55,18 @@ const EnvSchema = z
     STRIPE_PRICE_ANNUAL: z.string().optional(),
   })
   .superRefine((env, ctx) => {
+    // Checked everywhere: a broken sender makes every email fail, while the site looks healthy.
+    const senderDomain = senderDomainOf(env.EMAIL_FROM);
+    if (senderDomain === null) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["EMAIL_FROM"],
+        message: 'must be an email address, alone or with a name, like "College Compass <hello@mail.example.org>"',
+      });
+    } else if (env.EMAIL_TRANSPORT === "resend" && (!senderDomain.includes(".") || /(^|\.)localhost$/.test(senderDomain))) {
+      ctx.addIssue({ code: "custom", path: ["EMAIL_FROM"], message: "use an address on your verified sending domain" });
+    }
+
     if (env.NODE_ENV !== "production") return;
     if (!env.DATABASE_URL) {
       ctx.addIssue({ code: "custom", path: ["DATABASE_URL"], message: "required in production" });
@@ -59,9 +84,6 @@ const EnvSchema = z
     // Email links and Stripe return addresses are built from APP_URL.
     if (!env.APP_URL.startsWith("https://") || /\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(env.APP_URL)) {
       ctx.addIssue({ code: "custom", path: ["APP_URL"], message: "must be the site's public https address in production" });
-    }
-    if (env.EMAIL_TRANSPORT === "resend" && /@localhost\b/.test(env.EMAIL_FROM)) {
-      ctx.addIssue({ code: "custom", path: ["EMAIL_FROM"], message: "use an address on your verified sending domain" });
     }
     if (env.EMAIL_TRANSPORT === "resend" && !env.RESEND_API_KEY) {
       ctx.addIssue({ code: "custom", path: ["RESEND_API_KEY"], message: "required when EMAIL_TRANSPORT is resend" });

@@ -6,12 +6,17 @@ import { householdsWithFullAccess } from "./access/service";
 import { upcomingDeadlinesFor } from "./applications/service";
 import { MAX_GRADE, currentGrade, isUnder13 } from "./auth/age";
 import { hashToken } from "./auth/tokens";
-import type { Email } from "./email";
+import { type Email, EmailSendError, isUncertainSend } from "./email";
 import { MILESTONES } from "./roadmap/milestones";
 import { weekStartOf } from "./steps";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BATCH = 500;
+/**
+ * Sends in flight at once. The pace is set in email.ts, where every Resend request waits its turn
+ * (at most 8 start a second, under Resend's limit of 10); a few workers keep that pace even when
+ * each request takes a few hundred milliseconds.
+ */
 const SEND_CONCURRENCY = 5;
 /** An unsent claim this old belongs to a run that died mid-send (a run lasts at most 300 s). */
 const STALE_CLAIM_MS = 15 * 60 * 1000;
@@ -277,7 +282,22 @@ export async function releaseReminder(db: Db, r: ReminderKey) {
   await db.delete(reminderSends).where(and(sendKey(r), isNull(reminderSends.sentAt)));
 }
 
-export type ReminderRunResult = { sent: number; skipped: number; failed: number; more: boolean };
+/**
+ * The Idempotency-Key Resend gets for a reminder. It comes from the reminder itself (student,
+ * week and recipient), so every run that tries it uses the same key and Resend sends it at most
+ * once within 24 hours. Hashed, so it carries no id or address.
+ */
+export function reminderIdempotencyKey(r: ReminderKey) {
+  return `cc-reminder-${hashToken(`${r.userId}:${r.weekStart}:${r.recipientKey}`)}`;
+}
+
+/**
+ * What a run did. `sent`: went out. `skipped`: already sent, claimed by another run, or already
+ * with Resend. `failed`: not sent, and released for the next run. `uncertain`: Resend didn't
+ * answer in time, so it may have gone out; released too, and a re-run within a day is safe (the
+ * same idempotency key means Resend never sends it twice). `more`: the time budget ran out first.
+ */
+export type ReminderRunResult = { sent: number; skipped: number; failed: number; uncertain: number; more: boolean };
 
 export type ReminderRunOptions = {
   appUrl: string;
@@ -296,15 +316,16 @@ export type ReminderRunOptions = {
  * Sends this week's reminders one batch of students at a time, a few sends at once, until done or
  * the deadline passes (`more: true`). Every recipient is claimed before sending and marked sent
  * after, so a later run the same week sends exactly what is left: never claimed, released after a
- * failure, or claimed by a run that died. A failure for one recipient, whether the email provider
- * or the database, is counted and never stops the run.
+ * failure, or claimed by a run that died. Each reminder always goes to Resend with the same
+ * idempotency key, so even a send whose answer was lost goes out only once. A failure for one
+ * recipient, whether the email provider or the database, is counted and never stops the run.
  */
 export async function sendWeeklyReminders(db: Db, opts: ReminderRunOptions): Promise<ReminderRunResult> {
   const now = opts.now ?? new Date();
   const startedAt = Date.now();
   const clock = opts.clock ?? (() => now.getTime() + (Date.now() - startedAt));
   const outOfTime = () => opts.deadline !== undefined && clock() >= opts.deadline;
-  const result: ReminderRunResult = { sent: 0, skipped: 0, failed: 0, more: false };
+  const result: ReminderRunResult = { sent: 0, skipped: 0, failed: 0, uncertain: 0, more: false };
 
   for await (const batch of weeklyReminderBatches(db, opts.appUrl, now, opts.batchSize)) {
     if (outOfTime()) {
@@ -342,7 +363,7 @@ async function unsent(db: Db, batch: Reminder[], nowMs: number) {
   return batch.filter((r) => !legacy.has(r.userId) && !taken.has(`${r.userId}:${r.recipientKey}`));
 }
 
-/** Claim, send, then mark sent (or release after a failed send), each guarded on its own. */
+/** Claim, send, then mark sent (or release after a failed or uncertain send), each guarded on its own. */
 async function deliver(db: Db, r: Reminder, send: ReminderRunOptions["send"], clock: () => number) {
   try {
     if (!(await claimReminder(db, r, new Date(clock())))) return "skipped" as const;
@@ -351,20 +372,32 @@ async function deliver(db: Db, r: Reminder, send: ReminderRunOptions["send"], cl
     return "failed" as const;
   }
   try {
-    await send(r.email);
+    await send({ ...r.email, idempotencyKey: reminderIdempotencyKey(r) });
   } catch (error) {
+    if (error instanceof EmailSendError && error.code === "invalid_idempotent_request") {
+      // Resend already took this reminder in the last 24 hours and its text has changed since
+      // (a step was finished, say). Resend won't send it under this key, and a new key could mean
+      // a second email, so it counts as done.
+      await markSent(db, r, clock);
+      return "skipped" as const;
+    }
     logFailure("send", error);
-    // If the release fails too, the claim goes stale and a later run retries it.
+    // If the release fails too, the claim goes stale and a later run retries it. A retry reuses the
+    // idempotency key, so if an uncertain send did go out, Resend doesn't send it again.
     await releaseReminder(db, r).catch((releaseError: unknown) => logFailure("release", releaseError));
-    return "failed" as const;
+    return isUncertainSend(error) ? ("uncertain" as const) : ("failed" as const);
   }
-  // The email went out, so it is never released. Retry the mark once: a claim left unmarked goes
-  // stale and would be sent again by a later run.
+  // The email went out, so it is never released.
+  await markSent(db, r, clock);
+  return "sent" as const;
+}
+
+/** Retries the mark once: a claim left unmarked goes stale, and a later run would try it again. */
+async function markSent(db: Db, r: Reminder, clock: () => number) {
   const sentAt = new Date(clock());
   await markReminderSent(db, r, sentAt)
     .catch(() => markReminderSent(db, r, sentAt))
     .catch((error: unknown) => logFailure("mark", error));
-  return "sent" as const;
 }
 
 /** Logs the error's name only: messages can carry addresses. */

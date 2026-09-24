@@ -15,7 +15,7 @@ import {
 import { LIVE_STATUSES, subscriptionGrantsAccess } from "./access/entitlement";
 import { audit } from "./audit";
 import { generateToken, hashToken } from "./auth/tokens";
-import type { Email } from "./email";
+import { type Email, isUncertainSend } from "./email";
 import { consumeRateLimit } from "./rate-limit";
 
 // A teen who signed up on their own invites a parent or guardian to link to their account. We
@@ -61,7 +61,10 @@ async function hasLinkedParent(db: Conn, studentId: string) {
 // ---------------------------------------------------------------------------
 
 export type CreateInviteError = "not_eligible" | "has_parent" | "own_email" | "too_many_pending" | "rate_limited" | "send_failed";
-export type CreateInviteResult = { ok: true; inviteId: string; expiresAt: Date } | { ok: false; error: CreateInviteError };
+export type CreateInviteResult =
+  /** `delayed`: Resend didn't answer in time, so the email may take a few minutes (or not come). */
+  | { ok: true; inviteId: string; expiresAt: Date; delayed?: true }
+  | { ok: false; error: CreateInviteError };
 
 export type CreateInviteOptions = {
   /** Base URL for the link in the email. */
@@ -180,15 +183,21 @@ export async function createInvite(
   if (!created.ok) return created;
 
   const link = new URL(`/invite/${token}`, opts.appUrl).toString();
+  let delayed = false;
   try {
     await opts.send(inviteEmail(to, created.studentName, link));
-  } catch {
+  } catch (error) {
     // Nothing is logged: provider errors can echo the address back.
-    await db.delete(parentInvites).where(eq(parentInvites.id, created.inviteId));
-    return { ok: false, error: "send_failed" };
+    // When Resend may still deliver it, the invitation stays so its link works (it holds no
+    // address, and it expires); the student can cancel it like any other.
+    if (!isUncertainSend(error)) {
+      await db.delete(parentInvites).where(eq(parentInvites.id, created.inviteId));
+      return { ok: false, error: "send_failed" };
+    }
+    delayed = true;
   }
   await audit(db, "parent_invite.sent", { actorUserId: studentId, subjectUserId: studentId });
-  return { ok: true, inviteId: created.inviteId, expiresAt };
+  return { ok: true, inviteId: created.inviteId, expiresAt, ...(delayed && { delayed: true as const }) };
 }
 
 export type PendingInvite = { id: string; createdAt: Date; expiresAt: Date };

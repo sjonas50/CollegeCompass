@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
 import { createChildAccount, registerParent, registerStudent } from "@/lib/accounts";
 import { verifyParentConsent } from "@/lib/consent/verifier";
-import type { Email } from "@/lib/email";
+import { type Email, EmailSendError, type SendDeps, sendWithResend } from "@/lib/email";
 import { deleteParentAccount } from "@/lib/privacy";
 import {
   buildWeeklyReminders,
@@ -11,6 +11,7 @@ import {
   markReminderSent,
   releaseReminder,
   reminderGoesToParent,
+  reminderIdempotencyKey,
   reminderSettingFor,
   sendWeeklyReminders,
   setRemindersEnabled,
@@ -243,7 +244,7 @@ describe("reminder claims", () => {
     const [r] = await buildWeeklyReminders(db, APP, now);
     expect(await claimReminder(db, r, now)).toBe(false);
     const send = vi.fn(async (_: Email) => {});
-    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 0, skipped: 1, failed: 0, more: false });
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 0, skipped: 1, failed: 0, uncertain: 0, more: false });
     expect(send).not.toHaveBeenCalled();
 
     // Last week's legacy row doesn't block this week.
@@ -257,12 +258,12 @@ describe("weekly reminder run", () => {
   it("sends each reminder once, marks it sent, and a later run the same day sends nothing new", async () => {
     await teensWithSteps(2);
     const send = vi.fn(async (_: Email) => {});
-    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 2, skipped: 0, failed: 0, more: false });
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 2, skipped: 0, failed: 0, uncertain: 0, more: false });
     const rows = await db.select().from(schema.reminderSends);
     expect(rows).toHaveLength(2);
     expect(rows.every((r) => r.sentAt !== null)).toBe(true);
     const later = new Date(now.getTime() + 60 * MIN);
-    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now: later })).toEqual({ sent: 0, skipped: 2, failed: 0, more: false });
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now: later })).toEqual({ sent: 0, skipped: 2, failed: 0, uncertain: 0, more: false });
     expect(send).toHaveBeenCalledTimes(2);
   });
 
@@ -284,8 +285,8 @@ describe("weekly reminder run", () => {
         },
       });
     };
-    expect(await run(now)).toEqual({ sent: 3, skipped: 0, failed: 0, more: true });
-    expect(await run(new Date(now.getTime() + 60 * MIN))).toEqual({ sent: 2, skipped: 3, failed: 0, more: false });
+    expect(await run(now)).toEqual({ sent: 3, skipped: 0, failed: 0, uncertain: 0, more: true });
+    expect(await run(new Date(now.getTime() + 60 * MIN))).toEqual({ sent: 2, skipped: 3, failed: 0, uncertain: 0, more: false });
     expect(sentTo.sort()).toEqual(["s0", "s1", "s2", "s3", "s4"].map((s) => `${s}@example.com`));
   });
 
@@ -305,7 +306,7 @@ describe("weekly reminder run", () => {
     const [a] = await teensWithSteps(3);
     await failWritesFor(a, "INSERT");
     const send = vi.fn(async (_: Email) => {});
-    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 2, skipped: 0, failed: 1, more: false });
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 2, skipped: 0, failed: 1, uncertain: 0, more: false });
     expect(send.mock.calls.map(([e]) => e.to).sort()).toEqual(["s1@example.com", "s2@example.com"]);
     expect(log).toHaveBeenCalled();
   });
@@ -317,13 +318,13 @@ describe("weekly reminder run", () => {
     const send = vi.fn(async (email: Email) => {
       if (email.to === "s1@example.com") throw new Error("provider down");
     });
-    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 2, skipped: 0, failed: 1, more: false });
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 2, skipped: 0, failed: 1, uncertain: 0, more: false });
 
     await db.execute(sql.raw("DROP TRIGGER fail_delete ON reminder_sends"));
     send.mockImplementation(async () => {});
     // The claim that couldn't be released goes stale, and the next hourly run sends it.
     const later = new Date(now.getTime() + 60 * MIN);
-    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now: later })).toEqual({ sent: 1, skipped: 2, failed: 0, more: false });
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now: later })).toEqual({ sent: 1, skipped: 2, failed: 0, uncertain: 0, more: false });
     expect(send).toHaveBeenLastCalledWith(expect.objectContaining({ to: "s1@example.com" }));
   });
 
@@ -332,8 +333,152 @@ describe("weekly reminder run", () => {
     const [a] = await teensWithSteps(2);
     await failWritesFor(a, "UPDATE");
     const send = vi.fn(async (_: Email) => {});
-    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 2, skipped: 0, failed: 0, more: false });
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 2, skipped: 0, failed: 0, uncertain: 0, more: false });
     expect(await db.select().from(schema.reminderSends)).toHaveLength(2);
+  });
+});
+
+const RESEND = { apiKey: "re_test_key", from: "College Compass <hello@mail.example.org>" };
+const resendJson = (status: number, body: unknown, headers: Record<string, string> = {}) =>
+  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...headers } });
+const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * A stand-in for Resend's API, as its docs describe it: at most 10 requests in any second (then
+ * 429 with Retry-After: 1), and idempotency keys kept for the day. A repeated key gets the first
+ * answer back, or 409 concurrent_idempotent_requests while the first is still going, or 409
+ * invalid_idempotent_request with a different body. Like a real server, a request keeps going
+ * after the caller stops waiting for it.
+ */
+function fakeResend(latencyMs: (request: number) => number = () => 5) {
+  const starts: number[] = [];
+  const delivered: string[] = [];
+  const keys = new Map<string, { body: string; done: boolean }>();
+  const fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
+    const now = performance.now();
+    const request = starts.push(now) - 1;
+    if (starts.filter((t) => t > now - 1000).length > 10) {
+      return resendJson(429, { name: "rate_limit_exceeded" }, { "retry-after": "1" });
+    }
+    const key = new Headers(init?.headers).get("idempotency-key") ?? `none-${request}`;
+    const body = String(init?.body);
+    const seen = keys.get(key);
+    if (seen) {
+      if (seen.body !== body) return resendJson(409, { name: "invalid_idempotent_request" });
+      return seen.done ? resendJson(200, { id: key }) : resendJson(409, { name: "concurrent_idempotent_requests" });
+    }
+    const entry = { body, done: false };
+    keys.set(key, entry);
+    const finished = pause(latencyMs(request)).then(() => {
+      entry.done = true;
+      delivered.push(JSON.parse(body).to[0]);
+    });
+    return new Promise<Response>((resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+      void finished.then(() => resolve(resendJson(200, { id: key })));
+    });
+  }) as typeof globalThis.fetch;
+  /** The most requests that started within any one second. */
+  const busiestSecond = () => Math.max(0, ...starts.map((t) => starts.filter((u) => u >= t && u < t + 1000).length));
+  return { fetch, starts, delivered, busiestSecond };
+}
+
+describe("sending pace and idempotency", () => {
+  it("stays under Resend's limit of 10 requests a second, so no reminder is lost to a 429", async () => {
+    await teensWithSteps(12);
+    const resend = fakeResend();
+    const send = (email: Email) => sendWithResend(email, RESEND, { fetch: resend.fetch });
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 12, skipped: 0, failed: 0, uncertain: 0, more: false });
+    expect(resend.delivered).toHaveLength(12);
+    // 8 start a second by design. A pause in the test process can bunch a couple of starts
+    // together, which Resend's limit of 10 still allows.
+    expect(resend.busiestSecond()).toBeLessThanOrEqual(10);
+    expect(resend.starts.at(-1)! - resend.starts[0]).toBeGreaterThanOrEqual(11 * 125 - 5);
+  });
+
+  it("gives every reminder a key of its own that stays the same on every run, with no id or address in it", async () => {
+    const { parentId, childId } = await parentWithChild("2014-03-01", 7);
+    const second = await registerParent(db, { displayName: "Sam", email: "sam@example.com", password: "correct horse battery" });
+    if (!second.ok) throw new Error();
+    await db.insert(schema.parentStudentLinks).values({ parentUserId: second.value.userId, studentUserId: childId });
+    await db.insert(schema.weeklySteps).values({ userId: childId, weekStart: thisWeek, text: "Try the robotics club" });
+    const keysBy = new Map<string, string[]>();
+    const send = vi.fn(async (email: Email) => {
+      keysBy.set(email.to, [...(keysBy.get(email.to) ?? []), email.idempotencyKey!]);
+      throw new Error("provider down");
+    });
+    quietly();
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toMatchObject({ failed: 2 });
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now: new Date(now.getTime() + 60 * MIN) })).toMatchObject({ failed: 2 });
+
+    const rosa = keysBy.get("rosa@example.com")!;
+    const sam = keysBy.get("sam@example.com")!;
+    expect(rosa).toHaveLength(2);
+    expect(rosa[0]).toBe(rosa[1]);
+    expect(sam[0]).toBe(sam[1]);
+    expect(rosa[0]).not.toBe(sam[0]);
+    const reminders = await buildWeeklyReminders(db, APP, now);
+    expect(new Set(reminders.map(reminderIdempotencyKey))).toEqual(new Set([rosa[0], sam[0]]));
+    for (const key of [rosa[0], sam[0]]) {
+      expect(key).toMatch(/^cc-reminder-[0-9a-f]{64}$/);
+      for (const secret of [childId, parentId, "rosa", "sam", thisWeek]) expect(key).not.toContain(secret);
+    }
+  });
+
+  it("never sends a reminder twice when Resend takes it but answers too late", async () => {
+    quietly();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    await teensWithSteps(1);
+    // The first request takes a second; each try gives up after 50 ms, and waits are 1/20 as long.
+    const resend = fakeResend((request) => (request === 0 ? 1_000 : 5));
+    const deps: SendDeps = { fetch: resend.fetch, timeoutMs: 50, sleep: (ms) => pause(ms / 20), limiter: async () => {} };
+    const send = (email: Email) => sendWithResend(email, RESEND, deps);
+
+    // Tries: a timeout, then "still in progress" twice. The email may have gone out.
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 0, skipped: 0, failed: 0, uncertain: 1, more: false });
+    expect(await db.select().from(schema.reminderSends)).toHaveLength(0); // released for the next run
+    while (resend.delivered.length === 0) await pause(20);
+
+    // A re-run tries again with the same key, and Resend answers with the first send.
+    const later = new Date(now.getTime() + 10 * MIN);
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now: later })).toEqual({ sent: 1, skipped: 0, failed: 0, uncertain: 0, more: false });
+    expect(resend.delivered).toEqual(["s0@example.com"]);
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now: later })).toMatchObject({ sent: 0, skipped: 1 });
+    expect(resend.delivered).toHaveLength(1);
+  });
+
+  it("counts a reminder as done when Resend already took it and its text has changed since", async () => {
+    quietly();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const [id] = await teensWithSteps(1);
+    const resend = fakeResend((request) => (request === 0 ? 1_000 : 5));
+    const deps: SendDeps = { fetch: resend.fetch, timeoutMs: 50, sleep: (ms) => pause(ms / 20), limiter: async () => {} };
+    const send = vi.fn((email: Email) => sendWithResend(email, RESEND, deps));
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toMatchObject({ uncertain: 1 });
+    while (resend.delivered.length === 0) await pause(20);
+
+    // The student adds a step before the re-run, so the email's text is different now.
+    await db.insert(schema.weeklySteps).values({ userId: id, weekStart: thisWeek, text: "Visit a campus" });
+    const later = new Date(now.getTime() + 10 * MIN);
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now: later })).toEqual({ sent: 0, skipped: 1, failed: 0, uncertain: 0, more: false });
+    const [row] = await db.select().from(schema.reminderSends);
+    expect(row.sentAt).not.toBeNull();
+
+    send.mockClear();
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now: later })).toMatchObject({ skipped: 1 });
+    expect(send).not.toHaveBeenCalled();
+    expect(resend.delivered).toHaveLength(1);
+  });
+
+  it("releases an uncertain send and counts it apart from failures", async () => {
+    quietly();
+    await teensWithSteps(2);
+    const send = vi.fn(async (email: Email) => {
+      if (email.to === "s0@example.com") throw new EmailSendError("resend", null, "timeout", true);
+      throw new EmailSendError("resend", 422, "validation_error");
+    });
+    expect(await sendWeeklyReminders(db, { appUrl: APP, send, now })).toEqual({ sent: 0, skipped: 0, failed: 1, uncertain: 1, more: false });
+    expect(await db.select().from(schema.reminderSends)).toHaveLength(0);
   });
 });
 

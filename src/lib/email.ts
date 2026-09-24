@@ -2,14 +2,38 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { env } from "@/env";
 
-export type Email = { to: string; subject: string; text: string };
+export type Email = {
+  to: string;
+  subject: string;
+  text: string;
+  /**
+   * Resend sends one email per key within 24 hours: a repeat with the same key gets the first
+   * answer back instead of a second email. Give one that belongs to the email itself (like a
+   * reminder's student, week and recipient) when a later run may try it again. Without one, each
+   * call gets a fresh key, still shared by that call's retries.
+   */
+  idempotencyKey?: string;
+};
 
 /** Resend's send endpoint: https://resend.com/docs/api-reference/emails/send-email */
 export const RESEND_API_URL = "https://api.resend.com/emails";
 /** How long one attempt may take before it is abandoned. */
 export const EMAIL_TIMEOUT_MS = 10_000;
-/** Pause before the single retry, so a brief provider hiccup can clear. */
+/** Tries per email, the first one included. */
+export const EMAIL_MAX_ATTEMPTS = 3;
+/** Pause before retrying a server error, timeout or network error, so a brief hiccup can clear. */
 export const EMAIL_RETRY_DELAY_MS = 1_000;
+/** Pause before retrying while Resend is still working on the same email (409 concurrent_idempotent_requests). */
+export const EMAIL_BUSY_RETRY_DELAY_MS = 3_000;
+/** A rate limit that asks us to wait longer than this isn't a per-second limit, so we don't wait. */
+export const EMAIL_MAX_RATE_LIMIT_WAIT_MS = 10_000;
+/**
+ * Resend allows 10 requests a second per team. Requests from this server start at most 8 a
+ * second, which leaves room for other servers sending at the same moment.
+ */
+export const RESEND_REQUESTS_PER_SECOND = 8;
+
+const QUOTA_CODES = new Set(["daily_quota_exceeded", "monthly_quota_exceeded"]);
 
 /**
  * A failed send. The message holds only the provider, HTTP status and the provider's error code
@@ -24,15 +48,54 @@ export class EmailSendError extends Error {
     readonly status: number | null,
     /** A short machine code: the provider's error name, "timeout", "network_error" or "missing_api_key". */
     readonly code: string,
+    /**
+     * The email may still arrive: Resend got a request for it but we never learned how it ended
+     * (an attempt timed out, or Resend was still working on it when we stopped asking).
+     */
+    readonly uncertain = false,
   ) {
-    super(`${provider} send failed: status=${status ?? "none"} code=${code}`);
+    super(`${provider} send ${uncertain ? "uncertain" : "failed"}: status=${status ?? "none"} code=${code}`);
   }
 
-  /** Worth one more try: the provider had a server error or we never got an answer. */
+  /**
+   * Worth another try with the same idempotency key: a server error, no answer, a per-second rate
+   * limit, or Resend still busy with the same email. Never a quota, a bad request or a bad key.
+   */
   get retryable() {
-    return this.status === null ? this.code === "timeout" || this.code === "network_error" : this.status >= 500;
+    if (this.status === null) return this.code === "timeout" || this.code === "network_error";
+    if (this.status === 429) return !QUOTA_CODES.has(this.code);
+    if (this.status === 409) return this.code === "concurrent_idempotent_requests";
+    return this.status >= 500;
   }
 }
+
+/** The send failed, but the email may still arrive (see EmailSendError.uncertain). */
+export function isUncertainSend(error: unknown): boolean {
+  return error instanceof EmailSendError && error.uncertain;
+}
+
+/** Waits for this caller's turn to start a request. */
+export type StartLimiter = () => Promise<void>;
+
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Spaces out request starts: every caller that shares the limiter starts at least
+ * 1000 / perSecond ms after the one before, however many are waiting at once.
+ */
+export function startLimiter(perSecond: number, clock: () => number = Date.now, sleep: (ms: number) => Promise<void> = wait): StartLimiter {
+  const gapMs = 1000 / perSecond;
+  let nextStart = Number.NEGATIVE_INFINITY;
+  return async () => {
+    const now = clock();
+    const start = Math.max(now, nextStart);
+    nextStart = start + gapMs;
+    if (start > now) await sleep(start - now);
+  };
+}
+
+/** Shared by every Resend request this server makes, retries included. */
+const resendLimiter = startLimiter(RESEND_REQUESTS_PER_SECOND);
 
 export type ResendConfig = { apiKey: string | undefined; from: string };
 
@@ -41,12 +104,15 @@ export type SendDeps = {
   sleep?: (ms: number) => Promise<void>;
   timeoutMs?: number;
   retryDelayMs?: number;
+  /** Paces request starts. Defaults to the one limiter all Resend sends share. */
+  limiter?: StartLimiter;
 };
 
 /**
  * Sends transactional email with the configured transport. "log" prints to the server console
  * (development only; env() refuses it in production). "resend" sends through Resend's HTTP API.
- * Throws EmailSendError when the email could not be sent.
+ * Throws EmailSendError when the email could not be sent, with `uncertain` set when it may still
+ * arrive.
  */
 export async function sendEmail(email: Email): Promise<void> {
   const config = env();
@@ -59,59 +125,97 @@ export async function sendEmail(email: Email): Promise<void> {
   }
 }
 
+type Failure = { error: EmailSendError; retryAfterMs: number | null };
+
 /**
- * Sends one email through Resend. Each attempt times out after 10 seconds. A 5xx answer, a timeout
- * or a network error gets one retry; anything else (a bad address, a bad key, a quota) fails at
- * once. Both attempts share an idempotency key, so if the first one went through but its answer
- * was lost, Resend does not send the email twice.
+ * Sends one email through Resend, trying up to 3 times with the same idempotency key, so Resend
+ * never sends it twice however the tries end:
  *
- * Logs never include the recipient, subject or body: only the error name, status and code.
+ * - A server error, a timeout or a network error is tried again after a second.
+ * - A rate limit (429) is tried again after the wait Resend asks for (Retry-After). Quota errors
+ *   and waits over 10 seconds are not.
+ * - "Still working on this email" (409 concurrent_idempotent_requests, which follows a timeout)
+ *   is tried again after 3 seconds, and then gets the first try's answer.
+ * - Anything else (a bad address, a bad key) fails at once.
+ *
+ * Every try waits its turn in a limiter shared by all sends, so requests start at most 8 a second.
+ * Each try times out after 10 seconds. Logs never include the recipient, subject or body: only the
+ * error name, status and code.
  */
 export async function sendWithResend(email: Email, config: ResendConfig, deps: SendDeps = {}): Promise<void> {
   if (!config.apiKey) throw logged(new EmailSendError("resend", null, "missing_api_key"));
   const doFetch = deps.fetch ?? fetch;
-  const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const sleep = deps.sleep ?? wait;
+  const limiter = deps.limiter ?? resendLimiter;
   const timeoutMs = deps.timeoutMs ?? EMAIL_TIMEOUT_MS;
   const request = {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
       "Content-Type": "application/json",
-      "Idempotency-Key": `cc-${randomUUID()}`,
+      "Idempotency-Key": email.idempotencyKey ?? `cc-${randomUUID()}`,
     },
     body: JSON.stringify({ from: config.from, to: [email.to], subject: email.subject, text: email.text }),
   };
 
-  const attempt = async () => {
+  const attempt = async (): Promise<Failure | null> => {
+    await limiter();
     let response: Response;
     try {
       response = await doFetch(RESEND_API_URL, { ...request, signal: AbortSignal.timeout(timeoutMs) });
     } catch (error) {
-      throw new EmailSendError("resend", null, isTimeout(error) ? "timeout" : "network_error");
+      return { error: new EmailSendError("resend", null, isTimeout(error) ? "timeout" : "network_error"), retryAfterMs: null };
     }
     if (response.ok) {
       await response.body?.cancel().catch(() => {});
-      return;
+      return null;
     }
-    throw new EmailSendError("resend", response.status, await providerErrorName(response));
+    return {
+      error: new EmailSendError("resend", response.status, await providerErrorName(response)),
+      retryAfterMs: response.status === 429 ? retryAfterMs(response.headers) : null,
+    };
   };
 
-  try {
-    await attempt();
-  } catch (first) {
-    if (!(first instanceof EmailSendError) || !first.retryable) throw logged(asSendError(first));
-    console.warn(`[email] ${first.message}; retrying once`);
-    await sleep(deps.retryDelayMs ?? EMAIL_RETRY_DELAY_MS);
+  // Set once Resend may have taken the email: an answer we never got, or Resend saying it's busy with it.
+  let mayHaveSent = false;
+  for (let tries = 1; ; tries++) {
+    let failure: Failure | null;
     try {
-      await attempt();
-    } catch (second) {
-      throw logged(asSendError(second));
+      failure = await attempt();
+    } catch {
+      failure = { error: new EmailSendError("resend", null, "unexpected_error"), retryAfterMs: null };
     }
+    if (!failure) return;
+    const { error } = failure;
+    if (error.code === "timeout" || error.code === "concurrent_idempotent_requests") mayHaveSent = true;
+    const delay = retryDelay(failure, deps.retryDelayMs ?? EMAIL_RETRY_DELAY_MS);
+    if (delay === null || tries >= EMAIL_MAX_ATTEMPTS) {
+      // A definite refusal (a bad address, say) settles it; otherwise an earlier try may have gone through.
+      throw logged(mayHaveSent && error.retryable ? new EmailSendError("resend", error.status, error.code, true) : error);
+    }
+    console.warn(`[email] ${error.message}; retrying`);
+    await sleep(delay);
   }
 }
 
-function asSendError(error: unknown) {
-  return error instanceof EmailSendError ? error : new EmailSendError("resend", null, "unexpected_error");
+/** How long to wait before trying again, or null when another try can't help. */
+function retryDelay({ error, retryAfterMs }: Failure, defaultDelayMs: number): number | null {
+  if (!error.retryable) return null;
+  if (error.status === 429) {
+    const ms = retryAfterMs ?? 1_000;
+    return ms <= EMAIL_MAX_RATE_LIMIT_WAIT_MS ? ms : null;
+  }
+  if (error.code === "concurrent_idempotent_requests") return EMAIL_BUSY_RETRY_DELAY_MS;
+  return defaultDelayMs;
+}
+
+/** Resend's Retry-After (or ratelimit-reset), both in seconds. */
+function retryAfterMs(headers: Headers): number | null {
+  for (const name of ["retry-after", "ratelimit-reset"]) {
+    const value = headers.get(name)?.trim();
+    if (value && /^\d+(\.\d+)?$/.test(value)) return Math.ceil(Number(value) * 1000);
+  }
+  return null;
 }
 
 function logged(error: EmailSendError) {

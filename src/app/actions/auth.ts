@@ -26,7 +26,7 @@ import { homePathFor } from "@/lib/auth/dal";
 import { createSession, invalidateSession, validateSession } from "@/lib/auth/sessions";
 import { hashToken } from "@/lib/auth/tokens";
 import { createConsentRequest, cancelConsentRequest } from "@/lib/consent/requests";
-import { sendEmail } from "@/lib/email";
+import { isUncertainSend, sendEmail } from "@/lib/email";
 import { type FormState, birthDateFromForm, fieldErrors, safeNext } from "@/lib/forms";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { clientIpKey } from "@/lib/request";
@@ -91,7 +91,8 @@ async function importAtSignup(db: Db, userId: string, saved: FormDataEntryValue 
   }
 }
 
-export type ParentRequestState = { sent: true } | FormState;
+/** `delayed`: the email may take a few minutes to arrive (Resend didn't answer in time). */
+export type ParentRequestState = { sent: true; delayed?: true } | FormState;
 
 /** An under-13 student gives us a parent's email; nothing else about the child is collected. */
 export async function requestParentConsentAction(
@@ -130,6 +131,12 @@ export async function requestParentConsentAction(
       ].join("\n"),
       });
     } catch (error) {
+      if (isUncertainSend(error)) {
+        // Resend got the email but didn't answer in time, so it may still arrive. Its link keeps
+        // working: the request expires, and the daily sweep deletes the address with it.
+        console.warn("[consent] email may be delayed");
+        return { sent: true, delayed: true };
+      }
       console.error("[consent] email failed", error instanceof Error ? error.name : "unknown");
       await cancelConsentRequest(db, token);
       return { message: "We couldn't send the email right now. Please try again in a few minutes." };

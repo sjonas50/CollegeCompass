@@ -63,9 +63,11 @@ Routines and incident steps are in [operations.md](operations.md).
 
   Students always see crisis resources right away for high and imminent messages; staff review
   is the follow-up, not the emergency response.
-- [ ] **Safety drill**: a test student account sends a clearly high-risk test message on
-      production. It shows crisis resources, appears in the review queue at `/admin`, and the
-      reviewer records an outcome. Timed against the targets above.
+- [ ] **Safety drill**: a test student account (linked to a test parent) sends a clearly
+      high-risk test message on production. It shows crisis resources, appears in the review
+      queue at `/admin`, and the reviewer records an outcome. The reviewer also finds the parent's
+      contact the way they would for real: the reveal on the event's page in `/admin`, which is
+      recorded in the audit log. Timed against the targets above.
 - [ ] Spending limits set: `AI_MONTHLY_BUDGET_USD` per student, and a monthly spend limit on the
       Anthropic account (Anthropic Console → Limits) with an email alert.
 
@@ -75,15 +77,16 @@ Routines and incident steps are in [operations.md](operations.md).
       click tracking off.
 - [ ] `EMAIL_TRANSPORT=resend`, `RESEND_API_KEY` (sending access only) and `EMAIL_FROM` set in
       Production.
-- [ ] A consent email and a weekly reminder arrive in Gmail, Outlook and iCloud inboxes, not spam,
-      and every link in them works (they use `APP_URL`).
+- [ ] A consent email, a parent invitation and a weekly reminder arrive in Gmail, Outlook and
+      iCloud inboxes, not spam, and every link in them works (they use `APP_URL`).
 - [ ] **Support email** set up (like `help@` your domain), checked every weekday by a named
       person, and shown on `/privacy` and in the emails. Reply target: 1 business day.
 
 ## 6. Payments
 
 - [ ] Decide: is the pilot free? If so, leave `STRIPE_SECRET_KEY` unset. Families get the trial
-      and then free access (or comp access from staff).
+      and then free access, or comp access that staff grant with `npm run access:grant` (see
+      "Giving a family access" in operations.md).
 - [ ] If families pay during the pilot:
   - [ ] **Stripe prices set** (`STRIPE_PRICE_MONTHLY`, and `STRIPE_PRICE_ANNUAL` if offered).
   - [ ] Webhook endpoint `/api/stripe/webhook` added with the events in the README; Stripe shows
@@ -101,8 +104,10 @@ Routines and incident steps are in [operations.md](operations.md).
 - [ ] Preview deployments use their own database and Stripe test keys, and are behind Deployment
       Protection.
 - [ ] Migrations applied (`npm run db:migrate`) to production.
-- [ ] Both cron jobs appear under Vercel → Settings → Cron Jobs, and the daily sweep has run
-      successfully at least once (check its log line).
+- [ ] Both cron jobs appear under Vercel → Settings → Cron Jobs, and each has run once with
+      status 200: **View Logs** next to the job shows its runs (Hobby keeps logs for one hour, so
+      look within the hour after it runs), or run it by hand with the `curl` commands in the
+      README and check the answer.
 - [ ] **Backups on, and a restore tested**: point-in-time restore is on; we restored to a new
       database (or branch), pointed a preview deployment at it, signed in as a test account, and
       saw the right data. Restore window: ______ days. Time it took: ______.
@@ -154,8 +159,9 @@ pilot.
 2. [ ] Send invitations in small waves (5 families at a time), so problems show up early.
 3. [ ] Each family: the parent signs up first. Under-13 students are added by the parent. Teens
        13 and up sign up themselves and link a parent.
-4. [ ] Give pilot families access for the whole pilot (comp access from `/admin`, or the trial
-       then free access), so price never comes up.
+4. [ ] Give pilot families access for the whole pilot, so price never comes up: comp access
+       until the pilot ends (`npm run access:grant -- --household <id> --kind comp --until <date>`;
+       see operations.md), or the trial then free access.
 5. [ ] Offer a 15-minute welcome call: sign in together, start the interest assessment, and
        show the parent the parent page, the export and the delete button.
 6. [ ] Week 1: short check-in message. Week 4: survey. End: survey and a call.

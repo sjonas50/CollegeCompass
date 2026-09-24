@@ -4,12 +4,16 @@ How to run College Compass day to day, and what to do when something breaks. Set
 README under [Deploying to production](../README.md#deploying-to-production); the launch list is
 [pilot-checklist.md](pilot-checklist.md).
 
-Two rules apply to everything here:
+These rules apply to everything here:
 
 - **Keep personal data out of notes, tickets, chat and commits.** Refer to a family by an account
   id from `/admin`, never by name, email or message text.
 - **Staff pages live at `/admin`.** Only named people have staff accounts
   (`npm run admin:create`).
+- **Look up contact details only when you need them.** To reach a parent after a safety event,
+  use the reveal on that event's page in `/admin`: it shows who the student is and how to reach
+  their linked parent, and every reveal is recorded in the audit log. If no parent is linked (a
+  teen who signed up alone), it says so; follow the parent-notification policy for that case.
 
 ## Every weekday (about 15 minutes)
 
@@ -47,25 +51,47 @@ Two rules apply to everything here:
    an AI outage (see below).
 4. **Support inbox.** Reply within one business day.
 
-On Hobby, Vercel keeps runtime logs for only one hour, so rely on the error-monitoring service
-for anything older.
+Vercel keeps runtime logs for one hour on Hobby and one day on Pro, so rely on the
+error-monitoring service for anything older.
 
 ## Every week
 
-- **Monday afternoon (after 14:00 UTC): weekly reminders.** Find the
-  `/api/cron/weekly-reminders` run in the Vercel logs. Its response shows
-  `{ sent, skipped, failed, more }`. If `failed` is above 0 or `more` is `true`, fix the cause
-  (see "Email failures") and run it again by hand; re-runs never send anything twice:
+- **Monday afternoon (after 14:30 UTC): weekly reminders.** The scheduled run's log line is
+  gone within the hour on Hobby, so check by running the job again by hand. A re-run sends only
+  what the scheduled run didn't, and never sends a reminder twice:
 
   ```bash
   curl -H "Authorization: Bearer $CRON_SECRET" https://YOUR_DOMAIN/api/cron/weekly-reminders
   ```
 
+  It answers with counts, `{ sent, skipped, failed, uncertain, more }`:
+
+  - `skipped`: reminders that already went out. If this run `sent` any, the scheduled run missed
+    them (it didn't run, ran out of time, or a send failed). They've gone out now.
+  - `failed` above 0: fix the cause (see "Email failures"), then run it again.
+  - `uncertain` above 0: Resend took those emails but answered too late. Run it again in a few
+    minutes. Resend recognizes each reminder and never sends it twice within 24 hours, so re-run
+    the same day.
+  - `more: true`: time ran out. Run it again.
+
+  Every run also logs one line with the same counts, like
+  `[reminders] run sent=12 skipped=0 failed=0 uncertain=0 more=false` (a warning when something
+  is left). On Pro, where logs last a day, you can read the scheduled runs' lines instead.
+
 - **Cost dashboard** (`/admin`). Look at this month's AI spend per student and in total. Look into
   any student near `AI_MONTHLY_BUDGET_USD` and any sudden jump. Compare the total with the
   Anthropic Console's usage page.
 - **Stripe** (only if families pay): failed payments, disputes, and failing webhook deliveries.
-- **Daily sweep.** Confirm `/api/cron/sweep` ran each day this week.
+- **Daily sweep.** Logs don't last a week, so check what the sweep leaves behind. In the database
+  provider's SQL editor, both of these should return 0 (counts only, no personal data):
+
+  ```sql
+  select count(*) from consent_requests where expires_at < now() - interval '2 days';
+  select count(*) from sessions where expires_at < now() - interval '2 days';
+  ```
+
+  Anything above 0 means the sweep hasn't run for over a day: see "A cron job didn't run", then
+  run it by hand.
 
 ## Every month
 
@@ -111,6 +137,22 @@ for anything older.
 - **Policies.** Re-read the privacy policy, the parent-notification policy and the vendor data
   agreements with the lawyer.
 
+## As needed
+
+### Giving a family access (comp or sponsored)
+
+Families get full access from a plan, the trial or free access on their own. Staff can also give a
+household access for a set time, for example pilot families for the whole pilot:
+
+```bash
+DATABASE_URL="postgres://..." npm run access:grant -- --household <household id> --kind comp --until 2027-06-30
+```
+
+Use `--kind comp` for access we give ourselves and `--kind sponsored` for a seat someone else
+pays for. `--until` is the date access ends. See the script's header for how to find a
+family's household id and for its other options. Don't write the family's name next to the id in
+notes or tickets.
+
 ## Incidents
 
 For any incident: (1) find out who is affected and since when, (2) stop the harm, (3) fix the
@@ -153,8 +195,10 @@ If the outage is only one model (for example it was retired), set `AI_MODEL_SAFE
 
 ### Email failures
 
-Failures are logged as `[email] resend send failed: status=... code=...`. They never include the
-recipient or the email text. What the codes mean:
+Failures are logged as `[email] resend send failed: status=... code=...`, or
+`[email] resend send uncertain: ...` when the email may still arrive. They never include the
+recipient or the email text. A line ending in `; retrying` is a try that's being repeated, not a
+failure yet. What the codes mean:
 
 | Log shows | What it means | What to do |
 | --- | --- | --- |
@@ -162,15 +206,21 @@ recipient or the email text. What the codes mean:
 | `status=403`, `validation_error` about the domain | The sending domain isn't verified | Check the DNS records in Resend and `EMAIL_FROM` |
 | `status=422` or `validation_error` for one email | One bad address | Usually nothing; a family may have mistyped an email |
 | `daily_quota_exceeded`, `monthly_quota_exceeded` or `email_above_quota` | Plan quota used up | Upgrade the Resend plan, then re-run what failed |
-| `status=429`, `rate_limit_exceeded` | Too many sends per second | Re-run the job later; tell a developer if it repeats |
-| `status=5xx`, `timeout`, `network_error` (after one retry) | Resend or the network had a problem | Check resend.com's status page; re-run later |
+| `status=429`, `rate_limit_exceeded` (after retries) | Too many sends per second, even after waiting as Resend asked. Usually another app or script sending with the same Resend team | Re-run the job later; tell a developer if it repeats |
+| `status=5xx` or `network_error` (after 3 tries) | Resend or the network had a problem | Check resend.com's status page; re-run later |
+| `resend send uncertain` (`timeout` or `concurrent_idempotent_requests`) | Resend took the email but didn't answer in time. It may still arrive | Nothing, unless it repeats. Consent links and invitations keep working; for reminders, re-run the job the same day |
+| `status=409`, `invalid_idempotent_request` | A re-run found a weekly reminder that Resend already took in the last 24 hours, and its text has changed since | Nothing: it counts as sent |
 
 **Re-sending what failed:**
 
-- **Weekly reminders:** a failed send is released, so running the job again by hand sends only
-  what didn't go out (command above).
+- **Weekly reminders:** a failed or uncertain send is released, so running the job again by hand
+  sends only what didn't go out (command above). Re-run the same day, while Resend still
+  recognizes each reminder.
 - **Parent consent emails:** the student (or parent) asks again from the same page. The limit is
-  3 requests per parent email a day.
+  3 requests per parent email a day. After an uncertain send the first link still works, so ask
+  the parent to check their spam folder first.
+- **Parent invitations:** the student cancels the invitation on their dashboard and sends a new
+  one (up to 5 a day, 3 waiting at once).
 
 If email is down for more than a few hours during a weekday, add a note to the support inbox's
 auto-reply.
@@ -185,8 +235,9 @@ auto-reply.
 
 ### A cron job didn't run
 
-Check Vercel → Settings → Cron Jobs and the logs. On Hobby a job can start any time within its
-hour. Run it by hand with the `curl` command above. A `401` means `CRON_SECRET` in Vercel doesn't
+Check Vercel → Settings → Cron Jobs. **View Logs** next to a job shows its recent runs and their
+status (logs last one hour on Hobby and one day on Pro). On Hobby a job can start any time within
+its hour. Run it by hand with the `curl` command above. A `401` means `CRON_SECRET` in Vercel doesn't
 match what you sent.
 
 ### Stripe webhook failures
