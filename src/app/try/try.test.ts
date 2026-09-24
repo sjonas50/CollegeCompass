@@ -371,15 +371,40 @@ describe("keeping the free results", () => {
 
 describe("landing page", () => {
   const home = (sp: Record<string, string> = {}) => Home({ params: Promise.resolve({}), searchParams: Promise.resolve(sp) } as PageProps<"/">);
+  const hrefsOf = (html: string) => [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
 
-  it("leads with the free quiz, then signup and sign in, then the explorers", async () => {
+  it("leads with student signup, then the parent path, and says what College Compass is", async () => {
     const html = await render(home());
-    const hrefs = [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
-    expect(hrefs[0]).toBe("/try");
-    expect(hrefs).toEqual(expect.arrayContaining(["/signup", "/signup/parent", "/login", "/colleges", "/aid"]));
-    expect(hrefs.indexOf("/signup")).toBeLessThan(hrefs.indexOf("/colleges"));
-    expect(text(html)).toContain("Find careers that fit you — free, no account needed");
+    const hrefs = hrefsOf(html);
+    expect(hrefs.slice(0, 2)).toEqual(["/signup", "/signup/parent"]);
+    expect(hrefs).toEqual(expect.arrayContaining(["/login", "/careers", "/colleges", "/aid"]));
+    expect(html.match(/<h1[ >]/g)).toHaveLength(1);
+    expect(text(html)).toMatch(/Plan your path to college and career ?, one week at a time\./);
+    expect(text(html)).toContain("AI guidance counselor");
     expect(text(html)).not.toContain("were deleted");
+  });
+
+  it("ends in the get-started section the header links to, with both signup paths and sign in", async () => {
+    const html = await render(home());
+    expect(html.match(/id="get-started"/g)).toHaveLength(1);
+    const section = hrefsOf(html.slice(html.indexOf('id="get-started"')));
+    expect(section).toEqual(expect.arrayContaining(["/signup", "/signup/parent", "/login"]));
+    expect(section.indexOf("/signup")).toBeLessThan(section.indexOf("/signup/parent"));
+  });
+
+  it("offers the free quiz only as a secondary path, after both signup paths", async () => {
+    const hrefs = hrefsOf(await render(home()));
+    expect(hrefs.filter((h) => h === "/try")).toHaveLength(1);
+    expect(hrefs.indexOf("/try")).toBeGreaterThan(hrefs.lastIndexOf("/signup/parent"));
+  });
+
+  it("links only to public pages that exist, or to its own sections", async () => {
+    const html = await render(home());
+    const pages = ["/signup", "/signup/parent", "/login", "/try", "/careers", "/colleges", "/aid", "/privacy", "/about/data"];
+    for (const href of hrefsOf(html)) {
+      if (href.startsWith("#")) expect(html, href).toContain(`id="${href.slice(1)}"`);
+      else expect(pages, href).toContain(href);
+    }
   });
 
   it("confirms a deleted account", async () => {
@@ -389,5 +414,7 @@ describe("landing page", () => {
   it("sends signed-in users home", async () => {
     await signInStudent();
     expect(await redirectOf(Promise.resolve().then(() => home()))).toBe("/dashboard");
+    await signInParent();
+    expect(await redirectOf(Promise.resolve().then(() => home()))).toBe("/parent");
   });
 });
