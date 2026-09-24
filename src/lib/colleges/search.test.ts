@@ -2,17 +2,19 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, createTestDb } from "@/db";
 import {
   CollegeSearchFiltersSchema,
+  MAJOR_CHOICE_LIMIT,
+  type MajorQueryResult,
   PAGE_SIZE,
   collegeSearchHref,
   findPrograms,
   majorsForCip6,
+  offeredFamilies,
   parseCollegeSearchParams,
-  MAJOR_CHOICE_LIMIT,
   programTitle,
   resolveMajorQuery,
   searchColleges,
 } from "./search";
-import { insertColleges, insertPrograms } from "./test-fixtures";
+import { insertColleges, insertMajorSearchData, insertPrograms } from "./test-fixtures";
 
 let db: Db;
 
@@ -27,7 +29,7 @@ describe("searchColleges filters", () => {
   beforeEach(async () => {
     await insertColleges(db, [
       { unitId: 1, name: "Lakeside State University", state: "TX", control: 1, enrollment: 22_000, predominantDegree: 3 },
-      { unitId: 2, name: "Hill Country College", state: "TX", control: 1, enrollment: 4_999, predominantDegree: 2 },
+      { unitId: 2, name: "Hill Country College", city: "Austin", state: "TX", control: 1, enrollment: 4_999, predominantDegree: 2 },
       { unitId: 3, name: "Riverbend University", state: "CA", control: 2, enrollment: 5_000, predominantDegree: 3, hbcu: true },
       { unitId: 4, name: "Canyon Technical Institute", state: "AZ", control: 3, enrollment: 15_000, predominantDegree: 1 },
       { unitId: 5, name: "Mesa Community College", state: "AZ", control: 1, enrollment: 15_001, predominantDegree: 2, hispanicServing: true },
@@ -58,6 +60,12 @@ describe("searchColleges filters", () => {
     expect(await names({ q: "100%" })).toEqual(["100% Real_College"]);
     expect(await names({ q: "l_ke" })).toEqual([]);
     expect(await names({ q: "%" })).toEqual(["100% Real_College"]);
+  });
+
+  it("matches each word in the name box against the college's name or its city", async () => {
+    expect(await names({ q: "Austin" })).toEqual(["Hill Country College"]);
+    expect(await names({ q: "country austin" })).toEqual(["Hill Country College"]);
+    expect(await names({ q: "lakeside austin" })).toEqual([]);
   });
 
   it("filters by state, accepting lowercase and rejecting unknown codes", async () => {
@@ -206,70 +214,152 @@ describe("searchColleges pagination", () => {
 });
 
 describe("majors", () => {
+  // How many colleges offer each family, scaled down from the real June 2026 data (e.g. 51.38
+  // Registered Nursing at 2,178 colleges, 51.16 "Nursing" at 8).
+  const OFFERED_BY = {
+    "51.38": 22, "51.39": 13, "51.16": 1, "51.11": 5, "01.06": 3, "48.05": 10, "15.06": 6, "47.06": 10, "14.42": 1,
+    "46.03": 7, "51.06": 8, "50.04": 13, "50.05": 11, "11.10": 12, "11.01": 16, "11.07": 10, "43.01": 19, "22.03": 7,
+    "22.00": 3, "22.01": 1, "51.12": 1, "51.09": 17, "51.22": 7, "51.07": 18, "16.09": 10, "13.12": 18, "14.19": 4,
+    "42.01": 17, "40.05": 9,
+  };
+  const cip4s = (r: MajorQueryResult) => (r.kind === "choices" ? r.choices.map((c) => c.cip4) : r.kind === "match" ? [r.major.cip4] : []);
+
   beforeEach(async () => {
-    await insertColleges(db, [
-      { unitId: 1, name: "A" },
-      { unitId: 2, name: "B" },
-    ]);
-    await insertPrograms(db, [
-      { unitId: 1, cip4: "51.38", title: "Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing." },
-      { unitId: 2, cip4: "51.38", title: "Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing.", credentialLevel: 2 },
-      { unitId: 1, cip4: "51.39", title: "Practical Nursing, Vocational Nursing and Nursing Assistants.", credentialLevel: 1 },
-      { unitId: 1, cip4: "11.07", title: "Computer Science." },
-    ]);
+    await insertMajorSearchData(db, OFFERED_BY);
   });
 
-  it("finds majors by the words in their title, one per CIP family", async () => {
-    expect(await findPrograms(db, "nursing")).toEqual([
-      { cip4: "51.39", title: "Practical Nursing, Vocational Nursing and Nursing Assistants" },
-      { cip4: "51.38", title: "Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing" },
-    ]);
-    expect(await findPrograms(db, "science COMPUTER")).toEqual([{ cip4: "11.07", title: "Computer Science" }]);
-    expect(await findPrograms(db, "x")).toEqual([]);
-    expect(await findPrograms(db, "   ")).toEqual([]);
-    expect(await findPrograms(db, "astronomy")).toEqual([]);
-  });
-
-  it("resolves typed words to one major, a short list, or nothing", async () => {
-    expect(await resolveMajorQuery(db, "computer")).toEqual({ kind: "match", major: { cip4: "11.07", title: "Computer Science" } });
-    expect(await resolveMajorQuery(db, "nursing")).toEqual({
+  it("finds trades by their everyday names through the 6-digit majors colleges file them under", async () => {
+    expect(await resolveMajorQuery(db, "welding")).toEqual({
       kind: "choices",
       choices: [
-        { cip4: "51.39", title: "Practical Nursing, Vocational Nursing and Nursing Assistants" },
-        { cip4: "51.38", title: "Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing" },
+        { cip4: "48.05", title: "Precision Metal Working", colleges: 10, includes: "Welding Technology/Welder" },
+        { cip4: "15.06", title: "Industrial Production Technologies/Technicians", colleges: 6, includes: "Welding Engineering Technology/Technician" },
       ],
       more: false,
     });
-    expect(await resolveMajorQuery(db, "astronomy")).toEqual({ kind: "none" });
-    expect(await resolveMajorQuery(db, "")).toEqual({ kind: "none" });
+    expect(await resolveMajorQuery(db, "Welders")).toEqual({
+      kind: "match",
+      major: { cip4: "48.05", title: "Precision Metal Working", colleges: 10, includes: "Welding Technology/Welder" },
+    });
+    expect(await resolveMajorQuery(db, "electrician")).toMatchObject({ kind: "match", major: { cip4: "46.03", includes: "Electrician" } });
+    expect(await resolveMajorQuery(db, "dental hygiene")).toMatchObject({ kind: "match", major: { cip4: "51.06", includes: "Dental Hygiene/Hygienist" } });
+    expect(await resolveMajorQuery(db, "graphic design")).toMatchObject({ kind: "match", major: { cip4: "50.04", includes: "Graphic Design" } });
+    expect(await resolveMajorQuery(db, "video game design")).toMatchObject({ kind: "match", major: { cip4: "50.04" } });
+    // get_career hands the counselor full 6-digit titles.
+    expect(await resolveMajorQuery(db, "Welding Technology/Welder")).toMatchObject({ kind: "match", major: { cip4: "48.05" } });
   });
 
-  it("prefers an exact title, then titles that start with the words typed, and caps the list", async () => {
-    await insertColleges(db, [{ unitId: 3, name: "C" }]);
-    await insertPrograms(db, [
-      { unitId: 3, cip4: "11.01", title: "Computer and Information Sciences, General." },
-      { unitId: 3, cip4: "52.12", title: "Management Information Systems and Services." },
-      { unitId: 3, cip4: "51.16", title: "Nursing Science." },
-      ...Array.from({ length: 12 }, (_, i) => ({ unitId: 3, cip4: `30.${String(i + 10)}`, title: `Applied Science Topic ${String.fromCharCode(65 + i)}.` })),
+  it("asks between the nursing families most colleges offer instead of picking the little-used 'Nursing' family", async () => {
+    const nursing = await resolveMajorQuery(db, "nursing");
+    expect(nursing.kind).toBe("choices");
+    expect(cip4s(nursing).slice(0, 2)).toEqual(["51.38", "51.39"]);
+    expect(cip4s(nursing)).toContain("51.16");
+    // "nurse" is a whole word: no "Plant Nursery Operations and Management".
+    const nurse = await resolveMajorQuery(db, "nurse");
+    expect(cip4s(nurse).slice(0, 2)).toEqual(["51.38", "51.39"]);
+    expect(cip4s(nurse)).not.toContain("01.06");
+    expect(await resolveMajorQuery(db, "RN")).toMatchObject({ kind: "match", major: { cip4: "51.38" } });
+    expect(await resolveMajorQuery(db, "LPN")).toMatchObject({ kind: "match", major: { cip4: "51.39" } });
+  });
+
+  it("matches the start of words, so 'IT' isn't 'Literatures' and 'auto' isn't 'Automation'", async () => {
+    expect(await resolveMajorQuery(db, "IT")).toMatchObject({ kind: "match", major: { cip4: "11.01", includes: "Information Technology" } });
+    const auto = await resolveMajorQuery(db, "auto");
+    expect(cip4s(auto)).toEqual(["47.06"]);
+    expect(await resolveMajorQuery(db, "auto mechanic")).toMatchObject({
+      kind: "match",
+      major: { cip4: "47.06", includes: "Automobile/Automotive Mechanics Technology/Technician" },
+    });
+    expect(cip4s(await resolveMajorQuery(db, "weld"))).toEqual(["48.05", "15.06"]);
+  });
+
+  it("understands everyday words for majors", async () => {
+    expect(await resolveMajorQuery(db, "theater")).toMatchObject({ kind: "match", major: { cip4: "50.05" } });
+    expect(cip4s(await resolveMajorQuery(db, "cybersecurity"))).toEqual(["11.10"]);
+    // "pre med" is "Pre-Medicine", not "Community Health and Preventive Medicine".
+    for (const words of ["doctor", "pre-med", "premed"]) {
+      expect(await resolveMajorQuery(db, words)).toMatchObject({ kind: "match", major: { cip4: "51.11", includes: "Pre-Medicine/Pre-Medical Studies" } });
+    }
+    expect(cip4s(await resolveMajorQuery(db, "medicine"))[0]).toBe("51.11");
+    // "law" can mean paralegal work, pre-law, law school or police work ("Criminal
+    // Justice/Law Enforcement Administration" only mentions law in passing, so it comes last).
+    expect(cip4s(await resolveMajorQuery(db, "law"))).toEqual(["22.03", "22.00", "22.01", "43.01"]);
+    expect(cip4s(await resolveMajorQuery(db, "lawyer"))).toEqual(["22.03", "22.00"]);
+  });
+
+  it("goes straight to an exact title only when no other match is offered at more colleges", async () => {
+    expect(await resolveMajorQuery(db, "psychology")).toEqual({
+      kind: "match",
+      major: { cip4: "42.01", title: "Psychology, General", colleges: 17 },
+    });
+    // More colleges file computer science under 11.01 than under 11.07 "Computer Science".
+    expect(await resolveMajorQuery(db, "Computer   Science")).toEqual({
+      kind: "choices",
+      choices: [
+        { cip4: "11.01", title: "Computer and Information Sciences, General", colleges: 16 },
+        { cip4: "11.07", title: "Computer Science", colleges: 10 },
+      ],
+      more: false,
+    });
+    expect(await resolveMajorQuery(db, "chemistry")).toMatchObject({ kind: "match", major: { cip4: "40.05" } });
+  });
+
+  it("lists families whose own title matches before ones that only mention the words in passing", async () => {
+    // 13.12 (teacher education) has a "STEM Educational Methods" major and more colleges, but
+    // "Mechanical Engineering" is about engineering.
+    expect(await findPrograms(db, "engineering")).toEqual([
+      { cip4: "14.19", title: "Mechanical Engineering", colleges: 4 },
+      { cip4: "14.42", title: "Mechatronics, Robotics, and Automation Engineering", colleges: 1 },
+      {
+        cip4: "13.12",
+        title: "Teacher Education and Professional Development, Specific Levels and Methods",
+        colleges: 18,
+        includes: "Science, Technology, Engineering, and Mathematics (STEM) Educational Methods",
+      },
+      { cip4: "15.06", title: "Industrial Production Technologies/Technicians", colleges: 6, includes: "Welding Engineering Technology/Technician" },
     ]);
-    // "computer science" also matches "Computer and Information Sciences", but one title is exact.
-    expect(await resolveMajorQuery(db, "Computer   Science")).toEqual({ kind: "match", major: { cip4: "11.07", title: "Computer Science" } });
+  });
 
-    const info = await resolveMajorQuery(db, "information");
-    expect(info.kind === "choices" && info.choices.map((c) => c.cip4)).toEqual(["11.01", "52.12"]);
-    const management = await resolveMajorQuery(db, "systems");
-    expect(management).toMatchObject({ kind: "match", major: { cip4: "52.12" } });
+  it("counts only colleges the search lists, and leaves out residencies and families no listed college offers", async () => {
+    await insertColleges(db, [
+      { unitId: 1, name: "Anywhere Online University", onlineOnly: true },
+      { unitId: 2, name: "Summit School of Medicine", predominantDegree: 4 },
+    ]);
+    await insertPrograms(db, [
+      { unitId: 1, cip4: "48.05", title: "Precision Metal Working." },
+      { unitId: 2, cip4: "51.12", title: "Medicine." },
+      { unitId: 2, cip4: "60.07", title: "Nurse Practitioner Residency/Fellowship Programs." },
+      { unitId: 1, cip4: "30.99", title: "Multi/Interdisciplinary Studies, Other." },
+    ]);
+    expect((await findPrograms(db, "welding"))[0]).toMatchObject({ cip4: "48.05", colleges: 10 });
+    expect(await findPrograms(db, "multi interdisciplinary")).toEqual([]);
+    expect(cip4s(await resolveMajorQuery(db, "nurse practitioner"))).not.toContain("60.07");
+    expect(await offeredFamilies(db, ["48.05", "51.12", "30.99", "99.99", "junk"])).toEqual(
+      new Map([
+        ["48.05", { title: "Precision Metal Working", colleges: 10 }],
+        ["51.12", { title: "Medicine", colleges: 1 }],
+      ]),
+    );
+  });
 
-    const science = await resolveMajorQuery(db, "science");
+  it("finds nothing for unknown words, filler words or too little text", async () => {
+    for (const text of ["astronomy", "", " ", "x", "degree program", "zzz"]) {
+      expect(await resolveMajorQuery(db, text)).toEqual({ kind: "none" });
+    }
+  });
+
+  it("caps the list of choices", async () => {
+    await insertColleges(db, [{ unitId: 3, name: "C" }]);
+    await insertPrograms(
+      db,
+      Array.from({ length: 12 }, (_, i) => ({ unitId: 3, cip4: `30.${String(i + 10)}`, title: `Applied Science Topic ${String.fromCharCode(65 + i)}.` })),
+    );
+    const science = await resolveMajorQuery(db, "applied science");
     expect(science.kind).toBe("choices");
     if (science.kind !== "choices") return;
     expect(science.more).toBe(true);
     expect(science.choices).toHaveLength(MAJOR_CHOICE_LIMIT);
-    // Nothing starts with "science", so the list stays alphabetical.
     expect(science.choices[0].title).toBe("Applied Science Topic A");
-
-    const nursing = await resolveMajorQuery(db, "nursing");
-    expect(nursing.kind === "choices" && nursing.choices.map((c) => c.cip4)).toEqual(["51.16", "51.39", "51.38"]);
   });
 
   it("looks up a major's title", async () => {

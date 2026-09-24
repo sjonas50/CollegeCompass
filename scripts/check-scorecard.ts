@@ -61,6 +61,11 @@ const CASES: { unitId: number; kind: string; expect: (r: ApiResult) => boolean }
     kind: "public university that reported net price as a private school (control changed)",
     expect: (r) => r["school.ownership"] === 1 && r["latest.cost.avg_net_price.public"] == null && r["latest.cost.avg_net_price.private"] != null,
   },
+  {
+    unitId: 485500,
+    kind: "small certificate school (graduation rate suppressed: fewer than 30 students)",
+    expect: (r) => r["school.degrees_awarded.predominant"] === 1 && r["latest.completion.rate_suppressed.lt_four_year_150percent"] == null,
+  },
 ];
 
 const BANDS: (keyof NetPriceByIncome)[] = ["0-30000", "30001-48000", "48001-75000", "75001-110000", "110001-plus"];
@@ -87,8 +92,9 @@ const FIELDS = [
   "latest.cost.attendance.program_year",
   "latest.cost.tuition.in_state",
   "latest.cost.tuition.out_of_state",
-  "latest.completion.completion_rate_4yr_150nt",
-  "latest.completion.completion_rate_less_than_4yr_150nt",
+  // C150_4_POOLED_SUPP and C150_L4_POOLED_SUPP: two starting classes pooled, suppressed under 30 students.
+  "latest.completion.rate_suppressed.four_year",
+  "latest.completion.rate_suppressed.lt_four_year_150percent",
   "latest.earnings.10_yrs_after_entry.median",
   "latest.aid.pell_grant_rate",
   "latest.aid.median_debt.completers.overall",
@@ -250,11 +256,11 @@ function compareSchool(ours: College | undefined, programs: Program[], theirs: A
   add("tuition in-state", "money", ours.tuitionInState, theirs["latest.cost.tuition.in_state"]);
   add("tuition out-of-state", "money", ours.tuitionOutOfState, theirs["latest.cost.tuition.out_of_state"]);
   add(
-    "completion rate",
+    "completion rate (pooled)",
     "rate",
     ours.completionRate,
-    numberOrNull(theirs["latest.completion.completion_rate_4yr_150nt"]) ??
-      numberOrNull(theirs["latest.completion.completion_rate_less_than_4yr_150nt"]),
+    numberOrNull(theirs["latest.completion.rate_suppressed.four_year"]) ??
+      numberOrNull(theirs["latest.completion.rate_suppressed.lt_four_year_150percent"]),
   );
   add("median earnings 10yr", "money", ours.medianEarnings10yr, theirs["latest.earnings.10_yrs_after_entry.median"]);
   add("Pell share", "rate", ours.pellShare, theirs["latest.aid.pell_grant_rate"]);
@@ -314,6 +320,8 @@ async function main() {
       "- Rates are stored as 32-bit reals, so they're compared to 4 decimal places (Scorecard's published precision).",
       "- The API returns ZIP+4 when the file has it; we keep the 5-digit ZIP.",
       '- The files mark missing values "NA" and privacy-suppressed ones "PS"; the API returns null for both, and so do we.',
+      "- The completion rate is the pooled, small-cohort-suppressed rate College Scorecard shows (C150_4_POOLED_SUPP,",
+      "  else C150_L4_POOLED_SUPP): two starting classes combined, and none when fewer than 30 students started.",
       "- Net price uses the school's own sector (public or private) first, then the other sector, then the discontinued",
       "  program-year and other-calendar fields, on both sides. Values can be negative when grants exceed the cost.",
       "- API program titles end with a period and include graduate credentials; we strip the period and keep levels 1-3.",

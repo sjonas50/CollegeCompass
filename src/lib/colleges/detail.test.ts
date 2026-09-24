@@ -61,22 +61,9 @@ describe("getCollege", () => {
     expect(college).not.toHaveProperty("hbcu");
   });
 
-  it("groups programs by credential level, certificates first, sorted by title", async () => {
+  it("groups programs by credential level, the college's main level first, sorted by title", async () => {
     const college = await getCollege(db, 110635);
     expect(college?.programs).toEqual([
-      {
-        credentialLevel: 1,
-        label: "Certificates",
-        programs: [
-          { cip4: "12.05", title: "Culinary Arts", medianEarnings4yr: null, medianDebt: null },
-          { cip4: "47.06", title: "Vehicle Maintenance and Repair Technologies", medianEarnings4yr: null, medianDebt: null },
-        ],
-      },
-      {
-        credentialLevel: 2,
-        label: "Associate degrees",
-        programs: [{ cip4: "51.38", title: "Registered Nursing", medianEarnings4yr: 61_000, medianDebt: 12_000 }],
-      },
       {
         credentialLevel: 3,
         label: "Bachelor's degrees",
@@ -85,7 +72,29 @@ describe("getCollege", () => {
           { cip4: "51.38", title: "Registered Nursing", medianEarnings4yr: 72_000, medianDebt: 24_000 },
         ],
       },
+      {
+        credentialLevel: 2,
+        label: "Associate degrees",
+        programs: [{ cip4: "51.38", title: "Registered Nursing", medianEarnings4yr: 61_000, medianDebt: 12_000 }],
+      },
+      {
+        credentialLevel: 1,
+        label: "Certificates",
+        programs: [
+          { cip4: "12.05", title: "Culinary Arts", medianEarnings4yr: null, medianDebt: null },
+          { cip4: "47.06", title: "Vehicle Maintenance and Repair Technologies", medianEarnings4yr: null, medianDebt: null },
+        ],
+      },
     ]);
+  });
+
+  it("leads with certificates at a college where most students earn one", async () => {
+    await insertColleges(db, [{ unitId: 3, name: "Canyon Technical Institute", predominantDegree: 1 }]);
+    await insertPrograms(db, [
+      { unitId: 3, cip4: "51.38", title: "Registered Nursing.", credentialLevel: 2 },
+      { unitId: 3, cip4: "48.05", title: "Precision Metal Working.", credentialLevel: 1 },
+    ]);
+    expect((await getCollege(db, 3))?.programs.map((g) => g.credentialLevel)).toEqual([1, 2]);
   });
 
   it("handles a college with no programs, bad links and missing data", async () => {

@@ -67,7 +67,10 @@ export type CollegeDetail = {
   tuitionOutOfState: number | null;
   missions: Mission[];
   onlineOnly: boolean;
-  /** Undergraduate programs, grouped by credential level (certificate first), sorted by title. */
+  /**
+   * Undergraduate programs grouped by credential level, sorted by title. The level most students
+   * here earn comes first, then the rest from bachelor's down.
+   */
   programs: ProgramGroup[];
 };
 
@@ -126,8 +129,11 @@ export async function getCollege(db: Db, unitId: number): Promise<CollegeDetail 
     list.push({ cip4: p.cip4, title: cleanTitle(p.title), medianEarnings4yr: p.medianEarnings4yr, medianDebt: p.medianDebt });
     groups.set(level, list);
   }
+  // The credential most students here earn comes first, then the others from bachelor's down,
+  // so a university leads with its degrees and a career school with its certificates.
+  const order = (level: Credential) => (level === row.predominantDegree ? 0 : 4 - level);
   const programs: ProgramGroup[] = [...groups.entries()]
-    .sort(([a], [b]) => a - b)
+    .sort(([a], [b]) => order(a) - order(b))
     .map(([credentialLevel, list]) => ({
       credentialLevel,
       label: CREDENTIAL_LABELS[credentialLevel].many,

@@ -5,7 +5,15 @@ import { cache, type ReactNode } from "react";
 import { AddToListButton } from "@/components/add-to-list";
 import { Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
-import { FOR_PROFIT_NOTE, MEANINGS, admissionContext, sizeText } from "@/lib/colleges/describe";
+import {
+  FOR_PROFIT_NOTE,
+  MEANINGS,
+  PUBLIC_IN_STATE_NOTE,
+  TRANSFER_NOTE,
+  admissionContext,
+  outOfStateCost,
+  sizeText,
+} from "@/lib/colleges/describe";
 import { type CollegeDetail, getCollege, parseUnitId } from "@/lib/colleges/detail";
 import { AID_EXCEEDS_COST, NOT_REPORTED, formatDollars, formatNetPrice, formatPercent } from "@/lib/colleges/format";
 import { CONTROL_LABELS, CREDENTIAL_LABELS, DEGREE_LABELS, MISSION_LABELS } from "@/lib/colleges/labels";
@@ -61,6 +69,9 @@ export default async function CollegePage({ params, searchParams }: PageProps<"/
   ].filter((f): f is string => Boolean(f));
 
   const netPrice = formatNetPrice(college.avgNetPrice);
+  // Public colleges report net price and cost of attendance for in-state students.
+  const inState = college.control === 1;
+  const outOfState = inState ? formatDollars(outOfStateCost(college.costOfAttendance, college.tuitionInState, college.tuitionOutOfState)) : null;
   const programCounts = college.programs.map(
     (g) => `${g.programs.length} ${(g.programs.length === 1 ? CREDENTIAL_LABELS[g.credentialLevel].one : g.label).toLowerCase()}`,
   );
@@ -88,9 +99,13 @@ export default async function CollegePage({ params, searchParams }: PageProps<"/
 
         <Card className="space-y-4">
           <h3 className="font-medium">Net price: what students paid after grants</h3>
-          <NetPriceHeadline byIncome={college.netPriceByIncome} />
+          <NetPriceHeadline byIncome={college.netPriceByIncome} inState={inState} />
+          {inState && <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm">{PUBLIC_IN_STATE_NOTE}</p>}
           <dl>
-            <Stat term="Average net price, all income ranges" value={netPrice ? perYear(netPrice.text) : NOT_REPORTED}>
+            <Stat
+              term={`Average net price${inState ? " for in-state students" : ""}, all income ranges`}
+              value={netPrice ? perYear(netPrice.text) : NOT_REPORTED}
+            >
               {netPrice?.aidExceedsCost
                 ? AID_EXCEEDS_COST
                 : netPrice
@@ -99,7 +114,7 @@ export default async function CollegePage({ params, searchParams }: PageProps<"/
             </Stat>
           </dl>
           <IncomeBandPicker compact />
-          <NetPriceTable byIncome={college.netPriceByIncome} />
+          <NetPriceTable byIncome={college.netPriceByIncome} inState={inState} />
           <p className="text-sm">{MEANINGS.netPrice}</p>
           {college.netPriceCalculatorUrl ? (
             <ExternalLink href={college.netPriceCalculatorUrl} variant="primary">
@@ -115,14 +130,19 @@ export default async function CollegePage({ params, searchParams }: PageProps<"/
 
         <Card className="space-y-3">
           <h3 className="font-medium">Sticker price: the full price before aid</h3>
-          <dl className="grid gap-3 sm:grid-cols-3">
-            <Stat term="Cost of attendance" value={perYear(formatDollars(college.costOfAttendance))} />
+          <dl className={`grid gap-3 ${outOfState ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
+            <Stat term={`Cost of attendance${inState ? ", in-state" : ""}`} value={perYear(formatDollars(college.costOfAttendance))} />
+            {outOfState && (
+              <Stat term="Cost of attendance, out-of-state (estimate)" value={perYear(outOfState)}>
+                The in-state cost plus the extra out-of-state tuition.
+              </Stat>
+            )}
             <Stat term="Tuition and fees, in-state" value={perYear(formatDollars(college.tuitionInState))} />
             <Stat term="Tuition and fees, out-of-state" value={perYear(formatDollars(college.tuitionOutOfState))} />
           </dl>
           <p className="text-sm text-muted">
             {MEANINGS.stickerPrice}
-            {college.control === 1 && " Public colleges usually charge less tuition to students who live in their state."}
+            {inState && " Public colleges charge less tuition to students who live in their state."}
           </p>
         </Card>
       </section>
@@ -133,7 +153,9 @@ export default async function CollegePage({ params, searchParams }: PageProps<"/
         </h2>
         <dl className="grid gap-3 sm:grid-cols-2">
           <Stat term="Graduation rate" value={formatPercent(college.completionRate) ?? NOT_REPORTED}>
+            {college.predominantDegree === 2 && college.completionRate !== null && <strong className="block font-medium">{TRANSFER_NOTE}</strong>}
             {MEANINGS.completion}
+            {college.completionRate === null && " No rate is shown when fewer than 30 students started, or when the college didn't report one."}
           </Stat>
           <Stat term="Earnings 10 years after starting" value={perYear(formatDollars(college.medianEarnings10yr))}>
             {MEANINGS.earnings}

@@ -61,15 +61,27 @@ export function parseOccupationValue(row: Row) {
   return { occupationCode, value, score };
 }
 
-/** NCES CIP2020–SOC2018 crosswalk, "CIP-SOC" sheet. */
-export function parseCipSoc(row: Row) {
+/**
+ * A CIP 2020 major from any row of the crosswalk's "CIP-SOC" sheet, including majors with no
+ * matching occupation (so major search knows every major, like "Pre-Medicine/Pre-Medical
+ * Studies"). Skips the "99.9999 NO MATCH" placeholder for occupations with no matching major.
+ */
+export function parseCipMajor(row: Row) {
   const cipCode = row.CIP2020Code?.trim();
-  const cipTitle = row.CIP2020Title?.trim().replace(/\.$/, "");
+  const title = row.CIP2020Title?.trim().replace(/\.$/, "");
+  if (!cipCode || !/^\d{2}\.\d{4}$/.test(cipCode) || !title) return null;
+  if (cipCode.startsWith("99.") || title.toUpperCase() === "NO MATCH") return null;
+  return { cipCode, title };
+}
+
+/** NCES CIP2020–SOC2018 crosswalk, "CIP-SOC" sheet: one major–occupation link. */
+export function parseCipSoc(row: Row) {
+  const major = parseCipMajor(row);
   const socCode = row.SOC2018Code?.trim();
-  if (!cipCode || !/^\d{2}\.\d{4}$/.test(cipCode) || !cipTitle) return null;
+  if (!major) return null;
   // "99-9999" and blanks mark programs with no matching occupation.
   if (!socCode || !/^\d{2}-\d{4}$/.test(socCode) || socCode === "99-9999") return null;
-  return { cipCode, cipTitle, socCode };
+  return { cipCode: major.cipCode, cipTitle: major.title, socCode };
 }
 
 /**
@@ -180,7 +192,11 @@ export function parseCollege(row: Row) {
     highestDegree: int(row.HIGHDEG),
     enrollment: int(row.UGDS),
     admissionRate: num(row.ADM_RATE),
-    completionRate: num(row.C150_4) ?? num(row.C150_L4),
+    // The rate College Scorecard itself shows: two starting classes pooled, and suppressed ("PS")
+    // when fewer than 30 students started. The single-year C150_4 / C150_L4 rates are published
+    // for cohorts as small as one student, so they'd put 0% and 100% rates from a handful of
+    // students at the top of "Highest graduation rate".
+    completionRate: num(row.C150_4_POOLED_SUPP) ?? num(row.C150_L4_POOLED_SUPP),
     medianEarnings10yr: int(row.MD_EARN_WNE_P10),
     avgNetPrice: firstInt(row, suffixes.map((s) => `NPT4_${s}`)),
     netPriceByIncome: Object.keys(netPriceByIncome).length ? netPriceByIncome : null,

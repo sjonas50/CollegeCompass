@@ -107,6 +107,15 @@ describe("net price headline", () => {
     expect(netPriceHeadline({ "0-30000": 7_000 }, null)?.text).toBe("After grants, students paid about $7,000 a year.");
     expect(netPriceHeadline(null, null)).toBeNull();
   });
+
+  it("says the price is for in-state students at public colleges", () => {
+    expect(netPriceHeadline(prices, "0-30000", { inState: true })?.text).toBe(
+      "For families earning $0–$30,000, in-state students paid about $6,500 a year after grants.",
+    );
+    expect(netPriceHeadline(prices, null, { inState: true })?.text).toBe(
+      "After grants, in-state students paid about $6,500 to $24,000 a year, depending on family income.",
+    );
+  });
 });
 
 describe("stored band (browser only)", () => {

@@ -60,8 +60,14 @@ export type NetPriceHeadline =
 /**
  * The sentence that headlines a college's net price. With a chosen band it names that band's
  * price; without one it gives the range across bands. Null when no band prices were reported.
+ * Public colleges report net prices for in-state students only, so pass `inState` for them.
  */
-export function netPriceHeadline(byIncome: NetPriceByIncome | null | undefined, band: IncomeBand | null): NetPriceHeadline | null {
+export function netPriceHeadline(
+  byIncome: NetPriceByIncome | null | undefined,
+  band: IncomeBand | null,
+  { inState = false }: { inState?: boolean } = {},
+): NetPriceHeadline | null {
+  const students = inState ? "in-state students" : "students";
   if (band) {
     const value = valueOf(byIncome, band);
     const label = incomeBandLabel(band);
@@ -73,7 +79,7 @@ export function netPriceHeadline(byIncome: NetPriceByIncome | null | undefined, 
     }
     return {
       kind: "band",
-      text: `For families earning ${label}, students paid about ${formatDollars(value)} a year after grants.`,
+      text: `For families earning ${label}, ${students} paid about ${formatDollars(value)} a year after grants.`,
       aidExceedsCost: value < 0,
     };
   }
@@ -85,8 +91,8 @@ export function netPriceHeadline(byIncome: NetPriceByIncome | null | undefined, 
     kind: "range",
     text:
       low === high
-        ? `After grants, students paid about ${low} a year.`
-        : `After grants, students paid about ${low} to ${high} a year, depending on family income.`,
+        ? `After grants, ${students} paid about ${low} a year.`
+        : `After grants, ${students} paid about ${low} to ${high} a year, depending on family income.`,
   };
 }
 

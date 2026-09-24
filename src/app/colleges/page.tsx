@@ -31,6 +31,7 @@ export default async function CollegesPage({ searchParams }: PageProps<"/college
 
   // A major comes from ?major= (e.g. from a career page) or from words typed in the major field.
   let majorTitle: string | null = null;
+  let majorIncludes: string | null = null;
   let choices: Extract<MajorQueryResult, { kind: "choices" }> | null = null;
   let majorNotFound: string | null = null;
   if (filters.major) {
@@ -40,6 +41,7 @@ export default async function CollegesPage({ searchParams }: PageProps<"/college
     if (resolved.kind === "match") {
       filters.major = resolved.major.cip4;
       majorTitle = resolved.major.title;
+      majorIncludes = resolved.major.includes ?? null;
     } else if (resolved.kind === "choices") {
       choices = resolved;
     } else {
@@ -57,33 +59,36 @@ export default async function CollegesPage({ searchParams }: PageProps<"/college
         lead="Compare four-year colleges, community colleges and career schools. We show the net price, what students actually paid after grants, before the sticker price."
       />
 
-      <SearchForm filters={filters} majorTitle={majorTitle} majorQuery={filters.major ? null : majorQuery} />
+      <SearchForm filters={filters} majorTitle={majorTitle} majorIncludes={majorIncludes} majorQuery={filters.major ? null : majorQuery} />
 
-      {choices && <MajorChoices query={majorQuery ?? ""} choices={choices.choices} more={choices.more} filters={filters} />}
+      {/* Searches and page links jump here (#results), so phones don't land back at the top of the form. */}
+      <div id="results" className="scroll-mt-4 space-y-6">
+        {choices && <MajorChoices query={majorQuery ?? ""} choices={choices.choices} more={choices.more} filters={filters} />}
 
-      {majorNotFound !== null && (
-        <p role="status" className="rounded-lg bg-accent-soft px-4 py-3 text-sm">
-          We couldn&apos;t find a major matching &ldquo;{majorNotFound}&rdquo;, so these results include every major. Try a
-          shorter or more general word, like &ldquo;nurs&rdquo;, &ldquo;business&rdquo; or &ldquo;auto&rdquo;.
-        </p>
-      )}
+        {majorNotFound !== null && (
+          <p role="status" className="rounded-lg bg-accent-soft px-4 py-3 text-sm">
+            We couldn&apos;t find a major matching &ldquo;{majorNotFound}&rdquo;, so these results include every major. Try
+            another word for it, like &ldquo;nurse&rdquo;, &ldquo;business&rdquo; or &ldquo;auto repair&rdquo;.
+          </p>
+        )}
 
-      {result && (
-        <>
-          {result.total > 0 && (
-            <section aria-labelledby="income-heading" className="rounded-xl border border-border bg-surface p-5">
-              <h2 id="income-heading" className="font-medium">
-                Prices for families like yours
-              </h2>
-              <p className="mt-1 mb-3 text-sm text-muted">
-                What a college costs depends a lot on family income. Colleges report what students in each income range paid.
-              </p>
-              <IncomeBandPicker />
-            </section>
-          )}
-          <Results filters={filters} result={result} />
-        </>
-      )}
+        {result && (
+          <>
+            {result.total > 0 && (
+              <section aria-labelledby="income-heading" className="rounded-xl border border-border bg-surface p-5">
+                <h2 id="income-heading" className="font-medium">
+                  Prices for families like yours
+                </h2>
+                <p className="mt-1 mb-3 text-sm text-muted">
+                  What a college costs depends a lot on family income. Colleges report what students in each income range paid.
+                </p>
+                <IncomeBandPicker />
+              </section>
+            )}
+            <Results filters={filters} result={result} />
+          </>
+        )}
+      </div>
 
       <NumbersExplainer />
       <ScorecardAttribution />
@@ -108,16 +113,21 @@ function MajorChoices({
         Which major do you mean?
       </h2>
       <p className="mt-1 text-sm text-muted">
-        A few majors match &ldquo;{query}&rdquo;. Pick one to see colleges that offer it.
+        A few majors match &ldquo;{query}&rdquo;. Colleges often use formal names for programs. Pick one to see colleges
+        that offer it.
       </p>
       <ul className="mt-3 divide-y divide-border">
         {choices.map((m) => (
           <li key={m.cip4}>
             <Link
-              href={collegeSearchHref({ ...filters, major: m.cip4, page: undefined })}
-              className="flex min-h-11 items-center py-2 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-accent"
+              href={`${collegeSearchHref({ ...filters, major: m.cip4, page: undefined })}#results`}
+              className="group block min-h-11 py-2 focus-visible:outline-2 focus-visible:outline-accent"
             >
-              {m.title}
+              <span className="underline-offset-2 group-hover:underline">{m.title}</span>
+              <span className="block text-sm text-muted">
+                {m.includes && <>Includes {m.includes}. </>}
+                Offered at {formatCount(m.colleges)} {m.colleges === 1 ? "college" : "colleges"} nationwide.
+              </span>
             </Link>
           </li>
         ))}
@@ -167,7 +177,7 @@ function Results({ filters, result }: { filters: CollegeSearchFilters; result: A
         page={result.page}
         total={result.total}
         pageSize={result.pageSize}
-        hrefFor={(page) => collegeSearchHref({ ...filters, page })}
+        hrefFor={(page) => `${collegeSearchHref({ ...filters, page })}#results`}
       />
     </section>
   );
@@ -176,7 +186,7 @@ function Results({ filters, result }: { filters: CollegeSearchFilters; result: A
 function EmptyState({ filters }: { filters: CollegeSearchFilters }) {
   const tips = [
     "Remove a filter or two. Each one makes the list smaller.",
-    filters.q && "Check the spelling, or type just part of the name, like “state” or “tech”.",
+    filters.q && "Check the spelling, or type just part of the name or city, like “state” or “tech”.",
     filters.major && "Try a broader major. Some programs go by a different name, like “business” instead of “marketing”.",
     filters.major && filters.credential && "Try any type of program. Some majors are offered only as a certificate or only as a degree.",
     filters.state && "Try a nearby state, or pick “Any state”.",

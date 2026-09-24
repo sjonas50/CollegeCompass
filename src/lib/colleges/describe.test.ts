@@ -1,5 +1,55 @@
 import { describe, expect, it } from "vitest";
-import { admissionContext, locationText, pageList, resultRange, sizeText } from "./describe";
+import {
+  MEANINGS,
+  PUBLIC_IN_STATE_NOTE,
+  TRANSFER_NOTE,
+  admissionContext,
+  locationText,
+  outOfStateCost,
+  pageList,
+  resultRange,
+  sizeText,
+} from "./describe";
+
+describe("MEANINGS", () => {
+  it("explains what each College Scorecard number does and doesn't count", () => {
+    // Public colleges' net price and cost of attendance are for in-state students.
+    expect(MEANINGS.netPrice).toContain("At public colleges, it's for students from the college's state.");
+    expect(MEANINGS.stickerPrice).toContain("At public colleges, it's the price for students from the college's state.");
+    // Transfers count against the graduation rate.
+    expect(MEANINGS.completion).toContain("Students who transfer to another college before they finish count as not finishing.");
+    // Median debt is among borrowers only.
+    expect(MEANINGS.debt).toContain("graduates who took out federal loans");
+    expect(MEANINGS.debt).toContain("Students who didn't borrow aren't counted");
+  });
+
+  /** Flesch-Kincaid grade level, with a simple syllable count. */
+  function gradeLevel(text: string) {
+    const syllables = (word: string) => {
+      const w = word.toLowerCase().replace(/[^a-z]/g, "");
+      if (w.length <= 3) return 1;
+      return Math.max(1, (w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, "").replace(/^y/, "").match(/[aeiouy]{1,2}/g) ?? []).length);
+    };
+    const sentences = Math.max(1, (text.match(/[.!?]+(\s|$)/g) ?? []).length);
+    const words = text.split(/\s+/).filter((w) => /[a-z0-9]/i.test(w));
+    return 0.39 * (words.length / sentences) + 11.8 * (words.reduce((n, w) => n + syllables(w), 0) / words.length) - 15.59;
+  }
+
+  it("reads at about an 8th-grade level or below", () => {
+    const texts = [...Object.values(MEANINGS), PUBLIC_IN_STATE_NOTE, TRANSFER_NOTE, admissionContext(null), admissionContext(0.3)];
+    for (const text of texts) expect(gradeLevel(text), text).toBeLessThanOrEqual(8.5);
+  });
+});
+
+describe("outOfStateCost", () => {
+  it("adds the extra out-of-state tuition to the in-state cost of attendance", () => {
+    // University of Michigan-Ann Arbor, June 2026 release.
+    expect(outOfStateCost(34_654, 17_736, 60_946)).toBe(77_864);
+    expect(outOfStateCost(20_000, 5_000, 5_000)).toBeNull();
+    expect(outOfStateCost(null, 5_000, 9_000)).toBeNull();
+    expect(outOfStateCost(20_000, null, 9_000)).toBeNull();
+  });
+});
 
 describe("locationText", () => {
   it("joins whatever parts are known", () => {
@@ -36,7 +86,9 @@ describe("admissionContext", () => {
   it("explains a missing rate without saying null", () => {
     for (const rate of [null, undefined, Number.NaN]) {
       const text = admissionContext(rate);
-      expect(text).toContain("open admission");
+      expect(text).toBe(
+        "No admission rate is listed. Colleges that take everyone who applies, like most community colleges, usually don't report one. This is called open admission.",
+      );
       expect(text).not.toMatch(/null|NaN/);
     }
   });

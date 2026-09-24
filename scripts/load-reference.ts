@@ -27,6 +27,7 @@ import {
 } from "../src/db/schema";
 import {
   collectCollegePrograms,
+  parseCipMajor,
   parseCipSoc,
   parseCollege,
   parseJobZone,
@@ -107,10 +108,12 @@ async function main() {
 
   const sheet = await readSheet(files.crosswalk, "CIP-SOC");
   const [header, ...body] = sheet;
-  const crosswalk = body
-    .map((cells) => parseCipSoc(Object.fromEntries(header.map((h, i) => [String(h), cells[i] == null ? undefined : String(cells[i])]))))
-    .filter((r) => r !== null);
-  const majorRows = [...new Map(crosswalk.map((r) => [r.cipCode, { cipCode: r.cipCode, title: r.cipTitle }])).values()];
+  const sheetRows = body.map((cells) =>
+    Object.fromEntries(header.map((h, i) => [String(h), cells[i] == null ? undefined : String(cells[i])])),
+  );
+  // Every major, including those with no matching occupation (for major search), and the links.
+  const majorRows = [...new Map(sheetRows.map(parseCipMajor).filter((r) => r !== null).map((r) => [r.cipCode, r])).values()];
+  const crosswalk = sheetRows.map(parseCipSoc).filter((r) => r !== null);
   const linkRows = [...new Map(crosswalk.map((r) => [`${r.cipCode}|${r.socCode}`, { cipCode: r.cipCode, socCode: r.socCode }])).values()];
 
   const collegeRows = await collect(await csvFromZip(files.scorecard), parseCollege);

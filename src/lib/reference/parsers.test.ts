@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createTestDb, schema } from "@/db";
 import {
   collectCollegePrograms,
+  parseCipMajor,
   parseCipSoc,
   parseCollege,
   parseCollegeProgram,
@@ -42,6 +43,17 @@ describe("reference parsers", () => {
     expect(parseCipSoc({ CIP2020Code: "01.0000", CIP2020Title: "Agriculture, General.", SOC2018Code: "19-1011", SOC2018Title: "Animal Scientists" }))
       .toEqual({ cipCode: "01.0000", cipTitle: "Agriculture, General", socCode: "19-1011" });
     expect(parseCipSoc({ CIP2020Code: "01.0000", CIP2020Title: "Agriculture, General.", SOC2018Code: "99-9999" })).toBeNull();
+    // Occupations with no matching major are listed under a "99.9999 NO MATCH" major.
+    expect(parseCipSoc({ CIP2020Code: "99.9999", CIP2020Title: "NO MATCH", SOC2018Code: "27-1023", SOC2018Title: "Floral Designers" })).toBeNull();
+  });
+
+  it("keeps every real major for major search, even with no matching occupation, but not NO MATCH", () => {
+    expect(parseCipMajor({ CIP2020Code: "51.1102", CIP2020Title: "Pre-Medicine/Pre-Medical Studies.", SOC2018Code: "99-9999", SOC2018Title: "NO MATCH" }))
+      .toEqual({ cipCode: "51.1102", title: "Pre-Medicine/Pre-Medical Studies" });
+    expect(parseCipMajor({ CIP2020Code: "48.0508", CIP2020Title: "Welding Technology/Welder.", SOC2018Code: "51-4121" }))
+      .toEqual({ cipCode: "48.0508", title: "Welding Technology/Welder" });
+    expect(parseCipMajor({ CIP2020Code: "99.9999", CIP2020Title: "NO MATCH", SOC2018Code: "25-3041", SOC2018Title: "Tutors" })).toBeNull();
+    expect(parseCipMajor({ CIP2020Code: "5111", CIP2020Title: "Health/Medical Preparatory Programs." })).toBeNull();
   });
 
   it("parses Scorecard institutions with every column we keep (public HBCU)", () => {
@@ -49,7 +61,7 @@ describe("reference parsers", () => {
       UNITID: "100654", INSTNM: "Alabama A & M University", CITY: "Normal", STABBR: "AL", ZIP: "35762",
       INSTURL: "www.aamu.edu/", NPCURL: "www.aamu.edu/admissions-aid/tuition-fees/net-price-calculator.html",
       CONTROL: "1", PREDDEG: "3", HIGHDEG: "4", CURROPER: "1", UGDS: "6124", ADM_RATE: "0.5795", C150_4: "0.2403",
-      C150_L4: "NA", MD_EARN_WNE_P10: "40628", NPT4_PUB: "17621", NPT4_PRIV: "NA", NPT4_PROG: "NA", NPT4_OTHER: "NA",
+      C150_L4: "NA", C150_4_POOLED_SUPP: "0.2629", C150_L4_POOLED_SUPP: "NA", MD_EARN_WNE_P10: "40628", NPT4_PUB: "17621", NPT4_PRIV: "NA", NPT4_PROG: "NA", NPT4_OTHER: "NA",
       NPT41_PUB: "16500", NPT42_PUB: "16387", NPT43_PUB: "19622", NPT44_PUB: "21680", NPT45_PUB: "20364",
       NPT41_PRIV: "NA", COSTT4_A: "27153", COSTT4_P: "NA", TUITIONFEE_IN: "10024", TUITIONFEE_OUT: "18634",
       PCTPELL: "0.6298", GRAD_DEBT_MDN: "31000", HBCU: "1", HSI: "0", TRIBAL: "0", DISTANCEONLY: "0",
@@ -59,7 +71,7 @@ describe("reference parsers", () => {
       url: "https://www.aamu.edu/",
       netPriceCalculatorUrl: "https://www.aamu.edu/admissions-aid/tuition-fees/net-price-calculator.html",
       control: 1, predominantDegree: 3, highestDegree: 4, enrollment: 6124, admissionRate: 0.5795,
-      completionRate: 0.2403, medianEarnings10yr: 40628, avgNetPrice: 17621,
+      completionRate: 0.2629, medianEarnings10yr: 40628, avgNetPrice: 17621,
       netPriceByIncome: {
         "0-30000": 16500, "30001-48000": 16387, "48001-75000": 19622, "75001-110000": 21680, "110001-plus": 20364,
       },
@@ -93,14 +105,30 @@ describe("reference parsers", () => {
     const tcat = parseCollege({
       UNITID: "221102", INSTNM: "Tennessee College of Applied Technology-Murfreesboro", STABBR: "TN", ZIP: "37129-3311",
       CONTROL: "1", PREDDEG: "1", HIGHDEG: "1", CURROPER: "1", UGDS: "709", C150_4: "NA", C150_L4: "0.7615",
+      C150_4_POOLED_SUPP: "NA", C150_L4_POOLED_SUPP: "0.7525",
       NPT4_PUB: "6631", NPT4_PRIV: "NA", NPT41_PUB: "1020", NPT42_PUB: "2270", NPT43_PUB: "8579", NPT44_PUB: "NA",
       NPT45_PUB: "NA", COSTT4_A: "NA", COSTT4_P: "12415", TUITIONFEE_IN: "NA", TUITIONFEE_OUT: "NA", GRAD_DEBT_MDN: "PS",
     });
     expect(tcat).toMatchObject({
-      zip: "37129", predominantDegree: 1, completionRate: 0.7615, avgNetPrice: 6631,
+      zip: "37129", predominantDegree: 1, completionRate: 0.7525, avgNetPrice: 6631,
       netPriceByIncome: { "0-30000": 1020, "30001-48000": 2270, "48001-75000": 8579 },
       costOfAttendance: 12415, tuitionInState: null, tuitionOutOfState: null, medianDebt: null,
     });
+  });
+
+  it("uses the pooled graduation rate, which College Scorecard leaves out for fewer than 30 students", () => {
+    // ABCO Technology: the single-year rate is 100% from a starting class of 2 students.
+    const abco = parseCollege({
+      UNITID: "485500", INSTNM: "ABCO Technology", CITY: "Los Angeles", PREDDEG: "1", CONTROL: "3", CURROPER: "1",
+      C150_4: "NA", C150_L4: "1", C150_4_POOLED_SUPP: "NA", C150_L4_POOLED_SUPP: "PS", D150_L4: "2", D150_L4_POOLED: "15",
+    });
+    expect(abco?.completionRate).toBeNull();
+    // Austin Community College District reports under the four-year columns.
+    const acc = parseCollege({
+      UNITID: "222992", INSTNM: "Austin Community College District", PREDDEG: "2", CONTROL: "1", CURROPER: "1",
+      C150_4: "0.202", C150_L4: "NA", C150_4_POOLED_SUPP: "0.1913", C150_L4_POOLED_SUPP: "NA",
+    });
+    expect(acc?.completionRate).toBe(0.1913);
   });
 
   it("falls back to program-year and other-calendar net price columns (older releases)", () => {
@@ -233,14 +261,14 @@ describe("reference parsers", () => {
       const db = await createTestDb();
       const college = parseCollege({
         UNITID: "221102", INSTNM: "Tennessee College of Applied Technology-Murfreesboro", CONTROL: "1", PREDDEG: "1",
-        CURROPER: "1", ZIP: "37129-3311", C150_L4: "0.7615", PCTPELL: "0.4919", NPT4_PUB: "6631", NPT41_PUB: "1020", COSTT4_P: "12415",
+        CURROPER: "1", ZIP: "37129-3311", C150_L4_POOLED_SUPP: "0.7525", PCTPELL: "0.4919", NPT4_PUB: "6631", NPT41_PUB: "1020", COSTT4_P: "12415",
       })!;
       const programs = await collectCollegePrograms([tcatHvac, { ...tcatHvac, CIPCODE: "5139", CIPDESC: "Practical Nursing." }], new Set([college.unitId]));
       await db.insert(schema.colleges).values([college]);
       await db.insert(schema.collegePrograms).values(programs);
 
       const [stored] = await db.select().from(schema.colleges);
-      expect(stored).toMatchObject({ ...college, completionRate: expect.closeTo(0.7615, 4), pellShare: expect.closeTo(0.4919, 4) });
+      expect(stored).toMatchObject({ ...college, completionRate: expect.closeTo(0.7525, 4), pellShare: expect.closeTo(0.4919, 4) });
       expect(await db.select().from(schema.collegePrograms)).toEqual(expect.arrayContaining(programs));
 
       // Reloading deletes programs before colleges, as scripts/load-reference.ts does.

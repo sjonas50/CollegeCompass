@@ -12,20 +12,47 @@ export const SCORECARD_RELEASE = "June 2026";
  * usable by the AI counselor) so every place explains a number the same way.
  */
 export const MEANINGS = {
+  // College Scorecard (IPEDS) net price and cost of attendance at public colleges are for students
+  // paying the in-state (or in-district) rate.
   netPrice:
-    "Net price is what students paid for one year after grants and scholarships (money you don't pay back). It's the average for students who got federal financial aid, and it covers tuition, fees, books, housing and food. Your own price can be higher or lower. Each college's net price calculator gives you a personal estimate.",
+    "Net price is what students paid for one year after grants and scholarships (money you don't pay back). It's the average for students who got federal financial aid, and it covers tuition, fees, books, housing and food. At public colleges, it's for students from the college's state. Your own price can be higher or lower. Each college's net price calculator gives you a personal estimate.",
   stickerPrice:
-    "The sticker price (cost of attendance) is the full price for one year before any aid: tuition, fees, books, housing and food. Most students pay less than this.",
+    "The sticker price (cost of attendance) is the full price for one year before any aid: tuition, fees, books, housing and food. At public colleges, it's the price for students from the college's state. Most students pay less than this.",
+  // The pooled rate (two starting classes, none under 30 students); IPEDS counts transfers as
+  // not completing.
   completion:
-    "The share of first-time, full-time students who finished within 1.5 times the usual length, like 6 years for a 4-year degree or 3 years for a 2-year degree.",
+    "The share of students who finished within 1.5 times the usual time, like 6 years for a 4-year degree or 3 years for a 2-year degree. It follows full-time students who started college here, from two starting years. Students who transfer to another college before they finish count as not finishing. Many community college students plan to transfer, so community college rates often look low.",
   earnings:
-    "Typical (median) yearly earnings of former students 10 years after they started here, counting students who got federal aid, whether or not they finished.",
-  debt: "Typical (median) federal student loan debt for students who finished here. Half owed more and half owed less. Private loans aren't included.",
+    "This is the typical (median) yearly pay of former students 10 years after they started here. It counts students who got federal aid, whether they finished or not.",
+  // GRAD_DEBT_MDN and the field-of-study debt are medians among borrowers only.
+  debt: "Typical (median) federal loan debt of graduates who took out federal loans. Half of those borrowers owed more and half owed less. Students who didn't borrow aren't counted, and private loans aren't included.",
   pell: "Pell Grants are federal grants for students from families with lower incomes. You don't pay them back.",
 } as const;
 
 export const FOR_PROFIT_NOTE =
   "This is a for-profit college. It's a good idea to compare its graduation rate, earnings and debt with other colleges before you decide.";
+
+/** Shown with a public college's net price and cost of attendance. */
+export const PUBLIC_IN_STATE_NOTE =
+  "At public colleges, these prices are for students who live in the college's state. If you live in another state, you'll likely pay more.";
+
+/** Shown with the graduation rate of colleges where most students earn an associate degree. */
+export const TRANSFER_NOTE = "Students who transfer out count as not graduating.";
+
+/**
+ * A rough yearly cost of attendance for out-of-state students at a public college: the in-state
+ * cost plus the extra out-of-state tuition. Null unless all three numbers are reported and
+ * out-of-state tuition is higher.
+ */
+export function outOfStateCost(
+  costOfAttendance: number | null | undefined,
+  tuitionInState: number | null | undefined,
+  tuitionOutOfState: number | null | undefined,
+): number | null {
+  if (![costOfAttendance, tuitionInState, tuitionOutOfState].every((n) => typeof n === "number" && Number.isFinite(n))) return null;
+  const extra = (tuitionOutOfState as number) - (tuitionInState as number);
+  return extra > 0 ? (costOfAttendance as number) + extra : null;
+}
 
 /** "Austin, TX", or whichever part is known, or null. */
 export function locationText(city: string | null | undefined, state: string | null | undefined): string | null {
@@ -47,7 +74,7 @@ export function sizeText(enrollment: number | null | undefined): string | null {
  */
 export function admissionContext(rate: number | null | undefined): string {
   if (typeof rate !== "number" || !Number.isFinite(rate)) {
-    return "Colleges that accept everyone who applies (open admission), like most community colleges, usually don't report one.";
+    return "No admission rate is listed. Colleges that take everyone who applies, like most community colleges, usually don't report one. This is called open admission.";
   }
   if (rate < 0.25) return "This college is very selective. Most colleges admit most of the students who apply.";
   if (rate < 0.5) return "This college admits fewer than half of applicants. Most colleges admit most of the students who apply.";

@@ -69,8 +69,8 @@ export function ProgramGroups({ groups }: { groups: ProgramGroup[] }) {
     <div className="space-y-6">
       <p className="text-sm text-muted">
         Earnings are the typical (median) yearly pay of graduates who got federal aid, 4 years after finishing. Debt is the
-        typical federal student loan debt when they finished. Numbers appear only when enough students graduated to report
-        them.
+        typical federal loan debt of graduates who took out federal loans. Students who didn&apos;t borrow aren&apos;t
+        counted. Numbers appear only when enough students graduated to report them.
       </p>
       {groups.map((group) => {
         const headingId = `programs-${group.credentialLevel}`;
@@ -81,9 +81,11 @@ export function ProgramGroups({ groups }: { groups: ProgramGroup[] }) {
               {group.label} <span className="font-normal text-muted">({count})</span>
             </h3>
             {group.programs.length > OPEN_LIMIT ? (
-              <details className="mt-1">
-                <summary className="flex min-h-11 cursor-pointer items-center text-sm underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-accent">
-                  Show all {count}
+              <details className="group mt-1">
+                {/* Left as a list item (not flex) so browsers keep the open/closed triangle. */}
+                <summary className="min-h-11 cursor-pointer content-center text-sm font-medium focus-visible:outline-2 focus-visible:outline-accent">
+                  <span className="group-open:hidden">Show all {count}</span>
+                  <span className="hidden group-open:inline">Hide the list</span>
                 </summary>
                 <ProgramList programs={group.programs} />
               </details>

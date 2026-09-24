@@ -82,8 +82,8 @@ export function IncomeBandPicker({ compact = false }: { compact?: boolean }) {
       </label>
       <p id={`${id}-hint`} className="text-sm text-muted">
         {compact
-          ? "Stays on this device. We never ask for or save it."
-          : "Pick a range to see what families like yours paid. Your choice stays on this device. We never ask for your family's income or save it."}
+          ? "Saved only in this browser. Never sent to us."
+          : "Pick a range to see what families like yours paid. Your choice is saved only in this browser, so you don't have to pick it again. It's never sent to College Compass."}
       </p>
       <select
         id={id}
@@ -105,11 +105,20 @@ export function IncomeBandPicker({ compact = false }: { compact?: boolean }) {
 
 /**
  * One line about price by family income: the chosen band's price, or the range across bands
- * when nothing is chosen. Renders nothing when the college reported no band prices.
+ * when nothing is chosen. Renders nothing when the college reported no band prices. `inState`
+ * for public colleges, whose net prices are for in-state students.
  */
-export function BandPriceLine({ byIncome, className = "" }: { byIncome: NetPriceByIncome | null; className?: string }) {
+export function BandPriceLine({
+  byIncome,
+  inState = false,
+  className = "",
+}: {
+  byIncome: NetPriceByIncome | null;
+  inState?: boolean;
+  className?: string;
+}) {
   const band = useIncomeBand();
-  const headline = netPriceHeadline(byIncome, band);
+  const headline = netPriceHeadline(byIncome, band, { inState });
   if (!headline) return null;
   return (
     <p className={`text-sm ${headline.kind === "band" ? "font-medium" : "text-muted"} ${className}`}>
@@ -120,9 +129,9 @@ export function BandPriceLine({ byIncome, className = "" }: { byIncome: NetPrice
 }
 
 /** The detail page's net price headline, with a prompt to pick a range when none is chosen. */
-export function NetPriceHeadline({ byIncome }: { byIncome: NetPriceByIncome | null }) {
+export function NetPriceHeadline({ byIncome, inState = false }: { byIncome: NetPriceByIncome | null; inState?: boolean }) {
   const band = useIncomeBand();
-  const headline = netPriceHeadline(byIncome, band);
+  const headline = netPriceHeadline(byIncome, band, { inState });
   return (
     <div className="space-y-1" aria-live="polite">
       {headline ? (
@@ -137,12 +146,14 @@ export function NetPriceHeadline({ byIncome }: { byIncome: NetPriceByIncome | nu
 }
 
 /** Net price for every income band, with the chosen band highlighted. */
-export function NetPriceTable({ byIncome }: { byIncome: NetPriceByIncome | null }) {
+export function NetPriceTable({ byIncome, inState = false }: { byIncome: NetPriceByIncome | null; inState?: boolean }) {
   const band = useIncomeBand();
   const rows = netPriceRows(byIncome);
   return (
     <table className="w-full text-sm">
-      <caption className="mb-1 text-left text-sm text-muted">Average net price per year, by family income</caption>
+      <caption className="mb-1 text-left text-sm text-muted">
+        Average net price per year{inState ? " for in-state students" : ""}, by family income
+      </caption>
       <thead>
         <tr className="text-left text-muted">
           <th scope="col" className="py-2 pr-3 font-normal">

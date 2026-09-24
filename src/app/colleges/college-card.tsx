@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FOR_PROFIT_NOTE, locationText, sizeText } from "@/lib/colleges/describe";
+import { FOR_PROFIT_NOTE, TRANSFER_NOTE, locationText, sizeText } from "@/lib/colleges/describe";
 import { AID_EXCEEDS_COST, NOT_REPORTED, formatDollars, formatNetPrice, formatPercent } from "@/lib/colleges/format";
 import { CONTROL_LABELS, DEGREE_LABELS } from "@/lib/colleges/labels";
 import type { CollegeSummary } from "@/lib/colleges/search";
@@ -19,6 +19,8 @@ export function CollegeCard({ college, major }: { college: CollegeSummary; major
     college.predominantDegree ? DEGREE_LABELS[college.predominantDegree]?.typical : null,
   ].filter((f): f is string => Boolean(f));
   const headingId = `college-${college.unitId}`;
+  // Public colleges report net price and cost of attendance for in-state students.
+  const inState = college.control === 1;
 
   return (
     <li>
@@ -37,32 +39,41 @@ export function CollegeCard({ college, major }: { college: CollegeSummary; major
           <MissionBadges missions={college.missions} onlineOnly={college.onlineOnly} />
         </div>
 
-        <dl className="mt-3 rounded-lg bg-background p-3">
-          <div>
-            <dt className="text-sm text-muted">Average net price (after grants)</dt>
-            <dd>
-              {netPrice ? (
-                <>
-                  <span className="text-2xl font-semibold tabular-nums">{netPrice.text}</span>{" "}
-                  <span className="text-sm text-muted">a year</span>
-                  {netPrice.aidExceedsCost && <span className="block text-sm">{AID_EXCEEDS_COST}</span>}
-                </>
-              ) : (
-                <span className="text-sm">Not reported for this college. Its own net price calculator can give an estimate.</span>
-              )}
-              <BandPriceLine byIncome={college.netPriceByIncome} className="mt-1" />
-            </dd>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-x-1 text-sm text-muted">
-            <dt>Sticker price before aid:</dt>
-            <dd className="tabular-nums">{sticker ? `${sticker} a year` : NOT_REPORTED.toLowerCase()}</dd>
-          </div>
-        </dl>
+        <div className="mt-3 rounded-lg bg-background p-3">
+          <dl>
+            <div>
+              <dt className="text-sm text-muted">Average net price after grants{inState ? ", in-state" : ""}</dt>
+              <dd>
+                {netPrice ? (
+                  <>
+                    <span className="text-2xl font-semibold tabular-nums">{netPrice.text}</span>{" "}
+                    <span className="text-sm text-muted">a year</span>
+                    {netPrice.aidExceedsCost && <span className="block text-sm">{AID_EXCEEDS_COST}</span>}
+                  </>
+                ) : (
+                  <span className="text-sm">Not reported for this college. Its own net price calculator can give an estimate.</span>
+                )}
+                <BandPriceLine byIncome={college.netPriceByIncome} inState={inState} className="mt-1" />
+              </dd>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-x-1 text-sm text-muted">
+              <dt>Sticker price before aid{inState ? ", in-state" : ""}:</dt>
+              <dd className="tabular-nums">{sticker ? `${sticker} a year` : NOT_REPORTED.toLowerCase()}</dd>
+            </div>
+          </dl>
+          {inState && <p className="mt-1 text-sm text-muted">Students from other states usually pay more at public colleges.</p>}
+        </div>
 
         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div>
             <dt className="text-muted">Graduation rate</dt>
-            <dd className="font-medium tabular-nums">{completion ?? NOT_REPORTED}</dd>
+            <dd className="font-medium tabular-nums">
+              {completion ?? NOT_REPORTED}
+              {/* Community college students often transfer on purpose, which this rate counts against them. */}
+              {completion && college.predominantDegree === 2 && (
+                <span className="block text-xs font-normal text-muted">{TRANSFER_NOTE}</span>
+              )}
+            </dd>
           </div>
           <div>
             <dt className="text-muted">Earnings 10 years after starting</dt>

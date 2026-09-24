@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CareerPage from "@/app/careers/[code]/page";
 import { type Db, createTestDb } from "@/db";
 import { cipSocLinks, majors, occupationInterests, occupations } from "@/db/schema";
-import { insertColleges, insertPrograms } from "@/lib/colleges/test-fixtures";
+import { insertColleges, insertMajorSearchData, insertPrograms } from "@/lib/colleges/test-fixtures";
 import CollegePage, { generateMetadata } from "./[unitId]/page";
 import CollegesPage from "./page";
 
@@ -85,17 +85,64 @@ describe("/colleges search page", () => {
     expect(lakeside).toContain("Austin, TX · Public · Large (22,000 undergraduates) · Mostly bachelor's degrees");
     expect(lakeside.indexOf("Average net price")).toBeLessThan(lakeside.indexOf("Sticker price"));
     expect(lakeside).toContain("$15,000 a year");
-    expect(lakeside).toContain("Sticker price before aid: $28,000 a year");
     expect(lakeside).toContain("Graduation rate 60%");
     expect(lakeside).toContain("Earnings 10 years after starting $50,000 a year");
     expectCleanNumbers(html);
   });
 
+  it("says a public college's prices are for in-state students", async () => {
+    const words = text(await searchPage());
+    // Cards are in name order: Canyon, then Lakeside.
+    const canyon = words.slice(words.indexOf("Canyon Technical Institute"), words.indexOf("Lakeside State University"));
+    const lakeside = words.slice(words.indexOf("Lakeside State University"), words.indexOf("What these numbers mean"));
+    expect(lakeside).toContain("Average net price after grants, in-state $15,000 a year");
+    expect(lakeside).toContain("After grants, in-state students paid about $9,000 to $21,000 a year");
+    expect(lakeside).toContain("Sticker price before aid, in-state: $28,000 a year");
+    expect(lakeside).toContain("Students from other states usually pay more at public colleges.");
+    // Canyon is for-profit: its prices apply to everyone.
+    expect(canyon).toContain("Average net price after grants $0 a year");
+    expect(canyon).not.toMatch(/in-state|other states/);
+  });
+
+  it("notes that transfers count against a community college's graduation rate", async () => {
+    await insertColleges(state.db!, [{ unitId: 4, name: "Mesa Community College", predominantDegree: 2, completionRate: 0.2 }]);
+    const words = text(await searchPage());
+    expect(words.slice(words.indexOf("Mesa Community College"))).toContain("Graduation rate 20% Students who transfer out count as not graduating.");
+    // Only on the community college's card.
+    expect(words.match(/Students who transfer out count as not graduating/g)).toHaveLength(1);
+  });
+
   it("shows the range across income bands and asks to pick one, without a stored band", async () => {
     const words = text(await searchPage());
-    expect(words).toContain("After grants, students paid about $9,000 to $21,000 a year, depending on family income.");
+    expect(words).toContain("After grants, in-state students paid about $9,000 to $21,000 a year, depending on family income.");
     expect(words).toContain("Your family's yearly income (optional)");
     expect(words).toContain("Choose a range");
+  });
+
+  it("says exactly what happens to the income range: saved in this browser, never sent", async () => {
+    const words = text(await searchPage());
+    expect(words).toContain(
+      "Your choice is saved only in this browser, so you don't have to pick it again. It's never sent to College Compass.",
+    );
+    expect(words).not.toContain("We never ask for");
+    expect(text(await collegePage("1"))).toContain("Saved only in this browser. Never sent to us.");
+  });
+
+  it("searches by name or city, and says so", async () => {
+    const html = await searchPage({ q: "austin" });
+    // Lakeside State University is in Austin; its name doesn't say so.
+    expect(text(html)).toContain("Lakeside State University");
+    expect(text(html)).toContain("1 college");
+    expect(text(html)).toContain("College name or city");
+    expect(html).not.toContain("or a city");
+  });
+
+  it("takes searches and page links to the results, not the top of the form", async () => {
+    const html = await searchPage({ state: "TX" });
+    expect(html).toContain('action="/colleges#results"');
+    expect(html).toMatch(/id="results"/);
+    // "More filters" stays a list item so browsers draw its open/closed triangle.
+    expect(html).toMatch(/<summary class="(?![^"]*\bflex\b)[^"]*">More filters/);
   });
 
   it("shows $0 when aid exceeds the cost, plain words for missing data, and a for-profit note", async () => {
@@ -137,9 +184,23 @@ describe("/colleges search page", () => {
     const html = await searchPage({ mq: "nursing" });
     const words = text(html);
     expect(words).toContain("Which major do you mean?");
-    expect(html).toContain('href="/colleges?major=51.39"');
-    expect(html).toContain('href="/colleges?major=51.38"');
+    expect(html).toContain('href="/colleges?major=51.39#results"');
+    expect(html).toContain('href="/colleges?major=51.38#results"');
+    expect(words).toContain("Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing Offered at 1 college nationwide.");
     expect(words).not.toContain("Lakeside State University");
+  });
+
+  it("finds trades by everyday words, showing the formal name colleges use", async () => {
+    await insertMajorSearchData(state.db!, { "48.05": 3, "15.06": 2 });
+    const words = text(await searchPage({ mq: "welding" }));
+    expect(words).toContain("Precision Metal Working Includes Welding Technology/Welder. Offered at 3 colleges nationwide.");
+    expect(words).toContain(
+      "Industrial Production Technologies/Technicians Includes Welding Engineering Technology/Technician. Offered at 2 colleges nationwide.",
+    );
+
+    const welder = text(await searchPage({ mq: "welder" }));
+    expect(welder).toContain("Precision Metal Working (includes Welding Technology/Welder)");
+    expect(welder).toContain("3 colleges");
   });
 
   it("uses the only matching major directly", async () => {
@@ -182,14 +243,14 @@ describe("/colleges pagination", () => {
     const first = await searchPage({ state: "OH" });
     expect(text(first)).toContain("45 colleges");
     expect(text(first)).toContain("Showing 1–20.");
-    expect(first).toContain('href="/colleges?state=OH&amp;page=2"');
+    expect(first).toContain('href="/colleges?state=OH&amp;page=2#results"');
     expect(first).toMatch(/aria-current="page"[^>]*>.*?1</);
     expect(first).not.toContain("Previous");
 
     const last = await searchPage({ state: "OH", page: "3" });
     expect(text(last)).toContain("Showing 41–45.");
     expect(text(last)).toContain("College 45");
-    expect(last).toContain('href="/colleges?state=OH"');
+    expect(last).toContain('href="/colleges?state=OH#results"');
     expect(last).not.toMatch(/rel="next"/);
   });
 });
@@ -227,9 +288,6 @@ describe("/colleges/[unitId] detail page", () => {
     expect(net).toBeGreaterThan(-1);
     expect(net).toBeLessThan(sticker);
     expect(sticker).toBeLessThan(words.indexOf("Graduation, earnings and debt"));
-    expect(words).toContain("After grants, students paid about $0 to $24,000 a year, depending on family income.");
-    expect(words).toContain("Average net price, all income ranges $15,000 a year");
-    expect(words).toContain("Cost of attendance $28,000 a year");
     expect(words).toContain("Tuition and fees, in-state $10,000 a year");
     expect(words).toContain("Tuition and fees, out-of-state $25,000 a year");
     expect(words).toContain("Earnings 10 years after starting $50,000 a year");
@@ -239,6 +297,32 @@ describe("/colleges/[unitId] detail page", () => {
     expect(words).toContain("Admission rate 82% Like most colleges, this one admits most of the students who apply.");
     expect(words).toContain("Hispanic-serving institution");
     expectCleanNumbers(html);
+  });
+
+  it("says a public college's net price and cost of attendance are for in-state students, with an out-of-state estimate", async () => {
+    const words = text(await collegePage("110635"));
+    expect(words).toContain("After grants, in-state students paid about $0 to $24,000 a year, depending on family income.");
+    expect(words).toContain(
+      "At public colleges, these prices are for students who live in the college's state. If you live in another state, you'll likely pay more.",
+    );
+    expect(words).toContain("Average net price for in-state students, all income ranges $15,000 a year");
+    expect(words).toContain("Average net price per year for in-state students, by family income");
+    expect(words).toContain("Cost of attendance, in-state $28,000 a year");
+    // $28,000 plus the $15,000 more that out-of-state students pay in tuition.
+    expect(words).toContain("Cost of attendance, out-of-state (estimate) $43,000 a year");
+
+    const forProfit = text(await collegePage("2"));
+    expect(forProfit).not.toMatch(/in-state students|out-of-state \(estimate\)|live in the college's state\. If/);
+  });
+
+  it("explains graduation rates and debt accurately", async () => {
+    await insertColleges(state.db!, [{ unitId: 3, name: "Hill Country College", predominantDegree: 2, completionRate: 0.2 }]);
+    const words = text(await collegePage("3"));
+    expect(words).toContain("Graduation rate 20% Students who transfer out count as not graduating.");
+    expect(words).toContain("Many community college students plan to transfer");
+    expect(words).toContain("Typical federal loan debt $19,000 Typical (median) federal loan debt of graduates who took out federal loans.");
+    expect(words).toContain("Students who didn't borrow aren't counted");
+    expect(text(await collegePage("2"))).toContain("Graduation rate 60%");
   });
 
   it("lists every income band, showing $0 when aid exceeds the cost and explaining gaps", async () => {
@@ -263,12 +347,25 @@ describe("/colleges/[unitId] detail page", () => {
     expect(words).toContain("Associate degrees (1 program) Registered Nursing Earnings 4 years after finishing $61,000 a year");
     expect(words).toContain("Typical federal loan debt Not enough graduates to report");
     expect(words).toContain("Bachelor's degrees (2 programs) Computer Science Not enough graduates to report.");
-    expect(words).toContain("Undergraduate programs: 1 associate degree, 2 bachelor's degrees.");
+    // Mostly a bachelor's college, so its bachelor's degrees come first.
+    expect(words.indexOf("Bachelor's degrees (2 programs)")).toBeLessThan(words.indexOf("Associate degrees (1 program)"));
+    expect(words).toContain("Undergraduate programs: 2 bachelor's degrees, 1 associate degree.");
+    expect(words).toContain("Debt is the typical federal loan debt of graduates who took out federal loans.");
+  });
+
+  it("marks long program lists as a toggle that says whether it's open", async () => {
+    await insertPrograms(
+      state.db!,
+      Array.from({ length: 11 }, (_, i) => ({ unitId: 110635, cip4: `30.${String(i + 10)}`, title: `Topic ${i}.`, credentialLevel: 1 })),
+    );
+    const html = await collegePage("110635");
+    expect(html).toMatch(/<details class="group[^"]*"><summary class="(?![^"]*\bflex\b)[^"]*">/);
+    expect(text(html)).toContain("Show all 11 programs Hide the list");
   });
 
   it("highlights the major a student searched for", async () => {
     const words = text(await collegePage("110635", { major: "51.38" }));
-    expect(words).toContain("The major you searched for: Registered Nursing Associate degree");
+    expect(words).toContain("The major you searched for: Registered Nursing Bachelor's degree");
     expect(text(await collegePage("110635", { major: "junk" }))).not.toContain("The major you searched for");
   });
 
@@ -278,7 +375,7 @@ describe("/colleges/[unitId] detail page", () => {
     expect(words).toContain("This college didn't report prices by family income.");
     expect(words).toContain("didn't report an average net price");
     expect(words).toContain("Search its website for “net price calculator”");
-    expect(words).toContain("Admission rate Not reported");
+    expect(words).toContain("Admission rate Not reported No admission rate is listed.");
     expect(words).toContain("open admission");
     expect(words).toContain("programs aren't in the College Scorecard data yet");
     expect(words).toContain("This is a for-profit college.");
@@ -300,20 +397,62 @@ describe("/colleges/[unitId] detail page", () => {
 });
 
 describe("/careers/[code] college links", () => {
-  it("links each related major to a college search", async () => {
-    const db = state.db!;
-    await db.insert(occupations).values({ code: "15-1252.00", title: "Software Developers", description: "Build software.", jobZone: 4 });
-    await db.insert(occupationInterests).values([
-      { occupationCode: "15-1252.00", interest: "I", score: 6 },
-      { occupationCode: "15-1252.00", interest: "C", score: 5 },
-    ]);
-    await db.insert(majors).values([{ cipCode: "11.0701", title: "Computer Science" }]);
-    await db.insert(cipSocLinks).values([{ cipCode: "11.0701", socCode: "15-1252" }]);
+  const careerPage = (code: string) =>
+    render(CareerPage({ params: Promise.resolve({ code }), searchParams: Promise.resolve({}) } as PageProps<"/careers/[code]">));
 
-    const html = await render(
-      CareerPage({ params: Promise.resolve({ code: "15-1252.00" }), searchParams: Promise.resolve({}) } as PageProps<"/careers/[code]">),
-    );
+  async function insertCareer(code: string, title: string, jobZone: number, links: [string, string][]) {
+    const db = state.db!;
+    await db.insert(occupations).values({ code, title, description: "What the work is.", jobZone });
+    await db.insert(occupationInterests).values([
+      { occupationCode: code, interest: "I", score: 6 },
+      { occupationCode: code, interest: "S", score: 5 },
+    ]);
+    if (!links.length) return;
+    await db.insert(majors).values(links.map(([cipCode, t]) => ({ cipCode, title: t }))).onConflictDoNothing();
+    await db.insert(cipSocLinks).values(links.map(([cipCode]) => ({ cipCode, socCode: code.slice(0, 7) })));
+  }
+
+  it("links each related major that colleges offer to a college search", async () => {
+    await insertCareer("15-1252.00", "Software Developers", 4, [["11.0701", "Computer Science"]]);
+    await insertColleges(state.db!, [{ unitId: 1, name: "Lakeside State University" }]);
+    await insertPrograms(state.db!, [{ unitId: 1, cip4: "11.07", title: "Computer Science." }]);
+
+    const html = await careerPage("15-1252.00");
     expect(html).toContain('href="/colleges?major=11.07"');
     expect(text(html)).toContain("Find colleges for Computer Science");
+  });
+
+  it("puts majors colleges offer first and never links to an empty search", async () => {
+    // Physician Assistants: in the real crosswalk, the first 15 majors by title were all 60.09xx
+    // residencies, each linking to a search with no colleges.
+    await insertCareer("29-1071.00", "Physician Assistants", 5, [
+      ["60.0901", "Physician Assistant Residency/Fellowship Program, General"],
+      ["60.0902", "Cardiology Physician Assistant Residency/Fellowship Program"],
+      ["51.0912", "Physician Assistant"],
+      ["26.0102", "Biomedical Sciences, General"],
+      ["30.4301", "Geobiology"],
+    ]);
+    await insertColleges(state.db!, [{ unitId: 1, name: "Lakeside State University" }]);
+    await insertPrograms(state.db!, [
+      { unitId: 1, cip4: "26.01", title: "Biology, General." },
+      { unitId: 1, cip4: "51.09", title: "Allied Health Diagnostic, Intervention, and Treatment Professions." },
+    ]);
+
+    const html = await careerPage("29-1071.00");
+    const words = text(html);
+    expect(words).not.toContain("Residency");
+    expect(words).toContain("Biomedical Sciences, General Find colleges for Biomedical Sciences, General Physician Assistant Studied after college Geobiology");
+    expect(words).toContain("“Studied after college” means graduate or professional school");
+    expect(html).toContain('href="/colleges?major=26.01"');
+    // Physician assistant programs are master's programs, so no link to 51.09's EMT and other programs.
+    expect(html).not.toContain("major=51.09");
+    // No college offers geobiology (30.43), so no link.
+    expect(html).not.toContain("major=30.43");
+    expect(html).not.toMatch(/major=6[01]\./);
+  });
+
+  it("explains careers reached through training when no major leads there", async () => {
+    await insertCareer("27-1023.00", "Floral Designers", 2, []);
+    expect(text(await careerPage("27-1023.00"))).toContain("usually reached through training or experience");
   });
 });

@@ -61,11 +61,14 @@ function Checkbox({ name, label, checked }: { name: string; label: string; check
 export function SearchForm({
   filters,
   majorTitle,
+  majorIncludes = null,
   majorQuery,
 }: {
   filters: CollegeSearchFilters;
   /** Title of the chosen major (shown as a removable chip). */
   majorTitle: string | null;
+  /** The more familiar major name that matched what was typed, like "Welding Technology/Welder". */
+  majorIncludes?: string | null;
   /** What was typed in the major field, when it didn't resolve to one major. */
   majorQuery: string | null;
 }) {
@@ -76,8 +79,15 @@ export function SearchForm({
   const removeMajorHref = collegeSearchHref({ ...filters, major: undefined, page: undefined });
 
   return (
-    <form action="/colleges" role="search" aria-label="Search colleges" className="space-y-4 rounded-xl border border-border bg-surface p-5">
-      <Field label="College name" name="q" defaultValue={filters.q ?? ""} placeholder="Try “state”, “tech” or a city" autoComplete="off" />
+    // "#results" brings phones straight to the results instead of back to the top of the form.
+    <form action="/colleges#results" role="search" aria-label="Search colleges" className="space-y-4 rounded-xl border border-border bg-surface p-5">
+      <Field
+        label="College name or city"
+        name="q"
+        defaultValue={filters.q ?? ""}
+        hint="Like “state”, “tech” or “Houston”"
+        autoComplete="off"
+      />
 
       {filters.major ? (
         <div>
@@ -86,7 +96,10 @@ export function SearchForm({
           </p>
           <input type="hidden" name="major" value={filters.major} />
           <p className="mt-1 inline-flex min-h-11 max-w-full items-center gap-1 rounded-full bg-accent-soft py-0 pr-0 pl-4 text-sm font-medium">
-            <span className="min-w-0">{majorTitle ?? "The major you picked"}</span>
+            <span className="min-w-0">
+              {majorTitle ?? "The major you picked"}
+              {majorIncludes && <span className="font-normal"> (includes {majorIncludes})</span>}
+            </span>
             <Link
               href={removeMajorHref}
               className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-lg hover:bg-surface focus-visible:outline-2 focus-visible:outline-accent"
@@ -116,7 +129,8 @@ export function SearchForm({
       </SelectField>
 
       <details open={moreOpen} className="group rounded-lg border border-border">
-        <summary className="flex min-h-11 cursor-pointer items-center px-3 font-medium focus-visible:outline-2 focus-visible:outline-accent">
+        {/* Left as a list item (not flex) so browsers keep the open/closed triangle. */}
+        <summary className="min-h-11 cursor-pointer content-center px-3 font-medium focus-visible:outline-2 focus-visible:outline-accent">
           More filters
         </summary>
         <div className="space-y-4 border-t border-border p-3">
