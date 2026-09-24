@@ -103,6 +103,7 @@ export function collegeTools(db: Db): BetaRunnableTool[] {
         major,
         moreResults: collegeSearchHref(filters),
         notes: [
+          "Net prices are averages. For a personal estimate, tell the student to open the college's page (page), which links that college's own net price calculator.",
           COMPLETION_NOTE,
           ...(results.some((c) => c.control === 1) ? [`Public colleges: ${PUBLIC_IN_STATE_NOTE}`] : []),
         ],
