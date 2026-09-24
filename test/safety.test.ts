@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
 import { registerParent } from "@/lib/accounts";
 import { assessMessage } from "@/lib/ai/safety";
+import { env } from "@/env";
 import { BudgetExceededError, assertWithinBudget, recordUsage } from "@/lib/ai/usage";
 
 let db: Db;
@@ -92,8 +93,11 @@ describe("assessMessage", () => {
 describe("AI budget", () => {
   it("blocks further AI use once the monthly budget is spent", async () => {
     await assertWithinBudget(db, userId);
-    // $1 default budget: 40k output tokens on Opus 5 = $1.00
-    await recordUsage(db, userId, "counselor", "claude-opus-5", { input_tokens: 0, output_tokens: 40_000 });
+    // Opus 5 output costs $25 per million tokens, so this spends exactly the monthly budget.
+    const tokens = (env().AI_MONTHLY_BUDGET_USD / 25) * 1_000_000;
+    await recordUsage(db, userId, "counselor", "claude-opus-5", { input_tokens: 0, output_tokens: tokens - 1 });
+    await assertWithinBudget(db, userId);
+    await recordUsage(db, userId, "counselor", "claude-opus-5", { input_tokens: 0, output_tokens: 1 });
     await expect(assertWithinBudget(db, userId)).rejects.toBeInstanceOf(BudgetExceededError);
   });
 });

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
 import { registerStudent } from "@/lib/accounts";
+import { env } from "@/env";
 import { recordUsage } from "@/lib/ai/usage";
 import { listMessages } from "@/lib/counselor/conversations";
 import { MEMORY_BATCH, getMemory, updateMemory } from "@/lib/counselor/memory";
@@ -125,7 +126,9 @@ describe("counselor respond", () => {
   });
 
   it("gives a notice when the monthly budget is used up, but still screens for safety", async () => {
-    await recordUsage(db, student.id, "counselor", "claude-opus-5", { input_tokens: 0, output_tokens: 40_000 });
+    // Spend the whole monthly budget (Opus 5 output: $25 per million tokens).
+    const tokens = (env().AI_MONTHLY_BUDGET_USD / 25) * 1_000_000;
+    await recordUsage(db, student.id, "counselor", "claude-opus-5", { input_tokens: 0, output_tokens: tokens });
     const calm = fakeClient({});
     const events = await collect(respond(db, student, { text: "what is a gpa" }, { client: calm.client, now }));
     expect(events.find((e) => e.type === "notice")).toEqual({ type: "notice", text: NOTICES.budget });

@@ -24,7 +24,7 @@ const EnvSchema = z
     AI_MODEL_SAFETY: z.string().default("claude-opus-5"),
     AI_MODEL_COUNSELOR: z.string().default("claude-opus-5"),
     // Per-student monthly AI spend ceiling, in US dollars.
-    AI_MONTHLY_BUDGET_USD: z.coerce.number().positive().default(1),
+    AI_MONTHLY_BUDGET_USD: z.coerce.number().positive().default(3),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== "production") return;
