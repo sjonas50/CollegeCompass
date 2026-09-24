@@ -11,7 +11,7 @@ const RENEW_WHEN_REMAINING_MS = 7 * DAY_MS;
 
 export type SessionUser = Pick<
   typeof users.$inferSelect,
-  "id" | "role" | "displayName" | "householdId" | "parentManaged"
+  "id" | "role" | "displayName" | "username" | "householdId" | "parentManaged"
 > & {
   /** Current grade (advanced each August); above 12 means graduated. Null for adults. */
   grade: number | null;
@@ -34,6 +34,7 @@ export async function validateSession(db: Db, token: string, now = new Date()) {
         id: users.id,
         role: users.role,
         displayName: users.displayName,
+        username: users.username,
         grade: users.grade,
         gradeSchoolYear: users.gradeSchoolYear,
         householdId: users.householdId,

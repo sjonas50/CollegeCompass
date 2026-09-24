@@ -7,15 +7,19 @@ import { counselorConversations, counselorMemory } from "@/db/schema";
 import { getAnthropic } from "../ai/client";
 import { modelFor, supportsEffort } from "../ai/models";
 import { scrubPii } from "../ai/privacy";
-import { recordUsage } from "../ai/usage";
+import { BudgetExceededError, assertWithinBudget, recordMessageUsage } from "../ai/usage";
 import { listMessages } from "./conversations";
 
 export const MAX_MEMORY_NOTES = 12;
 /** Fold new messages into memory once this many have accumulated in a conversation. */
 export const MEMORY_BATCH = 6;
 
+export const MAX_NOTE_CHARS = 140;
+
+// Limits are enforced after parsing: structured outputs don't enforce max lengths, and a schema
+// violation would throw away the (already billed) response.
 const MemoryUpdate = z.object({
-  notes: z.array(z.string().max(140)).max(MAX_MEMORY_NOTES),
+  notes: z.array(z.string()).describe(`At most ${MAX_MEMORY_NOTES} short notes, each under ${MAX_NOTE_CHARS} characters`),
 });
 
 const SYSTEM = `You maintain short private notes that help an AI guidance counselor remember a student (grades 7–12) across conversations. Given the current notes and a new conversation, return the updated list of notes.
@@ -37,7 +41,7 @@ export async function updateMemory(
   db: Db,
   userId: string,
   conversationId: string,
-  opts: { client?: Pick<Anthropic, "beta">; knownNames?: string[]; force?: boolean } = {},
+  opts: { client?: Pick<Anthropic, "beta">; knownNames?: string[]; force?: boolean; now?: Date } = {},
 ) {
   const [conv] = await db.select().from(counselorConversations).where(eq(counselorConversations.id, conversationId));
   if (!conv || conv.userId !== userId || conv.concernFlagged) return null;
@@ -45,6 +49,13 @@ export async function updateMemory(
   const messages = (await listMessages(db, conversationId)).filter((m) => m.kind === "chat");
   const fresh = messages.slice(conv.memoryProcessedCount);
   if (fresh.length === 0 || (!opts.force && fresh.length < MEMORY_BATCH)) return null;
+
+  try {
+    await assertWithinBudget(db, userId, opts.now);
+  } catch (error) {
+    if (error instanceof BudgetExceededError) return null;
+    throw error;
+  }
 
   const current = await getMemory(db, userId);
   const transcript = fresh
@@ -66,9 +77,14 @@ export async function updateMemory(
       },
     ],
   });
-  await recordUsage(db, userId, "counselor", model, message.usage);
-  const notes = message.stop_reason === "refusal" ? null : message.parsed_output?.notes;
-  if (!notes) return null;
+  await recordMessageUsage(db, userId, "counselor", model, message);
+  const parsed = message.stop_reason === "refusal" ? null : message.parsed_output?.notes;
+  if (!parsed) return null;
+  const notes = parsed
+    .map((n) => n.trim())
+    .filter(Boolean)
+    .slice(0, MAX_MEMORY_NOTES)
+    .map((n) => (n.length > MAX_NOTE_CHARS ? `${n.slice(0, MAX_NOTE_CHARS - 1)}…` : n));
 
   await db
     .insert(counselorMemory)

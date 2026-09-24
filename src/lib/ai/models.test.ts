@@ -17,3 +17,30 @@ describe("costMicros", () => {
     ).toBe(Math.ceil(0.1 * 1000 * 2 + 1.25 * 1000 * 2));
   });
 });
+
+describe("recordMessageUsage", () => {
+  it("charges each attempt at the model that served it", async () => {
+    const { createTestDb, schema } = await import("@/db");
+    const { registerParent } = await import("@/lib/accounts");
+    const { recordMessageUsage } = await import("./usage");
+    const db = await createTestDb();
+    const res = await registerParent(db, { displayName: "T", email: "t@example.com", password: "correct horse battery" });
+    if (!res.ok) throw new Error();
+    await recordMessageUsage(db, res.value.userId, "counselor", "claude-sonnet-5", {
+      model: "claude-sonnet-5",
+      usage: {
+        input_tokens: 2000,
+        output_tokens: 20,
+        iterations: [
+          { type: "message", model: "claude-sonnet-5", input_tokens: 1000, output_tokens: 10 },
+          { type: "fallback_message", model: "claude-opus-5", input_tokens: 1000, output_tokens: 10 },
+        ],
+      },
+    });
+    const rows = await db.select().from(schema.aiUsage);
+    expect(rows.map((r) => [r.model, r.costMicros]).sort()).toEqual([
+      ["claude-opus-5", costMicros("claude-opus-5", { input_tokens: 1000, output_tokens: 10 })],
+      ["claude-sonnet-5", costMicros("claude-sonnet-5", { input_tokens: 1000, output_tokens: 10 })],
+    ]);
+  });
+});

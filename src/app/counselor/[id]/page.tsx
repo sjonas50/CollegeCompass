@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import * as z from "zod";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/auth/dal";
+import { getMemory } from "@/lib/counselor/memory";
 import { getOwnedConversation, listConversations, listMessages } from "@/lib/counselor/conversations";
 import { Chat } from "../chat";
 import { CounselorShell } from "../shell";
@@ -16,9 +17,9 @@ export default async function ConversationPage({ params }: PageProps<"/counselor
   const db = await getDb();
   const conversation = await getOwnedConversation(db, student.id, id);
   if (!conversation) notFound();
-  const [messages, conversations] = await Promise.all([listMessages(db, id), listConversations(db, student.id)]);
+  const [messages, conversations, notes] = await Promise.all([listMessages(db, id), listConversations(db, student.id), getMemory(db, student.id)]);
   return (
-    <CounselorShell conversations={conversations} activeId={id}>
+    <CounselorShell conversations={conversations} activeId={id} hasMemory={notes.length > 0}>
       <Chat
         key={id}
         conversationId={id}

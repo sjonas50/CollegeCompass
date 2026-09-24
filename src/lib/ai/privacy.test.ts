@@ -10,6 +10,13 @@ describe("scrubPii", () => {
     expect(out).toBe("Hi I'm [name] [name], email [email] or call [phone], I live at [address]");
   });
 
+  it("removes names that start or end with accented letters, and usernames before their name prefix", () => {
+    expect(scrubPii("Soy José y mi hermana es Zoë, él es Ángel", ["José", "Zoë", "Ángel"])).toBe("Soy [name] y mi hermana es [name], él es [name]");
+    expect(scrubPii("I'm maya, username mayalopez", ["Maya", "mayalopez"])).toBe("I'm [name], username [name]");
+    // Doesn't clip names inside longer words.
+    expect(scrubPii("Joséphine and Zoëlle", ["José", "Zoë"])).toBe("Joséphine and Zoëlle");
+  });
+
   it("leaves ordinary text alone", () => {
     const text = "I got a 1350 on the PSAT and want to study biology in 2029";
     expect(scrubPii(text, ["Al"])).toBe(text);

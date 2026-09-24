@@ -9,7 +9,11 @@ import type { ToolContext } from "./tools";
  * Student-scoped tools for the counselor to read the signed-in student's own course plan and
  * roadmap. They take no ids from the model, so they can only ever return this student's data.
  */
-export async function counselorExtraTools(db: Db, student: { id: string; grade: number | null }): Promise<NonNullable<ToolContext["extra"]>> {
+export async function counselorExtraTools(
+  db: Db,
+  student: { id: string; grade: number | null },
+  opts: { now?: Date } = {},
+): Promise<NonNullable<ToolContext["extra"]>> {
   const plan = betaZodTool({
     name: "get_my_plan",
     description:
@@ -22,7 +26,7 @@ export async function counselorExtraTools(db: Db, student: { id: string; grade: 
     description:
       "Get the student's own grade-by-grade roadmap: what's timely this month and coming up, what they could catch up on, their progress this grade, and this week's steps.",
     inputSchema: z.object({}),
-    run: async () => JSON.stringify(await roadmapSummary(db, student.id, student.grade)),
+    run: async () => JSON.stringify(await roadmapSummary(db, student.id, student.grade, opts.now)),
   });
   return [plan, roadmap];
 }

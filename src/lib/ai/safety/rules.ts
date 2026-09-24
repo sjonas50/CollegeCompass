@@ -8,7 +8,7 @@ type Rule = SafetySignal & { pattern: RegExp };
 const RULES: Rule[] = [
   // Self-harm and suicide
   { category: "self_harm", severity: "imminent", pattern: /\b(going to|gonna|about to|will|plan(ning)? to)\s+(kill|hurt|cut)\s+myself\b/ },
-  { category: "self_harm", severity: "imminent", pattern: /\b(tonight|today|right now)\b.*\b(kill myself|end (it|my life)|die)\b|\b(kill myself|end (it all|my life))\b.*\b(tonight|today|right now)\b/ },
+  { category: "self_harm", severity: "imminent", pattern: /\b(tonight|today|right now|this weekend)\b.*\b(kill myself|end (it|it all|my life|things)(?! with)|die)\b|\b(kill myself|end (it|it all|my life|things)(?! with))\b.*\b(tonight|today|right now|this weekend)\b/ },
   { category: "self_harm", severity: "imminent", pattern: /\bsuicide note\b|\bgoodbye (letter|note)s?\b/ },
   { category: "self_harm", severity: "high", pattern: /\b(kill(ing|ed)?|hurt(ing)?|cut(ting)?|hang(ing|ed)?|harm(ing|ed)?|burn(ing|ed)?)\s+myself\b/ },
   { category: "self_harm", severity: "high", pattern: /\b(want|wanna|wish)(ed)?\s+(to\s+)?(die|be dead|disappear forever|not wake up)\b|\bwish i (was|were) dead\b/ },

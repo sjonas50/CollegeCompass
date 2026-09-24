@@ -22,6 +22,30 @@ export async function recordUsage(db: Db, userId: string, feature: AiFeature, mo
   });
 }
 
+type UsageEntry = TokenUsage & { model?: string | null; type?: string };
+
+/**
+ * Records a response's usage, charging each attempt at the model that actually served it. With
+ * refusal fallbacks, `usage.iterations` lists every attempt (including `fallback_message`), and the
+ * top-level model may not be the one that answered.
+ */
+export async function recordMessageUsage(
+  db: Db,
+  userId: string,
+  feature: AiFeature,
+  requestedModel: string,
+  message: { model?: string | null; usage: TokenUsage & { iterations?: UsageEntry[] | null } },
+) {
+  const iterations = message.usage.iterations?.filter((i) => typeof i.input_tokens === "number") ?? [];
+  if (iterations.length === 0) {
+    await recordUsage(db, userId, feature, message.model ?? requestedModel, message.usage);
+    return;
+  }
+  for (const it of iterations) {
+    await recordUsage(db, userId, feature, it.model ?? message.model ?? requestedModel, it);
+  }
+}
+
 function startOfMonthUtc(now: Date) {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 }

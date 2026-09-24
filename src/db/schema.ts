@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   date,
   index,
@@ -507,6 +508,8 @@ export const counselorMessages = pgTable(
   "counselor_messages",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    // Insertion order. Timestamps can tie when a reply and its notice are saved together.
+    seq: bigint("seq", { mode: "number" }).generatedAlwaysAsIdentity(),
     conversationId: uuid("conversation_id")
       .notNull()
       .references(() => counselorConversations.id, { onDelete: "cascade" }),
@@ -517,7 +520,7 @@ export const counselorMessages = pgTable(
     content: text("content").notNull(),
     createdAt: createdAt(),
   },
-  (t) => [index("counselor_messages_conversation_idx").on(t.conversationId, t.createdAt)],
+  (t) => [index("counselor_messages_conversation_idx").on(t.conversationId, t.seq)],
 );
 
 /** Short notes the counselor keeps about a student across conversations (never sensitive details). */
@@ -529,7 +532,10 @@ export const counselorMemory = pgTable("counselor_memory", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** Which weekly reminder emails were sent, so the cron job is idempotent. */
+/**
+ * Weekly reminder emails, claimed per recipient before sending so a re-run of the cron job
+ * never double-sends and a failed send to one parent can be retried alone.
+ */
 export const reminderSends = pgTable(
   "reminder_sends",
   {
@@ -537,7 +543,9 @@ export const reminderSends = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     weekStart: date("week_start", { mode: "string" }).notNull(),
+    // SHA-256 of the recipient address (never the address itself).
+    recipient: text("recipient").notNull().default(""),
     sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.userId, t.weekStart] })],
+  (t) => [primaryKey({ columns: [t.userId, t.weekStart, t.recipient] })],
 );

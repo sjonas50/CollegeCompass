@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { clearMemoryAction, deleteConversationAction } from "@/app/actions/counselor";
 import { Notice } from "@/components/ui";
+import { ConfirmButton } from "./confirm-button";
 
 type Convo = { id: string; title: string | null; updatedAt: Date };
 
@@ -10,18 +11,20 @@ export function CounselorShell({
   conversations,
   activeId,
   memoryCleared,
+  hasMemory,
 }: {
   children: React.ReactNode;
   conversations: Convo[];
   activeId?: string;
   memoryCleared?: boolean;
+  hasMemory: boolean;
 }) {
   return (
     <div className="space-y-6">
       <div className="flex items-baseline justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Counselor</h1>
         {activeId && (
-          <Link href="/counselor" className="text-sm underline">
+          <Link href="/counselor" className="inline-flex min-h-11 items-center text-sm underline">
             New chat
           </Link>
         )}
@@ -34,28 +37,40 @@ export function CounselorShell({
       </p>
       {conversations.length > 0 && (
         <details className="rounded-xl border border-border bg-surface p-4">
-          <summary className="cursor-pointer font-medium">Past conversations</summary>
+          <summary className="min-h-11 cursor-pointer content-center font-medium">Past conversations</summary>
           <ul className="mt-3 divide-y divide-border">
             {conversations.map((c) => (
-              <li key={c.id} className="flex items-center justify-between gap-2 py-2">
-                <Link href={`/counselor/${c.id}`} className={`truncate ${c.id === activeId ? "font-medium" : ""} underline-offset-2 hover:underline`}>
+              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-1">
+                <Link
+                  href={`/counselor/${c.id}`}
+                  className={`inline-flex min-h-11 min-w-0 items-center truncate ${c.id === activeId ? "font-medium" : ""} underline-offset-2 hover:underline`}
+                >
                   {c.title ?? "Conversation"}
                 </Link>
-                <form action={deleteConversationAction}>
-                  <input type="hidden" name="conversationId" value={c.id} />
-                  <button type="submit" className="shrink-0 text-sm text-muted underline">
-                    Delete
-                  </button>
-                </form>
+                <ConfirmButton
+                  action={deleteConversationAction}
+                  fields={{ conversationId: c.id }}
+                  label="Delete"
+                  accessibleLabel={`Delete conversation: ${c.title ?? "Conversation"}`}
+                  question="Delete this conversation?"
+                  confirmLabel="Yes, delete it"
+                />
               </li>
             ))}
           </ul>
-          <form action={clearMemoryAction} className="mt-3 border-t border-border pt-3">
-            <button type="submit" className="text-sm text-muted underline">
-              Make the counselor forget its notes about me
-            </button>
-          </form>
+          <p className="mt-2 text-xs text-muted">Deleting a conversation doesn&apos;t erase notes the counselor already took from it.</p>
         </details>
+      )}
+      {hasMemory && (
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
+          <span>The counselor keeps a few short notes to remember your goals.</span>
+          <ConfirmButton
+            action={clearMemoryAction}
+            label="Make it forget its notes about me"
+            question="Erase the counselor's notes about you?"
+            confirmLabel="Yes, erase them"
+          />
+        </div>
       )}
     </div>
   );

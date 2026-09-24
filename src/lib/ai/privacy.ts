@@ -31,10 +31,11 @@ function escapeRegExp(s: string) {
  */
 export function scrubPii(text: string, knownNames: string[] = []): string {
   let out = text.replace(EMAIL, "[email]").replace(SSN, "[number]").replace(PHONE, "[phone]").replace(STREET, "[address]");
-  for (const name of knownNames) {
-    const trimmed = name.trim();
-    if (trimmed.length < 2) continue;
-    out = out.replace(new RegExp(`\\b${escapeRegExp(trimmed)}\\b`, "gi"), "[name]");
+  // Longest first, so "mayalopez" is replaced before its "maya" prefix. Boundaries are Unicode-aware
+  // (\b treats accented letters as non-word characters, so it would miss "José" or "Zoë").
+  const names = [...new Set(knownNames.map((n) => n.trim()).filter((n) => n.length >= 2))].sort((a, b) => b.length - a.length);
+  for (const name of names) {
+    out = out.replace(new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRegExp(name)}(?![\\p{L}\\p{N}_])`, "giu"), "[name]");
   }
   return out;
 }

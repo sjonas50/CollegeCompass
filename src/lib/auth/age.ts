@@ -48,6 +48,23 @@ export function currentGrade(
   return stored.grade + Math.max(0, elapsed);
 }
 
+/**
+ * How to ask for a grade on a given date. In June and July "this school year" is ambiguous (the
+ * year just ended), so we ask for the grade just finished; it's stored against that school year and
+ * advances in August like any other.
+ */
+export function gradeQuestion(today: Date = new Date()): { label: string; min: number; max: number } {
+  const month = today.getUTCMonth() + 1;
+  return month === 6 || month === 7
+    ? { label: "Grade you just finished", min: MIN_GRADE - 1, max: MAX_GRADE - 1 }
+    : { label: "Grade this school year", min: MIN_GRADE, max: MAX_GRADE };
+}
+
+export function isAllowedGrade(grade: number, today: Date = new Date()): boolean {
+  const q = gradeQuestion(today);
+  return Number.isInteger(grade) && grade >= q.min && grade <= q.max;
+}
+
 export type GradeBand = "explore" | "build" | "launch";
 
 /** 7–8 explore, 9–10 build, 11–12 launch. */

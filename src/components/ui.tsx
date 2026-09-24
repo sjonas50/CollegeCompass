@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { gradeQuestion } from "@/lib/auth/age";
 import type { ComponentProps, ReactNode } from "react";
 
 export function PageHeading({ title, lead }: { title: string; lead?: ReactNode }) {
@@ -79,11 +80,16 @@ export function Field({
   );
 }
 
+export function gradeOptionLabel(g: number) {
+  return g === 12 ? "12th grade" : `${g}th grade`;
+}
+
 export function GradeSelect({ errors, defaultValue }: { errors?: string[]; defaultValue?: string }) {
+  const q = gradeQuestion();
   return (
     <div>
       <label htmlFor="grade" className="block text-sm font-medium">
-        Grade this school year
+        {q.label}
       </label>
       <select
         key={defaultValue ?? ""}
@@ -97,9 +103,9 @@ export function GradeSelect({ errors, defaultValue }: { errors?: string[]; defau
         <option value="" disabled>
           Choose a grade
         </option>
-        {[7, 8, 9, 10, 11, 12].map((g) => (
+        {Array.from({ length: q.max - q.min + 1 }, (_, i) => q.min + i).map((g) => (
           <option key={g} value={g}>
-            {g}th grade
+            {gradeOptionLabel(g)}
           </option>
         ))}
       </select>

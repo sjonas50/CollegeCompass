@@ -1,10 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Db } from "@/db";
+import { safetyEvents } from "@/db/schema";
 import { AiUnavailableError, getAnthropic } from "../ai/client";
 import { modelFor, supportsEffort } from "../ai/models";
 import { scrubPii } from "../ai/privacy";
-import { assessMessage } from "../ai/safety";
-import { BudgetExceededError, assertWithinBudget, recordUsage } from "../ai/usage";
+import { assessMessage, screenWithRulesOnly } from "../ai/safety";
+import { BudgetExceededError, assertWithinBudget, recordMessageUsage } from "../ai/usage";
 import { consumeRateLimit } from "../rate-limit";
 import {
   HISTORY_LIMIT,
@@ -18,6 +19,7 @@ import { COUNSELOR_SYSTEM, buildStudentContext } from "./prompt";
 import { type ToolContext, counselorTools } from "./tools";
 
 export const MAX_MESSAGE_CHARS = 2000;
+export const RATE_LIMIT = { count: 20, windowMs: 10 * 60_000 };
 
 export type CounselorEvent =
   | { type: "conversation"; id: string }
@@ -26,13 +28,15 @@ export type CounselorEvent =
   | { type: "notice"; text: string }
   | { type: "done"; messageId: string | null };
 
-export type Student = { id: string; grade: number | null; displayName: string };
+export type Student = { id: string; grade: number | null; displayName: string; username?: string | null };
 
 type Deps = {
   client?: Anthropic;
   /** Extra student-scoped tools (course plan, roadmap). */
   extraTools?: ToolContext["extra"];
   now?: Date;
+  /** Aborted when the client disconnects; stops generation. */
+  signal?: AbortSignal;
 };
 
 export const NOTICES = {
@@ -40,6 +44,8 @@ export const NOTICES = {
   budget:
     "You've used this month's counselor chats. They'll be back next month. Your roadmap, plan, and career explorer still work in the meantime.",
   error: "Sorry, something went wrong on my end. Please try sending that again.",
+  incomplete: "Sorry, I couldn't finish that answer. Please try asking again.",
+  interrupted: "This reply was interrupted.",
   refusal: "I can't help with that one, but I'm happy to talk about school, careers, college, or training.",
   rateLimited: "That's a lot of messages in a short time. Take a quick break and try again in a few minutes.",
 };
@@ -78,12 +84,35 @@ class TextQueue {
   }
 }
 
-type GenerationResult = { text: string; outcome: "ok" | "notice" | "refusal" | "error" | "aborted" };
+type GenerationResult = {
+  /** Text the student may keep (a refused attempt's text is excluded). */
+  text: string;
+  outcome: "ok" | "notice" | "refusal" | "incomplete" | "error" | "aborted";
+  notice?: string;
+};
+
+/**
+ * Where the model's view of the history starts. Moves in blocks of 10 rather than sliding every
+ * turn, so the cached prompt prefix stays valid for several turns in a row.
+ */
+export function historyStart(length: number, limit = HISTORY_LIMIT): number {
+  if (length <= limit) return 0;
+  return Math.ceil((length - limit) / 10) * 10;
+}
+
+async function safely<T>(label: string, fn: () => Promise<T>): Promise<T | null> {
+  try {
+    return await fn();
+  } catch (error) {
+    console.error(`[counselor] ${label} failed`, error instanceof Error ? error.name : "unknown");
+    return null;
+  }
+}
 
 /**
  * Handles one student message: stores it, screens it for safety while the counselor drafts a
  * reply, and only releases the reply once screening clears. High-risk messages get crisis
- * resources instead and put the conversation in support mode.
+ * resources instead (sent before anything else can fail) and put the conversation in support mode.
  */
 export async function* respond(
   db: Db,
@@ -93,6 +122,33 @@ export async function* respond(
 ): AsyncGenerator<CounselorEvent> {
   const text = input.text.trim().slice(0, MAX_MESSAGE_CHARS);
   if (!text) return;
+  const knownNames = [student.displayName, student.username].filter((n): n is string => Boolean(n));
+
+  // Rate limit first: a limited request makes no model calls and writes nothing, but a message
+  // that plainly signals a crisis still gets help (keyword rules only).
+  if (!(await consumeRateLimit(db, `counselor:${student.id}`, RATE_LIMIT.count, RATE_LIMIT.windowMs, deps.now))) {
+    const screen = screenWithRulesOnly(text);
+    if (screen.supportMessage) {
+      yield { type: "support", text: screen.supportMessage };
+      // Record it for human review, capped so this path can't be used to flood the queue.
+      if (screen.category && (await consumeRateLimit(db, `safety-record:${student.id}`, 20, 24 * 60 * 60_000, deps.now))) {
+        await safely("record rate-limited safety event", () =>
+          db.insert(safetyEvents).values({
+            userId: student.id,
+            category: screen.category!,
+            severity: screen.severity === "imminent" ? "imminent" : "high",
+            sources: ["rules", "rate_limited"],
+            excerpt: text.slice(0, 1000),
+          }),
+        );
+      }
+      yield { type: "done", messageId: null };
+      return;
+    }
+    yield { type: "notice", text: NOTICES.rateLimited };
+    yield { type: "done", messageId: null };
+    return;
+  }
 
   let conversation = input.conversationId ? await getOwnedConversation(db, student.id, input.conversationId) : null;
   if (input.conversationId && !conversation) throw new Error("Conversation not found");
@@ -102,70 +158,70 @@ export async function* respond(
   const history = await listMessages(db, conversation.id);
   await appendMessage(db, conversation.id, { role: "user", content: text });
 
-  if (!(await consumeRateLimit(db, `counselor:${student.id}`, 20, 10 * 60_000, deps.now))) {
-    // Still screen it: a student in crisis must get help even when rate-limited.
-    const safety = await assessMessage(db, student.id, text, { client: deps.client, knownNames: [student.displayName] });
+  const queue = new TextQueue();
+  const abort = new AbortController();
+  const onClientAbort = () => abort.abort();
+  deps.signal?.addEventListener("abort", onClientAbort);
+  let settled = false;
+  const generation = generate(conversation, history)
+    .finally(() => {
+      settled = true;
+      queue.close();
+    });
+
+  try {
+    const safety = await assessMessage(db, student.id, text, { client: deps.client, knownNames });
+
     if (safety.supportMessage) {
-      await flagConversation(db, conversation.id);
-      const id = await appendMessage(db, conversation.id, { role: "assistant", kind: "support", content: safety.supportMessage });
+      abort.abort();
+      // Crisis resources go out first; nothing below may keep them from the student.
       yield { type: "support", text: safety.supportMessage };
+      await generation.catch(() => undefined);
+      await safely("flag conversation", () => flagConversation(db, conversation.id));
+      const id = await safely("store support message", () =>
+        appendMessage(db, conversation.id, { role: "assistant", kind: "support", content: safety.supportMessage! }),
+      );
       yield { type: "done", messageId: id };
       return;
     }
-    yield { type: "notice", text: NOTICES.rateLimited };
-    yield { type: "done", messageId: null };
-    return;
-  }
 
-  const knownNames = [student.displayName];
-  const queue = new TextQueue();
-  const abort = new AbortController();
-  const generation = generate(db, student, conversation, history, text, queue, abort.signal, deps).finally(() => queue.close());
-  const safety = await assessMessage(db, student.id, text, { client: deps.client, knownNames });
+    for await (const delta of queue.drain()) yield { type: "delta", text: delta };
+    const result = await generation;
 
-  if (safety.supportMessage) {
-    abort.abort();
-    await generation.catch(() => undefined);
-    await flagConversation(db, conversation.id);
-    const id = await appendMessage(db, conversation.id, { role: "assistant", kind: "support", content: safety.supportMessage });
-    yield { type: "support", text: safety.supportMessage };
-    yield { type: "done", messageId: id };
-    return;
-  }
-
-  for await (const delta of queue.drain()) yield { type: "delta", text: delta };
-  const result = await generation;
-
-  if (result.outcome === "notice") {
-    const id = await appendMessage(db, conversation.id, { role: "assistant", kind: "notice", content: result.text });
-    yield { type: "notice", text: result.text };
-    yield { type: "done", messageId: id };
-    return;
-  }
-  if (result.outcome !== "ok" || !result.text.trim()) {
-    const notice =
-      result.outcome === "refusal" ? NOTICES.refusal : result.text.trim() ? null : NOTICES.error;
     let messageId: string | null = null;
-    if (result.text.trim()) messageId = await appendMessage(db, conversation.id, { role: "assistant", content: result.text });
+    if (result.text.trim()) {
+      messageId = await appendMessage(db, conversation.id, { role: "assistant", content: result.text });
+    }
+    const notice =
+      result.outcome === "ok"
+        ? result.text.trim()
+          ? null
+          : NOTICES.error
+        : result.outcome === "notice"
+          ? result.notice!
+          : result.outcome === "refusal"
+            ? NOTICES.refusal
+            : result.outcome === "incomplete"
+              ? NOTICES.incomplete
+              : result.outcome === "aborted"
+                ? result.text.trim()
+                  ? NOTICES.interrupted
+                  : null
+                : NOTICES.error;
     if (notice) {
       messageId = await appendMessage(db, conversation.id, { role: "assistant", kind: "notice", content: notice });
       yield { type: "notice", text: notice };
     }
     yield { type: "done", messageId };
-    return;
+  } finally {
+    // If the consumer stops early (client gone, error), don't leave the model generating.
+    if (!settled) abort.abort();
+    deps.signal?.removeEventListener("abort", onClientAbort);
   }
-  const messageId = await appendMessage(db, conversation.id, { role: "assistant", content: result.text });
-  yield { type: "done", messageId };
 
   async function generate(
-    db: Db,
-    student: Student,
     conv: { id: string; concernFlagged: boolean },
     prior: Awaited<ReturnType<typeof listMessages>>,
-    latest: string,
-    out: TextQueue,
-    signal: AbortSignal,
-    deps: Deps,
   ): Promise<GenerationResult> {
     let client: Anthropic;
     try {
@@ -173,20 +229,23 @@ export async function* respond(
       client = deps.client ?? getAnthropic();
     } catch (error) {
       const notice = error instanceof BudgetExceededError ? NOTICES.budget : error instanceof AiUnavailableError ? NOTICES.unavailable : NOTICES.error;
-      return { text: notice, outcome: "notice" };
+      return { text: "", outcome: "notice", notice };
     }
 
     const model = modelFor("counselor");
     const context = await buildStudentContext(db, student, { concernFlagged: conv.concernFlagged, now: deps.now, knownNames });
-    const messages: Anthropic.Beta.BetaMessageParam[] = prior
-      .slice(-HISTORY_LIMIT)
-      .filter((m) => m.kind !== "notice")
+    const window = prior.filter((m) => m.kind !== "notice");
+    const messages: Anthropic.Beta.BetaMessageParam[] = window
+      .slice(historyStart(window.length))
       .map((m) => ({ role: m.role, content: m.role === "user" ? scrubPii(m.content, knownNames) : m.content }));
-    messages.push({ role: "user", content: scrubPii(latest, knownNames) });
+    messages.push({ role: "user", content: scrubPii(text, knownNames) });
     // The API requires the first message to be from the user.
     while (messages.length && messages[0].role !== "user") messages.shift();
 
-    let text = "";
+    let kept = "";
+    // Text streamed in the current iteration; kept if the stream breaks, since the student saw it.
+    let inProgress = "";
+    let lastStop: string | null = null;
     try {
       const runner = client.beta.messages.toolRunner(
         {
@@ -195,42 +254,48 @@ export async function* respond(
           max_iterations: 5,
           betas: ["server-side-fallback-2026-07-01"],
           fallbacks: "default",
+          // Auto-caching covers the conversation; the explicit breakpoint keeps the tools and
+          // standing instructions cached even when the student context changes.
           cache_control: { type: "ephemeral" },
           ...(supportsEffort(model) && { output_config: { effort: "medium" as const } }),
           system: [
-            { type: "text", text: COUNSELOR_SYSTEM },
+            { type: "text", text: COUNSELOR_SYSTEM, cache_control: { type: "ephemeral" } },
             { type: "text", text: context },
           ],
           tools: counselorTools({ db, userId: student.id, grade: student.grade, extra: deps.extraTools }),
           messages,
           stream: true,
         },
-        { signal },
+        { signal: abort.signal },
       );
       for await (const stream of runner) {
+        inProgress = "";
         for await (const event of stream) {
           if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            text += event.delta.text;
-            out.push(event.delta.text);
+            inProgress += event.delta.text;
+            queue.push(event.delta.text);
           }
         }
         const message = await stream.finalMessage();
-        await recordUsage(db, student.id, "counselor", model, message.usage);
-        if (message.stop_reason === "refusal") return { text, outcome: "refusal" };
-        if (message.stop_reason === "max_tokens" && message.content.some((b) => b.type === "tool_use")) {
-          return { text, outcome: "error" };
-        }
+        lastStop = message.stop_reason;
+        await safely("record usage", () => recordMessageUsage(db, student.id, "counselor", model, message));
+        if (message.stop_reason === "refusal") return { text: kept, outcome: "refusal" };
+        kept += inProgress;
+        inProgress = "";
+        if (message.stop_reason === "max_tokens") return { text: kept, outcome: "incomplete" };
         // Separate text written before and after a tool call.
-        if (text && !/\s$/.test(text) && message.stop_reason === "tool_use") {
-          text += "\n\n";
-          out.push("\n\n");
+        if (message.stop_reason === "tool_use" && kept && !/\s$/.test(kept)) {
+          kept += "\n\n";
+          queue.push("\n\n");
         }
       }
-      return { text, outcome: "ok" };
+      // Ran out of iterations while still asking for tools: the answer never got written.
+      if (lastStop === "tool_use") return { text: kept, outcome: "incomplete" };
+      return { text: kept, outcome: "ok" };
     } catch (error) {
-      if (signal.aborted) return { text, outcome: "aborted" };
+      if (abort.signal.aborted) return { text: kept + inProgress, outcome: "aborted" };
       console.error("[counselor] generation failed", error instanceof Anthropic.APIError ? `${error.status} ${error.name}` : error instanceof Error ? error.name : "unknown");
-      return { text, outcome: "error" };
+      return { text: kept + inProgress, outcome: "error" };
     }
   }
 }

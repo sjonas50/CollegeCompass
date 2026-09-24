@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageOn, currentGrade, gradeBand, isPlausibleStudentBirthDate, isUnder13, schoolYearOf } from "./age";
+import { ageOn, currentGrade, gradeBand, gradeQuestion, isAllowedGrade, isPlausibleStudentBirthDate, isUnder13, schoolYearOf } from "./age";
 
 const today = new Date("2026-09-23T12:00:00Z");
 
@@ -34,6 +34,16 @@ describe("age", () => {
     expect(currentGrade(stored, new Date("2027-08-20T12:00:00Z"))).toBe(8);
     expect(currentGrade(stored, new Date("2032-09-01T12:00:00Z"))).toBe(13); // graduated
     expect(currentGrade({ grade: null, gradeSchoolYear: null })).toBeNull();
+  });
+
+  it("asks for the grade just finished in June and July", () => {
+    const july = new Date("2027-07-10T12:00:00Z");
+    expect(gradeQuestion(july)).toEqual({ label: "Grade you just finished", min: 6, max: 11 });
+    expect(isAllowedGrade(6, july)).toBe(true);
+    expect(isAllowedGrade(6, new Date("2027-09-10T12:00:00Z"))).toBe(false);
+    // A rising senior who finished 11th in July shows as 12th in August, not graduated.
+    const stored = { grade: 11, gradeSchoolYear: schoolYearOf(july) };
+    expect(currentGrade(stored, new Date("2027-08-20T12:00:00Z"))).toBe(12);
   });
 
   it("maps grades to bands", () => {

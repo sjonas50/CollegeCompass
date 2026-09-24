@@ -37,6 +37,7 @@ export async function createChildAction(_prev: FormState, formData: FormData): P
   const result = await createChildAccount(db, parent.id, parsed.data, consent);
   if (!result.ok) {
     if (result.error === "username_taken") return { errors: { username: ["That username is taken."] } };
+    if (result.error === "invalid_grade") return { errors: { grade: ["Choose a grade from the list."] } };
     return { message: "We couldn't create this account. Please check the details and try again." };
   }
 

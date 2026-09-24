@@ -7,12 +7,13 @@ import { isLinkedParent, setStudentGrade } from "@/lib/accounts";
 import { requireUser } from "@/lib/auth/dal";
 import { setRemindersEnabled } from "@/lib/reminders";
 
-const Grade = z.coerce.number().int().min(7).max(12);
+// An empty value means "leave it as is" (the select shows "Finished high school" for graduates).
+const Grade = z.coerce.number().int().min(6).max(12);
 
 export async function setMyGradeAction(formData: FormData) {
   const student = await requireUser(["student"]);
-  const grade = Grade.safeParse(formData.get("grade"));
-  if (grade.success) await setStudentGrade(await getDb(), student.id, grade.data);
+  const grade = Grade.safeParse(formData.get("grade") || undefined);
+  if (grade.success && grade.data !== student.grade) await setStudentGrade(await getDb(), student.id, grade.data);
   redirect("/dashboard?settings=saved");
 }
 
@@ -22,15 +23,26 @@ export async function setMyRemindersAction(formData: FormData) {
   redirect("/dashboard?settings=saved");
 }
 
-/** Parents manage settings for linked children (grade corrections, reminder emails). */
-export async function setChildSettingsAction(formData: FormData) {
+async function linkedChild(formData: FormData) {
   const parent = await requireUser(["parent"]);
   const studentId = z.uuid().safeParse(formData.get("studentId"));
   if (!studentId.success) redirect("/parent");
   const db = await getDb();
   if (!(await isLinkedParent(db, parent.id, studentId.data))) redirect("/parent");
-  const grade = Grade.safeParse(formData.get("grade"));
-  if (grade.success) await setStudentGrade(db, studentId.data, grade.data);
-  await setRemindersEnabled(db, studentId.data, formData.get("reminders") === "on");
+  return { db, studentId: studentId.data };
+}
+
+/** Parents correct a linked child's grade. Unchanged or empty values do nothing. */
+export async function setChildGradeAction(formData: FormData) {
+  const { db, studentId } = await linkedChild(formData);
+  const grade = Grade.safeParse(formData.get("grade") || undefined);
+  const shown = Number(formData.get("shownGrade"));
+  if (grade.success && grade.data !== shown) await setStudentGrade(db, studentId, grade.data);
+  redirect("/parent?saved=1");
+}
+
+export async function setChildRemindersAction(formData: FormData) {
+  const { db, studentId } = await linkedChild(formData);
+  await setRemindersEnabled(db, studentId, formData.get("reminders") === "on");
   redirect("/parent?saved=1");
 }

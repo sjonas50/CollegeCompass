@@ -3,7 +3,7 @@ import * as z from "zod";
 import type { Db } from "@/db";
 import { consentRecords, households, parentStudentLinks, users } from "@/db/schema";
 import { audit } from "./audit";
-import { MAX_GRADE, MIN_GRADE, currentGrade, isPlausibleStudentBirthDate, isUnder13, schoolYearOf } from "./auth/age";
+import { MAX_GRADE, MIN_GRADE, currentGrade, isAllowedGrade, isPlausibleStudentBirthDate, isUnder13, schoolYearOf } from "./auth/age";
 import { hashPassword, verifyPassword } from "./auth/password";
 import { CONSENT_POLICY_VERSION, type ConsentVerification } from "./consent/verifier";
 
@@ -17,10 +17,11 @@ const password = z
   .string()
   .min(10, "Use at least 10 characters.")
   .max(128, "Use 128 characters or fewer.");
+// 6 is accepted only in June/July, as "the grade you just finished" (see gradeQuestion).
 const grade = z.coerce
   .number()
   .int()
-  .min(MIN_GRADE, `Grades ${MIN_GRADE}–${MAX_GRADE} only.`)
+  .min(MIN_GRADE - 1, `Grades ${MIN_GRADE}–${MAX_GRADE} only.`)
   .max(MAX_GRADE, `Grades ${MIN_GRADE}–${MAX_GRADE} only.`);
 const birthDate = z
   .string()
@@ -41,7 +42,7 @@ export const LoginSchema = z.object({
   password: z.string().min(1, "Enter your password."),
 });
 
-export type AccountError = "email_taken" | "username_taken" | "under_13" | "consent_required";
+export type AccountError = "email_taken" | "username_taken" | "under_13" | "consent_required" | "invalid_grade";
 type Result<T> = { ok: true; value: T } | { ok: false; error: AccountError };
 
 // ---------------------------------------------------------------------------
@@ -71,6 +72,7 @@ export async function registerStudent(
   today = new Date(),
 ): Promise<Result<{ userId: string }>> {
   if (isUnder13(input.birthDate, today)) return { ok: false, error: "under_13" };
+  if (!isAllowedGrade(input.grade, today)) return { ok: false, error: "invalid_grade" };
   if (await emailTaken(db, input.email)) return { ok: false, error: "email_taken" };
 
   const passwordHash = await hashPassword(input.password);
@@ -133,6 +135,7 @@ export async function createChildAccount(
 ): Promise<Result<{ userId: string }>> {
   const under13 = isUnder13(input.birthDate, today);
   if (under13 && !consent) return { ok: false, error: "consent_required" };
+  if (!isAllowedGrade(input.grade, today)) return { ok: false, error: "invalid_grade" };
   if (await usernameTaken(db, input.username)) return { ok: false, error: "username_taken" };
 
   const [parent] = await db
@@ -245,6 +248,8 @@ export async function listChildren(db: Db, parentUserId: string, now = new Date(
       username: users.username,
       grade: users.grade,
       gradeSchoolYear: users.gradeSchoolYear,
+      email: users.email,
+      birthDate: users.birthDate,
       parentManaged: users.parentManaged,
       remindersEnabled: users.remindersEnabled,
       createdAt: users.createdAt,
@@ -258,7 +263,7 @@ export async function listChildren(db: Db, parentUserId: string, now = new Date(
 
 /** Lets a student (or their parent) correct the grade, e.g. after skipping or repeating a year. */
 export async function setStudentGrade(db: Db, studentId: string, grade: number, today = new Date()) {
-  if (!Number.isInteger(grade) || grade < MIN_GRADE || grade > MAX_GRADE) return false;
+  if (!isAllowedGrade(grade, today)) return false;
   const updated = await db
     .update(users)
     .set({ grade, gradeSchoolYear: schoolYearOf(today) })

@@ -64,6 +64,7 @@ export async function registerStudentAction(_prev: FormState, formData: FormData
   }
   const result = await registerStudent(db, parsed.data);
   if (!result.ok) {
+    if (result.error === "invalid_grade") return { errors: { grade: ["Choose your grade from the list."] } };
     if (result.error === "under_13") {
       await setUnder13Gate();
       return { message: "Please ask a parent to set up your account." };

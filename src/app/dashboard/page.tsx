@@ -17,6 +17,7 @@ import { listCourses } from "@/lib/courses/service";
 import { listNorthStars } from "@/lib/goals";
 import { buildRoadmap, getMilestoneProgress } from "@/lib/roadmap";
 import { MILESTONES } from "@/lib/roadmap/milestones";
+import { reminderGoesToParent } from "@/lib/reminders";
 
 export const metadata: Metadata = { title: "Your dashboard" };
 
@@ -44,7 +45,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     listNorthStars(db, user.id),
     getMilestoneProgress(db, user.id),
     listCourses(db, user.id),
-    db.select({ remindersEnabled: users.remindersEnabled }).from(users).where(eq(users.id, user.id)),
+    db
+      .select({ remindersEnabled: users.remindersEnabled, email: users.email, birthDate: users.birthDate })
+      .from(users)
+      .where(eq(users.id, user.id)),
   ]);
   const roadmap = buildRoadmap(MILESTONES, grade, new Date(), progress);
   const timely = [...roadmap.now, ...roadmap.catchUp].slice(0, 3);
@@ -61,7 +65,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       />
       {settings === "saved" && <Notice>Settings saved.</Notice>}
 
-      <WeeklyStepsCard />
+      {/* Graduates have no roadmap, so the card shouldn't send them there for ideas. */}
+      <WeeklyStepsCard linkToRoadmap={!graduated} />
 
       {!graduated && (
         <section>
@@ -172,7 +177,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </Card>
       </div>
 
-      <StudentSettings grade={user.grade} remindersEnabled={prefs?.remindersEnabled ?? true} />
+      <StudentSettings
+        grade={user.grade}
+        remindersEnabled={prefs?.remindersEnabled ?? true}
+        remindersGoToParent={prefs ? reminderGoesToParent(prefs) : false}
+      />
 
       <form action={logoutAction}>
         <button type="submit" className="min-h-11 text-sm text-muted underline">Sign out</button>

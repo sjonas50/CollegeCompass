@@ -40,7 +40,7 @@ export async function listMessages(db: Db, conversationId: string) {
     })
     .from(counselorMessages)
     .where(eq(counselorMessages.conversationId, conversationId))
-    .orderBy(asc(counselorMessages.createdAt), asc(counselorMessages.id));
+    .orderBy(asc(counselorMessages.seq));
 }
 
 export async function appendMessage(

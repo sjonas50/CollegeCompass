@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { logoutAction } from "@/app/actions/auth";
-import { setChildSettingsAction } from "@/app/actions/settings";
+import { setChildGradeAction, setChildRemindersAction } from "@/app/actions/settings";
+import { GradeSettingSelect } from "@/components/student-settings";
+import { reminderGoesToParent } from "@/lib/reminders";
+import { gradeQuestion } from "@/lib/auth/age";
 import { getDb } from "@/db";
 import { Button, ButtonLink, Card, Notice, PageHeading } from "@/components/ui";
 import { listChildren } from "@/lib/accounts";
@@ -46,28 +49,26 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
               </div>
             </div>
             <details className="mt-3 border-t border-border pt-3">
-              <summary className="cursor-pointer text-sm font-medium">Settings</summary>
-              <form action={setChildSettingsAction} className="mt-3 flex flex-wrap items-end gap-3">
-                <input type="hidden" name="studentId" value={child.id} />
-                <div>
-                  <label htmlFor={`grade-${child.id}`} className="block text-sm">Grade this school year</label>
-                  <select
-                    id={`grade-${child.id}`}
-                    name="grade"
-                    defaultValue={child.grade && child.grade <= 12 ? child.grade : 12}
-                    className="mt-1 block min-h-11 rounded-lg border border-border bg-surface px-3"
-                  >
-                    {[7, 8, 9, 10, 11, 12].map((g) => (
-                      <option key={g} value={g}>{g}th grade</option>
-                    ))}
-                  </select>
-                </div>
-                <label className="flex min-h-11 items-center gap-2 text-sm">
-                  <input type="checkbox" name="reminders" defaultChecked={child.remindersEnabled} className="size-4" />
-                  Weekly reminder email{child.parentManaged ? " (sent to you)" : ""}
-                </label>
-                <Button type="submit" variant="secondary">Save</Button>
-              </form>
+              <summary className="min-h-11 cursor-pointer content-center text-sm font-medium">Settings</summary>
+              <div className="mt-3 space-y-4">
+                <form action={setChildGradeAction} className="flex flex-wrap items-end gap-3">
+                  <input type="hidden" name="studentId" value={child.id} />
+                  <input type="hidden" name="shownGrade" value={child.grade ?? ""} />
+                  <div>
+                    <label htmlFor={`grade-${child.id}`} className="block text-sm">{gradeQuestion().label}</label>
+                    <GradeSettingSelect id={`grade-${child.id}`} grade={child.grade} />
+                  </div>
+                  <Button type="submit" variant="secondary">Save grade</Button>
+                </form>
+                <form action={setChildRemindersAction} className="flex flex-wrap items-center gap-3">
+                  <input type="hidden" name="studentId" value={child.id} />
+                  <label className="flex min-h-11 items-center gap-2 text-sm">
+                    <input type="checkbox" name="reminders" defaultChecked={child.remindersEnabled} className="size-4" />
+                    Weekly reminder email {reminderGoesToParent(child) ? "(sent to you)" : `(sent to ${child.displayName})`}
+                  </label>
+                  <Button type="submit" variant="secondary">Save</Button>
+                </form>
+              </div>
             </details>
           </Card>
         ))}
