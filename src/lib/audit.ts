@@ -22,6 +22,7 @@ export type AuditAction =
   | "parent_invite.accepted"
   | "assessment.imported"
   | "safety.reviewed"
+  | "admin.viewed_safety_event"
   | "admin.created";
 
 /** Records who did what. Metadata must never contain personal data: it outlives deletion. */
