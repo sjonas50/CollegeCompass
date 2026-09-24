@@ -8,7 +8,9 @@ This is the v2 rebuild. The v1 prototype lives in `main`'s history.
 
 ## Getting started
 
-Requires Node 24+.
+Requires Node 24 (production and CI run 24; `engines` pins it for Vercel). Newer Node works for
+development: from Node 25, `fetch` speaks HTTP/2, which hung the server on Node 26 when a request
+was cancelled, so calls to Anthropic and Resend go through `outboundFetch` (HTTP/1.1 only).
 
 ```bash
 npm install

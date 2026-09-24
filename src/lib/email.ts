@@ -1,6 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { env } from "@/env";
+import { outboundFetch } from "./outbound-fetch";
 
 export type Email = {
   to: string;
@@ -144,7 +145,7 @@ type Failure = { error: EmailSendError; retryAfterMs: number | null };
  */
 export async function sendWithResend(email: Email, config: ResendConfig, deps: SendDeps = {}): Promise<void> {
   if (!config.apiKey) throw logged(new EmailSendError("resend", null, "missing_api_key"));
-  const doFetch = deps.fetch ?? fetch;
+  const doFetch = deps.fetch ?? outboundFetch();
   const sleep = deps.sleep ?? wait;
   const limiter = deps.limiter ?? resendLimiter;
   const timeoutMs = deps.timeoutMs ?? EMAIL_TIMEOUT_MS;
