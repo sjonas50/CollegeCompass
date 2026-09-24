@@ -105,6 +105,7 @@ export default async function SafetyQueuePage({ searchParams }: PageProps<"/admi
                   </span>
                   <span className="mt-2 block text-sm text-muted">
                     Flagged {formatAgo(row.createdAt, now)} · {row.gradeBand} · {row.sources.map(sourceLabel).join(", ") || "No tier recorded"}
+                    {row.sentWhileLocked && " · Sent while the counselor was locked"}
                   </span>
                   {row.rulesAlone && (
                     <span className="mt-1 block text-sm font-medium">{RULES_ALONE_REASONS[row.modelTier]}: keyword rules alone decided</span>

@@ -36,7 +36,7 @@ change settings.
 | `npm run eval:safety` | Live eval of the safety classifier (calls the Anthropic API; costs money) |
 | `npm run eval:counselor` | Live eval of the AI counselor (calls the Anthropic API; costs money) |
 | `npm run admin:create` | Creates a staff account for `/admin` (see [The first admin](#8-the-first-admin)) |
-| `npm run access:grant` | Gives a household comp or sponsored access (see [`docs/operations.md`](docs/operations.md)) |
+| `npm run access:grant` | Gives a household comp or sponsored access, recorded with the staff account in `--by` (see "Giving a family access" in [`docs/operations.md`](docs/operations.md)) |
 
 ## Reference data
 
@@ -194,7 +194,7 @@ Student data is never touched. Do the same for the Preview database.
 
 | Route | Schedule (UTC) | What it does |
 | --- | --- | --- |
-| `/api/cron/sweep` | Daily, 09:00 | Deletes expired parent consent requests (and the parent's email with them), expired sessions, old rate-limit rows, and Stripe event ids older than 30 days. |
+| `/api/cron/sweep` | Daily, 09:00 | Deletes expired parent consent requests (and the parent's email with them), expired sessions, old rate-limit rows, and Stripe event ids older than 30 days. Retries Stripe clean-up that failed earlier and closes Stripe customers of households whose last parent left, once their plan has ended (see "Stripe clean-up" in [`docs/operations.md`](docs/operations.md)). |
 | `/api/cron/weekly-reminders` | Mondays, 13:00 | Sends each student (or a younger student's parent) a weekly look back and ahead. |
 
 **Hobby vs Pro.** Hobby allows one run a day per job and may start it any time within the hour.

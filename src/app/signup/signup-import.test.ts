@@ -117,11 +117,20 @@ describe("signup with a saved free quiz", () => {
   it("still creates the account when the saved answers don't check out, without importing them", async () => {
     const tampered = JSON.stringify({ ...JSON.parse(saved), scores: { areas: { E: 40 } } });
     for (const [i, bad] of [tampered, "not json", serializeSavedAssessment({ ...emptySavedAssessment(), answers: { R1: 3 } })].entries()) {
+      state.cookie = null; // signed out between sign-ups
       expect(await submit(signupForm({ [SAVED_ASSESSMENT_FIELD]: bad, email: `sam${i}@example.com` }))).toEqual({ redirect: "/dashboard" });
     }
     expect(await db.select().from(schema.users)).toHaveLength(3);
     expect(await db.select().from(schema.assessmentAttempts)).toHaveLength(0);
     expect(await db.select().from(schema.auditLog).where(eq(schema.auditLog.action, "assessment.imported"))).toHaveLength(0);
+  });
+
+  it("won't create a second account over a signed-in session", async () => {
+    expect(await submit(signupForm({}))).toEqual({ redirect: "/dashboard" });
+    expect(await submit(signupForm({ email: "someone.else@example.com" }))).toEqual({
+      value: { message: "You're already signed in. Sign out first to create a new account." },
+    });
+    expect(await db.select().from(schema.users)).toHaveLength(1);
   });
 
   it("never creates an account, or imports anything, for an under-13", async () => {

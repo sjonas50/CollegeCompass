@@ -72,6 +72,12 @@ export default async function SafetyEventPage({ params, searchParams }: PageProp
             {MODEL_TIER_LABELS[event.modelTier]}
             {event.rulesAlone && " Keyword rules alone decided, so the rating may be off in either direction."}
           </dd>
+          {event.sentWhileLocked && (
+            <>
+              <dt className="text-muted">Sent</dt>
+              <dd>While the counselor was locked, so it wasn&apos;t saved in a conversation</dd>
+            </>
+          )}
           <dt className="text-muted">Student</dt>
           <dd>{event.gradeBand}</dd>
           <dt className="text-muted">Family reference</dt>

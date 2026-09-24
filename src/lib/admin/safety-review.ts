@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, asc, count, desc, eq, gte, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 import type { Db } from "@/db";
@@ -23,11 +23,12 @@ import {
   REVIEW_OUTCOMES,
   SEVERITIES,
   gradeBandLabel,
-  isRulesAloneMarker,
+  isMarker,
   median,
   modelTierOf,
   monthRange,
   rulesAlone,
+  sentWhileLocked,
 } from "./format";
 
 const HOUR_MS = 60 * 60_000;
@@ -99,6 +100,8 @@ export type QueueRow = {
   modelTier: ModelTier;
   /** True when the model couldn't be used and keyword rules alone decided (read these with extra care). */
   rulesAlone: boolean;
+  /** Sent while the counselor was locked: screened, but never saved in a conversation. */
+  sentWhileLocked: boolean;
   createdAt: Date;
   /** The student's grade band when the message was sent. Never the name. */
   gradeBand: string;
@@ -137,9 +140,10 @@ function toQueueRow(row: EventRow, now: Date): QueueRow {
     id: row.id,
     severity: row.severity,
     category: row.category,
-    sources: row.sources.filter((s) => !isRulesAloneMarker(s)),
+    sources: row.sources.filter((s) => !isMarker(s)),
     modelTier,
     rulesAlone: rulesAlone(modelTier),
+    sentWhileLocked: sentWhileLocked(row.sources),
     createdAt: row.createdAt,
     gradeBand: gradeBandLabel(currentGrade({ grade: row.grade, gradeSchoolYear: row.gradeSchoolYear }, row.createdAt)),
     reviewedAt: row.reviewedAt,
@@ -382,7 +386,7 @@ async function conversationAround(
 ): Promise<ConversationContext> {
   // Messages sent while the counselor is locked are screened but never saved, so a text match could
   // only find a different message.
-  if (event.sources.includes("locked")) return { state: "not_saved" };
+  if (sentWhileLocked(event.sources)) return { state: "not_saved" };
 
   // Only a full-length excerpt was cut short; a shorter one must match the whole message. A cut can
   // end in half an emoji, which the database stores as U+FFFD.
@@ -548,11 +552,13 @@ export type SafetyMonthStats = {
   waiting: number;
   /** Still waiting and past the target. */
   overdue: number;
+  /** Events whose family deleted their account before anyone reviewed them (counted in total). */
+  deletedBeforeReview: number;
   /** Reviewed events (counted above) whose family has since deleted their account. */
   fromDeletedAccounts: number;
 };
 
-type StatsRow = { severity: EventSeverity; createdAt: Date; reviewedAt: Date | null };
+type StatsRow = { severity: EventSeverity; createdAt: Date; reviewedAt: Date | null; deletedAt?: Date };
 
 /**
  * Reviewed events flagged in [start, end) whose family deleted their account (the event went with
@@ -563,21 +569,22 @@ async function deletedReviewedEvents(db: Db, start: Date, end: Date): Promise<St
   const field = (name: string) => sql<string | null>`${auditLog.metadata}->>${name}`;
   const flaggedAt = sql`(${field("flaggedAt")})::timestamptz`;
   const rows = await db
-    .select({ severity: field("severity"), flaggedAt: field("flaggedAt"), reviewedAt: field("reviewedAt") })
+    .select({ action: auditLog.action, severity: field("severity"), flaggedAt: field("flaggedAt"), reviewedAt: field("reviewedAt"), at: auditLog.createdAt })
     .from(auditLog)
     .where(
       and(
-        eq(auditLog.action, "safety.reviewed"),
+        inArray(auditLog.action, ["safety.reviewed", "safety.deleted_unreviewed"]),
         sql`${flaggedAt} >= ${start.toISOString()}::timestamptz`,
         sql`${flaggedAt} < ${end.toISOString()}::timestamptz`,
         sql`not exists (select 1 from ${safetyEvents} where ${safetyEvents.id}::text = ${field("eventId")})`,
       ),
     );
-  return rows.flatMap((r) =>
-    SEVERITIES.includes(r.severity as EventSeverity) && r.flaggedAt && r.reviewedAt
-      ? [{ severity: r.severity as EventSeverity, createdAt: new Date(r.flaggedAt), reviewedAt: new Date(r.reviewedAt) }]
-      : [],
-  );
+  return rows.flatMap((r): StatsRow[] => {
+    if (!SEVERITIES.includes(r.severity as EventSeverity) || !r.flaggedAt) return [];
+    const severity = r.severity as EventSeverity;
+    if (r.action === "safety.deleted_unreviewed") return [{ severity, createdAt: new Date(r.flaggedAt), reviewedAt: null, deletedAt: r.at }];
+    return r.reviewedAt ? [{ severity, createdAt: new Date(r.flaggedAt), reviewedAt: new Date(r.reviewedAt) }] : [];
+  });
 }
 
 export async function safetyMonthStats(db: Db, actorId: string, month: string, now: Date = new Date()): Promise<SafetyMonthStats> {
@@ -600,11 +607,19 @@ export async function safetyMonthStats(db: Db, actorId: string, month: string, n
     reviewedLate: 0,
     waiting: 0,
     overdue: 0,
-    fromDeletedAccounts: deleted.length,
+    deletedBeforeReview: 0,
+    fromDeletedAccounts: deleted.filter((r) => r.reviewedAt).length,
   };
   const took: number[] = [];
   for (const row of rows) {
     stats.bySeverity[row.severity]++;
+    if (row.deletedAt && !row.reviewedAt) {
+      // Never reviewed: overdue only if it was already past the target when the family left.
+      stats.deletedBeforeReview++;
+      const atDeletion = reviewTiming(row, row.deletedAt);
+      if (atDeletion.state !== "reviewed" && atDeletion.overdue) stats.overdue++;
+      continue;
+    }
     const timing = reviewTiming(row, now);
     if (timing.state === "reviewed") {
       stats.reviewed++;

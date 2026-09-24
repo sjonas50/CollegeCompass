@@ -22,7 +22,7 @@ import {
   setSessionCookie,
   setUnder13Gate,
 } from "@/lib/auth/cookies";
-import { homePathFor } from "@/lib/auth/dal";
+import { homePathFor, getCurrentUser } from "@/lib/auth/dal";
 import { createSession, invalidateSession, validateSession } from "@/lib/auth/sessions";
 import { hashToken } from "@/lib/auth/tokens";
 import { createConsentRequest, cancelConsentRequest } from "@/lib/consent/requests";
@@ -49,7 +49,11 @@ export async function checkAgeAction(_prev: AgeGateState, formData: FormData): P
   return { step: "teen", birthDate };
 }
 
+const ALREADY_SIGNED_IN = "You're already signed in. Sign out first to create a new account.";
+
 export async function registerStudentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  // A stale tab or a hand-made post must not swap a signed-in family member's session for a new account.
+  if (await getCurrentUser()) return { message: ALREADY_SIGNED_IN };
   if (await hasUnder13Gate()) return { message: "Please ask a parent to set up your account." };
   const parsed = StudentSignupSchema.safeParse({
     displayName: formData.get("displayName"),
@@ -146,6 +150,7 @@ export async function requestParentConsentAction(
 }
 
 export async function registerParentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  if (await getCurrentUser()) return { message: ALREADY_SIGNED_IN };
   const parsed = ParentSignupSchema.safeParse({
     displayName: formData.get("displayName"),
     email: formData.get("email"),

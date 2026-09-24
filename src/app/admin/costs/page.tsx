@@ -137,6 +137,12 @@ function deletedFamiliesText(count: number) {
     : `Includes ${n(count)} reviewed events from families that have since deleted their accounts.`;
 }
 
+function deletedBeforeReviewText(count: number) {
+  return count === 1
+    ? "1 event was deleted with its account before anyone reviewed it."
+    : `${n(count)} events were deleted with their accounts before anyone reviewed them.`;
+}
+
 function SafetySection({ stats }: { stats: SafetyMonthStats }) {
   const onTimeShare = stats.reviewed ? ` (${formatPercent((stats.reviewedOnTime / stats.reviewed) * 100)})` : "";
   return (
@@ -171,8 +177,9 @@ function SafetySection({ stats }: { stats: SafetyMonthStats }) {
       )}
       <p className="mt-3 text-xs text-muted">
         {stats.fromDeletedAccounts > 0 && `${deletedFamiliesText(stats.fromDeletedAccounts)} `}
-        When a family deletes their account, events someone already reviewed stay in these numbers. Events deleted before
-        anyone reviewed them aren&apos;t counted.
+        {stats.deletedBeforeReview > 0 && `${deletedBeforeReviewText(stats.deletedBeforeReview)} `}
+        When a family deletes their account, their events stay in these numbers. One deleted before anyone reviewed it
+        counts as overdue only if it was already past the target.
       </p>
     </Card>
   );

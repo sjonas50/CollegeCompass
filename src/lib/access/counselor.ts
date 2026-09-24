@@ -21,7 +21,8 @@ export const LOCKED_SCREEN_LIMIT = { count: 10, windowMs: 10 * 60_000 };
 async function recordRulesOnlyEvent(db: Db, userId: string, text: string, category: SafetyCategory, severity: "high" | "imminent", now?: Date) {
   try {
     if (!(await consumeRateLimit(db, `safety-record:${userId}`, 20, 24 * 60 * 60_000, now))) return;
-    await db.insert(safetyEvents).values({ userId, category, severity, sources: ["rules", "locked"], excerpt: text.slice(0, 1000) });
+    // Rules alone decided because of the screening cap ("rate_limited"); "locked": never saved.
+    await db.insert(safetyEvents).values({ userId, category, severity, sources: ["rules", "rate_limited", "locked"], excerpt: text.slice(0, 1000) });
   } catch (error) {
     // Never let a failed write keep crisis resources from the student. Log no message text.
     console.error("[access] failed to record a safety event", error instanceof Error ? error.name : "unknown");
@@ -47,7 +48,10 @@ export async function lockedCounselorReply(
     // A failed limit check errs toward screening.
     console.error("[access] locked screening cap failed", error instanceof Error ? error.name : "unknown");
   }
-  const screen = screenInFull ? await assessMessage(db, student.id, text, { client: deps.client, knownNames }) : screenWithRulesOnly(text);
+  // Marked "locked": the message isn't saved, so staff know there's no conversation to open.
+  const screen = screenInFull
+    ? await assessMessage(db, student.id, text, { client: deps.client, knownNames, markers: ["locked"] })
+    : screenWithRulesOnly(text);
   if (!screenInFull && screen.supportMessage && screen.category) {
     // Rules alone decided (assessMessage records its own events). Still queue it for review, with
     // the same daily cap as the counselor's rate-limited path so this can't flood the queue.

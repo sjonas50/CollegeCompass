@@ -27,6 +27,8 @@ type Options = {
   client?: Pick<Anthropic, "beta">;
   /** The student's own name(s), removed before the text reaches the model. */
   knownNames?: string[];
+  /** Extra markers for the review queue, e.g. "locked" when the message won't be stored. */
+  markers?: string[];
 };
 
 // Each safety call gets a deadline, so the primary, the backup and the rules fallback all finish
@@ -101,7 +103,7 @@ export async function assessMessage(
           userId,
           category: signal.category,
           severity: signal.severity,
-          sources: modelRan ? sources : [...sources, "model_unavailable"],
+          sources: [...sources, ...(modelRan ? [] : ["model_unavailable"]), ...(opts.markers ?? [])],
           excerpt: text.slice(0, 1000),
         })
         .returning({ id: safetyEvents.id });

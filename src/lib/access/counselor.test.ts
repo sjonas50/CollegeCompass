@@ -25,14 +25,16 @@ describe("lockedCounselorReply", () => {
   it("returns crisis resources and queues the message for review", async () => {
     const body = await lockedCounselorReply(db, student, "i want to kill myself");
     expect(body.support).toContain("988");
-    expect(await db.select().from(schema.safetyEvents)).toHaveLength(1);
+    // Marked as sent while locked, so staff know it was never saved in a conversation.
+    const [event] = await db.select().from(schema.safetyEvents);
+    expect(event.sources).toContain("locked");
   });
 
   it("past its screening cap, still returns crisis resources from the keyword rules and queues them, up to a daily cap", async () => {
     for (let i = 0; i < LOCKED_SCREEN_LIMIT.count; i++) await lockedCounselorReply(db, student, "hello");
     const body = await lockedCounselorReply(db, student, "i want to kill myself");
     expect(body.support).toContain("988");
-    expect(await db.select().from(schema.safetyEvents)).toEqual([expect.objectContaining({ severity: "high", sources: ["rules", "locked"] })]);
+    expect(await db.select().from(schema.safetyEvents)).toEqual([expect.objectContaining({ severity: "high", sources: ["rules", "rate_limited", "locked"] })]);
 
     for (let i = 0; i < 25; i++) expect((await lockedCounselorReply(db, student, "i want to kill myself")).support).toContain("988");
     expect(await db.select().from(schema.safetyEvents)).toHaveLength(20);

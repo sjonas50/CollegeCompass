@@ -167,11 +167,17 @@ describe("parent controls", () => {
     );
     if (!teen.ok) throw new Error(teen.error);
     expect(await listChildren(db, parentId)).toHaveLength(2);
+    const base = { category: "self_harm" as const, severity: "high" as const, sources: ["rules"], excerpt: "test" };
+    const [childEvent] = await db.insert(schema.safetyEvents).values({ ...base, userId: childId }).returning();
+    await db.insert(schema.safetyEvents).values({ ...base, userId: teen.value.userId });
 
     expect(await deleteParentAccount(db, parentId)).toEqual({ childrenDeleted: 1 });
     const remaining = await db.select({ id: schema.users.id }).from(schema.users);
     expect(remaining.map((r) => r.id)).toEqual([teen.value.userId]);
     expect(remaining.map((r) => r.id)).not.toContain(childId);
+    // The deleted child's unreviewed event is noted for staff review numbers; the teen's is still live.
+    const noted = await db.select().from(schema.auditLog).where(eq(schema.auditLog.action, "safety.deleted_unreviewed"));
+    expect(noted.map((a) => a.metadata)).toEqual([{ eventId: childEvent.id, severity: "high", flaggedAt: childEvent.createdAt.toISOString() }]);
   });
 });
 

@@ -25,5 +25,8 @@ export async function GET(req: Request) {
   const stripeCleanup = await runStripeCleanup(db, stripe, now);
   const billingClosed = await sweepBillingWithoutParent(db, stripe, now);
 
-  return Response.json({ consentRequests, sessions: expiredSessions.length, stripeCleanup, billingClosed });
+  const result = { consentRequests, sessions: expiredSessions.length, stripeCleanup, billingClosed };
+  // Counts only, so the run can be checked in the logs.
+  console.info("[sweep] done", JSON.stringify(result));
+  return Response.json(result);
 }

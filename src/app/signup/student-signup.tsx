@@ -91,6 +91,9 @@ function ParentHandoff() {
         <PageHeading title="Check with your parent" />
         <Notice>
           We sent your parent an email. Once they set things up, they&apos;ll give you your username and password.
+          {"delayed" in state && state.delayed && (
+            <> It may take a few minutes to arrive. If your parent doesn&apos;t see it soon, ask them to check their spam folder.</>
+          )}
         </Notice>
       </>
     );

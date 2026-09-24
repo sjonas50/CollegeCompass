@@ -259,7 +259,7 @@ export async function removeImportedAssessment(
   if (actorUserId !== studentUserId && !(await isLinkedParent(db, actorUserId, studentUserId))) {
     return { ok: false, error: "not_allowed" };
   }
-  return db.transaction(async (tx): Promise<RemoveImportResult> => {
+  const removed = await db.transaction(async (tx): Promise<RemoveImportResult> => {
     // Locks the student, as the import does.
     const [student] = await tx
       .select({ id: users.id })
@@ -275,4 +275,8 @@ export async function removeImportedAssessment(
     await forgetSavedContexts(tx, studentUserId);
     return { ok: true };
   });
+  if (removed.ok) {
+    await audit(db, "assessment.import_removed", { actorUserId, subjectUserId: studentUserId, metadata: { instrument: "interests" } });
+  }
+  return removed;
 }

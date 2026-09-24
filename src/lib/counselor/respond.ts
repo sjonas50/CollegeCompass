@@ -175,17 +175,23 @@ export async function* respond(
       (await safely("safety record cap", () => consumeRateLimit(db, `safety-record:${student.id}`, 20, 24 * 60 * 60_000, deps.now))) !== false;
     let messageId: string | null = null;
     if (record) {
+      let rulesEventId: string | undefined;
       if (screened === false && screen.category) {
         const category = screen.category;
-        await safely("record rate-limited safety event", () =>
-          db.insert(safetyEvents).values({
-            userId: student.id,
-            category,
-            severity: screen.severity === "imminent" ? "imminent" : "high",
-            sources: ["rules", "rate_limited"],
-            excerpt: text.slice(0, 1000),
-          }),
-        );
+        const [row] =
+          (await safely("record rate-limited safety event", () =>
+            db
+              .insert(safetyEvents)
+              .values({
+                userId: student.id,
+                category,
+                severity: screen.severity === "imminent" ? "imminent" : "high",
+                sources: ["rules", "rate_limited"],
+                excerpt: text.slice(0, 1000),
+              })
+              .returning({ id: safetyEvents.id }),
+          )) ?? [];
+        rulesEventId = row?.id;
       }
       const conv = await safely("open conversation", async () =>
         (input.conversationId ? await getOwnedConversation(db, student.id, input.conversationId) : null) ??
@@ -193,7 +199,7 @@ export async function* respond(
       );
       if (conv) {
         yield { type: "conversation", id: conv.id };
-        const eventId = "eventId" in screen ? screen.eventId : undefined;
+        const eventId = "eventId" in screen ? screen.eventId : rulesEventId;
         if (typeof eventId === "string") await linkEvent(eventId, conv.id);
         await safely("store user message", () => appendMessage(db, conv.id, { role: "user", content: text }));
         await safely("flag conversation", () => flagConversation(db, conv.id));

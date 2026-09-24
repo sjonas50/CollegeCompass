@@ -22,7 +22,9 @@ export type AuditAction =
   | "parent_invite.accepted"
   | "parent_invite.cancelled"
   | "assessment.imported"
+  | "assessment.import_removed"
   | "safety.reviewed"
+  | "safety.deleted_unreviewed"
   | "admin.viewed_safety_event"
   | "admin.created";
 

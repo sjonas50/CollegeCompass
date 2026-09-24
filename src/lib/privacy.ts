@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import type { Db } from "@/db";
 import {
   aiUsage,
@@ -185,16 +185,37 @@ export type DeletionDeps = { stripe?: Stripe | null };
  * child, as do consent records and audit entries. If the
  * student was the last person in their household, the household goes too (see deleteEmptyHousehold).
  */
+/** Safety events nobody has reviewed yet, read before their students are deleted. */
+async function unreviewedSafetyEvents(db: Db, studentIds: string[]) {
+  if (!studentIds.length) return [];
+  return db
+    .select({ id: safetyEvents.id, severity: safetyEvents.severity, createdAt: safetyEvents.createdAt })
+    .from(safetyEvents)
+    .where(and(inArray(safetyEvents.userId, studentIds), isNull(safetyEvents.reviewedAt)));
+}
+
+/**
+ * Once the students are gone, notes each safety event deleted before anyone reviewed it (id,
+ * severity and when it was flagged; nothing about the student), so staff review numbers stay whole.
+ */
+async function auditDeletedUnreviewed(db: Db, events: Awaited<ReturnType<typeof unreviewedSafetyEvents>>) {
+  for (const e of events) {
+    await audit(db, "safety.deleted_unreviewed", { metadata: { eventId: e.id, severity: e.severity, flaggedAt: e.createdAt.toISOString() } });
+  }
+}
+
 export async function deleteStudent(db: Db, requesterId: string, studentId: string, deps: DeletionDeps = {}) {
   if (requesterId !== studentId && !(await isLinkedParent(db, requesterId, studentId))) {
     return false;
   }
+  const unreviewed = await unreviewedSafetyEvents(db, [studentId]);
   const deleted = await db
     .delete(users)
     .where(and(eq(users.id, studentId), eq(users.role, "student")))
     .returning({ id: users.id, householdId: users.householdId });
   if (deleted.length === 0) return false;
   await audit(db, "student.deleted", { actorUserId: requesterId === studentId ? null : requesterId });
+  await auditDeletedUnreviewed(db, unreviewed);
   await deleteEmptyHousehold(db, deleted[0].householdId, deps);
   return true;
 }
@@ -212,6 +233,7 @@ export async function deleteParentAccount(db: Db, parentId: string, deps: Deleti
     .innerJoin(users, eq(parentStudentLinks.studentUserId, users.id))
     .where(eq(parentStudentLinks.parentUserId, parentId));
   const managedIds = children.filter((c) => c.parentManaged).map((c) => c.id);
+  const unreviewed = await unreviewedSafetyEvents(db, managedIds);
 
   const removed = await db.transaction(async (tx) => {
     const kids =
@@ -225,6 +247,7 @@ export async function deleteParentAccount(db: Db, parentId: string, deps: Deleti
     return [...parent, ...kids];
   });
   await audit(db, "parent.deleted", { metadata: { childrenDeleted: managedIds.length } });
+  if (removed.length > 0) await auditDeletedUnreviewed(db, unreviewed);
   for (const householdId of new Set(removed.map((r) => r.householdId))) {
     if (!householdId) continue;
     const deleted = await deleteEmptyHousehold(db, householdId, deps);

@@ -6,8 +6,9 @@ README under [Deploying to production](../README.md#deploying-to-production); th
 
 These rules apply to everything here:
 
-- **Keep personal data out of notes, tickets, chat and commits.** Refer to a family by an account
-  id from `/admin`, never by name, email or message text.
+- **Keep personal data out of notes, tickets, chat and commits.** Refer to a family by its family
+  reference (`H-` and 8 characters, shown on each safety event in `/admin`), never by name, email
+  or message text.
 - **Staff pages live at `/admin`.** Only named people have staff accounts
   (`npm run admin:create`).
 - **Look up contact details only when you need them.** To reach a parent after a safety event,
@@ -24,10 +25,12 @@ These rules apply to everything here:
    - **Open it.** The page shows what the student wrote, the details, and the event's **family
      reference** (`H-` and 8 characters). Opening an event is logged.
    - **Check "AI model tier".** "Didn't run" means keyword rules alone rated the message, because
-     the AI model was unavailable, the student was sending messages very fast, or the counselor
-     was locked. The queue row says the same thing ("...: keyword rules alone decided"). The
-     rating may be off in either direction, so read these with extra care. "Not asked" means the
-     rules found a clear high-risk phrase; check whether it's even more urgent than rated.
+     the AI model was unavailable or the student was sending messages very fast (including more
+     than 10 in 10 minutes while the counselor was locked). The queue row says the same thing
+     ("...: keyword rules alone decided"). The rating may be off in either direction, so read these
+     with extra care. "Not asked" means the rules found a clear high-risk phrase; check whether
+     it's even more urgent than rated. An event marked "Sent while the counselor was locked" was
+     screened as usual but never saved in a conversation.
    - **Only if you need it, "Show conversation context".** It shows the student's first name,
      whether a parent manages the account, and the messages around this one. If the event isn't
      linked to a conversation, the page shows its best guess, labeled "Likely match". Don't treat
@@ -42,8 +45,9 @@ These rules apply to everything here:
      reviewer someone already did it.
 
    The monthly numbers are on the AI costs page (`/admin/costs`), under "Safety reviews". When a
-   family deletes their account, events someone already reviewed stay in those numbers; events
-   nobody reviewed yet are deleted with the account and drop out.
+   family deletes their account, their events stay in those numbers: reviewed ones as reviewed,
+   and ones nobody reviewed yet as "deleted before review" (counted as overdue only if they were
+   already past the target). The events themselves are gone; only these counts remain.
 2. **Alerts.** Check the uptime monitor (`/api/health`) and the error-monitoring service. Anything
    new gets looked at today.
 3. **Logs.** Search the Vercel logs for `[safety]`, `[email]` and `[reminders]`. A few
@@ -78,9 +82,10 @@ error-monitoring service for anything older.
   `[reminders] run sent=12 skipped=0 failed=0 uncertain=0 more=false` (a warning when something
   is left). On Pro, where logs last a day, you can read the scheduled runs' lines instead.
 
-- **Cost dashboard** (`/admin`). Look at this month's AI spend per student and in total. Look into
-  any student near `AI_MONTHLY_BUDGET_USD` and any sudden jump. Compare the total with the
-  Anthropic Console's usage page.
+- **Cost dashboard** (`/admin/costs`). Look at this month's AI spend per student and in total.
+  Look into any student near `AI_MONTHLY_BUDGET_USD` and any sudden jump. Compare the total with
+  the Anthropic Console's usage page. Totals include spend from accounts deleted since; "Students
+  using AI" and the per-student numbers count only students who still have an account.
 - **Stripe** (only if families pay): failed payments, disputes, and failing webhook deliveries.
 - **Daily sweep.** Logs don't last a week, so check what the sweep leaves behind. In the database
   provider's SQL editor, both of these should return 0 (counts only, no personal data):
@@ -145,13 +150,16 @@ Families get full access from a plan, the trial or free access on their own. Sta
 household access for a set time, for example pilot families for the whole pilot:
 
 ```bash
-DATABASE_URL="postgres://..." npm run access:grant -- --household <household id> --kind comp --until 2027-06-30
+DATABASE_URL="postgres://..." npm run access:grant -- --by <your staff email> --household <household id, or a student's email or username> --kind comp --until 2027-06-30
 ```
 
-Use `--kind comp` for access we give ourselves and `--kind sponsored` for a seat someone else
-pays for. `--until` is the date access ends. See the script's header for how to find a
-family's household id and for its other options. Don't write the family's name next to the id in
-notes or tickets.
+- `--by` is your staff account (`npm run admin:create`). The grant is recorded with it and
+  audited, without names, emails or ids.
+- `--kind comp` is access we give ourselves; `--kind sponsored` is a seat someone else pays for.
+- `--until` is the last day of access (a UTC calendar day), or `none` for no end date.
+
+The script prints the household id. Don't write the family's name or email next to it in notes or
+tickets.
 
 ## Incidents
 
@@ -164,15 +172,15 @@ cause, (4) write a short note of what happened and what changed, with no persona
 
 - **Safety still runs.** Each message is checked by the safety model, then the backup model, then
   the keyword rules alone if both models fail. Clear high-risk phrasings still get crisis
-  resources right away. Concerning messages are still saved to the review queue, marked
-  `model_unavailable`.
+  resources right away. Concerning messages are still saved to the review queue, where the queue
+  row says "AI model unavailable: keyword rules alone decided".
 - **The counselor pauses.** Students see: "The counselor isn't available right now. Please try
   again a little later." Career explanations fall back to a template. The rest of the app works.
 
 **What you do:**
 
 1. Check status.anthropic.com and the `[safety]` log lines to confirm.
-2. Review every `model_unavailable` event as soon as you can. The keyword rules miss subtle
+2. Review every "AI model unavailable" event as soon as you can. The keyword rules miss subtle
    messages, and a message the rules didn't flag at all is not in the queue, so there is no way
    to review those later.
 3. If it lasts more than a day, tell families by email that the counselor is paused.
@@ -239,6 +247,36 @@ Check Vercel → Settings → Cron Jobs. **View Logs** next to a job shows its r
 status (logs last one hour on Hobby and one day on Pro). On Hobby a job can start any time within
 its hour. Run it by hand with the `curl` command above. A `401` means `CRON_SECRET` in Vercel doesn't
 match what you sent.
+
+### Stripe clean-up
+
+Two Stripe changes must not be lost: deleting a family's Stripe customer when their account is
+deleted (which cancels any plan), and setting a plan to end at the close of its paid period when
+the parent who pays leaves. When Stripe can't be reached, the app logs
+`[billing] couldn't delete a Stripe customer` or `[billing] couldn't end a plan without a parent`
+with the error's name, and saves the job in the `stripe_cleanup` table (Stripe ids only, never
+whose they were). The daily sweep tries each job again: daily for the first five days, then
+weekly. Its log line includes `stripeCleanup: { done, failed, waiting }`.
+
+**When a job keeps failing** (the sweep logs `[billing] Stripe clean-up keeps failing` with the
+job's row id, action, attempts and last error):
+
+1. Check the error name. `StripeNotConfigured` means `STRIPE_SECRET_KEY` is missing; an
+   authentication error means the key was rolled or revoked. Fix the key in Vercel and redeploy.
+2. Otherwise look the job up (counts and Stripe ids only):
+
+   ```sql
+   select id, action, stripe_customer_id, stripe_subscription_id, attempts, last_error, next_attempt_at
+   from stripe_cleanup order by attempts desc;
+   ```
+
+3. Find that customer or subscription in Stripe's dashboard and do it there: delete the customer,
+   or set the subscription to cancel at the end of the period. Then delete the row:
+   `delete from stripe_cleanup where id = '...';`. If Stripe says the customer or subscription is
+   already gone, the next sweep removes the row on its own.
+
+Until a customer is deleted, Stripe keeps the family's billing email and card details, so don't
+leave a job failing for more than a few days.
 
 ### Stripe webhook failures
 

@@ -9,6 +9,8 @@
     `StudentAiContext` and run free text through `scrubPii`.
   - Every student message to an AI feature goes through `assessMessage` first.
   - Audit metadata must never contain personal data (it outlives deletion).
+  - Staff access to student data is audited: every view of a student's conversation, safety event
+    page and parent contact reveal.
   - New student data must be covered by `exportStudentData` and deleted with the student.
 - Business logic lives in `src/lib` as functions taking a `Db`; server actions stay thin.
   Test with `createTestDb()` (fresh in-memory PGlite per test).

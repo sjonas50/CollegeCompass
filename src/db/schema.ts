@@ -162,7 +162,8 @@ export const auditLog = pgTable(
     metadata: jsonb("metadata").$type<Record<string, string | number | boolean>>(),
     createdAt: createdAt(),
   },
-  (t) => [index("audit_log_created_idx").on(t.createdAt)],
+  // By action: the admin's safety review numbers read the review entries of deleted accounts.
+  (t) => [index("audit_log_created_idx").on(t.createdAt), index("audit_log_action_idx").on(t.action)],
 );
 
 export const aiUsage = pgTable(

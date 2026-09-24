@@ -13,11 +13,18 @@ export type PendingInviteView = { id: string; sentOn: string; worksUntil: string
 export function InviteParentForm({ pending, canSend, max }: { pending: PendingInviteView[]; canSend: boolean; max: number }) {
   const [state, action, isPending, values] = useFormAction<InviteFormState>(sendParentInviteAction, undefined);
   const sent = Boolean(state && "sent" in state);
+  const delayed = Boolean(state && "delayed" in state && state.delayed);
   const failed = state && !("sent" in state) ? state : undefined;
 
   return (
     <div className="mt-3 space-y-4">
-      {sent && <Notice>Invitation sent. Ask them to check their email, including the spam folder.</Notice>}
+      {sent && (
+        <Notice>
+          {delayed
+            ? "Invitation sent. The email may take a few minutes to arrive. Ask them to check their email, including the spam folder."
+            : "Invitation sent. Ask them to check their email, including the spam folder."}
+        </Notice>
+      )}
 
       {pending.length > 0 && (
         <div>

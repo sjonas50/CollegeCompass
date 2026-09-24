@@ -646,11 +646,10 @@ describe("the invitation page", () => {
     expect(html).not.toContain('name="password"');
   });
 
-  it("explains a refused double subscription", async () => {
+  it("shows nothing extra for an unknown error code", async () => {
     const { token } = await invite(await teen(), new Date());
     await signIn(await parent());
-    expect(text(await invitePage(token, { error: "both_subscribed" }))).toContain("You and Ana each pay for College Compass");
-    expect(text(await invitePage(token, { error: "made-up" }))).not.toContain("each pay");
+    expect(text(await invitePage(token, { error: "made-up" }))).not.toContain("already linked");
   });
 
   it("asks anyone else to sign out, and offers nothing to accept", async () => {

@@ -121,8 +121,12 @@ Routines and incident steps are in [operations.md](operations.md).
 
 ## 8. Privacy in practice
 
-- [ ] **Export tested**: a parent downloads a child's data export, and it has everything the child
-      has entered (assessments, plans, lists, counselor chats, and so on).
+- [ ] **Export tested**, with test accounts:
+  - [ ] A parent downloads the export of a child they set up (under 13): it has everything the
+        child has entered (assessments, plans, lists, counselor chats, and so on).
+  - [ ] A parent downloads a linked teen's export: it leaves out counselor conversations, memory
+        notes, safety events and counselor usage, and its `notIncluded` note says so.
+  - [ ] A teen downloads their own export ("Download my data" on the account page): it's complete.
 - [ ] **Deletion tested end to end** on production with test accounts:
   - [ ] A parent deletes one child: the child can't sign in, and their rows are gone (check the
         tables with a query).
@@ -160,8 +164,9 @@ pilot.
 3. [ ] Each family: the parent signs up first. Under-13 students are added by the parent. Teens
        13 and up sign up themselves and link a parent.
 4. [ ] Give pilot families access for the whole pilot, so price never comes up: comp access
-       until the pilot ends (`npm run access:grant -- --household <id> --kind comp --until <date>`;
-       see operations.md), or the trial then free access.
+       until the pilot ends
+       (`npm run access:grant -- --by <your staff email> --household <household id, or a student's email or username> --kind comp --until <date>`;
+       see "Giving a family access" in operations.md), or the trial then free access.
 5. [ ] Offer a 15-minute welcome call: sign in together, start the interest assessment, and
        show the parent the parent page, the export and the delete button.
 6. [ ] Week 1: short check-in message. Week 4: survey. End: survey and a call.

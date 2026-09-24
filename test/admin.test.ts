@@ -30,6 +30,7 @@ import {
 import { homePathFor, requireUser } from "@/lib/auth/dal";
 import { verifyPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/sessions";
+import { deleteStudent } from "@/lib/privacy";
 
 // Staff tools, end to end: the real requireUser and session checks run against an in-memory
 // database; only the session cookie, getDb and Next's redirect/notFound are stand-ins.
@@ -724,7 +725,9 @@ describe("safety event detail", () => {
       [["rules"], "not_needed", "Keyword rules", "Not asked: the keyword rules found a clear high-risk phrase.", null],
       [["rules", "model_unavailable"], "unavailable", "Keyword rules", "Didn't run: the AI model was unavailable.", "AI model unavailable: keyword rules alone decided"],
       [["rules", "rate_limited"], "rate_limited", "Keyword rules", "Didn't run: the student was sending messages very fast.", "Sent while rate-limited: keyword rules alone decided"],
-      [["rules", "locked"], "locked", "Keyword rules", "Didn't run: sent while the counselor was locked.", "Sent while the counselor was locked: keyword rules alone decided"],
+      // Sent while locked: the model may or may not have run; "locked" only says it wasn't saved.
+      [["rules", "rate_limited", "locked"], "rate_limited", "Keyword rules", "Didn't run: the student was sending messages very fast.", "Sent while rate-limited: keyword rules alone decided"],
+      [["rules", "model", "locked"], "ran", "Keyword rules, AI model", "Ran normally", null],
     ];
     await signIn(admin.id);
     for (const [sources, tier, flaggedBy, modelTier, queueNote] of cases) {
@@ -735,7 +738,8 @@ describe("safety event detail", () => {
       else expect(page, sources.join()).not.toContain("off in either direction");
 
       const { rows } = await listSafetyQueue(db, admin.id, { now: NOW });
-      expect(rows.find((r) => r.id === event.id)).toMatchObject({ modelTier: tier, rulesAlone: queueNote !== null });
+      expect(rows.find((r) => r.id === event.id)).toMatchObject({ modelTier: tier, rulesAlone: queueNote !== null, sentWhileLocked: sources.includes("locked") });
+      if (sources.includes("locked")) expect(page).toContain("Sent While the counselor was locked, so it wasn't saved in a conversation");
       const queue = text(await render(SafetyQueuePage({ params: Promise.resolve({}), searchParams: Promise.resolve({}) } as PageProps<"/admin/safety">)));
       if (queueNote) expect(queue, sources.join()).toContain(queueNote);
       else expect(queue, sources.join()).not.toContain("keyword rules alone decided");
@@ -853,6 +857,7 @@ describe("AI cost dashboard", () => {
       reviewedLate: 1,
       waiting: 1,
       overdue: 1,
+      deletedBeforeReview: 0,
       fromDeletedAccounts: 0,
     });
 
@@ -925,7 +930,8 @@ describe("AI cost dashboard", () => {
 
     await db.delete(schema.users).where(eq(schema.users.id, leaving.id));
     const after = await safetyMonthStats(db, admin.id, "2026-09", NOW);
-    // The reviewed event stays; the one nobody reviewed goes with the account.
+    // The reviewed event stays; the one nobody reviewed goes with the account (deleted directly here,
+    // so nothing recorded it).
     expect(after).toEqual({
       total: 2,
       bySeverity: { imminent: 1, high: 1, medium: 0, low: 0 },
@@ -935,6 +941,7 @@ describe("AI cost dashboard", () => {
       reviewedLate: 1,
       waiting: 0,
       overdue: 0,
+      deletedBeforeReview: 0,
       fromDeletedAccounts: 1,
     });
     expect((await safetyMonthStats(db, admin.id, "2026-08", NOW)).total).toBe(0);
@@ -954,7 +961,38 @@ describe("AI cost dashboard", () => {
     const t = text(await render(CostsPage({ params: Promise.resolve({}), searchParams: Promise.resolve({ month: "2026-09" }) } as PageProps<"/admin/costs">)));
     expect(t).toContain("Reviewed within the target 1 (50%) 1 after the target");
     expect(t).toContain("Includes 1 reviewed event from a family that has since deleted their account.");
-    expect(t).toContain("Events deleted before anyone reviewed them aren't counted.");
+    expect(t).toContain("When a family deletes their account, their events stay in these numbers.");
+  });
+
+  it("counts events deleted before review, as overdue only if they were past the target then", async () => {
+    const at = (iso: string) => new Date(iso);
+    const student = await makeUser("student");
+    // Past its target by the time the student deletes their account (NOW is late September).
+    await addEvent(student.id, { severity: "imminent", createdAt: at("2026-09-02T10:00:00Z") });
+    // Still within its target when deleted.
+    const fresh = await addEvent(student.id, { severity: "medium", createdAt: new Date(NOW.getTime() - HOUR) });
+    await reviewSafetyEvent(db, admin.id, (await addEvent(student.id, { severity: "high", createdAt: at("2026-09-03T10:00:00Z") })).id, { outcome: "no_action", note: "" }, at("2026-09-03T12:00:00Z"));
+
+    expect(await deleteStudent(db, student.id, student.id)).toBe(true);
+    const rows = await auditRows("safety.deleted_unreviewed");
+    expect(rows).toHaveLength(2);
+    // Nothing about the student: no user id, no message text.
+    expect(rows.find((r) => r.metadata?.eventId === fresh.id)?.metadata).toEqual({
+      eventId: fresh.id,
+      severity: "medium",
+      flaggedAt: new Date(NOW.getTime() - HOUR).toISOString(),
+    });
+    for (const r of rows) expect([r.actorUserId, r.subjectUserId]).toEqual([null, null]);
+
+    const stats = await safetyMonthStats(db, admin.id, "2026-09", NOW);
+    expect(stats).toMatchObject({ total: 3, reviewed: 1, waiting: 0, deletedBeforeReview: 2, fromDeletedAccounts: 1 });
+    // The imminent one was overdue when deleted; the fresh one wasn't. Staying deleted doesn't change that.
+    expect(stats.overdue).toBe(1);
+    expect((await safetyMonthStats(db, admin.id, "2026-09", new Date(NOW.getTime() + 30 * 24 * HOUR))).overdue).toBe(1);
+
+    await signIn(admin.id);
+    const t = text(await render(CostsPage({ params: Promise.resolve({}), searchParams: Promise.resolve({ month: "2026-09" }) } as PageProps<"/admin/costs">)));
+    expect(t).toContain("2 events were deleted with their accounts before anyone reviewed them.");
   });
 });
 

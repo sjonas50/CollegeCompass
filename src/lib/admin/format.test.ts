@@ -104,7 +104,7 @@ describe("labels", () => {
   it("names classifier sources and passes unknown ones through", () => {
     expect(sourceLabel("rules")).toBe("Keyword rules");
     expect(sourceLabel("rate_limited")).toBe("Sent while rate-limited (rules only)");
-    expect(sourceLabel("locked")).toBe("Sent while the counselor was locked (rules only)");
+    expect(sourceLabel("locked")).toBe("Sent while the counselor was locked (not saved)");
     expect(sourceLabel("something_new")).toBe("something_new");
   });
 
@@ -116,7 +116,10 @@ describe("labels", () => {
     expect(modelTierOf(["rules", "model_unavailable"])).toBe("unavailable");
     expect(modelTierOf(["model_unavailable"])).toBe("unavailable");
     expect(modelTierOf(["rules", "rate_limited"])).toBe("rate_limited");
-    expect(modelTierOf(["rules", "locked"])).toBe("locked");
+    // Past the locked counselor's screening cap: rate-limited. "locked" alone says nothing about the model.
+    expect(modelTierOf(["rules", "rate_limited", "locked"])).toBe("rate_limited");
+    expect(modelTierOf(["rules", "model", "locked"])).toBe("ran");
+    expect(modelTierOf(["rules", "locked"])).toBe("not_needed");
     expect(modelTierOf([])).toBe("unknown");
   });
 });

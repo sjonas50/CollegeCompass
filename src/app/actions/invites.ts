@@ -17,14 +17,15 @@ import { deleteEmptyHousehold } from "@/lib/privacy";
 const HOUR = 60 * 60 * 1000;
 const TOKEN = /^[A-Za-z0-9_-]{1,128}$/;
 
-export type InviteFormState = { sent: true } | FormState;
+/** `delayed`: the email may take a few minutes (the email service didn't answer in time). */
+export type InviteFormState = { sent: true; delayed?: true } | FormState;
 
 const SEND_MESSAGES: Record<CreateInviteError, string> = {
   not_eligible: "Your account can't send invitations.",
   has_parent: "A parent or guardian is already linked to your account.",
   own_email: "That's your own email. Enter your parent's or guardian's email instead.",
   too_many_pending: `You have ${MAX_PENDING_INVITES} invitations waiting. Cancel one to send another.`,
-  rate_limited: "You've sent a lot of invitations today. Please try again tomorrow.",
+  rate_limited: "We can't send more invitations right now. Please try again tomorrow.",
   send_failed: "We couldn't send the email. Check the address and try again.",
 };
 
@@ -43,7 +44,7 @@ export async function sendParentInviteAction(_prev: InviteFormState, formData: F
     return res.error === "own_email" ? { errors: { parentEmail: [SEND_MESSAGES.own_email] } } : { message: SEND_MESSAGES[res.error] };
   }
   refresh();
-  return { sent: true };
+  return res.delayed ? { sent: true, delayed: true } : { sent: true };
 }
 
 export async function cancelParentInviteAction(formData: FormData) {
@@ -65,7 +66,9 @@ export async function acceptParentInviteAction(formData: FormData) {
   const db = await getDb();
   const res = await acceptInvite(db, token, parent.id);
   if (!res.ok) redirect(`/invite/${token}?error=${res.error}`);
-  // The student's old household is empty but held a lapsed plan: close its Stripe customer.
+  // The student's old household is empty but still holds a plan the accepting parent doesn't pay
+  // for. Its paid time already came along as a grant (merge.paidUntil); close the Stripe customer
+  // (or queue that, if Stripe is down).
   if (res.merge.parkedHouseholdId) await deleteEmptyHousehold(db, res.merge.parkedHouseholdId);
   redirect("/parent?linked=1");
 }

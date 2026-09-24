@@ -14,8 +14,6 @@ const ROLE_NAMES = { student: "a student", parent: "a parent", counselor: "a cou
 
 function errorMessage(error: string | string[] | undefined, name: string): string | null {
   switch (error as AcceptInviteError | undefined) {
-    case "both_subscribed":
-      return `You and ${name} each pay for College Compass. Ask ${name} to cancel their plan first (it keeps working until the end of what they paid for), then accept again.`;
     case "student_has_parent":
       return `Another parent or guardian is already linked to ${name}'s account.`;
     default:

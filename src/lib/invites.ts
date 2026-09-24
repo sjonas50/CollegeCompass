@@ -4,7 +4,6 @@ import * as z from "zod";
 import type { Db } from "@/db";
 import { env } from "@/env";
 import {
-  type SubscriptionStatus,
   accessGrants,
   billingAccounts,
   households,
@@ -418,12 +417,7 @@ export type AcceptInviteError =
   | "expired"
   | "used"
   | "not_parent"
-  | "student_has_parent"
-  /**
-   * No longer returned: a plan in the student's old household never blocks linking (see
-   * mergeIntoParentHousehold). Kept only until the invitation page drops its message for it.
-   */
-  | "both_subscribed";
+  | "student_has_parent";
 export type AcceptInviteResult =
   | { ok: true; studentId: string; studentName: string; merge: HouseholdMerge }
   | { ok: false; error: AcceptInviteError };

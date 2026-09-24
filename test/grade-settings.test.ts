@@ -147,9 +147,17 @@ describe("GradeSettingSelect", () => {
   it("is in the student's own settings form along with the grade it shows", () => {
     setClock(JUNE_15);
     const html = renderToStaticMarkup(
-      createElement(StudentSettings, { grade: 12, reminders: { kind: "self", enabled: true } }),
+      createElement(StudentSettings, { studentId: "00000000-0000-4000-8000-000000000001", grade: 12, reminders: { kind: "self", enabled: true } }),
     );
     expect(untouched(html)).toEqual({ grade: expect.objectContaining({ value: "" }), shownGrade: "12" });
+  });
+
+  it("links the student to a download of their own data", () => {
+    const html = renderToStaticMarkup(
+      createElement(StudentSettings, { studentId: "00000000-0000-4000-8000-000000000001", grade: 9, reminders: { kind: "self", enabled: true } }),
+    );
+    expect(html).toContain('href="/api/parent/children/00000000-0000-4000-8000-000000000001/export"');
+    expect(html).toContain("Download my data");
   });
 });
 
@@ -160,7 +168,7 @@ describe("saving the grade form untouched", () => {
     const user = await signIn(db, id, JUNE_15);
     expect(user.grade).toBe(12);
     const { grade, shownGrade } = untouched(
-      renderToStaticMarkup(createElement(StudentSettings, { grade: user.grade, reminders: { kind: "self", enabled: true } })),
+      renderToStaticMarkup(createElement(StudentSettings, { studentId: id, grade: user.grade, reminders: { kind: "self", enabled: true } })),
     );
     await submit(setMyGradeAction, { grade: grade.value, shownGrade });
     const row = await storedRow(db, id);

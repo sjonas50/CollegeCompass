@@ -1,5 +1,5 @@
 import { setMyGradeAction, setMyRemindersAction } from "@/app/actions/settings";
-import { Button, gradeOptionLabel } from "@/components/ui";
+import { Button, ButtonLink, gradeOptionLabel } from "@/components/ui";
 import { MAX_GRADE, gradeQuestion, schoolYearOf } from "@/lib/auth/age";
 import type { ReminderSetting } from "@/lib/reminders";
 
@@ -42,8 +42,8 @@ export function GradeSettingSelect({ id, grade }: { id: string; grade: number | 
   );
 }
 
-/** Small settings panel for the student dashboard: grade correction and reminder emails. */
-export function StudentSettings({ grade, reminders }: { grade: number | null; reminders: ReminderSetting }) {
+/** Small settings panel for the student dashboard: grade correction, reminder emails and a copy of their data. */
+export function StudentSettings({ studentId, grade, reminders }: { studentId: string; grade: number | null; reminders: ReminderSetting }) {
   const q = gradeQuestion();
   return (
     <details className="rounded-xl border border-border bg-surface p-4">
@@ -78,6 +78,18 @@ export function StudentSettings({ grade, reminders }: { grade: number | null; re
                 : "Your parent or guardian has turned off weekly reminder emails about your steps. They can turn them back on from their parent page."}
           </p>
         )}
+        <div>
+          <h3 className="text-sm font-medium">Your data</h3>
+          <p className="text-sm text-muted">
+            A copy of everything College Compass keeps about you, including your chats with the counselor.
+          </p>
+          <div className="mt-2">
+            {/* The export route serves a student's own complete copy too (see exportStudentData). */}
+            <ButtonLink href={`/api/parent/children/${studentId}/export`} variant="secondary" prefetch={false}>
+              Download my data
+            </ButtonLink>
+          </div>
+        </div>
       </div>
     </details>
   );
