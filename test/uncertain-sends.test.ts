@@ -13,9 +13,10 @@ import { createInvite, findInvite, listPendingInvites } from "@/lib/invites";
 const state = vi.hoisted(() => ({
   db: null as unknown,
   send: null as null | ((email: Email) => Promise<void>),
+  ipKey: "hashed-203.0.113.9",
 }));
 vi.mock("@/db", async (original) => ({ ...(await original<typeof import("@/db")>()), getDb: async () => state.db }));
-vi.mock("@/lib/request", () => ({ clientIp: async () => "203.0.113.9", clientIpKey: async () => "hashed-203.0.113.9" }));
+vi.mock("@/lib/request", () => ({ clientIp: async () => "203.0.113.9", clientIpKey: async () => state.ipKey }));
 vi.mock("@/lib/email", async (original) => ({
   ...(await original<typeof import("@/lib/email")>()),
   sendEmail: (email: Email) => state.send!(email),
@@ -34,6 +35,7 @@ let logs: string[];
 beforeEach(async () => {
   db = await createTestDb();
   state.db = db;
+  state.ipKey = "hashed-203.0.113.9";
   emailed = [];
   logs = [];
   for (const level of ["info", "warn", "error"] as const) {
@@ -78,12 +80,45 @@ describe("parent consent email (under-13 signup)", () => {
     expect(await db.select().from(schema.consentRequests)).toHaveLength(0);
   });
 
-  it("doesn't count an email that definitely didn't go out against the address or the network", async () => {
-    failingWith(refused);
-    // More failures than the address (3 a day) or the network (10 an hour) would allow.
-    for (let i = 0; i < 12; i++) {
+  it("doesn't count an email the provider failed to send against the address or the network", async () => {
+    // Failures on the provider's side (or a bad key), none of them about this email: more of them
+    // than the address (3 a day) or the network (10 an hour) would allow.
+    const providerFailures = [
+      new EmailSendError("resend", 500, "application_error"),
+      new EmailSendError("resend", 503, "service_unavailable"),
+      new EmailSendError("resend", null, "network_error"),
+      new EmailSendError("resend", null, "timeout"),
+      new EmailSendError("resend", 429, "rate_limit_exceeded"),
+      new EmailSendError("resend", 429, "daily_quota_exceeded"),
+      new EmailSendError("resend", null, "missing_api_key"),
+      new EmailSendError("resend", 401, "missing_api_key"),
+      new EmailSendError("resend", 401, "restricted_api_key"),
+      new EmailSendError("resend", 403, "invalid_api_key"),
+      new EmailSendError("resend", 403, "suspended_api_key"),
+      new Error("unexpected"),
+    ];
+    for (const error of providerFailures) {
+      failingWith(() => error);
       expect(await ask()).toEqual({ message: "We couldn't send the email right now. Please try again in a few minutes." });
     }
+    state.send = async (email) => void emailed.push(email);
+    expect(await ask()).toEqual({ sent: true });
+    expect(await db.select().from(schema.consentRequests)).toHaveLength(1);
+  });
+
+  it("counts an email Resend refused against the network, but not against the address", async () => {
+    failingWith(refused);
+    // The network allows 10 an hour, and a refused email still uses one up.
+    for (let i = 0; i < 10; i++) {
+      expect(await ask()).toEqual({ message: "We couldn't send the email right now. Please try again in a few minutes." });
+    }
+    expect(await ask()).toEqual({
+      message: "A lot of parent emails were just sent from here, so we can't send yours right now. Please try again in an hour.",
+    });
+    expect(emailed).toHaveLength(10);
+
+    // The address (3 a day) got its tries back: from another network, its email goes out.
+    state.ipKey = "hashed-198.51.100.7";
     state.send = async (email) => void emailed.push(email);
     expect(await ask()).toEqual({ sent: true });
     expect(await db.select().from(schema.consentRequests)).toHaveLength(1);

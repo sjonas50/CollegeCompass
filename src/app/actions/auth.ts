@@ -27,7 +27,7 @@ import { beginSignIn, signInSucceeded } from "@/lib/auth/login-limit";
 import { createSession, invalidateSession, validateSession } from "@/lib/auth/sessions";
 import { hashToken } from "@/lib/auth/tokens";
 import { createConsentRequest, cancelConsentRequest } from "@/lib/consent/requests";
-import { isUncertainSend, sendEmail } from "@/lib/email";
+import { isRefusedSend, isUncertainSend, sendEmail } from "@/lib/email";
 import { type FormState, birthDateFromForm, fieldErrors, safeNext } from "@/lib/forms";
 import { consumeRateLimit, refundRateLimit } from "@/lib/rate-limit";
 import { clientIpKey } from "@/lib/request";
@@ -157,7 +157,10 @@ export async function requestParentConsentAction(
     // Nothing went out, so this try doesn't count: otherwise an email outage would use up the
     // address's emails, and the child would later be told emails were sent when none were.
     await refundRateLimit(db, addressLimit);
-    await refundRateLimit(db, ipLimit);
+    // The network's try is given back only when the email provider failed (an outage, a rate limit,
+    // a bad API key). When Resend refused this email (say, an address it won't take), the try still
+    // counts: otherwise one network could keep sending such requests to Resend with no hourly limit.
+    if (!isRefusedSend(error)) await refundRateLimit(db, ipLimit);
     return { message: "We couldn't send the email right now. Please try again in a few minutes." };
   }
   return { sent: true };
