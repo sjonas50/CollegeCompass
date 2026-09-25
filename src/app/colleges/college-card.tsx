@@ -1,13 +1,26 @@
 import Link from "next/link";
-import { FOR_PROFIT_NOTE, TRANSFER_NOTE, locationText, sizeText } from "@/lib/colleges/describe";
+import {
+  FOR_PROFIT_NOTE,
+  IN_STATE_FOR_YOU,
+  OUT_OF_STATE_SHORT,
+  TRANSFER_NOTE,
+  inStateCaveat,
+  locationText,
+  residencyFor,
+  sizeText,
+} from "@/lib/colleges/describe";
 import { AID_EXCEEDS_COST, NOT_REPORTED, formatDollars, formatNetPrice, formatPercent } from "@/lib/colleges/format";
 import { CONTROL_LABELS, DEGREE_LABELS } from "@/lib/colleges/labels";
 import type { CollegeSummary } from "@/lib/colleges/search";
+import { stateName } from "@/lib/colleges/states";
 import { BandPriceLine } from "./income-band";
 import { MissionBadges } from "./shared";
 
-/** A search result. Net price comes first; the sticker price follows in smaller type. */
-export function CollegeCard({ college, major }: { college: CollegeSummary; major?: string }) {
+/**
+ * A search result. Net price comes first; the sticker price follows in smaller type. With the
+ * viewer's `homeState`, a public college says whether it's in-state for them.
+ */
+export function CollegeCard({ college, major, homeState = null }: { college: CollegeSummary; major?: string; homeState?: string | null }) {
   const netPrice = formatNetPrice(college.avgNetPrice);
   const sticker = formatDollars(college.costOfAttendance);
   const completion = formatPercent(college.completionRate);
@@ -21,6 +34,8 @@ export function CollegeCard({ college, major }: { college: CollegeSummary; major
   const headingId = `college-${college.unitId}`;
   // Public colleges report net price and cost of attendance for in-state students.
   const inState = college.control === 1;
+  const residency = residencyFor(college.control, college.state, homeState);
+  const homeName = homeState ? (stateName(homeState) ?? homeState) : null;
 
   return (
     <li>
@@ -38,6 +53,12 @@ export function CollegeCard({ college, major }: { college: CollegeSummary; major
         <div className="mt-2">
           <MissionBadges missions={college.missions} onlineOnly={college.onlineOnly} />
         </div>
+        {residency === "in_state" && homeName && (
+          <p className="mt-2 text-sm">
+            <span className="rounded-full bg-success-soft px-2 py-0.5 font-medium">{IN_STATE_FOR_YOU}</span>{" "}
+            <span className="text-muted">{inStateCaveat(homeName)}</span>
+          </p>
+        )}
 
         <div className="mt-3 rounded-lg bg-background p-3">
           <dl>
@@ -61,7 +82,8 @@ export function CollegeCard({ college, major }: { college: CollegeSummary; major
               <dd className="tabular-nums">{sticker ? `${sticker} a year` : NOT_REPORTED.toLowerCase()}</dd>
             </div>
           </dl>
-          {inState && <p className="mt-1 text-sm text-muted">Students from other states usually pay more at public colleges.</p>}
+          {residency === "out_of_state" && <p className="mt-1 text-sm">{OUT_OF_STATE_SHORT}</p>}
+          {residency === "unknown" && <p className="mt-1 text-sm text-muted">Students from other states usually pay more at public colleges.</p>}
         </div>
 
         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">

@@ -122,9 +122,16 @@ error-monitoring service for anything older.
 ## Every year
 
 - **Reference data refresh.** O*NET and the College Scorecard publish new releases about once a
-  year.
-  1. Update the file URLs in `scripts/load-reference.ts`, and `SCORECARD_RELEASE` in
-     `src/lib/colleges/describe.ts`.
+  year. NCES publishes a final Common Core of Data school directory each year (the 2025-26 one
+  follows the preliminary file of July 2026) and the Private School Universe Survey every two years
+  (2025-26 is due in spring 2027).
+  1. Update the file URLs in `scripts/load-reference.ts`, `SCORECARD_RELEASE` in
+     `src/lib/colleges/describe.ts`, and `SCHOOL_RELEASES` in `src/lib/reference/schools.ts` for new
+     school files. Check a new school file's columns against its companion layout file first: the
+     parsers read `NCESSCH`, `SCH_NAME`, `LEA_NAME`, `LCITY`, `ST`, `UPDATED_STATUS`, `SCH_TYPE`,
+     `CHARTER_TEXT`, `GSLO`/`GSHI`, the `G_*_OFFERED` flags, `SHARED_TIME` and `VIRTUAL` (CCD), and
+     `PPIN`, `PINST`, `PCITY`/`PL_CIT`, `PSTABB`/`PL_STABB`, `LOGR2024`/`HIGR2024` and the grade
+     flags `P145`-`P295` (PSS; the year in the grade column names changes with each survey).
   2. Locally: `npm run data:load`, `npm test`, `npm run check:matching`,
      `npm run data:check-scorecard`. If `check:matching` says a listed career changed or a new
      gambling or bar job needs review, update `src/lib/matching/minors.ts`.
@@ -146,6 +153,17 @@ error-monitoring service for anything older.
   agreements with the lawyer.
 
 ## As needed
+
+### A family can't find their school
+
+The school list is the U.S. Department of Education's public directories, loaded as they are; we
+don't add schools by hand. Tell the family to search by part of the name or the city, and check the
+state is right (schools are listed by state). If it still isn't there, "My school isn't listed" is
+the right answer: everything except class planning from the school's own list works the same, and
+the school may appear in the next yearly release. Private schools that didn't answer the federal
+survey are never in it. Don't ask the family for the school's name in email or chat, and never
+write a school name in a support note or audit entry: a school and a first name can identify a
+child. Staff have no screen that shows a student's school.
 
 ### Giving a family access (comp or sponsored)
 

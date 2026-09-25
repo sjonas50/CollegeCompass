@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeState } from "../colleges/states";
 import { toSafeHref } from "./linkify";
 
 // ---------------------------------------------------------------------------
@@ -13,11 +14,17 @@ import { toSafeHref } from "./linkify";
 //   "sections": [{
 //     "id": one of AID_GUIDE_SECTION_IDS (below), in that order,
 //     "title": "...", "summary": "One sentence.",
-//     "blocks": [{ "kind": "paragraph" | "tip" | "warning", "heading"?: "...", "text": "..." }
-//              | { "kind": "list" | "steps", "heading"?: "...", "items": ["...", "..."] }],
+//     "blocks": [{ "kind": "paragraph" | "tip" | "warning", "heading"?: "...", "states"?: ["TN"], "text": "..." }
+//              | { "kind": "list" | "steps", "heading"?: "...", "states"?: ["TN"],
+//                  "items": ["...", { "text": "...", "states": ["TX", "MO"] }] }],
 //     "sources": [{ "title": "...", "url": "https://..." }]
 //   }]
 // }
+//
+// "states" (optional, English only for now) tags a block or a list item with the states it's
+// about, as postal codes. Pages mark tagged content with the state's name and show a signed-in
+// student's own state's items first ("For Texas"). Tag only content about a particular state's
+// programs or dates, not general advice that uses a state as an example.
 //
 // Rules the checks enforce:
 // - Plain text only. No HTML or Markdown, and no line breaks: each paragraph is its own block and
@@ -107,27 +114,51 @@ const SectionId = z.enum(AID_GUIDE_SECTION_IDS, {
     `Unknown section id ${JSON.stringify(issue.input)}. Use one of the ids in AID_GUIDE_SECTION_IDS (src/lib/aid-guide/schema.ts), or add the new id there first.`,
 });
 
+/**
+ * State tags: the postal codes of the states a block or list item is about, like ["TN"] for
+ * Tennessee Promise. Pages put a signed-in student's own state's items first and mark tagged items
+ * with the state's name. English only for now; Spanish content has no tags.
+ */
+const StateTags = z
+  .array(
+    z.string().refine((code) => normalizeState(code) === code, {
+      error: (issue) => `Unknown state code ${JSON.stringify(issue.input)}. Use a two-letter code in capitals, like "TX".`,
+    }),
+  )
+  .min(1, "List at least one state, or leave out \"states\".")
+  .refine((codes) => new Set(codes).size === codes.length, "List each state once.");
+
 /** The content format, with the length limits for one language. */
 function guideSchema(lang: AidLanguage) {
   const limit = LENGTH_LIMITS[lang];
   const heading = plainText(limit.heading).optional();
+  const states = StateTags.optional();
 
   const textBlock = <K extends "paragraph" | "tip" | "warning">(kind: K) =>
-    z.strictObject({ kind: z.literal(kind), heading, text: plainText(limit.text) });
+    z.strictObject({ kind: z.literal(kind), heading, states, text: plainText(limit.text) });
+  // An item is its text, or { "text": ..., "states": [...] } when it's about particular states.
+  const item = z.union([plainText(limit.item), z.strictObject({ text: plainText(limit.item), states: StateTags })]);
   const itemsBlock = <K extends "list" | "steps">(kind: K) =>
     z.strictObject({
       kind: z.literal(kind),
       heading,
-      items: z.array(plainText(limit.item)).min(1, "A list needs at least one item."),
+      states,
+      items: z.array(item).min(1, "A list needs at least one item."),
     });
 
-  const block = z.discriminatedUnion("kind", [
-    textBlock("paragraph"),
-    textBlock("tip"),
-    textBlock("warning"),
-    itemsBlock("list"),
-    itemsBlock("steps"),
-  ]);
+  // Tagged items become plain text plus `itemStates` (one list of codes per item, empty when
+  // untagged), so everything that reads `items` keeps reading strings.
+  const block = z
+    .discriminatedUnion("kind", [textBlock("paragraph"), textBlock("tip"), textBlock("warning"), itemsBlock("list"), itemsBlock("steps")])
+    .transform((b) => {
+      if (!("items" in b)) return b;
+      const tagged = b.items.some((i) => typeof i !== "string");
+      return {
+        ...b,
+        items: b.items.map((i) => (typeof i === "string" ? i : i.text)),
+        ...(tagged && { itemStates: b.items.map((i) => (typeof i === "string" ? [] : i.states)) }),
+      };
+    });
 
   const source = z.strictObject({
     title: plainText(limit.sourceTitle),

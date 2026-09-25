@@ -9,6 +9,7 @@ import { ChecklistCard, GpaCard, SuggestionsCard } from "./cards";
 import { type CourseDefaults, CourseFields } from "./course-fields";
 import { CourseRow, type PlanCourse } from "./course-row";
 import { GradeSections } from "./grade-section";
+import { PlannerStateProvider } from "./planner-state";
 
 // Server-rendered smoke tests for the planner UI (vitest runs in node, without a DOM).
 
@@ -89,6 +90,34 @@ describe("course fields", () => {
     expect(html).toMatch(/checked="" value="in_progress"/);
     expect(html).not.toMatch(/name="highSchoolCredit" checked/);
     expect(html).toContain("Only finished courses get a final grade.");
+  });
+
+  it("asks what kind of class it is, for the subject, with a guess from the name and no choice stored", () => {
+    expect(fields({})).toContain("Choose a subject first.");
+    expect(fields({})).toContain('type="hidden" name="courseTypeId" value=""');
+
+    const chem = fields({ defaults: { ...defaults, name: "Honors Chem", subject: "science", level: "honors" } });
+    expect(chem).toMatch(/<label for="[^"]+-courseType"[^>]*>What kind of class is this\? \(optional\)<\/label>/);
+    // Nothing chosen: the planner treats it as its guess (never stored).
+    expect(chem).toContain('<option value="" selected="">Not sure (we&#x27;ll guess Chemistry)</option>');
+    expect(chem).toContain('<option value="sci.chem">Chemistry</option>');
+    expect(chem).not.toContain('value="math.alg2"');
+
+    // A saved choice is selected; an AP class lists only kinds with an AP version.
+    const ap = fields({ defaults: { ...defaults, name: "AP Bio", subject: "science", level: "ap", courseTypeId: "sci.bio" } });
+    expect(ap).toContain('<option value="sci.bio" selected="">Biology</option>');
+    expect(ap).not.toContain('value="sci.forensic"');
+  });
+
+  it("uses a state's own names for kinds of class in Utah, Tennessee and Texas", () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        PlannerStateProvider,
+        { state: "UT" },
+        createElement(CourseFields, { values: {}, errors: undefined, defaults: { ...defaults, name: "Math 3", subject: "math" } }),
+      ),
+    );
+    expect(html).toContain("we&#x27;ll guess Secondary Mathematics III");
   });
 
   it("lets the edit form move a course to another grade", () => {

@@ -554,7 +554,7 @@ const FLAG_PARAMS = { hbcu: "hbcu", hispanicServing: "hsi", tribal: "tribal", in
  * Reads /colleges search params leniently: anything invalid is dropped, never an error.
  * `majorQuery` is the free text typed into the major field (resolved to a CIP family by the page).
  */
-export function parseCollegeSearchParams(params: Params): { filters: CollegeSearchFilters; majorQuery: string | null } {
+export function parseCollegeSearchParams(params: Params): { filters: CollegeSearchFilters; majorQuery: string | null; anyState: boolean } {
   const filters: CollegeSearchFilters = {};
   const q = first(params.q)?.slice(0, 100);
   if (q) filters.q = q;
@@ -576,14 +576,23 @@ export function parseCollegeSearchParams(params: Params): { filters: CollegeSear
   const page = Number(first(params.page));
   if (Number.isInteger(page) && page > 1) filters.page = Math.min(page, 10_000);
   const majorQuery = filters.major ? null : (first(params.mq)?.slice(0, 60) ?? null);
-  return { filters, majorQuery };
+  // "state=any": every state, chosen on purpose, so a student's own state isn't filled in.
+  const anyState = !filters.state && first(params.state)?.toLowerCase() === ANY_STATE;
+  return { filters, majorQuery, anyState };
 }
 
-/** A /colleges link for these filters, leaving out defaults. */
-export function collegeSearchHref(filters: CollegeSearchFilters): string {
+/** The state filter's value for "Any state" when the viewer has a state of their own (see /colleges). */
+export const ANY_STATE = "any";
+
+/**
+ * A /colleges link for these filters, leaving out defaults. `anyState` keeps "Any state" chosen on
+ * purpose (state=any), so the viewer's own state isn't filled in again.
+ */
+export function collegeSearchHref(filters: CollegeSearchFilters, opts: { anyState?: boolean } = {}): string {
   const params = new URLSearchParams();
   if (filters.q?.trim()) params.set("q", filters.q.trim());
   if (filters.state) params.set("state", filters.state);
+  else if (opts.anyState) params.set("state", ANY_STATE);
   if (filters.major) params.set("major", filters.major);
   if (filters.credential) params.set("credential", String(filters.credential));
   if (filters.control) params.set("control", String(filters.control));

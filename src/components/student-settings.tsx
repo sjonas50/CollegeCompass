@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { saveMySchoolAction } from "@/app/actions/schools";
 import { setMyGradeAction, setMyRemindersAction } from "@/app/actions/settings";
 import { ChangePasswordForm } from "@/components/change-password";
 import { RemoveParent } from "@/components/remove-parent";
+import { type SchoolPickerSettings, SchoolSettingsForm } from "@/components/school-settings";
 import { Button, ButtonLink, gradeOptionLabel } from "@/components/ui";
 import { formatDate, usToday } from "@/lib/applications/dates";
 import { MAX_GRADE, gradeQuestion, schoolYearOf } from "@/lib/auth/age";
@@ -118,9 +120,10 @@ function LinkedParents({ parents, parentManaged }: { parents: LinkedParent[]; pa
 }
 
 /**
- * Small settings panel for the student dashboard: grade correction, reminder emails, linked parents,
- * changing the password (for a teen who owns their account), a copy of their data, and deleting the
- * account (a child a parent set up under 13 is sent to that parent).
+ * Small settings panel for the student dashboard: grade correction, where they go to school (state
+ * and school, free), reminder emails, linked parents, changing the password (for a teen who owns
+ * their account), a copy of their data, and deleting the account (a child a parent set up under 13
+ * is sent to that parent).
  */
 export function StudentSettings({
   studentId,
@@ -128,6 +131,8 @@ export function StudentSettings({
   grade,
   reminders,
   parents = [],
+  school,
+  open = false,
 }: {
   studentId: string;
   parentManaged: boolean;
@@ -135,10 +140,14 @@ export function StudentSettings({
   reminders: ReminderSetting;
   /** From listLinkedParents, for this student. */
   parents?: LinkedParent[];
+  /** From schoolSettings, for this student. */
+  school?: SchoolPickerSettings;
+  /** Open on load (after saving the school, or from "Add your state and school"). */
+  open?: boolean;
 }) {
   const q = gradeQuestion();
   return (
-    <details className="rounded-xl border border-border bg-surface p-4">
+    <details id="settings" open={open} className="rounded-xl border border-border bg-surface p-4">
       <summary className="min-h-11 cursor-pointer content-center font-medium">Settings</summary>
       <div className="mt-4 space-y-5">
         <form action={setMyGradeAction} className="flex flex-wrap items-end gap-2">
@@ -151,6 +160,11 @@ export function StudentSettings({
           </div>
           <Button type="submit" variant="secondary">Save grade</Button>
         </form>
+        {school && (
+          <div id="school-settings" className="scroll-mt-4 border-t border-border pt-5">
+            <SchoolSettingsForm action={saveMySchoolAction} idPrefix="settings-school" grade={grade} settings={school} />
+          </div>
+        )}
         {reminders.kind === "self" ? (
           <form action={setMyRemindersAction} className="flex flex-wrap items-center gap-3">
             <label className="flex min-h-11 items-center gap-2 text-sm">

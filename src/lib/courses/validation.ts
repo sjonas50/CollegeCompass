@@ -1,5 +1,7 @@
 import * as z from "zod";
+import type { CourseSubject } from "@/db/schema";
 import { MAX_GRADE, MIN_GRADE } from "../auth/age";
+import { type CourseTypeId, getCourseType, isCourseTypeId } from "../planner/course-types";
 import {
   COURSE_LEVELS,
   COURSE_STATUSES,
@@ -41,12 +43,32 @@ export const CourseInputSchema = z
     status: z.enum(COURSE_STATUSES, { error: "Choose planned, taking now or finished." }).default("planned"),
     finalGrade: z.preprocess(emptyToNull, z.enum(LETTER_GRADES, { error: "Choose a grade from the list." }).nullable()),
     highSchoolCredit: z.boolean().optional(),
+    // "What kind of class is this?": a course-type id from the planner's vocabulary, or null to
+    // let the planner guess from the name (a guess is never stored).
+    courseTypeId: z.preprocess(
+      emptyToNull,
+      z
+        .string()
+        .refine((id) => isCourseTypeId(id), "Choose a kind of class from the list.")
+        .nullable()
+        .optional(),
+    ),
   })
   .refine((c) => c.finalGrade === null || c.status === "completed", {
     error: "Only finished courses get a final grade.",
     path: ["finalGrade"],
   })
+  .refine((c) => !c.courseTypeId || !isCourseTypeId(c.courseTypeId) || courseTypeFitsSubject(c.courseTypeId, c.subject), {
+    error: "That kind of class doesn't match the subject. Choose another, or leave it for us to guess.",
+    path: ["courseTypeId"],
+  })
   .transform((c) => ({ ...c, highSchoolCredit: c.highSchoolCredit ?? defaultHighSchoolCredit(c.gradeLevel) }));
+
+/** Whether a course type belongs under a subject: its own subject, or one students often file it under. */
+export function courseTypeFitsSubject(id: CourseTypeId, subject: CourseSubject): boolean {
+  const type = getCourseType(id);
+  return type.subject === subject || type.altSubjects.includes(subject);
+}
 
 export type CourseInput = z.output<typeof CourseInputSchema>;
 export type CourseInputRaw = z.input<typeof CourseInputSchema>;
@@ -67,6 +89,7 @@ export function courseFormInput(formData: FormData): Record<string, unknown> {
     status: text("status"),
     finalGrade: text("finalGrade"),
     highSchoolCredit: formData.get("highSchoolCredit") === "on",
+    courseTypeId: text("courseTypeId"),
   };
 }
 

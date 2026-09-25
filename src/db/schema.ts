@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
+  check,
   date,
   index,
   integer,
@@ -52,12 +53,17 @@ export const users = pgTable(
     remindersEnabled: boolean("reminders_enabled").notNull().default(true),
     // True when a parent created and controls this account (under-13 at creation).
     parentManaged: boolean("parent_managed").notNull().default(false),
+    // Students only: the state (or D.C. or territory) they live and go to school in, as a postal
+    // code from US_STATES (src/lib/colleges/states.ts). Unlocks in-state colleges, state aid and the
+    // state's class planning. The AI may know it; it never knows the school (student_schools).
+    homeState: text("home_state"),
     createdAt: createdAt(),
   },
   (t) => [
     uniqueIndex("users_email_uq").on(sql`lower(${t.email})`),
     uniqueIndex("users_username_uq").on(sql`lower(${t.username})`),
     index("users_household_idx").on(t.householdId),
+    check("users_home_state_code", sql`${t.homeState} ~ '^[A-Z]{2}$'`),
   ],
 );
 
@@ -402,6 +408,50 @@ export const occupationWorkStyles = pgTable(
   (t) => [primaryKey({ columns: [t.occupationCode, t.style] })],
 );
 
+export type SchoolType = "regular" | "alternative" | "special_ed" | "cte_center" | "private";
+
+/**
+ * Schools that teach any of grades 7–12, in every state, D.C. and the territories: public schools
+ * (charters included) from the NCES Common Core of Data school directory and private schools from
+ * the NCES Private School Universe Survey. Public domain. Loaded by `npm run data:load`, which
+ * replaces the table, so student_schools keeps `school_ref` without a foreign key.
+ */
+export const schools = pgTable(
+  "schools",
+  {
+    // "nces:" + the 12-character NCESSCH id (public), or "pss:" + the 8-character PPIN (private).
+    schoolRef: text("school_ref").primaryKey(),
+    source: text("source").$type<"ccd" | "pss">().notNull(),
+    // Which file it came from, like "CCD 2024-25".
+    release: text("release").notNull(),
+    // Display name (all-caps names are title-cased, "H S" becomes "High School").
+    name: text("name").notNull(),
+    city: text("city"),
+    state: text("state").notNull(),
+    // NCES district (LEA) id and name; null for private schools.
+    leaId: text("lea_id"),
+    leaName: text("lea_name"),
+    // Lowest and highest grade taught: -1 pre-K, 0 kindergarten, 1–12. Null when not reported.
+    gradeLow: smallint("grade_low"),
+    gradeHigh: smallint("grade_high"),
+    // Every grade taught, -1 to 12.
+    grades: smallint("grades").array().notNull(),
+    schoolType: text("school_type").$type<SchoolType>().notNull(),
+    charter: boolean("charter").notNull().default(false),
+    // Exclusively or mostly online.
+    virtual: boolean("virtual").notNull().default(false),
+    // A center students attend part of the day (often career and technical classes), not a home school.
+    sharedTime: boolean("shared_time").notNull().default(false),
+    website: text("website"),
+    // Lowercase words without accents for search: the name as printed and as shown, city, district.
+    searchText: text("search_text").notNull(),
+  },
+  (t) => [
+    index("schools_state_idx").on(t.state),
+    index("schools_search_idx").using("gin", sql`to_tsvector('simple', ${t.searchText})`),
+  ],
+);
+
 // ---------------------------------------------------------------------------
 // Assessments and career matching (student data — deleted with the student)
 //
@@ -538,10 +588,48 @@ export const studentCourses = pgTable(
     // Middle-school courses usually don't count toward the high school GPA unless the school
     // gives high school credit (e.g. Algebra I in 8th grade).
     highSchoolCredit: boolean("high_school_credit").notNull().default(true),
+    // What kind of class it is, as a course-type id from the planner's vocabulary
+    // (src/lib/planner/course-types.ts), when the student picked one ("student") or it came from
+    // their school's class list ("catalog"). Null: the planner guesses from the name, and a guess
+    // is never stored (see resolveRowCourseType).
+    courseTypeId: text("course_type_id"),
+    courseTypeSource: text("course_type_source").$type<"catalog" | "student">(),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("student_courses_user_idx").on(t.userId, t.gradeLevel)],
+);
+
+export type StudentSchoolRole = "current" | "next";
+export type StudentSchoolChoice = "listed" | "not_listed" | "prefer_not_to_say";
+
+/**
+ * Where a student goes to school (`current`) and, when that school ends before 12th grade, the
+ * high school they expect to go to next (`next`). At most one row each. `school_ref` points into
+ * `schools` without a foreign key (reference data is replaced by `npm run data:load`). The school
+ * is identifying: it never goes to the AI, audit metadata, counts or staff views.
+ */
+export const studentSchools = pgTable(
+  "student_schools",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").$type<StudentSchoolRole>().notNull(),
+    // "listed": a school from the directory (school_ref). "not_listed": the family's own words for
+    // it, if any. "prefer_not_to_say": no school, state only.
+    choice: text("choice").$type<StudentSchoolChoice>().notNull(),
+    schoolRef: text("school_ref"),
+    notListedName: text("not_listed_name"),
+    // The school year (named by its starting year) the student is there from.
+    fromSchoolYear: smallint("from_school_year").notNull(),
+    setBy: text("set_by").$type<"student" | "parent">().notNull(),
+    setAt: timestamp("set_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.role] }),
+    check("student_schools_listed_ref", sql`(${t.choice} = 'listed') = (${t.schoolRef} is not null)`),
+  ],
 );
 
 /** A student's progress on roadmap milestones (the milestone library lives in code). */

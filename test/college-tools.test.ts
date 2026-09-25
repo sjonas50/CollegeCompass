@@ -119,12 +119,13 @@ describe("college tools with real major names", () => {
     // Before: Ohio State Beauty Academy first, sorted by net price.
     const ohioState = await run("search_colleges", { name: "Ohio State" });
     expect(names(ohioState)).toEqual(["Ohio State University-Main Campus", "Ohio State College of Barber Styling", "Ohio State Beauty Academy"]);
-    expect(ohioState.moreResults).toBe("/colleges?q=Ohio+State");
+    // "Any state" on purpose: the page must not narrow the search to the student's own state.
+    expect(ohioState.moreResults).toBe("/colleges?q=Ohio+State&state=any");
     expect(names(await run("search_colleges", { name: "MIT" }))[0]).toBe("Massachusetts Institute of Technology");
 
     const cheapest = await run("search_colleges", { name: "Ohio State", sort: "net_price" });
     expect(names(cheapest)[0]).toBe("Ohio State Beauty Academy");
-    expect(cheapest.moreResults).toBe("/colleges?q=Ohio+State&sort=net_price");
+    expect(cheapest.moreResults).toBe("/colleges?q=Ohio+State&state=any&sort=net_price");
   });
 
   it("searches by city", async () => {

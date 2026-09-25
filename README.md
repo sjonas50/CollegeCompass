@@ -14,7 +14,7 @@ was cancelled, so calls to Anthropic and Resend go through `outboundFetch` (HTTP
 
 ```bash
 npm install
-npm run data:load   # optional: O*NET careers, CIP–SOC majors, College Scorecard colleges and programs (~45 MB download)
+npm run data:load   # optional: O*NET careers, CIP–SOC majors, College Scorecard colleges and programs, NCES schools (~68 MB download)
 npm run dev
 ```
 
@@ -54,6 +54,27 @@ foreign keys, so reloading never touches student data.
 | `majors`, `cip_soc_links` | [NCES CIP 2020–SOC 2018 crosswalk](https://nces.ed.gov/ipeds/cipcode/resources.aspx?y=56) |
 | `colleges` | [College Scorecard](https://collegescorecard.ed.gov/data/) institution data, U.S. Department of Education (June 2026 release) |
 | `college_programs` | College Scorecard field-of-study data, U.S. Department of Education (June 2026 release) |
+| `schools` | [NCES Common Core of Data](https://nces.ed.gov/ccd/files.asp) 2024-25 school directory and school characteristics (public schools, charters included) and the [Private School Universe Survey](https://nces.ed.gov/surveys/pss/pssdata.asp) 2023-24 public-use file, U.S. Department of Education (public domain) |
+
+School directory notes (`src/lib/reference/schools.ts`):
+
+- Every state, D.C. and the territories. We keep schools that teach any of grades 7–12 (by the
+  grades-offered flags, not `LEVEL`, which files K–12 and 7–12 schools as "Other" or
+  "Secondary"): about 52,000 public schools that are open (CCD `UPDATED_STATUS` 1, 3, 4, 5 or 8)
+  and about 17,000 private schools. Bureau of Indian Education schools (state "BI") are filed
+  under the state they're in. The files are Latin-1 CSV.
+- `school_ref` is `nces:` plus the 12-digit NCES id, or `pss:` plus the private school's PPIN.
+  Names filed in capitals ("PLANO SR H S") are shown title-cased with common abbreviations spelled
+  out ("Plano Senior High School"); search matches both spellings, the city and the district.
+- The private-school file only has schools that answered the survey, so "My school isn't listed"
+  is always offered. The characteristics file adds `virtual` and `shared_time`; many regular high
+  schools are marked shared-time, so search keeps them, and lists career and technical centers
+  last.
+- School search (`POST /api/schools/search`, `src/lib/schools/search.ts`) always filters by state
+  and uses a text-search index on `search_text` (about 1–9 ms on the full directory). Queries are
+  never logged or put in a URL.
+- A student's school (`student_schools`) keeps `school_ref` without a foreign key. A school a new
+  release drops shows as "no longer in the national school list".
 
 College Scorecard notes:
 
@@ -87,8 +108,11 @@ College Scorecard notes:
   the data-access layer (`requireUser`). `src/proxy.ts` only does optimistic redirects.
 - `src/lib/ai/` — model config, cost tracking with a per-student monthly budget, PII scrubbing,
   and the two-tier safety classifier (`safety/`), with its eval set in `evals/safety/`.
-- `src/lib/reference/` — parsers for O*NET, the NCES CIP–SOC crosswalk and College Scorecard
-  (institutions and field of study).
+- `src/lib/reference/` — parsers for O*NET, the NCES CIP–SOC crosswalk, College Scorecard
+  (institutions and field of study) and the NCES school directories.
+- `src/lib/schools/` — where a student goes to school: school search, their state and schools
+  (`student_schools`, set in Settings or by a parent), and which states a page should put first.
+  Free for everyone. The school never reaches the AI (`test/school-ai-privacy.test.ts`).
 - `src/lib/assessments/` — the three instruments (O*NET Interest Profiler Short Form, Mini-IPIP,
   a work-values ranking), deterministic scoring, and attempts with autosave and 90-day retakes.
 - `src/lib/matching/` — career matching (interest-profile correlation, lightly adjusted by values,
@@ -184,12 +208,12 @@ new one is live.
 # Use the direct (unpooled) connection string for these.
 DATABASE_URL="postgres://..." npm run db:migrate
 
-# First deploy, and each time a new data release is loaded (downloads ~45 MB; needs `unzip`):
+# First deploy, and each time a new data release is loaded (downloads ~68 MB; needs `unzip`):
 DATABASE_URL="postgres://..." npm run data:load
 DATABASE_URL="postgres://..." npm run data:check-scorecard   # must pass: our numbers match the live API
 ```
 
-`data:load` replaces only the reference tables (careers, majors, colleges) in one transaction.
+`data:load` replaces only the reference tables (careers, majors, colleges, schools) in one transaction.
 Student data is never touched. Do the same for the Preview database.
 
 ### 5. Cron jobs

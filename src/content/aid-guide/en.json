@@ -187,8 +187,14 @@
           "items": [
             "Colleges and career schools set their own deadlines, and many are early. Some count the date your FAFSA is processed, not the day you send it, so don't wait until the last day. Check each school's aid page for its dates and forms.",
             "Applying early decision or early action (applying early to hear back sooner)? Your aid forms may be due soon after they open, so check each college's dates.",
-            "Each state has its own deadline, and some need an extra form. In some states, like Illinois and Kentucky, aid is first come, first served until the money runs out. Other states have dates in winter or spring 2027. For example, Texas's priority date is Jan. 15, 2027, Missouri's is Feb. 1, 2027, and California's (for Cal Grant) is March 2, 2027. See StudentAid.gov's FAFSA deadlines page.",
-            "Tennessee Promise applications are due Nov. 2, 2026. Ask your counselor if your state has a similar program.",
+            {
+              "text": "Each state has its own deadline, and some need an extra form. In some states, like Illinois and Kentucky, aid is first come, first served until the money runs out. Other states have dates in winter or spring 2027. For example, Texas's priority date is Jan. 15, 2027, Missouri's is Feb. 1, 2027, and California's (for Cal Grant) is March 2, 2027. See StudentAid.gov's FAFSA deadlines page.",
+              "states": ["CA", "IL", "KY", "MO", "TX"]
+            },
+            {
+              "text": "Tennessee Promise applications are due Nov. 2, 2026. Ask your counselor if your state has a similar program.",
+              "states": ["TN"]
+            },
             "Federal deadline: June 30, 2028, at 11:59 p.m. Central time. That's the last possible day, not a goal.",
             "Missed a state deadline? File anyway. It doesn't change whether you can get federal aid.",
             "Some colleges and scholarship programs also use the CSS Profile, a second aid form run by the College Board. It's a real form, not a scam. It opens Oct. 1. It's free for families who make up to $100,000 a year, and some others can get the fee waived."
@@ -703,13 +709,34 @@
           "kind": "list",
           "heading": "Seniors (class of 2027): check these dates now",
           "items": [
-            "Tennessee Promise (every step is required): Apply by Nov. 2, 2026. Go to a required meeting in December 2026 or January 2027. In spring 2027, apply to a community college, a college of applied technology or another eligible school. File the FAFSA by April 1, 2027.",
-            "Tennessee Promise, continued: Do 16 hours of community service by Aug. 1, 2027 (hours since Aug. 1, 2025 count) and enroll full-time. Can't go full-time? Talk to the college's financial aid office before the term starts.",
-            "Oklahoma's Promise (for families whose adjusted gross income, a number on the tax return, is under $60,000 to $80,000, depending on family size): Seniors can apply until Dec. 31, 2026. Documents are due Feb. 1, 2027. You must finish the required classes, and in college your parents' income must be $100,000 or less each year. It doesn't pay fees or books.",
-            "Indiana 21st Century Scholars: Finish all 12 Scholar Success Program activities, graduate with at least a 2.5 GPA and the required diploma type, and file the FAFSA by April 15 every year.",
-            "Washington College Bound: File the FAFSA or WASFA every year and start college within one year of graduating. Going straight to a four-year college? You need at least a 2.0 GPA. Income is checked every year in college (2027-28 limit: $95,500 for a family of four).",
-            "Texas: File the FAFSA by Jan. 15, 2027, for priority (the first chance at state aid). Missouri: Priority deadline Feb. 1, 2027, final deadline April 1, 2027. Illinois and Kentucky: Aid goes out until the money runs out, so file early.",
-            "California: The Cal Grant needs your FAFSA or CADAA (California Dream Act Application) and your school-certified GPA by March 2, 2027. Most schools send the GPA, but check. About a week after you apply, make a WebGrants 4 Students account (California's state aid account) and make sure your GPA is there. California community college students have until Sept. 2, 2027, but March 2 is best.",
+            {
+              "text": "Tennessee Promise (every step is required): Apply by Nov. 2, 2026. Go to a required meeting in December 2026 or January 2027. In spring 2027, apply to a community college, a college of applied technology or another eligible school. File the FAFSA by April 1, 2027.",
+              "states": ["TN"]
+            },
+            {
+              "text": "Tennessee Promise, continued: Do 16 hours of community service by Aug. 1, 2027 (hours since Aug. 1, 2025 count) and enroll full-time. Can't go full-time? Talk to the college's financial aid office before the term starts.",
+              "states": ["TN"]
+            },
+            {
+              "text": "Oklahoma's Promise (for families whose adjusted gross income, a number on the tax return, is under $60,000 to $80,000, depending on family size): Seniors can apply until Dec. 31, 2026. Documents are due Feb. 1, 2027. You must finish the required classes, and in college your parents' income must be $100,000 or less each year. It doesn't pay fees or books.",
+              "states": ["OK"]
+            },
+            {
+              "text": "Indiana 21st Century Scholars: Finish all 12 Scholar Success Program activities, graduate with at least a 2.5 GPA and the required diploma type, and file the FAFSA by April 15 every year.",
+              "states": ["IN"]
+            },
+            {
+              "text": "Washington College Bound: File the FAFSA or WASFA every year and start college within one year of graduating. Going straight to a four-year college? You need at least a 2.0 GPA. Income is checked every year in college (2027-28 limit: $95,500 for a family of four).",
+              "states": ["WA"]
+            },
+            {
+              "text": "Texas: File the FAFSA by Jan. 15, 2027, for priority (the first chance at state aid). Missouri: Priority deadline Feb. 1, 2027, final deadline April 1, 2027. Illinois and Kentucky: Aid goes out until the money runs out, so file early.",
+              "states": ["IL", "KY", "MO", "TX"]
+            },
+            {
+              "text": "California: The Cal Grant needs your FAFSA or CADAA (California Dream Act Application) and your school-certified GPA by March 2, 2027. Most schools send the GPA, but check. About a week after you apply, make a WebGrants 4 Students account (California's state aid account) and make sure your GPA is there. California community college students have until Sept. 2, 2027, but March 2 is best.",
+              "states": ["CA"]
+            },
             "Starting a program before July 1, 2027? You need the 2026-27 FAFSA. It's open until June 30, 2027, but some 2026-27 state deadlines have passed. Starting in summer 2027? Ask the school's financial aid office which year's form to file."
           ]
         },
@@ -735,7 +762,8 @@
         {
           "kind": "tip",
           "heading": "Younger brothers and sisters",
-          "text": "Help them sign up in time. Indiana: by June 30 of 8th grade. Oklahoma: in grades 8-11. In Indiana and Washington, many students get signed up through the free or reduced-price meal form, so fill it out every year if the school asks. If your school gives free meals to everyone, it may not collect these forms, so ask the counselor how students get signed up. You and your parents don't have to be U.S. citizens to apply for school meals."
+          "text": "Help them sign up in time. Indiana: by June 30 of 8th grade. Oklahoma: in grades 8-11. In Indiana and Washington, many students get signed up through the free or reduced-price meal form, so fill it out every year if the school asks. If your school gives free meals to everyone, it may not collect these forms, so ask the counselor how students get signed up. You and your parents don't have to be U.S. citizens to apply for school meals.",
+          "states": ["IN", "OK", "WA"]
         },
         {
           "kind": "steps",
@@ -756,12 +784,14 @@
         {
           "kind": "paragraph",
           "heading": "If you can't get federal aid",
-          "text": "Undocumented students, including DACA recipients, can't get federal aid, but some states have their own aid forms. California's CADAA is for undocumented students, DACA recipients, and students with a U visa or TPS (Temporary Protected Status) who meet California's AB 540 rules. That usually means at least 3 years of school in California and graduating from a California high school (or the equivalent). California's state aid agency says it doesn't share CADAA information with the federal government or use it for immigration enforcement. For other states' forms, see Special situations on the FAFSA. Rules can change each year, so check with your state aid office."
+          "text": "Undocumented students, including DACA recipients, can't get federal aid, but some states have their own aid forms. California's CADAA is for undocumented students, DACA recipients, and students with a U visa or TPS (Temporary Protected Status) who meet California's AB 540 rules. That usually means at least 3 years of school in California and graduating from a California high school (or the equivalent). California's state aid agency says it doesn't share CADAA information with the federal government or use it for immigration enforcement. For other states' forms, see Special situations on the FAFSA. Rules can change each year, so check with your state aid office.",
+          "states": ["CA"]
         },
         {
           "kind": "warning",
           "heading": "State forms mean state aid only",
-          "text": "The CADAA and Washington's state aid form, the WASFA, apply only for state and college aid. Some students who could file the FAFSA, such as a citizen whose parents are undocumented, may be allowed to use these forms. But if you use one instead of the FAFSA, you give up the federal Pell Grant and other federal aid. Talk with your counselor or a college financial aid office before you choose."
+          "text": "The CADAA and Washington's state aid form, the WASFA, apply only for state and college aid. Some students who could file the FAFSA, such as a citizen whose parents are undocumented, may be allowed to use these forms. But if you use one instead of the FAFSA, you give up the federal Pell Grant and other federal aid. Talk with your counselor or a college financial aid office before you choose.",
+          "states": ["CA", "WA"]
         },
         {
           "kind": "list",
@@ -769,9 +799,18 @@
           "items": [
             "On the FAFSA: If you were in foster care or a ward of the court at any time since you turned 13, you don't give your parents' information. The same can be true if you're homeless and not living with a parent or guardian. See Special situations on the FAFSA.",
             "Education and Training Vouchers (ETV): Through a federal program called Chafee, states offer up to $5,000 a year to many current and former foster youth. Ask your caseworker or your state's independent living program.",
-            "California's Chafee Grant for Foster Youth needs its own application, and money is limited, so apply early.",
-            "Washington's Passport to Careers helps former foster youth and unaccompanied homeless youth with college or apprenticeships.",
-            "Students in foster care can still join Indiana's 21st Century Scholars in high school. Washington signs up students in state foster care for College Bound automatically."
+            {
+              "text": "California's Chafee Grant for Foster Youth needs its own application, and money is limited, so apply early.",
+              "states": ["CA"]
+            },
+            {
+              "text": "Washington's Passport to Careers helps former foster youth and unaccompanied homeless youth with college or apprenticeships.",
+              "states": ["WA"]
+            },
+            {
+              "text": "Students in foster care can still join Indiana's 21st Century Scholars in high school. Washington signs up students in state foster care for College Bound automatically.",
+              "states": ["IN", "WA"]
+            }
           ]
         },
         {
@@ -1559,7 +1598,10 @@
             "Registered Apprenticeships pay you from day one. Find one at https://www.apprenticeship.gov/apprenticeship-job-finder.",
             "File the free FAFSA as soon as you can at https://studentaid.gov.",
             "Community college is often low cost. On average, grants cover tuition and fees for first-time, full-time students, but only if you apply.",
-            "Ask your counselor this week about free community college (“Promise”) programs. Some have applications due in the fall of senior year. For example, the class of 2027 must apply for Tennessee Promise by Nov. 2, 2026.",
+            {
+              "text": "Ask your counselor this week about free community college (“Promise”) programs. Some have applications due in the fall of senior year. For example, the class of 2027 must apply for Tennessee Promise by Nov. 2, 2026.",
+              "states": ["TN"]
+            },
             "Before you sign up, get in writing whether your program can get a Pell Grant, and how much."
           ]
         },

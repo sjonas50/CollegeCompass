@@ -13,7 +13,8 @@ import { CourseFields } from "./course-fields";
 export type PlanCourse = Pick<
   Course,
   "id" | "name" | "subject" | "level" | "gradeLevel" | "term" | "credits" | "status" | "finalGrade" | "highSchoolCredit"
->;
+> &
+  Partial<Pick<Course, "courseTypeId">>;
 
 /**
  * Tells the grade's list what just happened, for its status line. `moveFocus` means this row is
@@ -67,6 +68,7 @@ function EditCourse({
           status: course.status,
           finalGrade: course.finalGrade ?? "",
           highSchoolCredit: course.highSchoolCredit,
+          courseTypeId: course.courseTypeId ?? "",
         }}
         editGradeLevel
         focusName

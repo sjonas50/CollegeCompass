@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { logoutAction } from "@/app/actions/auth";
+import { sameSchoolAsAction, saveChildSchoolAction } from "@/app/actions/schools";
 import { setChildGradeAction, setChildRemindersAction } from "@/app/actions/settings";
 import { OnetDataAttribution, OnetToolsAttribution } from "@/components/attribution";
+import { SchoolSettingsForm } from "@/components/school-settings";
 import { GradeSettingSelect } from "@/components/student-settings";
+import { stateName } from "@/lib/colleges/states";
+import { savedSchoolLabel } from "@/lib/schools/labels";
+import { type SchoolSettings, schoolSettingsFor } from "@/lib/schools/student";
 import { reminderGoesToParent } from "@/lib/reminders";
 import { gradeQuestion } from "@/lib/auth/age";
 import { getDb } from "@/db";
@@ -23,6 +28,14 @@ function gradeText(grade: number | null) {
   return grade > 12 ? "Finished high school" : `Grade ${grade}`;
 }
 
+/** "Texas · Plano Senior High School": shown to the parent only (it's their child's data). */
+function schoolText(school: SchoolSettings | undefined): string | null {
+  if (!school?.homeState) return null;
+  const parts = [stateName(school.homeState) ?? school.homeState];
+  if (school.current && school.current.choice !== "prefer_not_to_say") parts.push(savedSchoolLabel(school.current));
+  return parts.join(" · ");
+}
+
 /**
  * What the data download holds (see exportStudentData): everything for a child the parent set up
  * under 13, and no counselor chats, notes or safety flags for a teen who owns their account.
@@ -39,7 +52,12 @@ function DownloadNote({ name, parentManaged }: { name: string; parentManaged: bo
 
 export default async function ParentHome({ searchParams }: PageProps<"/parent">) {
   const parent = await requireUser(["parent"]);
-  const [children, access] = await Promise.all([parentDashboard(await getDb(), parent.id), accessFor(parent)]);
+  const db = await getDb();
+  const [children, access] = await Promise.all([parentDashboard(db, parent.id), accessFor(parent)]);
+  const schools = await schoolSettingsFor(
+    db,
+    children.map((c) => c.id),
+  );
   const plan = describeAccess(access, "parent");
   const showsInterests = children.some((c) => c.progress.results?.interests);
   const showsCareers = children.some((c) => c.progress.results?.topMatches.length || c.progress.northStars.length);
@@ -70,48 +88,74 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
             </p>
           </Card>
         )}
-        {children.map((child) => (
-          <Card key={child.id}>
-            <div>
-              <h2 className="text-lg font-medium">{child.displayName}</h2>
-              <p className="text-sm text-muted">
-                {gradeText(child.grade)}
-                {child.username && <> · signs in as <span className="font-mono">{child.username}</span></>}
-              </p>
-            </div>
-            <ChildProgressSummary name={child.displayName} progress={child.progress} />
-            <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
-              <ButtonLink href={`/api/parent/children/${child.id}/export`} variant="secondary" prefetch={false}>
-                Download data
-              </ButtonLink>
-              <ButtonLink href={`/parent/children/${child.id}/delete`} variant="secondary">
-                Delete
-              </ButtonLink>
-            </div>
-            <DownloadNote name={child.displayName} parentManaged={child.parentManaged} />
-            <details className="mt-3 border-t border-border pt-3">
-              <summary className="min-h-11 cursor-pointer content-center text-sm font-medium">Settings</summary>
-              <div className="mt-3 space-y-4">
-                <form action={setChildGradeAction} className="flex flex-wrap items-end gap-3">
-                  <input type="hidden" name="studentId" value={child.id} />
-                  <div>
-                    <label htmlFor={`grade-${child.id}`} className="block text-sm">{gradeQuestion().label}</label>
-                    <GradeSettingSelect id={`grade-${child.id}`} grade={child.grade} />
-                  </div>
-                  <Button type="submit" variant="secondary">Save grade</Button>
-                </form>
-                <form action={setChildRemindersAction} className="flex flex-wrap items-center gap-3">
-                  <input type="hidden" name="studentId" value={child.id} />
-                  <label className="flex min-h-11 items-center gap-2 text-sm">
-                    <input type="checkbox" name="reminders" defaultChecked={child.remindersEnabled} className="size-4" />
-                    Weekly reminder email {reminderGoesToParent(child) ? "(sent to you)" : `(sent to ${child.displayName})`}
-                  </label>
-                  <Button type="submit" variant="secondary">Save</Button>
-                </form>
+        {children.map((child) => {
+          const school = schools.get(child.id);
+          const where = schoolText(school);
+          // Brothers and sisters with a state set, for "Same school as".
+          const siblings = children.filter((c) => c.id !== child.id && schools.get(c.id)?.homeState);
+          return (
+            <Card key={child.id}>
+              <div>
+                <h2 className="text-lg font-medium">{child.displayName}</h2>
+                <p className="text-sm text-muted">
+                  {gradeText(child.grade)}
+                  {child.username && <> · signs in as <span className="font-mono">{child.username}</span></>}
+                </p>
+                {where && <p className="text-sm text-muted break-words">{where}</p>}
               </div>
-            </details>
-          </Card>
-        ))}
+              <ChildProgressSummary name={child.displayName} progress={child.progress} />
+              <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
+                <ButtonLink href={`/api/parent/children/${child.id}/export`} variant="secondary" prefetch={false}>
+                  Download data
+                </ButtonLink>
+                <ButtonLink href={`/parent/children/${child.id}/delete`} variant="secondary">
+                  Delete
+                </ButtonLink>
+              </div>
+              <DownloadNote name={child.displayName} parentManaged={child.parentManaged} />
+              <details className="mt-3 border-t border-border pt-3">
+                <summary className="min-h-11 cursor-pointer content-center text-sm font-medium">Settings</summary>
+                <div className="mt-3 space-y-4">
+                  <form action={setChildGradeAction} className="flex flex-wrap items-end gap-3">
+                    <input type="hidden" name="studentId" value={child.id} />
+                    <div>
+                      <label htmlFor={`grade-${child.id}`} className="block text-sm">{gradeQuestion().label}</label>
+                      <GradeSettingSelect id={`grade-${child.id}`} grade={child.grade} />
+                    </div>
+                    <Button type="submit" variant="secondary">Save grade</Button>
+                  </form>
+                  <form action={setChildRemindersAction} className="flex flex-wrap items-center gap-3">
+                    <input type="hidden" name="studentId" value={child.id} />
+                    <label className="flex min-h-11 items-center gap-2 text-sm">
+                      <input type="checkbox" name="reminders" defaultChecked={child.remindersEnabled} className="size-4" />
+                      Weekly reminder email {reminderGoesToParent(child) ? "(sent to you)" : `(sent to ${child.displayName})`}
+                    </label>
+                    <Button type="submit" variant="secondary">Save</Button>
+                  </form>
+                  <div id={`school-${child.id}`} className="scroll-mt-4 space-y-3 border-t border-border pt-4">
+                    {siblings.map((sib) => (
+                      <form key={sib.id} action={sameSchoolAsAction}>
+                        <input type="hidden" name="studentId" value={child.id} />
+                        <input type="hidden" name="fromStudentId" value={sib.id} />
+                        <Button type="submit" variant="secondary">
+                          Same school as {sib.displayName}
+                        </Button>
+                      </form>
+                    ))}
+                    <SchoolSettingsForm
+                      action={saveChildSchoolAction}
+                      idPrefix={`school-${child.id}`}
+                      studentId={child.id}
+                      childName={child.displayName}
+                      grade={child.grade}
+                      settings={school ?? { homeState: null, current: null, next: null }}
+                    />
+                  </div>
+                </div>
+              </details>
+            </Card>
+          );
+        })}
         <ButtonLink href="/parent/children/new">Add a child</ButtonLink>
       </div>
 

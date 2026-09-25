@@ -1,18 +1,23 @@
 import type { GradeBand } from "../auth/age";
 import { gradeBand } from "../auth/age";
+import { normalizeState } from "../colleges/states";
 
 /**
- * What the model may know about a student. Deliberately has no name, email, username or
- * birth date: prompts are built only from this type.
+ * What the model may know about a student. Deliberately has no name, email, username, birth date
+ * or school: prompts are built only from this type. The state (a postal code) is coarse, like the
+ * grade; the school, its district and its local course names never reach the AI.
  */
 export type StudentAiContext = {
   grade: number;
   gradeBand: GradeBand;
+  /** The student's state, when they've told us ("TX"). */
+  homeState?: string;
 };
 
-export function toAiContext(student: { grade: number | null }): StudentAiContext {
+export function toAiContext(student: { grade: number | null; homeState?: string | null }): StudentAiContext {
   const grade = student.grade ?? 9;
-  return { grade, gradeBand: gradeBand(grade) };
+  const homeState = normalizeState(student.homeState);
+  return { grade, gradeBand: gradeBand(grade), ...(homeState && { homeState }) };
 }
 
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;

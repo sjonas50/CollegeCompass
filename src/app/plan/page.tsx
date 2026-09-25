@@ -10,9 +10,11 @@ import { computeGpa } from "@/lib/courses/gpa";
 import { isGraduated } from "@/lib/courses/plan-layout";
 import { listCourses } from "@/lib/courses/service";
 import { courseSuggestions } from "@/lib/courses/suggestions";
+import { isPlannerState } from "@/lib/planner/common";
 import { ChecklistCard, GpaCard, SuggestionsCard } from "./cards";
 import type { PlanCourse } from "./course-row";
 import { GradeSections } from "./grade-section";
+import { PlannerStateProvider } from "./planner-state";
 
 export const metadata: Metadata = { title: "Your course plan" };
 
@@ -41,10 +43,12 @@ export default async function PlanPage() {
   const gpa = computeGpa(courses);
   const checklist = collegePrepChecklist(courses);
   const planCourses: PlanCourse[] = courses.map(
-    ({ id, name, subject, level, gradeLevel, term, credits, status, finalGrade, highSchoolCredit }) => ({
-      id, name, subject, level, gradeLevel, term, credits, status, finalGrade, highSchoolCredit,
+    ({ id, name, subject, level, gradeLevel, term, credits, status, finalGrade, highSchoolCredit, courseTypeId }) => ({
+      id, name, subject, level, gradeLevel, term, credits, status, finalGrade, highSchoolCredit, courseTypeId,
     }),
   );
+  // Utah, Tennessee and Texas name some kinds of class their own way ("Secondary Mathematics III").
+  const plannerState = isPlannerState(student.homeState) ? student.homeState : null;
 
   const gpaCard = <GpaCard gpa={gpa} middleSchool={middleSchool} />;
   return (
@@ -74,7 +78,9 @@ export default async function PlanPage() {
 
       {!middleSchool && gpaCard}
 
-      <GradeSections current={current} courses={planCourses} gpa={gpa} />
+      <PlannerStateProvider state={plannerState}>
+        <GradeSections current={current} courses={planCourses} gpa={gpa} />
+      </PlannerStateProvider>
 
       <ChecklistCard checklist={checklist} middleSchool={middleSchool} />
       <SuggestionsCard suggestions={suggestions} />

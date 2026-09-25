@@ -10,10 +10,11 @@ import CollegesPage from "./page";
 
 // Server-rendered checks for the public college pages, with the database mocked.
 
-const state = vi.hoisted(() => ({ db: null as Db | null }));
+const state = vi.hoisted(() => ({ db: null as Db | null, user: null as import("@/lib/auth/sessions").SessionUser | null }));
 
 vi.mock("@/db", async (original) => ({ ...(await original<typeof import("@/db")>()), getDb: async () => state.db }));
-vi.mock("@/lib/auth/dal", () => ({ getCurrentUser: async () => null, requireUser: async () => null }));
+// Visitors, unless a test signs a student in (see "for a student with a state").
+vi.mock("@/lib/auth/dal", () => ({ getCurrentUser: async () => state.user, requireUser: async () => state.user }));
 // An async server component with its own tests (src/app/applications/pages.test.ts); these pages
 // are rendered synchronously here.
 vi.mock("@/components/add-to-list", () => ({ AddToListButton: () => null }));
@@ -42,6 +43,7 @@ function expectCleanNumbers(html: string) {
 
 afterEach(() => {
   state.db = null;
+  state.user = null;
 });
 
 beforeEach(async () => {
@@ -434,6 +436,77 @@ describe("/colleges/[unitId] detail page", () => {
     const meta = (unitId: string) => generateMetadata({ params: Promise.resolve({ unitId }) } as PageProps<"/colleges/[unitId]">);
     expect((await meta("110635")).title).toBe("Lakeside State University");
     expect((await meta("abc")).title).toBe("College not found");
+  });
+});
+
+describe("for a student with a state", () => {
+  /** A signed-in student who told us their state (validateSession puts it on the session). */
+  const signIn = (homeState: string | null) => {
+    state.user = { id: "00000000-0000-4000-8000-000000000001", role: "student", displayName: "Ana", username: null, householdId: null, parentManaged: false, grade: 11, homeState };
+  };
+
+  beforeEach(async () => {
+    await insertColleges(state.db!, [
+      { unitId: 1, name: "Lakeside State University", city: "Austin", state: "TX" },
+      { unitId: 2, name: "Prairie State University", city: "Springfield", state: "IL" },
+      { unitId: 3, name: "Hill Country College", city: "Austin", state: "TX", control: 2 },
+    ]);
+  });
+
+  it("starts the search in their state, says so, and lets them search every state", async () => {
+    signIn("TX");
+    const html = await searchPage();
+    const words = text(html);
+    expect(words).toContain("Showing colleges in Texas, your state.");
+    expect(words).toContain("2 colleges");
+    expect(words).not.toContain("Prairie State University");
+    expect(html).toMatch(/<option value="TX" selected="">Texas<\/option>/);
+    // "Any state" is sent as state=any so their state isn't filled in again.
+    expect(html).toContain('<option value="any">Any state</option>');
+    expect(html).toContain('href="/colleges?state=any#results"');
+    // Their own state isn't a filter to clear.
+    expect(words).not.toContain("Clear all");
+
+    const every = await searchPage({ state: "any" });
+    expect(text(every)).toContain("3 colleges");
+    expect(text(every)).not.toContain("your state");
+    expect(every).toMatch(/<option value="any" selected="">Any state<\/option>/);
+    expect(text(every)).toContain("Clear all");
+
+    // A state they pick wins.
+    expect(text(await searchPage({ state: "IL" }))).toContain("Prairie State University");
+  });
+
+  it("says which public colleges are in-state for them, with the residency caveat", async () => {
+    signIn("TX");
+    const words = text(await searchPage({ state: "any" }));
+    const lakeside = words.slice(words.indexOf("Lakeside State University"), words.indexOf("Prairie State University"));
+    const prairie = words.slice(words.indexOf("Prairie State University"));
+    const hill = words.slice(words.indexOf("Hill Country College"), words.indexOf("Lakeside State University"));
+    expect(lakeside).toContain("In-state for you If you're a Texas resident. Each college decides who counts as a resident, so check its rules.");
+    expect(lakeside).not.toContain("Students from other states usually pay more");
+    expect(prairie).toContain("Out-of-state for you: you'd likely pay more than these in-state prices.");
+    expect(prairie).not.toContain("In-state for you");
+    // Private colleges charge everyone the same tuition.
+    expect(hill).not.toMatch(/in-state for you|out-of-state for you/i);
+
+    const detail = text(await collegePage("1"));
+    expect(detail).toContain("In-state for you If you're a Texas resident.");
+    expect(detail).toContain("You live in Texas, so these in-state prices are likely the ones you'd pay.");
+    const away = text(await collegePage("2"));
+    expect(away).toContain(
+      "This public college is in Illinois, and you live in Texas, so you'd likely pay out-of-state tuition. The net prices shown are for in-state students, so yours would likely be higher.",
+    );
+    expect(away).not.toContain("In-state for you");
+  });
+
+  it("keeps today's wording for a student without a state", async () => {
+    signIn(null);
+    const words = text(await searchPage());
+    expect(words).toContain("3 colleges");
+    expect(words).not.toContain("your state");
+    expect(words).toContain("Students from other states usually pay more at public colleges.");
+    expect(text(await collegePage("1"))).toContain("At public colleges, these prices are for students who live in the college's state.");
   });
 });
 

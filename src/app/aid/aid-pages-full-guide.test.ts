@@ -5,6 +5,8 @@ import { indexPage, sectionPage, text } from "./page-test-utils";
 // The pages with a finished guide: all ten sections, reviewed by a counselor. The content files
 // are swapped for fixtures, so this doesn't depend on the real content being written yet.
 
+// Pages read the signed-in viewer for state tags; these render for a visitor.
+vi.mock("@/lib/auth/dal", () => ({ getCurrentUser: async () => null }));
 vi.mock("@/content/aid-guide/en.json", async () => ({ default: (await import("./page-fixtures")).finishedPageGuide("en") }));
 vi.mock("@/content/aid-guide/es.json", async () => ({ default: (await import("./page-fixtures")).finishedPageGuide("es") }));
 

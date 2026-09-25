@@ -30,6 +30,8 @@ import {
 // aid-pages-full-guide.test.ts covers a finished, reviewed guide; aid-pages-content.test.ts
 // renders the real content.
 
+// Pages read the signed-in viewer for state tags; these render for a visitor.
+vi.mock("@/lib/auth/dal", () => ({ getCurrentUser: async () => null }));
 vi.mock("@/content/aid-guide/en.json", async () => ({ default: (await import("./page-fixtures")).draftPageGuide("en") }));
 vi.mock("@/content/aid-guide/es.json", async () => ({ default: (await import("./page-fixtures")).draftPageGuide("es") }));
 

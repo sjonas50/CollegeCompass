@@ -14,7 +14,9 @@ import {
   removeStepAction,
   setStepDoneAction,
 } from "@/app/actions/roadmap";
+import { saveChildSchoolAction, saveMySchoolAction } from "@/app/actions/schools";
 import { POST as counselorApi } from "@/app/api/counselor/route";
+import { POST as schoolSearchApi } from "@/app/api/schools/search/route";
 import EntryPage from "@/app/applications/[id]/page";
 import ComparePage from "@/app/applications/compare/page";
 import ApplicationsPage from "@/app/applications/page";
@@ -28,6 +30,7 @@ import type { SessionUser } from "@/lib/auth/sessions";
 import { createConversation } from "@/lib/counselor/conversations";
 import { respond } from "@/lib/counselor/respond";
 import { MILESTONES } from "@/lib/roadmap/milestones";
+import { SCHOOLS } from "@/lib/schools/test-fixtures";
 import { CRISIS_LINE } from "./describe";
 
 // Every page, action and route that needs full access refuses without it (sending students to
@@ -232,6 +235,33 @@ describe("gated actions", () => {
     expect(await db.select().from(schema.counselorConversations)).toHaveLength(0);
     expect(await redirectOf(clearMemoryAction(form({})))).toBe("/counselor?memory=cleared");
     expect(await db.select().from(schema.counselorMemory)).toHaveLength(0);
+  });
+});
+
+describe("where a student goes to school (free)", () => {
+  const search = (body: unknown) =>
+    schoolSearchApi(new Request("http://localhost/api/schools/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+
+  it("saves a state and school, and searches schools, while locked", async () => {
+    const id = await signIn("locked");
+    await db.insert(schema.schools).values(SCHOOLS.alcoa);
+    expect((await search({ state: "TN", query: "alcoa" })).status).toBe(200);
+    expect(await redirectOf(saveMySchoolAction(undefined, form({ state: "TN", school: `ref:${SCHOOLS.alcoa.schoolRef}` })))).toBe(
+      "/dashboard?settings=school#school-settings",
+    );
+    expect(await db.select({ userId: schema.studentSchools.userId }).from(schema.studentSchools)).toEqual([{ userId: id }]);
+  });
+
+  it("lets a locked parent set a child's school", async () => {
+    const parentId = await signIn("locked", { role: "parent" });
+    const [child] = await db
+      .insert(schema.users)
+      .values({ role: "student", householdId: state.user!.householdId, displayName: "Leo", passwordHash: "x", birthDate: "2014-03-01", grade: 7, gradeSchoolYear: 2026 })
+      .returning({ id: schema.users.id });
+    await db.insert(schema.parentStudentLinks).values({ parentUserId: parentId, studentUserId: child.id });
+    expect(await redirectOf(saveChildSchoolAction(undefined, form({ studentId: child.id, state: "OH", school: "prefer_not_to_say" })))).toBe(
+      `/parent?saved=1#school-${child.id}`,
+    );
   });
 });
 

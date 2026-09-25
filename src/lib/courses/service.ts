@@ -1,4 +1,4 @@
-import { and, asc, count, eq, getTableColumns } from "drizzle-orm";
+import { and, asc, count, eq, getTableColumns, sql } from "drizzle-orm";
 import * as z from "zod";
 import type { Db } from "@/db";
 import { studentCourses, users } from "@/db/schema";
@@ -21,9 +21,18 @@ type Result<T = undefined> = { ok: true; value: T } | { ok: false; error: Course
 
 const isUuid = (v: string) => z.uuid().safeParse(v).success;
 
-/** Only finished courses carry a final grade. */
+/**
+ * Only finished courses carry a final grade. A kind of class the student picked is theirs
+ * ("student"); none means the planner guesses from the name, and guesses are never stored.
+ */
 function values(input: CourseInput) {
-  return { ...input, finalGrade: input.status === "completed" ? input.finalGrade : null };
+  const courseTypeId = input.courseTypeId ?? null;
+  return {
+    ...input,
+    finalGrade: input.status === "completed" ? input.finalGrade : null,
+    courseTypeId,
+    courseTypeSource: courseTypeId ? ("student" as const) : null,
+  };
 }
 
 /** The student's courses, by grade and then in the order they were added. */
@@ -63,9 +72,17 @@ export async function updateCourse(
   now = new Date(),
 ): Promise<Result<Course>> {
   if (!isUuid(courseId)) return { ok: false, error: "not_found" };
+  const next = values(input);
   const [row] = await db
     .update(studentCourses)
-    .set({ ...values(input), updatedAt: now })
+    .set({
+      ...next,
+      // Unchanged, a type from the school's class list stays "catalog".
+      courseTypeSource: next.courseTypeId
+        ? sql`case when ${studentCourses.courseTypeId} = ${next.courseTypeId} and ${studentCourses.courseTypeSource} = 'catalog' then 'catalog' else 'student' end`
+        : null,
+      updatedAt: now,
+    })
     .where(and(eq(studentCourses.id, courseId), eq(studentCourses.userId, userId)))
     .returning(courseColumns);
   return row ? { ok: true, value: row } : { ok: false, error: "not_found" };

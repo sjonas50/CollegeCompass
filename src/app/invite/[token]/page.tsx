@@ -31,7 +31,7 @@ function WhatLinkingMeans({ name }: { name: string }) {
           See {name}&apos;s progress and results: interest areas, strengths, top career matches, goals, roadmap, classes
           and college list
         </li>
-        <li>Change {name}&apos;s grade and weekly reminder emails</li>
+        <li>Change {name}&apos;s grade, state and school, and weekly reminder emails</li>
         <li>Manage your family&apos;s plan and billing</li>
         <li>Download a copy of {name}&apos;s data, or delete {name}&apos;s account</li>
       </ul>

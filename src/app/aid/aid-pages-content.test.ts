@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AID_GUIDE_LANGUAGES, getNeighbors, getSection, listSections, loadGuide } from "@/lib/aid-guide";
 import { LANGUAGE_NAMES, aidText, formatGuideDate, otherLanguages } from "@/lib/aid-guide/dictionary";
 import { guideTextSegments } from "@/lib/aid-guide/links";
@@ -20,6 +20,10 @@ import {
 // onto the page. Only structure is checked, never the wording, so any valid content passes: a
 // draft or a counselor-reviewed guide, with one section or all ten. The page rules themselves are
 // tested with fixtures in aid-pages.test.ts and aid-pages-full-guide.test.ts.
+
+// Pages read the signed-in viewer for state tags; these render for a visitor (aid-states.test.ts
+// covers a student with a state).
+vi.mock("@/lib/auth/dal", () => ({ getCurrentUser: async () => null }));
 
 const squash = (s: string) => s.replace(/\s+/g, " ").trim();
 

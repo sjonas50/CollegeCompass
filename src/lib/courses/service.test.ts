@@ -57,6 +57,24 @@ describe("course CRUD", () => {
     expect(res.ok && res.value.createdAt.getTime()).toBe(bio.createdAt.getTime());
   });
 
+  it("stores the kind of class a student picks as theirs, and never stores a guess", async () => {
+    const chem = await add(ana, { name: "Chem", courseTypeId: "sci.chem" });
+    expect(chem).toMatchObject({ courseTypeId: "sci.chem", courseTypeSource: "student" });
+    const guessed = await add(ana, { name: "Honors Chem" });
+    expect(guessed).toMatchObject({ courseTypeId: null, courseTypeSource: null });
+    const cleared = await updateCourse(db, ana, chem.id, input({ name: "Chem", courseTypeId: "" }));
+    expect(cleared.ok && cleared.value).toMatchObject({ courseTypeId: null, courseTypeSource: null });
+  });
+
+  it("keeps a kind of class from the school's list when the student doesn't change it", async () => {
+    const bio = await add(ana);
+    await db.update(schema.studentCourses).set({ courseTypeId: "sci.bio", courseTypeSource: "catalog" }).where(eq(schema.studentCourses.id, bio.id));
+    const same = await updateCourse(db, ana, bio.id, input({ name: "Biology H", courseTypeId: "sci.bio" }));
+    expect(same.ok && same.value).toMatchObject({ courseTypeId: "sci.bio", courseTypeSource: "catalog" });
+    const changed = await updateCourse(db, ana, bio.id, input({ name: "Biology H", courseTypeId: "sci.bio2" }));
+    expect(changed.ok && changed.value).toMatchObject({ courseTypeId: "sci.bio2", courseTypeSource: "student" });
+  });
+
   it("clears the final grade when a course is no longer finished", async () => {
     const bio = await add(ana, { status: "completed", finalGrade: "A" });
     // Bypasses the schema, as a defense against callers that skip validation.
