@@ -13,6 +13,7 @@ import {
   admissionContext,
   outOfStateCost,
   sizeText,
+  tuitionLines,
 } from "@/lib/colleges/describe";
 import { type CollegeDetail, getCollege, parseUnitId } from "@/lib/colleges/detail";
 import { AID_EXCEEDS_COST, NOT_REPORTED, formatDollars, formatNetPrice, formatPercent } from "@/lib/colleges/format";
@@ -72,6 +73,8 @@ export default async function CollegePage({ params, searchParams }: PageProps<"/
   // Public colleges report net price and cost of attendance for in-state students.
   const inState = college.control === 1;
   const outOfState = inState ? formatDollars(outOfStateCost(college.costOfAttendance, college.tuitionInState, college.tuitionOutOfState)) : null;
+  const tuition = tuitionLines(college.tuitionInState, college.tuitionOutOfState);
+  const stickerStats = 1 + (outOfState ? 1 : 0) + tuition.length;
   const programCounts = college.programs.map(
     (g) => `${g.programs.length} ${(g.programs.length === 1 ? CREDENTIAL_LABELS[g.credentialLevel].one : g.label).toLowerCase()}`,
   );
@@ -130,19 +133,20 @@ export default async function CollegePage({ params, searchParams }: PageProps<"/
 
         <Card className="space-y-3">
           <h3 className="font-medium">Sticker price: the full price before aid</h3>
-          <dl className={`grid gap-3 ${outOfState ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
+          <dl className={`grid gap-3 ${stickerStats === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
             <Stat term={`Cost of attendance${inState ? ", in-state" : ""}`} value={perYear(formatDollars(college.costOfAttendance))} />
             {outOfState && (
               <Stat term="Cost of attendance, out-of-state (estimate)" value={perYear(outOfState)}>
                 The in-state cost plus the extra out-of-state tuition.
               </Stat>
             )}
-            <Stat term="Tuition and fees, in-state" value={perYear(formatDollars(college.tuitionInState))} />
-            <Stat term="Tuition and fees, out-of-state" value={perYear(formatDollars(college.tuitionOutOfState))} />
+            {tuition.map((line) => (
+              <Stat key={line.term} term={line.term} value={perYear(formatDollars(line.amount))} />
+            ))}
           </dl>
           <p className="text-sm text-muted">
             {MEANINGS.stickerPrice}
-            {inState && " Public colleges charge less tuition to students who live in their state."}
+            {inState && tuition.length > 1 && " Public colleges charge less tuition to students who live in their state."}
           </p>
         </Card>
       </section>

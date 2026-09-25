@@ -9,6 +9,7 @@ import {
   pageList,
   resultRange,
   sizeText,
+  tuitionLines,
 } from "./describe";
 
 describe("MEANINGS", () => {
@@ -48,6 +49,22 @@ describe("outOfStateCost", () => {
     expect(outOfStateCost(20_000, 5_000, 5_000)).toBeNull();
     expect(outOfStateCost(null, 5_000, 9_000)).toBeNull();
     expect(outOfStateCost(20_000, null, 9_000)).toBeNull();
+  });
+});
+
+describe("tuitionLines", () => {
+  it("shows one line when in-state and out-of-state tuition are the same", () => {
+    // Harvard University, June 2026 release: $61,676 either way.
+    expect(tuitionLines(61_676, 61_676)).toEqual([{ term: "Tuition and fees", amount: 61_676 }]);
+  });
+
+  it("shows both when they differ or one is missing", () => {
+    expect(tuitionLines(17_736, 60_946)).toEqual([
+      { term: "Tuition and fees, in-state", amount: 17_736 },
+      { term: "Tuition and fees, out-of-state", amount: 60_946 },
+    ]);
+    expect(tuitionLines(null, null).map((l) => l.term)).toEqual(["Tuition and fees, in-state", "Tuition and fees, out-of-state"]);
+    expect(tuitionLines(9_000, null)).toHaveLength(2);
   });
 });
 

@@ -189,7 +189,7 @@ export function SearchForm({
         </div>
       </details>
 
-      <SelectField label="Sort by" name="sort" defaultValue={filters.sort ?? "name"}>
+      <SelectField label="Sort by" name="sort" defaultValue={filters.sort ?? "relevance"}>
         {SORTS.map((s) => (
           <option key={s} value={s}>
             {SORT_LABELS[s]}

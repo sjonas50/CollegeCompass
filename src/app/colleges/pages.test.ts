@@ -137,6 +137,24 @@ describe("/colleges search page", () => {
     expect(html).not.toContain("or a city");
   });
 
+  it("finds names however they're punctuated, best match first by default", async () => {
+    await insertColleges(state.db!, [
+      { unitId: 4, name: "St Olaf College", state: "MN", control: 2 },
+      { unitId: 5, name: "Lakeside State Beauty Academy", state: "TX", control: 3, enrollment: 90 },
+    ]);
+    const olaf = await searchPage({ q: "St. Olaf" });
+    expect(text(olaf)).toContain("1 college");
+    expect(olaf).toContain('href="/colleges/4"');
+    expect(olaf).toMatch(/<option value="relevance" selected="">Best match<\/option>/);
+
+    // The big university before the small academy, though A to Z puts the academy first.
+    const lakeside = text(await searchPage({ q: "lakeside state" }));
+    expect(lakeside.indexOf("Lakeside State University")).toBeLessThan(lakeside.indexOf("Lakeside State Beauty Academy"));
+    const byName = await searchPage({ q: "lakeside state", sort: "name" });
+    expect(text(byName).indexOf("Lakeside State Beauty Academy")).toBeLessThan(text(byName).indexOf("Lakeside State University"));
+    expect(byName).toMatch(/<option value="name" selected="">Name \(A to Z\)<\/option>/);
+  });
+
   it("takes searches and page links to the results, not the top of the form", async () => {
     const html = await searchPage({ state: "TX" });
     expect(html).toContain('action="/colleges#results"');
@@ -313,6 +331,23 @@ describe("/colleges/[unitId] detail page", () => {
 
     const forProfit = text(await collegePage("2"));
     expect(forProfit).not.toMatch(/in-state students|out-of-state \(estimate\)|live in the college's state\. If/);
+  });
+
+  it("shows one tuition line when everyone pays the same tuition", async () => {
+    await insertColleges(state.db!, [
+      // Harvard, June 2026 release.
+      { unitId: 3, name: "Harvard University", control: 2, costOfAttendance: 86_926, tuitionInState: 61_676, tuitionOutOfState: 61_676 },
+      { unitId: 4, name: "Flat Rate State College", control: 1, tuitionInState: 7_000, tuitionOutOfState: 7_000 },
+    ]);
+    const harvard = text(await collegePage("3"));
+    expect(harvard).toContain("Cost of attendance $86,926 a year Tuition and fees $61,676 a year");
+    expect(harvard).not.toMatch(/Tuition and fees, (in|out-of)-state/);
+
+    const flat = text(await collegePage("4"));
+    expect(flat).toContain("Tuition and fees $7,000 a year");
+    expect(flat).not.toContain("Public colleges charge less tuition");
+    // A public college that charges more out of state keeps both lines and the note.
+    expect(text(await collegePage("110635"))).toContain("Public colleges charge less tuition to students who live in their state.");
   });
 
   it("explains graduation rates and debt accurately", async () => {

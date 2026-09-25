@@ -54,6 +54,21 @@ export function outOfStateCost(
   return extra > 0 ? (costOfAttendance as number) + extra : null;
 }
 
+/**
+ * The tuition lines for a college's page. One "Tuition and fees" line when in-state and
+ * out-of-state tuition are the same, as at most private colleges; otherwise one line for each.
+ */
+export function tuitionLines(
+  tuitionInState: number | null,
+  tuitionOutOfState: number | null,
+): { term: string; amount: number | null }[] {
+  if (tuitionInState !== null && tuitionInState === tuitionOutOfState) return [{ term: "Tuition and fees", amount: tuitionInState }];
+  return [
+    { term: "Tuition and fees, in-state", amount: tuitionInState },
+    { term: "Tuition and fees, out-of-state", amount: tuitionOutOfState },
+  ];
+}
+
 /** "Austin, TX", or whichever part is known, or null. */
 export function locationText(city: string | null | undefined, state: string | null | undefined): string | null {
   const parts = [city?.trim(), state?.trim()].filter(Boolean);

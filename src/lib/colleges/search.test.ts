@@ -54,12 +54,14 @@ describe("searchColleges filters", () => {
     expect(res.results.map((r) => r.unitId)).toEqual([9, 4, 2, 1, 5, 6, 3]);
   });
 
-  it("matches the name case-insensitively, by every word typed, with wildcards escaped", async () => {
+  it("matches the name case-insensitively, by every word typed, ignoring punctuation", async () => {
     expect(await names({ q: "UNIVERSITY" })).toEqual(["Lakeside State University", "Riverbend University"]);
     expect(await names({ q: "  state   lakeside " })).toEqual(["Lakeside State University"]);
     expect(await names({ q: "100%" })).toEqual(["100% Real_College"]);
+    expect(await names({ q: "real college" })).toEqual(["100% Real_College"]);
     expect(await names({ q: "l_ke" })).toEqual([]);
-    expect(await names({ q: "%" })).toEqual(["100% Real_College"]);
+    // Nothing to search for, like an empty box.
+    expect((await searchColleges(db, { q: "%" })).total).toBe(7);
   });
 
   it("matches each word in the name box against the college's name or its city", async () => {
@@ -176,6 +178,99 @@ describe("searchColleges sorting", () => {
 
   it("sorts by highest earnings with missing earnings last and ties by name", async () => {
     expect(await names({ sort: "earnings" })).toEqual(["Delta College", "Gamma College", "Alpha College", "beta college"]);
+  });
+});
+
+describe("searchColleges by name", () => {
+  beforeEach(async () => {
+    // Real College Scorecard names (June 2026), spelled as the Scorecard spells them.
+    await insertColleges(db, [
+      { unitId: 1, name: "Massachusetts Institute of Technology", city: "Cambridge", enrollment: 4_535 },
+      { unitId: 2, name: "Smith College", city: "Northampton", enrollment: 2_544 },
+      { unitId: 3, name: "Summit Academy", city: "Dayton", enrollment: 300 },
+      { unitId: 4, name: "Mitchell College", city: "New London", enrollment: 377 },
+      { unitId: 5, name: "Ohio State Beauty Academy", city: "Lima", enrollment: 91 },
+      { unitId: 6, name: "Ohio State College of Barber Styling", city: "Columbus", enrollment: 406 },
+      { unitId: 7, name: "Ohio State University-Main Campus", city: "Columbus", enrollment: 45_638 },
+      { unitId: 8, name: "Ohio State University-Lima Campus", city: "Lima", enrollment: 621 },
+      { unitId: 9, name: "Wright State University-Main Campus", city: "Dayton", enrollment: 8_000 },
+      { unitId: 10, name: "St Olaf College", city: "Northfield", enrollment: 3_093 },
+      { unitId: 11, name: "St. John's College", city: "Annapolis", enrollment: 471 },
+      { unitId: 12, name: "Saint Johns University", city: "Collegeville", enrollment: 1_395 },
+      { unitId: 13, name: "Texas A&M University-College Station", city: "College Station", enrollment: 59_615 },
+      { unitId: 14, name: "West Texas A & M University", city: "Canyon", enrollment: 6_917 },
+      { unitId: 15, name: "University of California-Los Angeles", city: "Los Angeles", enrollment: 33_475 },
+      { unitId: 16, name: "Mount Holyoke College", city: "South Hadley", enrollment: 2_169 },
+      { unitId: 17, name: "Austin College", city: "Sherman", enrollment: 1_165 },
+      { unitId: 18, name: "Huston-Tillotson University", city: "Austin", enrollment: 1_200 },
+      { unitId: 19, name: "Universidad Central de Bayamon", city: "Bayamón", enrollment: 539 },
+    ]);
+  });
+
+  it("ignores punctuation and spells Saint, Mount and & the same way in names and searches", async () => {
+    for (const q of ["St. Olaf", "Saint Olaf", "st olaf", "ST.OLAF"]) expect(await names({ q }), q).toEqual(["St Olaf College"]);
+    for (const q of ["St. John's", "Saint Johns", "st johns", "St John’s"]) {
+      expect(await names({ q }), q).toEqual(["Saint Johns University", "St. John's College"]);
+    }
+    for (const q of ["Texas A&M", "texas a & m", "Texas A and M"]) {
+      expect(await names({ q }), q).toEqual(["Texas A&M University-College Station", "West Texas A & M University"]);
+    }
+    expect(await names({ q: "Mt Holyoke" })).toEqual(["Mount Holyoke College"]);
+    expect(await names({ q: "huston tillotson" })).toEqual(["Huston-Tillotson University"]);
+    expect(await names({ q: "bayamon" })).toEqual(["Universidad Central de Bayamon"]);
+  });
+
+  it("matches the start of words, not letters inside them", async () => {
+    // Before: "mit" found Smith and Summit.
+    expect(await names({ q: "mit" })).toEqual(["Massachusetts Institute of Technology", "Mitchell College"]);
+    expect(await names({ q: "tech" })).toEqual(["Massachusetts Institute of Technology"]);
+  });
+
+  it("puts names starting with the words first, larger colleges first", async () => {
+    // Before: Ohio State Beauty Academy first, A to Z.
+    expect(await names({ q: "Ohio State" })).toEqual([
+      "Ohio State University-Main Campus",
+      "Ohio State University-Lima Campus",
+      "Ohio State College of Barber Styling",
+      "Ohio State Beauty Academy",
+    ]);
+    expect(await names({ q: "state university" })).toEqual([
+      "Ohio State University-Main Campus",
+      "Wright State University-Main Campus",
+      "Ohio State University-Lima Campus",
+    ]);
+  });
+
+  it("puts an exact name first, then names starting with it, then other name matches, then city matches", async () => {
+    await insertColleges(db, [
+      { unitId: 30, name: "Smith College of Nursing", city: "Springfield", enrollment: 9_000 },
+      { unitId: 31, name: "Hobart William Smith Colleges", city: "Geneva", enrollment: 1_786 },
+    ]);
+    expect(await names({ q: "smith college" })).toEqual(["Smith College", "Smith College of Nursing", "Hobart William Smith Colleges"]);
+    // Austin College is named for Austin; Huston-Tillotson is only in the city.
+    expect(await names({ q: "austin" })).toEqual(["Austin College", "Huston-Tillotson University"]);
+  });
+
+  it("finds a college by its initials", async () => {
+    expect((await names({ q: "MIT" }))[0]).toBe("Massachusetts Institute of Technology");
+    expect(await names({ q: "UCLA" })).toEqual(["University of California-Los Angeles"]);
+    // Initials and other words together.
+    expect(await names({ q: "ucla los angeles" })).toEqual(["University of California-Los Angeles"]);
+  });
+
+  it("sorts by name when asked, and ranks the same with other filters", async () => {
+    expect(await names({ q: "Ohio State", sort: "name" })).toEqual([
+      "Ohio State Beauty Academy",
+      "Ohio State College of Barber Styling",
+      "Ohio State University-Lima Campus",
+      "Ohio State University-Main Campus",
+    ]);
+    expect(await names({ q: "Ohio State", sort: "relevance" })).toEqual(await names({ q: "Ohio State" }));
+    expect(await names({ q: "ohio state", size: "small" })).toEqual([
+      "Ohio State University-Lima Campus",
+      "Ohio State College of Barber Styling",
+      "Ohio State Beauty Academy",
+    ]);
   });
 });
 
@@ -438,7 +533,9 @@ describe("search params", () => {
         mq: ["nursing", "welding"],
       }),
     ).toEqual({ filters: {}, majorQuery: "nursing" });
-    expect(parseCollegeSearchParams({ page: "abc", sort: "name", q: "   " })).toEqual({ filters: {}, majorQuery: null });
+    expect(parseCollegeSearchParams({ page: "abc", sort: "relevance", q: "   " })).toEqual({ filters: {}, majorQuery: null });
+    // "Best match" is the default; A to Z is a choice.
+    expect(parseCollegeSearchParams({ sort: "name", q: "ohio state" })).toEqual({ filters: { sort: "name", q: "ohio state" }, majorQuery: null });
   });
 
   it("never reads income from the URL", () => {
@@ -448,7 +545,8 @@ describe("search params", () => {
 
   it("builds links that leave out defaults and round-trip", () => {
     expect(collegeSearchHref({})).toBe("/colleges");
-    expect(collegeSearchHref({ sort: "name", page: 1 })).toBe("/colleges");
+    expect(collegeSearchHref({ sort: "relevance", page: 1 })).toBe("/colleges");
+    expect(collegeSearchHref({ sort: "name" })).toBe("/colleges?sort=name");
     const filters = {
       q: "state university",
       state: "TX",
