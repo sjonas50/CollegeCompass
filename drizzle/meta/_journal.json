@@ -85,6 +85,13 @@
       "when": 1790274972482,
       "tag": "0011_audit_action_index",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790301248518,
+      "tag": "0012_daily_counts",
+      "breakpoints": true
     }
   ]
 }

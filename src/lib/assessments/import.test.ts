@@ -4,19 +4,21 @@ import { type Db, createTestDb, schema } from "@/db";
 import { createChildAccount, registerParent, registerStudent } from "@/lib/accounts";
 import { computeMatches, latestMatchRun, loadOccupationProfiles } from "@/lib/matching/service";
 import { deleteStudent, exportStudentData } from "@/lib/privacy";
-import { emptySavedAssessment, serializeSavedAssessment } from "./anonymous";
+import { emptySavedAssessment, emptySavedStrengths, serializeSavedAssessment } from "./anonymous";
 import {
+  FREE_FINISH_COUNT_LIMIT,
   FREE_MATCH_RATE_LIMIT,
   IMPORT_UNDO_DAYS,
   anonymousRateKey,
+  countFreeFinish,
   importSavedAssessment,
   interestCode,
   matchFreeAssessment,
   removeImportedAssessment,
   undoableImport,
 } from "./import";
-import { INTEREST_ITEMS, type Riasec } from "./instruments";
-import { scoreInterests } from "./scoring";
+import { INTEREST_ITEMS, PERSONALITY_ITEMS, type Riasec } from "./instruments";
+import { scoreInterests, scorePersonality } from "./scoring";
 import { completeAttempt, instrumentStatuses, latestResult, saveResponses, startOrResumeAttempt } from "./service";
 
 const now = new Date("2026-09-24T12:00:00Z");
@@ -28,6 +30,8 @@ let db: Db;
 const answers = Object.fromEntries(INTEREST_ITEMS.map((i) => [i.id, i.area === "I" ? 5 : i.area === "R" ? 4 : 2]));
 const saved = serializeSavedAssessment({ ...emptySavedAssessment(), answers });
 const scientistAreas = scoreInterests(answers).areas;
+const strengthsAnswers = Object.fromEntries(PERSONALITY_ITEMS.map((i, n) => [i.id, (n % 5) + 1]));
+const savedStrengths = serializeSavedAssessment({ ...emptySavedStrengths(), answers: strengthsAnswers });
 
 async function seedReference(target: Db) {
   const occs: [string, string, number, Partial<Record<Riasec, number>>][] = [
@@ -332,6 +336,139 @@ describe("importSavedAssessment", () => {
     for (const table of [schema.assessmentAttempts, schema.assessmentResponses, schema.assessmentResults, schema.matchRuns, schema.careerMatches]) {
       expect(await db.select().from(table)).toHaveLength(0);
     }
+  });
+});
+
+describe("importing the strengths add-on with the quiz", () => {
+  it("adds the strengths, scored on the server, before matching", async () => {
+    const student = await makeStudent("ana@example.com");
+    const res = await importSavedAssessment(db, student, student, saved, { via: "signup", strengths: savedStrengths, now });
+    if (!res.ok) throw new Error(res.error);
+    expect(res.strengthsAttemptId).toBeTruthy();
+
+    const personality = await latestResult(db, student, "personality");
+    expect(personality).toMatchObject({ attemptId: res.strengthsAttemptId, completedAt: now });
+    expect(personality?.scores).toEqual(scorePersonality(strengthsAnswers));
+    const responses = await db
+      .select()
+      .from(schema.assessmentResponses)
+      .where(eq(schema.assessmentResponses.attemptId, res.strengthsAttemptId!));
+    expect(Object.fromEntries(responses.map((r) => [r.itemId, r.value]))).toEqual(strengthsAnswers);
+    // The match run was made with them.
+    expect((await latestMatchRun(db, student))?.personalityAttemptId).toBe(res.strengthsAttemptId);
+    expect((await instrumentStatuses(db, student)).personality.state).toBe("done");
+
+    const audits = await db.select().from(schema.auditLog).where(eq(schema.auditLog.action, "assessment.imported"));
+    expect(audits.map((a) => a.metadata)).toEqual([
+      { instrument: "interests", via: "signup" },
+      { instrument: "personality", via: "signup" },
+    ]);
+    const exported = await exportStudentData(db, student, student);
+    expect(exported?.assessments.map((a: { instrument: string }) => a.instrument).sort()).toEqual(["interests", "personality"]);
+  });
+
+  it("leaves out strengths that don't check out, and still imports the quiz", async () => {
+    const student = await makeStudent("ana@example.com");
+    const { P20: _dropped, ...partial } = strengthsAnswers;
+    for (const bad of [
+      serializeSavedAssessment({ ...emptySavedStrengths(), answers: partial }),
+      serializeSavedAssessment({ ...emptySavedStrengths(), answers: { ...strengthsAnswers, P1: 9 } }),
+      JSON.stringify({ ...JSON.parse(savedStrengths), scores: { traits: { neuroticism: 0 } } }),
+      // The quiz's answers sent as strengths.
+      saved,
+      "{",
+    ]) {
+      const other = await makeStudent(`s${Math.random()}@example.com`);
+      const res = await importSavedAssessment(db, other, other, saved, { via: "signup", strengths: bad, now });
+      expect(res).toMatchObject({ ok: true, strengthsAttemptId: null });
+      expect(await latestResult(db, other, "personality")).toBeNull();
+    }
+    expect((await importSavedAssessment(db, student, student, saved, { via: "signup", now })).ok).toBe(true);
+  });
+
+  it("never replaces a personality result the student already has", async () => {
+    const student = await makeStudent("ana@example.com");
+    const start = await startOrResumeAttempt(db, student, "personality", now);
+    if (!start.ok) throw new Error();
+    await saveResponses(db, student, start.attempt.id, Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, 3])));
+    await completeAttempt(db, student, start.attempt.id, now);
+    const res = await importSavedAssessment(db, student, student, saved, { via: "dashboard", strengths: savedStrengths, now });
+    expect(res).toMatchObject({ ok: true, strengthsAttemptId: null });
+    expect((await latestResult(db, student, "personality"))?.attemptId).toBe(start.attempt.id);
+  });
+
+  it("takes both back when the quiz wasn't the student's", async () => {
+    const student = await makeStudent("ana@example.com");
+    const res = await importSavedAssessment(db, student, student, saved, { via: "signup", strengths: savedStrengths, now });
+    if (!res.ok) throw new Error(res.error);
+    const later = new Date(now.getTime() + 60_000);
+    expect(await undoableImport(db, student, later)).toMatchObject({ attemptId: res.attemptId, strengthsAttemptId: res.strengthsAttemptId });
+    expect(await removeImportedAssessment(db, student, student, res.attemptId, { now: later })).toEqual({ ok: true });
+    for (const table of [schema.assessmentAttempts, schema.assessmentResponses, schema.assessmentResults, schema.matchRuns]) {
+      expect(await db.select().from(table)).toHaveLength(0);
+    }
+    const statuses = await instrumentStatuses(db, student);
+    expect([statuses.interests.state, statuses.personality.state]).toEqual(["not_started", "not_started"]);
+    const removed = await db.select().from(schema.auditLog).where(eq(schema.auditLog.action, "assessment.import_removed"));
+    expect(removed.map((a) => a.metadata)).toEqual([{ instrument: "interests" }, { instrument: "personality" }]);
+  });
+
+  it("leaves a personality result the student gave themself when taking back a quiz", async () => {
+    const student = await makeStudent("ana@example.com");
+    const start = await startOrResumeAttempt(db, student, "personality", new Date(now.getTime() - 600_000));
+    if (!start.ok) throw new Error();
+    await saveResponses(db, student, start.attempt.id, Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, 3])));
+    await completeAttempt(db, student, start.attempt.id, now);
+    const res = await importSavedAssessment(db, student, student, saved, { via: "dashboard", strengths: savedStrengths, now });
+    if (!res.ok) throw new Error(res.error);
+    expect(await removeImportedAssessment(db, student, student, res.attemptId, { now })).toEqual({ ok: true });
+    expect((await latestResult(db, student, "personality"))?.attemptId).toBe(start.attempt.id);
+  });
+});
+
+describe("counting free quiz finishes", () => {
+  const countKey = anonymousRateKey(IP, SECRET, now, "count");
+
+  it("adds one to today's anonymous count, and nothing about the visitor", async () => {
+    expect(await countFreeFinish(db, "interests", { rateKey: countKey, now })).toBe(true);
+    expect(await countFreeFinish(db, "interests", { rateKey: countKey, now })).toBe(true);
+    expect(await countFreeFinish(db, "personality", { rateKey: countKey, now })).toBe(true);
+    const rows = await db.select().from(schema.dailyCounts);
+    expect(rows.map(({ day, metric, count }) => ({ day, metric, count })).sort((a, b) => a.metric.localeCompare(b.metric))).toEqual([
+      { day: "2026-09-24", metric: "free_quiz_finished", count: 2 },
+      { day: "2026-09-24", metric: "free_strengths_finished", count: 1 },
+    ]);
+    expect(Object.keys(rows[0]).sort()).toEqual(["count", "day", "metric"]);
+    for (const table of [schema.users, schema.assessmentAttempts, schema.auditLog]) {
+      expect(await db.select().from(table)).toHaveLength(0);
+    }
+    const [limit] = await db.select().from(schema.rateLimits);
+    expect(limit.key).toMatch(/^try:count:/);
+    expect(JSON.stringify(await db.select().from(schema.rateLimits))).not.toContain(IP);
+  });
+
+  it("counts only the two free activities", async () => {
+    for (const bad of ["values", "signup_student", "free_quiz_finished", null, { activity: "interests" }]) {
+      expect(await countFreeFinish(db, bad, { rateKey: countKey, now })).toBe(false);
+    }
+    expect(await db.select().from(schema.dailyCounts)).toHaveLength(0);
+    expect(await db.select().from(schema.rateLimits)).toHaveLength(0);
+  });
+
+  it("stops counting past the limit for one connection, so a script can't inflate it", async () => {
+    for (let i = 0; i < FREE_FINISH_COUNT_LIMIT.limit; i++) await countFreeFinish(db, "interests", { rateKey: countKey, now });
+    expect(await countFreeFinish(db, "interests", { rateKey: countKey, now })).toBe(false);
+    const [row] = await db.select().from(schema.dailyCounts);
+    expect(row.count).toBe(FREE_FINISH_COUNT_LIMIT.limit);
+    // Another connection, or the next hour, counts again.
+    expect(await countFreeFinish(db, "interests", { rateKey: anonymousRateKey("198.51.100.1", SECRET, now, "count"), now })).toBe(true);
+    const nextHour = new Date(now.getTime() + FREE_FINISH_COUNT_LIMIT.windowMs + 1000);
+    expect(await countFreeFinish(db, "interests", { rateKey: countKey, now: nextHour })).toBe(true);
+  });
+
+  it("uses a different key from career lookups", () => {
+    expect(countKey).toMatch(/^try:count:[A-Za-z0-9_-]{43}$/);
+    expect(countKey.slice("try:count:".length)).toBe(anonymousRateKey(IP, SECRET, now).slice("try:match:".length));
   });
 });
 

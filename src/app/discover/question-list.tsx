@@ -76,35 +76,65 @@ export function QuestionList({
           {/* Focusable only from code, after a page turn or "Go to it" (see usePageTurns). */}
           <fieldset tabIndex={-1} className="outline-hidden">
             <legend className="font-medium">{item.text}</legend>
-            <div className="mt-3 grid gap-2 sm:grid-cols-5">
-              {options.map((opt) => {
-                const selected = answers[item.id] === opt.value;
-                // Arrow keys move focus and the answer together, so the focused answer is usually
-                // the selected one: the ring sits outside it, apart from its filled background.
-                return (
-                  <label
-                    key={opt.value}
-                    className={`flex min-h-11 cursor-pointer items-center justify-center rounded-lg border px-2 text-center text-sm has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent ${
-                      selected ? "border-accent bg-accent text-accent-foreground" : "border-border hover:bg-background"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name={item.id}
-                      value={opt.value}
-                      checked={selected}
-                      onChange={() => onAnswer(item.id, opt.value)}
-                      className="sr-only"
-                    />
-                    {opt.label}
-                  </label>
-                );
-              })}
-            </div>
+            <AnswerScale name={item.id} options={options} value={answers[item.id]} onAnswer={(value) => onAnswer(item.id, value)} />
           </fieldset>
         </li>
       ))}
     </ol>
+  );
+}
+
+/**
+ * One question's answers, as native radio buttons named by the scale's own words (arrow keys move
+ * between them). From `sm` up, each answer shows its words. On phones the five answers sit in one
+ * row of marks at least 44px wide, with the two ends of the scale written underneath and, once
+ * one is chosen, its words; the words stay in each answer for screen readers.
+ */
+export function AnswerScale({
+  name,
+  options,
+  value,
+  onAnswer,
+}: {
+  name: string;
+  options: Option[];
+  value: number | undefined;
+  onAnswer: (value: number) => void;
+}) {
+  const chosen = options.findIndex((o) => o.value === value);
+  const last = options.length - 1;
+  return (
+    <>
+      <div className="mt-3 grid grid-cols-5 gap-1.5 sm:gap-2">
+        {options.map((opt) => {
+          const selected = value === opt.value;
+          // Arrow keys move focus and the answer together, so the focused answer is usually the
+          // selected one: the ring sits outside it, apart from its filled background.
+          return (
+            <label
+              key={opt.value}
+              className={`flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-lg border px-1 text-center text-sm sm:px-2 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent ${
+                selected ? "border-accent bg-accent text-accent-foreground" : "border-border hover:bg-background"
+              }`}
+            >
+              <input type="radio" name={name} value={opt.value} checked={selected} onChange={() => onAnswer(opt.value)} className="sr-only" />
+              <span aria-hidden className={`size-4 rounded-full border-2 border-current sm:hidden ${selected ? "bg-current" : "opacity-60"}`} />
+              <span className="max-sm:sr-only">{opt.label}</span>
+            </label>
+          );
+        })}
+      </div>
+      {/* Hidden from screen readers, which read each answer's own words. */}
+      <div aria-hidden className="mt-1.5 flex justify-between gap-4 text-xs text-muted sm:hidden">
+        <span>{options[0]?.label}</span>
+        <span className="text-right">{options[last]?.label}</span>
+      </div>
+      {chosen >= 0 && (
+        <p aria-hidden className="mt-1 text-xs sm:hidden">
+          Your answer: <span className="font-medium">{options[chosen].label}</span>
+        </p>
+      )}
+    </>
   );
 }
 

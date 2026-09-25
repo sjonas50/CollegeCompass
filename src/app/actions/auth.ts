@@ -12,7 +12,8 @@ import {
   registerParent,
   registerStudent,
 } from "@/lib/accounts";
-import { SAVED_ASSESSMENT_FIELD } from "@/lib/assessments/anonymous";
+import { recordCount } from "@/lib/admin/counts";
+import { SAVED_ASSESSMENT_FIELD, SAVED_STRENGTHS_FIELD } from "@/lib/assessments/anonymous";
 import { importSavedAssessment } from "@/lib/assessments/import";
 import { isPlausibleStudentBirthDate, isUnder13 } from "@/lib/auth/age";
 import {
@@ -80,16 +81,35 @@ export async function registerStudentAction(_prev: FormState, formData: FormData
   }
   const { token, expiresAt } = await createSession(db, result.value.userId);
   await setSessionCookie(token, expiresAt);
-  const imported = await importAtSignup(db, result.value.userId, formData.get(SAVED_ASSESSMENT_FIELD));
+  const imported = await importAtSignup(
+    db,
+    result.value.userId,
+    formData.get(SAVED_ASSESSMENT_FIELD),
+    formData.get(SAVED_STRENGTHS_FIELD),
+  );
+  await recordCount(db, "signup_student");
+  if (imported) await recordCount(db, "signup_student_with_quiz");
   // /try/saved clears the browser's copy of the quiz, then shows the results.
   redirect(imported ? "/try/saved" : "/dashboard");
 }
 
-/** Brings in a free quiz saved in the visitor's browser (see /try). Never blocks the new account. */
-async function importAtSignup(db: Db, userId: string, saved: FormDataEntryValue | null): Promise<boolean> {
+/**
+ * Brings in a free quiz saved in the visitor's browser (see /try), with its strengths add-on when
+ * they took it. Never blocks the new account.
+ */
+async function importAtSignup(
+  db: Db,
+  userId: string,
+  saved: FormDataEntryValue | null,
+  strengths: FormDataEntryValue | null,
+): Promise<boolean> {
   if (typeof saved !== "string" || !saved) return false;
   try {
-    return (await importSavedAssessment(db, userId, userId, saved, { via: "signup" })).ok;
+    const res = await importSavedAssessment(db, userId, userId, saved, {
+      via: "signup",
+      strengths: typeof strengths === "string" ? strengths : undefined,
+    });
+    return res.ok;
   } catch (error) {
     console.error("[signup] quiz import failed", error instanceof Error ? error.name : "unknown");
     return false;
@@ -184,6 +204,7 @@ export async function registerParentAction(_prev: FormState, formData: FormData)
 
   const { token, expiresAt } = await createSession(db, result.value.userId);
   await setSessionCookie(token, expiresAt);
+  await recordCount(db, "signup_parent");
   redirect(safeNext(formData.get("next")) ?? "/parent");
 }
 

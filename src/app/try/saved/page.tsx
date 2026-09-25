@@ -53,6 +53,7 @@ export default async function SavedPage({ searchParams }: PageProps<"/try/saved"
             Your quiz results are saved to your account.
             {top && <> Your top interests are {top}.</>}
             {noLead && <> You {noLead}.</>}
+            {imported?.strengthsAttemptId && <> Your strengths are saved too.</>}
           </p>
           <ButtonLink href="/discover/results">See my career matches</ButtonLink>
         </Card>
@@ -60,8 +61,8 @@ export default async function SavedPage({ searchParams }: PageProps<"/try/saved"
           <Card className="space-y-3">
             <h2 className="font-medium">Not your answers?</h2>
             <p className="text-sm text-muted">
-              If someone else took the quiz on this device, you can remove these results. Then you can take the quiz
-              yourself right away.
+              If someone else took the quiz on this device, you can remove these results
+              {imported.strengthsAttemptId && " and strengths"}. Then you can take the quiz yourself right away.
             </p>
             <RemoveImportButton attemptId={imported.attemptId} />
           </Card>

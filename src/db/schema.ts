@@ -230,6 +230,22 @@ export const rateLimits = pgTable("rate_limits", {
   count: integer("count").notNull(),
 });
 
+/**
+ * Anonymous daily totals for the staff overview: how many people finished the free quiz, signed up,
+ * and so on (see src/lib/admin/counts.ts). One number per UTC day and metric, and nothing else: no
+ * user ids, no addresses, nothing about any one person. Not personal data, so it isn't in any
+ * export and isn't deleted with an account.
+ */
+export const dailyCounts = pgTable(
+  "daily_counts",
+  {
+    day: date("day").notNull(),
+    metric: text("metric").notNull(),
+    count: integer("count").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.metric] })],
+);
+
 // ---------------------------------------------------------------------------
 // Reference data (loaded from public sources, read-only at runtime)
 // ---------------------------------------------------------------------------

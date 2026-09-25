@@ -6,14 +6,15 @@ import { startTransition, useEffect, useState } from "react";
 import { freeMatchesAction } from "@/app/actions/try";
 import { InterestAreasCard } from "@/app/discover/results/interest-areas";
 import { Button, ButtonLink, Card, FormMessage, PageHeading } from "@/components/ui";
-import { type SavedAssessment, answeredCount, isFinished } from "@/lib/assessments/anonymous";
+import { type SavedAssessment, answeredCount, isComplete, isFinished } from "@/lib/assessments/anonymous";
 import type { FreeCareer, FreeMatchesResult } from "@/lib/assessments/import";
 import { INTEREST_ITEMS, RIASEC } from "@/lib/assessments/instruments";
 import { type Responses, scoreInterests } from "@/lib/assessments/scoring";
 import { PATHWAY_INFO, type Pathway } from "@/lib/matching/match";
-import { forgetSavedAssessment, useSavedAssessment } from "../saved-store";
+import { forgetSavedAssessment, useSavedAssessment, useSavedStrengths } from "../saved-store";
 import { freeMatchesProblem, keptFreeMatches, loadFreeMatches } from "./free-matches";
 import { type ResultsViewer, SaveResultsCard } from "./save-card";
+import { StrengthsCard } from "./strengths-card";
 
 const PATHWAYS: Pathway[] = ["degree", "training"];
 
@@ -26,7 +27,7 @@ export function resultsHeading(saved: SavedAssessment | null | undefined): strin
 }
 
 /** The free quiz's results, scored in the browser from the answers saved there. */
-export function FreeResults({ viewer }: { viewer: ResultsViewer }) {
+export function FreeResults({ viewer, trialDays }: { viewer: ResultsViewer; trialDays?: number }) {
   const saved = useSavedAssessment();
   const heading = <PageHeading title={resultsHeading(saved)} />;
   if (saved === undefined) {
@@ -56,20 +57,22 @@ export function FreeResults({ viewer }: { viewer: ResultsViewer }) {
   return (
     <>
       {heading}
-      <Results answers={saved.answers} viewer={viewer} />
+      <Results answers={saved.answers} viewer={viewer} trialDays={trialDays} />
     </>
   );
 }
 
-export function Results({ answers, viewer }: { answers: Responses; viewer: ResultsViewer }) {
+export function Results({ answers, viewer, trialDays }: { answers: Responses; viewer: ResultsViewer; trialDays?: number }) {
   const router = useRouter();
+  const strengths = useSavedStrengths();
   // The same scoring as signed-in students, run here: the answers never leave the browser.
   const { areas } = scoreInterests(answers);
   const areasKey = RIASEC.map((a) => areas[a]).join(",");
   const { matches, retry } = useFreeMatches(areasKey);
 
   function takeAgain() {
-    if (!window.confirm("Erase these answers from this device and take the quiz again?")) return;
+    if (!window.confirm("Erase your answers from this device and take the quiz again?")) return;
+    // The strengths answers go too: they belong to the same person.
     forgetSavedAssessment();
     router.push("/try");
   }
@@ -111,11 +114,14 @@ export function Results({ answers, viewer }: { answers: Responses; viewer: Resul
           ))}
       </div>
 
-      <SaveResultsCard viewer={viewer} onTakeAgain={takeAgain} />
+      <StrengthsCard saved={strengths} />
+
+      <SaveResultsCard viewer={viewer} onTakeAgain={takeAgain} strengths={isComplete(strengths)} trialDays={trialDays} />
 
       <p className="text-sm text-muted">
-        Your answers are saved only in this browser. To find careers, we used just your six interest scores, and we
-        didn&apos;t keep them. &ldquo;Take it again&rdquo; erases your answers from this browser.
+        Your answers, including any strengths answers, are saved only in this browser. To find careers, we used just your
+        six interest scores, and we didn&apos;t keep them. We count how many people finish the quiz, but not who.
+        &ldquo;Take it again&rdquo; erases your answers from this browser.
       </p>
     </div>
   );
