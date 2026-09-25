@@ -1,23 +1,31 @@
 import { desc, eq } from "drizzle-orm";
 import type { Db } from "@/db";
-import { careerMatches, matchRuns, occupationInterests, occupationValues, occupations } from "@/db/schema";
+import { careerMatches, matchRuns, occupationInterests, occupationValues, occupationWorkStyles, occupations } from "@/db/schema";
 import type { Riasec, WorkValue } from "../assessments/instruments";
 import { latestResult } from "../assessments/service";
 import { SCORING_VERSION } from "../assessments/scoring";
-import { type OccupationProfile, rankForStudent } from "./match";
+import type { WorkStyle } from "../reference/work-styles";
+import { type OccupationProfile, rankForStudent, withTraitDemands } from "./match";
 import { forgetSavedContexts } from "../counselor/saved-context";
 
 let profileCache: { at: number; profiles: OccupationProfile[] } | undefined;
 const CACHE_MS = 60 * 60 * 1000;
 
-/** All occupations that have a complete O*NET interest profile. Cached: reference data rarely changes. */
+/**
+ * All occupations that have a complete O*NET interest profile, with how much each calls for each
+ * personality trait where O*NET has work styles for it (standardized across these occupations).
+ * Cached: reference data rarely changes.
+ */
 export async function loadOccupationProfiles(db: Db, { fresh = false } = {}): Promise<OccupationProfile[]> {
   if (!fresh && profileCache && Date.now() - profileCache.at < CACHE_MS) return profileCache.profiles;
 
-  const [occs, interests, values] = await Promise.all([
+  const [occs, interests, values, styles] = await Promise.all([
     db.select().from(occupations),
     db.select().from(occupationInterests),
     db.select().from(occupationValues),
+    db
+      .select({ occupationCode: occupationWorkStyles.occupationCode, style: occupationWorkStyles.style, impact: occupationWorkStyles.impact })
+      .from(occupationWorkStyles),
   ]);
   const byCode = new Map<string, OccupationProfile>();
   for (const o of occs) {
@@ -31,14 +39,32 @@ export async function loadOccupationProfiles(db: Db, { fresh = false } = {}): Pr
     const p = byCode.get(v.occupationCode);
     if (p) p.values[v.value as WorkValue] = v.score;
   }
-  const profiles = [...byCode.values()].filter((p) => Object.keys(p.interests).length === 6);
+  const impacts = new Map<string, Partial<Record<WorkStyle, number>>>();
+  for (const s of styles) {
+    const entry = impacts.get(s.occupationCode) ?? {};
+    entry[s.style as WorkStyle] = s.impact;
+    impacts.set(s.occupationCode, entry);
+  }
+  const profiles = withTraitDemands(
+    [...byCode.values()].filter((p) => Object.keys(p.interests).length === 6),
+    impacts,
+  );
   profileCache = { at: Date.now(), profiles };
   return profiles;
 }
 
 /**
+ * Whether a match run's ranking used the student's personality. Since scoring version 2 a run
+ * records the personality attempt only when it counted (see computeMatches); version 1 runs
+ * recorded it without using it.
+ */
+export function runUsedPersonality(run: { personalityAttemptId: string | null; scoringVersion: string }) {
+  return run.personalityAttemptId !== null && run.scoringVersion !== "1";
+}
+
+/**
  * Computes and stores a fresh set of matches from the student's latest interest (and, if taken,
- * values) results. Returns null until the interests assessment is complete.
+ * values and personality) results. Returns null until the interests assessment is complete.
  */
 export async function computeMatches(db: Db, userId: string) {
   const interests = await latestResult(db, userId, "interests");
@@ -50,8 +76,11 @@ export async function computeMatches(db: Db, userId: string) {
 
   const profiles = await loadOccupationProfiles(db);
   if (profiles.length === 0) throw new Error("Reference data not loaded. Run `npm run data:load`.");
+  // Personality counts only where work styles are loaded; the run records it only when it counted,
+  // so pages never say strengths shaped matches they didn't (see runUsedPersonality).
+  const usedPersonality = personality && profiles.some((p) => p.traitDemand) ? personality : null;
   const ranked = rankForStudent(
-    { interests: interests.scores.areas, valuesRanking: values?.scores.ranking },
+    { interests: interests.scores.areas, valuesRanking: values?.scores.ranking, personality: usedPersonality?.scores.traits },
     profiles,
   );
 
@@ -62,7 +91,7 @@ export async function computeMatches(db: Db, userId: string) {
         userId,
         interestsAttemptId: interests.attemptId,
         valuesAttemptId: values?.attemptId ?? null,
-        personalityAttemptId: personality?.attemptId ?? null,
+        personalityAttemptId: usedPersonality?.attemptId ?? null,
         scoringVersion: SCORING_VERSION,
       })
       .returning({ id: matchRuns.id });

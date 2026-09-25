@@ -12,7 +12,8 @@ import { UNLOCK_PATH, describeAccess } from "@/lib/access/describe";
 import { accessFor } from "@/lib/access/guard";
 import { getDb } from "@/db";
 import { INSTRUMENTS, type InstrumentId } from "@/lib/assessments/instruments";
-import { type InstrumentStatus, instrumentStatuses } from "@/lib/assessments/service";
+import { strengthsSummary } from "@/lib/assessments/descriptions";
+import { type InstrumentStatus, instrumentStatuses, latestResult } from "@/lib/assessments/service";
 import { gradeBand } from "@/lib/auth/age";
 import { requireUser } from "@/lib/auth/dal";
 import { computeGpa } from "@/lib/courses/gpa";
@@ -63,7 +64,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const { settings } = await searchParams;
   const db = await getDb();
   const grade = user.grade ?? 9;
-  const [access, statuses, stars, progress, courses, reminders, list] = await Promise.all([
+  const [access, statuses, stars, progress, courses, reminders, list, personality] = await Promise.all([
     accessFor(user),
     instrumentStatuses(db, user.id),
     listNorthStars(db, user.id),
@@ -71,6 +72,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     listCourses(db, user.id),
     reminderSettingFor(db, user.id),
     listEntries(db, user.id),
+    latestResult(db, user.id, "personality"),
   ]);
   const roadmap = buildRoadmap(MILESTONES, grade, new Date(), progress);
   const timely = [...roadmap.now, ...roadmap.catchUp].slice(0, 3);
@@ -193,6 +195,15 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             );
           })}
         </ol>
+        {personality && (
+          <div className="mt-3 rounded-xl border border-border bg-surface p-4 text-sm">
+            <h3 className="font-medium">Your strengths</h3>
+            <p className="mt-1 text-muted">{strengthsSummary(personality.scores.traits)}.</p>
+            <Link href="/discover/personality" className="inline-flex min-h-11 items-center underline underline-offset-2">
+              See what they mean
+            </Link>
+          </div>
+        )}
         <div className="mt-4 flex flex-wrap gap-2">
           {hasResults && <ButtonLink href="/discover/results">See my career matches</ButtonLink>}
           {next && (

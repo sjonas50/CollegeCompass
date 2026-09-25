@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, createTestDb } from "@/db";
 import { registerStudent } from "@/lib/accounts";
-import { INTEREST_ITEMS, type Riasec } from "../assessments/instruments";
+import { INTEREST_ITEMS, PERSONALITY_ITEMS, type Riasec } from "../assessments/instruments";
 import { completeAttempt, saveResponses, startOrResumeAttempt } from "../assessments/service";
 import { buildStudentContext, formatStudentContext } from "./prompt";
 
@@ -121,5 +121,68 @@ describe("building the context from results", () => {
 
   it("says when every area leaned toward 'Dislike'", async () => {
     expect(await interestsFrom({ C: 2 })).toBe("- Leaned toward disliking all six interest areas (no clear lead yet).");
+  });
+});
+
+describe("strengths in the context", () => {
+  let db: Db;
+  let student: { id: string; grade: number };
+
+  beforeEach(async () => {
+    db = await createTestDb();
+    const res = await registerStudent(
+      db,
+      { displayName: "Ana", email: "ana@example.com", password: "correct horse battery", birthDate: "2011-01-15", grade: 10 },
+      now,
+    );
+    if (!res.ok) throw new Error(res.error);
+    student = { id: res.value.userId, grade: 10 };
+  });
+
+  async function contextWithPersonality(answer: (item: (typeof PERSONALITY_ITEMS)[number]) => number) {
+    const start = await startOrResumeAttempt(db, student.id, "personality", now);
+    if (!start.ok) throw new Error();
+    await saveResponses(db, student.id, start.attempt.id, Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, answer(i)])));
+    await completeAttempt(db, student.id, start.attempt.id, now);
+    return buildStudentContext(db, student, { now });
+  }
+  const strengthsLine = (context: string) => context.split("\n").find((l) => l.startsWith("- Strengths:"));
+
+  it("sends four traits and never emotional stability (mood data about a minor)", async () => {
+    // "Very accurate" on every statement that says the trait describes them, including mood swings
+    // and getting upset easily; "Very inaccurate" on the rest.
+    const stressed = await contextWithPersonality((i) => (i.keyed === 1 ? 5 : 1));
+    const line = strengthsLine(stressed)!;
+    expect(line).toContain("Social energy: You get energy from being around people");
+    expect(line).toContain("Warmth: You're caring");
+    expect(line).toContain("Organization: You like to plan ahead");
+    expect(line).toContain("Curiosity: You love ideas");
+    expect(line).not.toMatch(/Staying calm|feel things deeply|stress/i);
+    expect(stressed).not.toMatch(/Staying calm|feel things deeply|mood|stress/i);
+  });
+
+  it("leaves emotional stability out at every level", async () => {
+    for (const value of [1, 3, 5]) {
+      db = await createTestDb();
+      const res = await registerStudent(
+        db,
+        { displayName: "Ana", email: "ana@example.com", password: "correct horse battery", birthDate: "2011-01-15", grade: 10 },
+        now,
+      );
+      if (!res.ok) throw new Error(res.error);
+      student = { id: res.value.userId, grade: 10 };
+      const context = await contextWithPersonality((i) => (i.factor === "neuroticism" ? value : 3));
+      expect(strengthsLine(context)!.match(/(Social energy|Warmth|Organization|Curiosity|Staying calm):/g)).toEqual([
+        "Social energy:",
+        "Warmth:",
+        "Organization:",
+        "Curiosity:",
+      ]);
+    }
+  });
+
+  it("formats the four strengths on one line", () => {
+    const context = formatStudentContext({ grade: 9, month: 8, strengths: ["Warmth: You're caring and tuned in to how other people feel."] });
+    expect(strengthsLine(context)).toBe("- Strengths: Warmth: You're caring and tuned in to how other people feel.");
   });
 });

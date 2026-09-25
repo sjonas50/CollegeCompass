@@ -80,4 +80,17 @@ describe("dashboard discover section", () => {
     await finish("personality");
     expect(await section()).toContain("All done. You can retake them as you grow.");
   });
+
+  it("sums up the student's strengths once personality is done", async () => {
+    expect(await section()).not.toContain("Your strengths");
+    // Curious, organized and quiet; "Very accurate" on the mood statements too.
+    const level = { extraversion: 1, agreeableness: 3, conscientiousness: 5, neuroticism: 5, intellect: 5 };
+    await finish(
+      "personality",
+      Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, i.keyed === 1 ? level[i.factor] : 6 - level[i.factor]])),
+    );
+    const t = await section();
+    expect(t).toContain("Your strengths Curious, organized and thoughtful. See what they mean");
+    expect(t).not.toMatch(/calm|steady|deeply/i);
+  });
 });

@@ -10,6 +10,8 @@ import {
   parseOccupation,
   parseOccupationInterest,
   parseOccupationValue,
+  parseWorkStyle,
+  collectWorkStyles,
   socFromOnetCode,
 } from "./parsers";
 
@@ -37,6 +39,72 @@ describe("reference parsers", () => {
     expect(parseOccupationValue({ ...base, "Element Name": "Working Conditions", "Scale ID": "EX", "Data Value": "6.33" }))
       .toEqual({ occupationCode: "11-1011.00", value: "working_conditions", score: 6.33 });
     expect(parseOccupationValue({ ...base, "Element Name": "First Work Value High-Point", "Scale ID": "VH", "Data Value": "3.00" })).toBeNull();
+  });
+
+  describe("O*NET work styles", () => {
+    // Rows from the real work_styles.csv (O*NET 31.0): Software Developers and Secondary School Teachers.
+    const dev = { "O*NET-SOC Code": "15-1252.00", Title: "Software Developers", Date: "12/2025", "Domain Source": "AI/Expert" };
+    const row = (elementId: string, elementName: string, scale: "WI" | "DR", value: string, base: Record<string, string> = dev) => ({
+      ...base,
+      "Element ID": elementId,
+      "Element Name": elementName,
+      "Scale ID": scale,
+      "Scale Name": scale === "WI" ? "Work Styles Impact" : "Distinctiveness Rank",
+      "Data Value": value,
+    });
+
+    it("reads both scales and keys styles by element ID", () => {
+      expect(parseWorkStyle(row("1.D.1.a", "Innovation", "DR", "1.00"))).toEqual({
+        occupationCode: "15-1252.00", style: "innovation", scale: "DR", value: 1,
+      });
+      expect(parseWorkStyle(row("1.D.1.a", "Innovation", "WI", "2.51"))).toEqual({
+        occupationCode: "15-1252.00", style: "innovation", scale: "WI", value: 2.51,
+      });
+      // Humility can get in the way of some work (Chief Executives: −0.27).
+      const ceo = { ...dev, "O*NET-SOC Code": "11-1011.00", Title: "Chief Executives" };
+      expect(parseWorkStyle(row("1.D.2.a", "Humility", "WI", "-0.27", ceo))).toMatchObject({ style: "humility", value: -0.27 });
+    });
+
+    it("skips unknown styles, other scales and values out of range", () => {
+      expect(parseWorkStyle(row("1.D.9.z", "Something New", "WI", "2.00"))).toBeNull();
+      expect(parseWorkStyle({ ...row("1.D.1.a", "Innovation", "WI", "2.51"), "Scale ID": "IM" })).toBeNull();
+      expect(parseWorkStyle(row("1.D.1.a", "Innovation", "WI", "4.10"))).toBeNull();
+      expect(parseWorkStyle(row("1.D.1.a", "Innovation", "DR", "11.00"))).toBeNull();
+      expect(parseWorkStyle(row("1.D.1.a", "Innovation", "DR", "n/a"))).toBeNull();
+      expect(parseWorkStyle({ ...row("1.D.1.a", "Innovation", "WI", "2.51"), "O*NET-SOC Code": "" })).toBeNull();
+    });
+
+    it("joins the scales into one record per style, with rank 0 as not ranked, and loads them", async () => {
+      const teacher = { ...dev, "O*NET-SOC Code": "25-2031.00", Title: "Secondary School Teachers, Except Special and Career/Technical Education" };
+      const ratings = [
+        row("1.D.1.a", "Innovation", "DR", "1.00"),
+        row("1.D.1.a", "Innovation", "WI", "2.51"),
+        row("1.D.1.d", "Tolerance for Ambiguity", "DR", "0.00"),
+        row("1.D.1.d", "Tolerance for Ambiguity", "WI", "1.72"),
+        row("1.D.4.a", "Stress Tolerance", "WI", "2.06", teacher),
+        row("1.D.4.a", "Stress Tolerance", "DR", "6.00", teacher),
+        // A rank with no impact isn't kept.
+        row("1.D.2.c", "Empathy", "DR", "3.00", teacher),
+      ]
+        .map(parseWorkStyle)
+        .filter((r) => r !== null);
+      const styles = collectWorkStyles(ratings);
+      expect(styles).toEqual([
+        { occupationCode: "15-1252.00", style: "innovation", impact: 2.51, distinctiveRank: 1 },
+        { occupationCode: "15-1252.00", style: "tolerance_for_ambiguity", impact: 1.72, distinctiveRank: null },
+        { occupationCode: "25-2031.00", style: "stress_tolerance", impact: 2.06, distinctiveRank: 6 },
+      ]);
+
+      const db = await createTestDb();
+      await db.insert(schema.occupations).values([
+        { code: "15-1252.00", title: "Software Developers", description: "" },
+        { code: "25-2031.00", title: "Secondary School Teachers", description: "" },
+      ]);
+      await db.insert(schema.occupationWorkStyles).values(styles);
+      expect(await db.select().from(schema.occupationWorkStyles)).toEqual(
+        expect.arrayContaining(styles.map((s) => ({ ...s, impact: expect.closeTo(s.impact, 4) }))),
+      );
+    });
   });
 
   it("parses the CIP–SOC crosswalk and skips unmatched rows", () => {

@@ -5,9 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
 import type { MatchExplanation } from "@/db/schema";
 import { registerStudent } from "@/lib/accounts";
-import { INTEREST_ITEMS, type Riasec } from "@/lib/assessments/instruments";
+import { INTEREST_ITEMS, PERSONALITY_ITEMS, type Riasec } from "@/lib/assessments/instruments";
 import { completeAttempt, saveResponses, startOrResumeAttempt } from "@/lib/assessments/service";
 import type { SessionUser } from "@/lib/auth/sessions";
+import { WORK_STYLES } from "@/lib/reference/work-styles";
 import { EXPLANATION_FACTS_VERSION } from "@/lib/matching/explain";
 import { computeMatches, latestMatchRun, loadOccupationProfiles } from "@/lib/matching/service";
 import { loadExplanation } from "./load-explanation";
@@ -197,6 +198,72 @@ describe("/discover/results", () => {
     expect(t).not.toContain("Writing a summary");
     expect(t).toContain("Chemists run experiments.");
     expect(t).toContain("File clerks keep records in order.");
+  });
+});
+
+describe("the strengths card", () => {
+  beforeEach(async () => {
+    // Work styles for every career, varying by career so trait demand has some spread.
+    const codes = ["19-2031.00", "25-2031.00", "11-9151.00", "43-4071.00"];
+    await state.db!.insert(schema.occupationWorkStyles).values(
+      codes.flatMap((occupationCode, i) => WORK_STYLES.map((s, j) => ({ occupationCode, style: s.id, impact: ((i + j) % 4) - 0.5, distinctiveRank: null }))),
+    );
+    await loadOccupationProfiles(state.db!, { fresh: true });
+  });
+
+  /** Finishes personality with `answer` for each statement, and computes matches as finishing does. */
+  async function takePersonality(answer: (item: (typeof PERSONALITY_ITEMS)[number]) => number) {
+    const db = state.db!;
+    const userId = state.user!.id;
+    const start = await startOrResumeAttempt(db, userId, "personality");
+    if (!start.ok) throw new Error();
+    await saveResponses(db, userId, start.attempt.id, Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, answer(i)])));
+    await completeAttempt(db, userId, start.attempt.id);
+    await computeMatches(db, userId);
+  }
+
+  it("sits right below the interest areas and invites the student to find their strengths", async () => {
+    await takeInterests(SCIENTIST);
+    const html = await render();
+    const t = text(html);
+    expect(t).toContain("Find my strengths (5 min)");
+    expect(t.indexOf("Your interest areas")).toBeLessThan(t.indexOf("Your strengths"));
+    expect(t.indexOf("Your strengths")).toBeLessThan(t.indexOf("College degree paths"));
+    expect(html).toContain('href="/discover/personality"');
+  });
+
+  it("shows all five strengths once personality is done, and says how they count", async () => {
+    await takeInterests(SCIENTIST);
+    // "Moderately accurate" for every statement that describes the trait.
+    await takePersonality((i) => (i.keyed === 1 ? 4 : 2));
+    const t = text(await render());
+    for (const s of ["Social energy: Outgoing.", "Warmth: Caring.", "Organization: Organized.", "Curiosity: Curious.", "Staying calm: Feels things deeply."]) {
+      expect(t).toContain(s);
+    }
+    expect(t).toContain("Your matches give a small boost to careers that especially call for these strengths. Your interests count the most.");
+    expect(t).toContain("What your strengths mean for school and work");
+    expect(t).not.toContain("Find my strengths");
+  });
+
+  it("doesn't say strengths count in matches made before they did", async () => {
+    await takeInterests(SCIENTIST);
+    await takePersonality(() => 4);
+    const run = await latestMatchRun(state.db!, state.user!.id);
+    await state.db!.update(schema.matchRuns).set({ scoringVersion: "1" }).where(eq(schema.matchRuns.id, run!.id));
+    const t = text(await render());
+    expect(t).toContain("Curiosity:");
+    expect(t).not.toContain("small boost");
+  });
+
+  it("doesn't say strengths count when no work styles are loaded", async () => {
+    await state.db!.delete(schema.occupationWorkStyles);
+    await loadOccupationProfiles(state.db!, { fresh: true });
+    await takeInterests(SCIENTIST);
+    await takePersonality(() => 4);
+    expect((await latestMatchRun(state.db!, state.user!.id))?.personalityAttemptId).toBeNull();
+    const t = text(await render());
+    expect(t).toContain("Curiosity:");
+    expect(t).not.toContain("small boost");
   });
 });
 

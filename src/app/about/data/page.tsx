@@ -20,6 +20,20 @@ export default function DataSourcesPage() {
         <p>
           <strong>Personality assessment.</strong> The 20 statements are the Mini-IPIP (Donnellan, Oswald, Baird &amp; Lucas,
           2006), from the public-domain <a className="underline" href="https://ipip.ori.org/">International Personality Item Pool</a>.
+          Four of its five traits give a small boost to careers that especially call for a student&apos;s strengths: at most 10
+          points out of 100, and a low score never pushes a career down. Emotional stability (&ldquo;Staying calm&rdquo;) never
+          changes which careers are suggested.
+        </p>
+        <p>
+          <strong>Work styles.</strong> The strengths that help in each career, like attention to detail or empathy, come from
+          the Work Styles data in the{" "}
+          <a className="underline" href="https://www.onetcenter.org/dictionary/31.0/excel/work_styles.html">O*NET 31.0 Database</a>{" "}
+          by USDOL/ETA, used under the{" "}
+          <a className="underline" href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> license. O*NET made these
+          ratings with a hybrid AI and expert method (its source is marked &ldquo;AI/Expert&rdquo;) rather than by surveying
+          workers, so we treat them as estimates: we show them as a starting point and use them only lightly in career matches.
+          College Compass connects them to personality traits in its own way; USDOL/ETA has not approved, endorsed, or tested
+          this use.
         </p>
         <p>
           <strong>Careers.</strong> Career descriptions, interest profiles and preparation levels come from the{" "}

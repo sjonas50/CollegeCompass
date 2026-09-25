@@ -40,6 +40,8 @@ export async function finishAssessmentAction(attemptId: string, answers: Record<
     return { ok: false as const, message: "A few questions still need an answer." };
   }
   const runId = await computeMatches(db, student.id);
+  // Personality has its own results view (the student's strengths), which links to the matches.
+  if (result.instrument === "personality") redirect("/discover/personality");
   redirect(runId ? "/discover/results" : "/dashboard");
 }
 

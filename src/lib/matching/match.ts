@@ -1,5 +1,6 @@
-import { RIASEC, type Riasec, WORK_VALUES, type WorkValue } from "../assessments/instruments";
+import { type BigFive, RIASEC, type Riasec, WORK_VALUES, type WorkValue } from "../assessments/instruments";
 import { isFlatProfile } from "../assessments/interest-pattern";
+import { MAPPED_TRAITS, type MappedTrait, TRAIT_WORK_STYLES, type WorkStyle } from "../reference/work-styles";
 
 /**
  * Career matching. Deterministic and explainable:
@@ -10,11 +11,35 @@ import { isFlatProfile } from "../assessments/interest-pattern";
  *   scores are nearly flat, correlation is meaningless and distance is used instead.
  * - Values fit (optional): correlation between the student's value ranking and the occupation's
  *   O*NET work value scores. Weighted lightly: that O*NET data dates from 2008.
- * - Personality is not used for ranking; published links between Big Five traits and specific
- *   occupations are too weak to rank careers with. It informs the written explanation instead.
+ * - Personality fit (optional, the lightest). The owner decided (2026-09-24) to show students their
+ *   strengths first, then let personality count a little in ranking, at most about 10%. Cautions,
+ *   and how the code respects them:
+ *   - Published links between Big Five traits and specific occupations are weak, and O*NET's work
+ *     styles are AI/Expert estimates, not surveys of workers. So personality can add at most
+ *     PERSONALITY_WEIGHT × 100 = 10 points to a 0–100 score, and interests stay in charge.
+ *   - Emotional stability (neuroticism) is never used: it's mood data about a minor and not a fair
+ *     thing to steer careers by. `MappedTrait` leaves it out by type, and the adjustment work
+ *     styles (Stress Tolerance, Self-Control) aren't mapped to any trait.
+ *   - Personality never discourages, screens out or stereotypes. Only strengths a student reports
+ *     (a trait above the scale midpoint) can raise a career, and a low score never lowers one: a
+ *     quiet student's teaching matches don't drop because they're quiet, and careers that need
+ *     less of a trait aren't pushed on students who scored low on it.
+ *   See personalityFit and occupationTraitDemands for the method.
  */
 
 export const VALUES_WEIGHT = 0.15;
+/** Personality can add at most PERSONALITY_WEIGHT × 100 points, lighter than values (see above). */
+export const PERSONALITY_WEIGHT = 0.1;
+/** How far above the average occupation, in standard deviations, a trait counts as fully called for. */
+export const DEMAND_CAP = 2;
+/**
+ * How far above the scale midpoint (50, "Neither") a trait score counts as a full strength: 25
+ * points is an average answer of "Moderately accurate" (75).
+ */
+export const STRENGTH_SPAN = 25;
+
+/** How much an occupation calls for each trait, in standard deviations from the average occupation. */
+export type TraitDemand = Record<MappedTrait, number>;
 
 export type OccupationProfile = {
   code: string;
@@ -22,11 +47,15 @@ export type OccupationProfile = {
   jobZone: number | null;
   interests: Record<Riasec, number>; // O*NET OI, 1–7
   values: Partial<Record<WorkValue, number>>; // O*NET EX, 1–7
+  /** From O*NET work styles (see withTraitDemands); missing when O*NET has none for it. */
+  traitDemand?: TraitDemand;
 };
 
 export type StudentProfile = {
   interests: Record<Riasec, number>; // 0–40
   valuesRanking?: WorkValue[];
+  /** Mini-IPIP trait scores, 0–100. Neuroticism may be present but is never read. */
+  personality?: Record<BigFive, number>;
 };
 
 export type ScoredOccupation = {
@@ -36,6 +65,8 @@ export type ScoredOccupation = {
   score: number;
   interestFit: number;
   valuesFit: number | null;
+  /** 0–100: how much the career calls for strengths the student has. Null when not used. */
+  personalityFit: number | null;
 };
 
 function mean(xs: number[]) {
@@ -74,13 +105,74 @@ function valuesFit(ranking: WorkValue[], values: Partial<Record<WorkValue, numbe
   return Math.round(((pearson(weights, extents) + 1) / 2) * 100);
 }
 
+function standardize(xs: number[]): number[] {
+  const m = mean(xs);
+  const sd = Math.sqrt(mean(xs.map((x) => (x - m) ** 2)));
+  return xs.map((x) => (sd === 0 ? 0 : (x - m) / sd));
+}
+
+/**
+ * How much each occupation calls for each trait, from the O*NET Work Styles Impact (WI) scores of
+ * the styles mapped to it (TRAIT_WORK_STYLES). Each style's impact is standardized across the
+ * occupations first, so a style that varies little between jobs (Dependability matters nearly
+ * everywhere) counts as much as one that varies a lot. A trait's demand is the average of its
+ * styles, standardized again so every trait is on the same scale: 0 is the average occupation, 1
+ * is one standard deviation above it. Occupations missing any mapped style get no demand, and so
+ * no personality fit.
+ */
+export function occupationTraitDemands(impacts: ReadonlyMap<string, Partial<Record<WorkStyle, number>>>): Map<string, TraitDemand> {
+  const styles = MAPPED_TRAITS.flatMap((t) => TRAIT_WORK_STYLES[t]);
+  const codes = [...impacts.keys()].filter((code) => styles.every((s) => Number.isFinite(impacts.get(code)![s])));
+  const z = new Map(styles.map((s) => [s, standardize(codes.map((c) => impacts.get(c)![s]!))]));
+  const demand = new Map(
+    MAPPED_TRAITS.map((t) => [t, standardize(codes.map((_, i) => mean(TRAIT_WORK_STYLES[t].map((s) => z.get(s)![i]))))]),
+  );
+  return new Map(codes.map((code, i) => [code, Object.fromEntries(MAPPED_TRAITS.map((t) => [t, demand.get(t)![i]])) as TraitDemand]));
+}
+
+/**
+ * The profiles with each one's trait demand from its work style impacts, standardized across
+ * these profiles (see occupationTraitDemands).
+ */
+export function withTraitDemands<P extends OccupationProfile>(
+  profiles: P[],
+  impacts: ReadonlyMap<string, Partial<Record<WorkStyle, number>>>,
+): P[] {
+  const codes = new Set(profiles.map((p) => p.code));
+  const demands = occupationTraitDemands(new Map([...impacts].filter(([code]) => codes.has(code))));
+  return profiles.map((p) => ({ ...p, traitDemand: demands.get(p.code) }));
+}
+
+/**
+ * 0–100: how much an occupation calls for the strengths a student reports. For each of the four
+ * mapped traits: the student's strength (how far above the scale midpoint of 50 they scored, 0–1,
+ * and 0 at or below the midpoint) times how much the occupation calls for the trait (its demand
+ * above the average occupation, 0 at or below average, capped at DEMAND_CAP standard deviations
+ * and scaled to 0–1). The fit is the average over the four traits.
+ *
+ * Why not a correlation, as interests use: with only four numbers, a correlation can swing from +1
+ * to −1 when one trait moves a little; it ignores how far from the midpoint the student is (52 on
+ * every trait would look as sure as 95); and it's undefined when all four scores are equal. A
+ * bounded average of products changes smoothly with every score, is 0 for a student at the
+ * midpoint, and can't leave its range. It's one-sided on purpose (see the top of this file): only
+ * strengths the student has add, and nothing subtracts.
+ */
+export function personalityFit(traits: Record<BigFive, number>, demand: TraitDemand): number {
+  const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+  const sum = MAPPED_TRAITS.reduce((acc, t) => acc + clamp01((traits[t] - 50) / STRENGTH_SPAN) * clamp01(demand[t] / DEMAND_CAP), 0);
+  return Math.round((sum / MAPPED_TRAITS.length) * 100);
+}
+
 export function scoreOccupation(student: StudentProfile, occ: OccupationProfile): ScoredOccupation {
   const s = RIASEC.map((a) => student.interests[a]);
   const o = RIASEC.map((a) => occ.interests[a]);
   const iFit = interestFit(s, o);
   const vFit = student.valuesRanking ? valuesFit(student.valuesRanking, occ.values) : null;
-  const score = vFit === null ? iFit : Math.round((1 - VALUES_WEIGHT) * iFit + VALUES_WEIGHT * vFit);
-  return { code: occ.code, title: occ.title, jobZone: occ.jobZone, score, interestFit: iFit, valuesFit: vFit };
+  const pFit = student.personality && occ.traitDemand ? personalityFit(student.personality, occ.traitDemand) : null;
+  const base = vFit === null ? iFit : (1 - VALUES_WEIGHT) * iFit + VALUES_WEIGHT * vFit;
+  // Personality only adds: at most PERSONALITY_WEIGHT × 100 points, and never past 100.
+  const score = pFit === null ? Math.round(base) : Math.min(100, Math.round(base + PERSONALITY_WEIGHT * pFit));
+  return { code: occ.code, title: occ.title, jobZone: occ.jobZone, score, interestFit: iFit, valuesFit: vFit, personalityFit: pFit };
 }
 
 /** Catch-all categories ("…, All Other") are too vague to be useful suggestions. */

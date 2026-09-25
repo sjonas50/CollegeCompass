@@ -1,4 +1,5 @@
 import type { NetPriceByIncome } from "@/db/schema";
+import { type WorkStyle, workStyleForElement } from "./work-styles";
 
 /**
  * Pure row mappers for the public datasets we load. Each takes one CSV/sheet row keyed by the
@@ -59,6 +60,42 @@ export function parseOccupationValue(row: Row) {
   const score = Number(row["Data Value"]);
   if (!value || !occupationCode || !Number.isFinite(score)) return null;
   return { occupationCode, value, score };
+}
+
+/**
+ * O*NET 31.0 work_styles.csv: one rating on one scale, WI (Work Styles Impact, −3 to +3) or DR
+ * (Distinctiveness Rank, 0–10, where 0 means not ranked). Rows for styles we don't know are skipped.
+ * The whole file's Domain Source is "AI/Expert" (see src/lib/reference/work-styles.ts).
+ */
+export function parseWorkStyle(row: Row) {
+  const occupationCode = row["O*NET-SOC Code"]?.trim();
+  const style = workStyleForElement(row["Element ID"]);
+  const scale = row["Scale ID"]?.trim();
+  const value = num(row["Data Value"]);
+  if (!occupationCode || !style || value === null) return null;
+  if (scale === "WI" && value >= -3 && value <= 3) return { occupationCode, style, scale, value } as const;
+  if (scale === "DR" && Number.isInteger(value) && value >= 0 && value <= 10) return { occupationCode, style, scale, value } as const;
+  return null;
+}
+
+export type WorkStyleRating = NonNullable<ReturnType<typeof parseWorkStyle>>;
+
+/**
+ * Joins the two scales into one record per occupation and style. A style needs its impact (WI) to
+ * be kept; a Distinctiveness Rank of 0 ("not ranked") becomes null.
+ */
+export function collectWorkStyles(ratings: Iterable<WorkStyleRating>) {
+  const byKey = new Map<string, { occupationCode: string; style: WorkStyle; impact?: number; distinctiveRank: number | null }>();
+  for (const r of ratings) {
+    const key = `${r.occupationCode}|${r.style}`;
+    const entry = byKey.get(key) ?? { occupationCode: r.occupationCode, style: r.style, distinctiveRank: null };
+    if (r.scale === "WI") entry.impact = r.value;
+    else entry.distinctiveRank = r.value > 0 ? r.value : null;
+    byKey.set(key, entry);
+  }
+  return [...byKey.values()]
+    .filter((e): e is typeof e & { impact: number } => e.impact !== undefined)
+    .map(({ occupationCode, style, impact, distinctiveRank }) => ({ occupationCode, style, impact, distinctiveRank }));
 }
 
 /**

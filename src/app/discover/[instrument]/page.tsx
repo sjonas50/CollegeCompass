@@ -15,12 +15,14 @@ import {
   WORK_VALUE_INFO,
   isInstrumentId,
 } from "@/lib/assessments/instruments";
-import { instrumentStatuses, startOrResumeAttempt } from "@/lib/assessments/service";
+import { instrumentStatuses, latestResult, startOrResumeAttempt } from "@/lib/assessments/service";
 import { undoableImport } from "@/lib/assessments/import";
 import { requireUser } from "@/lib/auth/dal";
+import { latestMatchRun, runUsedPersonality } from "@/lib/matching/service";
 import { RemoveImportButton } from "@/app/try/saved/remove-import";
 import { Questionnaire } from "../questionnaire";
 import { ValuesSort } from "../values-sort";
+import { StrengthsView } from "./strengths-view";
 
 export const metadata: Metadata = { title: "Discover" };
 
@@ -80,6 +82,21 @@ export default async function InstrumentPage({ params }: PageProps<"/discover/[i
         )}
       </>
     );
+  }
+
+  // Finished personality: the student's strengths, where finishing it leads.
+  if (instrument === "personality" && status.state === "done") {
+    const [personality, run] = await Promise.all([latestResult(db, student.id, "personality"), latestMatchRun(db, student.id)]);
+    if (personality) {
+      return (
+        <StrengthsView
+          traits={personality.scores.traits}
+          completedAt={status.completedAt}
+          retakeAfter={status.retakeAfter}
+          matches={!run ? "none" : runUsedPersonality(run) ? "updated" : "ready"}
+        />
+      );
+    }
   }
 
   const canStart = status.state === "not_started" || status.retakeAfter <= new Date();

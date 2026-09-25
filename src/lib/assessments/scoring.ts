@@ -11,7 +11,11 @@ import {
   type WorkValue,
 } from "./instruments";
 
-export const SCORING_VERSION = "1";
+/**
+ * Recorded with each result and match run. "2": career matches count personality lightly
+ * (src/lib/matching/match.ts); assessment scoring itself is unchanged since "1".
+ */
+export const SCORING_VERSION = "2";
 
 export type Responses = Record<string, number>;
 

@@ -1,7 +1,8 @@
 /**
- * Downloads and loads public reference data: O*NET occupations and interest profiles, the
- * O*NET 30.0 work values (dropped from 31.0), the NCES CIP–SOC crosswalk (majors ↔ careers),
- * and College Scorecard institutions and their undergraduate programs (field-of-study data).
+ * Downloads and loads public reference data: O*NET occupations, interest profiles and work styles
+ * (31.0; work styles are AI/Expert ratings, see src/lib/reference/work-styles.ts), the O*NET 30.0
+ * work values (dropped from 31.0), the NCES CIP–SOC crosswalk (majors ↔ careers), and College
+ * Scorecard institutions and their undergraduate programs (field-of-study data).
  *
  *   npm run data:load            # downloads into .data/reference (cached) and loads
  *
@@ -23,10 +24,12 @@ import {
   majors,
   occupationInterests,
   occupationValues,
+  occupationWorkStyles,
   occupations,
 } from "../src/db/schema";
 import {
   collectCollegePrograms,
+  collectWorkStyles,
   parseCipMajor,
   parseCipSoc,
   parseCollege,
@@ -34,6 +37,7 @@ import {
   parseOccupation,
   parseOccupationInterest,
   parseOccupationValue,
+  parseWorkStyle,
 } from "../src/lib/reference/parsers";
 
 const DIR = ".data/reference";
@@ -42,6 +46,7 @@ const SOURCES = {
   occupations: `${ONET}/occupation_data.csv`,
   jobZones: `${ONET}/job_zones.csv`,
   interests: `${ONET}/career_interest_types.csv`,
+  workStyles: `${ONET}/work_styles.csv`,
   workValues: "https://www.onetcenter.org/dl_files/database/db_30_0_text/Work%20Values.txt",
   crosswalk: "https://nces.ed.gov/ipeds/cipcode/Files/CIP2020_SOC2018_Crosswalk.xlsx",
   scorecard: "https://ed-public-download.scorecard.network/downloads/Most-Recent-Cohorts-Institution_06102026.zip",
@@ -105,6 +110,9 @@ async function main() {
   const valueRows = (await collect(createReadStream(files.workValues), parseOccupationValue, "\t")).filter((r) =>
     codes.has(r.occupationCode),
   );
+  const workStyleRows = collectWorkStyles(await collect(createReadStream(files.workStyles), parseWorkStyle)).filter((r) =>
+    codes.has(r.occupationCode),
+  );
 
   const sheet = await readSheet(files.crosswalk, "CIP-SOC");
   const [header, ...body] = sheet;
@@ -125,6 +133,7 @@ async function main() {
   await db.transaction(async (tx) => {
     await tx.delete(occupationInterests);
     await tx.delete(occupationValues);
+    await tx.delete(occupationWorkStyles);
     await tx.delete(occupations);
     await tx.delete(cipSocLinks);
     await tx.delete(majors);
@@ -133,6 +142,7 @@ async function main() {
     for (const batch of chunks(occupationRows)) await tx.insert(occupations).values(batch);
     for (const batch of chunks(interestRows)) await tx.insert(occupationInterests).values(batch);
     for (const batch of chunks(valueRows)) await tx.insert(occupationValues).values(batch);
+    for (const batch of chunks(workStyleRows)) await tx.insert(occupationWorkStyles).values(batch);
     for (const batch of chunks(majorRows)) await tx.insert(majors).values(batch);
     for (const batch of chunks(linkRows)) await tx.insert(cipSocLinks).values(batch);
     for (const batch of chunks(collegeRows, 500)) await tx.insert(colleges).values(batch);
@@ -141,6 +151,7 @@ async function main() {
 
   console.log(
     `Loaded ${occupationRows.length} occupations, ${interestRows.length} interest scores, ${valueRows.length} work value scores, ` +
+      `${workStyleRows.length} work style ratings (${new Set(workStyleRows.map((r) => r.occupationCode)).size} occupations), ` +
       `${majorRows.length} majors, ${linkRows.length} major–career links, ${collegeRows.length} colleges, ` +
       `${programRows.length} college programs.`,
   );

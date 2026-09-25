@@ -1,16 +1,96 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { addNorthStarAction, removeNorthStarAction } from "@/app/actions/discover";
 import { OnetDataAttribution } from "@/components/attribution";
 import { Button, Card, FormMessage, Notice, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
-import { RIASEC_INFO } from "@/lib/assessments/instruments";
+import { type BigFive, RIASEC_INFO } from "@/lib/assessments/instruments";
+import { latestResult } from "@/lib/assessments/service";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { JOB_ZONE_INFO, getCareer } from "@/lib/careers";
 import { collegeSearchHref } from "@/lib/colleges/search";
 import { MAX_NORTH_STARS, listNorthStars } from "@/lib/goals";
 import { PATHWAY_INFO } from "@/lib/matching/match";
+import {
+  WORK_STYLE_INFO,
+  type WorkStyle,
+  distinctiveStyles,
+  getOccupationWorkStyles,
+  strengthsForCareer,
+} from "@/lib/reference/work-styles";
+
+function StyleItem({ style, children }: { style: WorkStyle; children?: ReactNode }) {
+  const info = WORK_STYLE_INFO[style];
+  return (
+    <li>
+      <span className="font-medium">{info.name}.</span> <span className="text-muted">{info.description}</span>
+      {children}
+    </li>
+  );
+}
+
+/**
+ * The work styles that most set this career apart (O*NET Distinctiveness Rank). For a student who
+ * took the personality activity, the ones their strengths fit, and the rest as skills anyone can
+ * build. Everyone else sees only the career's styles, with nothing about them.
+ */
+function CareerStrengths({ styles, traits, askToTake }: { styles: WorkStyle[]; traits?: Record<BigFive, number>; askToTake: boolean }) {
+  const mine = traits ? strengthsForCareer(styles, traits) : null;
+  return (
+    <Card>
+      <h2 className="font-medium">{mine ? "Where your strengths help" : "Strengths that help in this work"}</h2>
+      <p className="mt-1 text-sm text-muted">The work styles that most set this career apart from others.</p>
+      {mine ? (
+        <>
+          {mine.helps.length > 0 && (
+            <>
+              <h3 className="mt-4 text-sm font-medium">Your strengths that fit</h3>
+              <ul className="mt-2 space-y-2 text-sm">
+                {mine.helps.map(({ style, strength }) => (
+                  <StyleItem key={style} style={style}>
+                    {" "}
+                    <Link href="/discover/personality" className="underline underline-offset-2">
+                      Fits your strength: {strength.name}
+                    </Link>
+                  </StyleItem>
+                ))}
+              </ul>
+            </>
+          )}
+          {mine.building.length > 0 && (
+            <>
+              <h3 className="mt-4 text-sm font-medium">Skills you can build</h3>
+              <p className="mt-1 text-sm text-muted">Anyone can grow these with practice, in class, on a team, in a club or at a job.</p>
+              <ul className="mt-2 space-y-2 text-sm">
+                {mine.building.map((style) => (
+                  <StyleItem key={style} style={style} />
+                ))}
+              </ul>
+            </>
+          )}
+        </>
+      ) : (
+        <ul className="mt-3 space-y-2 text-sm">
+          {styles.map((style) => (
+            <StyleItem key={style} style={style} />
+          ))}
+        </ul>
+      )}
+      {askToTake && (
+        <p className="mt-3 text-sm">
+          <Link href="/discover/personality" className="inline-flex min-h-11 items-center underline underline-offset-2">
+            Find your strengths to see which of these fit you (5 min)
+          </Link>
+        </p>
+      )}
+      <p className="mt-3 text-xs text-muted">
+        O*NET made these ratings with a mix of AI and expert judgment, so treat them as a starting point.
+      </p>
+    </Card>
+  );
+}
 
 export async function generateMetadata({ params }: PageProps<"/careers/[code]">): Promise<Metadata> {
   const career = await getCareer(await getDb(), (await params).code);
@@ -25,7 +105,11 @@ export default async function CareerPage({ params, searchParams }: PageProps<"/c
   if (!career) notFound();
 
   const user = await getCurrentUser();
-  const stars = user?.role === "student" ? await listNorthStars(db, user.id) : [];
+  const [stars, styles, personality] = await Promise.all([
+    user?.role === "student" ? listNorthStars(db, user.id) : [],
+    getOccupationWorkStyles(db, code).then((s) => distinctiveStyles(s)),
+    user?.role === "student" ? latestResult(db, user.id, "personality") : null,
+  ]);
   const isStar = stars.some((s) => s.occupationCode === code);
   const zone = career.jobZone ? JOB_ZONE_INFO[career.jobZone] : null;
   // Opened from the free quiz's results (?from=quiz), or a student's own results page.
@@ -62,6 +146,10 @@ export default async function CareerPage({ params, searchParams }: PageProps<"/c
           <p className="mt-1 text-sm text-muted">{RIASEC_INFO[career.interests[0].area].description}</p>
         </Card>
       </div>
+
+      {styles.length > 0 && (
+        <CareerStrengths styles={styles} traits={personality?.scores.traits} askToTake={user?.role === "student" && !personality} />
+      )}
 
       <Card>
         <h2 className="font-medium">College majors that lead here</h2>

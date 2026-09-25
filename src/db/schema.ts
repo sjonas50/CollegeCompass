@@ -358,6 +358,28 @@ export const occupationValues = pgTable(
   (t) => [primaryKey({ columns: [t.occupationCode, t.value] })],
 );
 
+/**
+ * O*NET 31.0 Work Styles: 21 styles (like Attention to Detail or Empathy) per occupation, with
+ * both of the file's scales. O*NET rated them with a hybrid AI/expert method (Domain Source
+ * "AI/Expert"), not by surveying workers, so they are used lightly and described as estimates.
+ */
+export const occupationWorkStyles = pgTable(
+  "occupation_work_styles",
+  {
+    occupationCode: text("occupation_code")
+      .notNull()
+      .references(() => occupations.code, { onDelete: "cascade" }),
+    // Our id for the style, e.g. "attention_to_detail" (WORK_STYLES in src/lib/reference/work-styles.ts).
+    style: text("style").notNull(),
+    // Work Styles Impact (WI), −3 to +3: how much the style helps (+) or gets in the way of (−) the work.
+    impact: real("impact").notNull(),
+    // Distinctiveness Rank (DR): 1 is the style that most sets this occupation apart from others.
+    // Null when the style isn't among the occupation's ranked ones (up to 10; published as 0).
+    distinctiveRank: smallint("distinctive_rank"),
+  },
+  (t) => [primaryKey({ columns: [t.occupationCode, t.style] })],
+);
+
 // ---------------------------------------------------------------------------
 // Assessments and career matching (student data — deleted with the student)
 //
