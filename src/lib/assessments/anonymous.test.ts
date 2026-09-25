@@ -5,7 +5,6 @@ import {
   answeredCount,
   describeSavedQuiz,
   emptySavedAssessment,
-  interestAreasText,
   isFinished,
   parseStoredAssessment,
   readSavedAssessment,
@@ -206,8 +205,6 @@ describe("describing a saved quiz on a shared device", () => {
   it("names the top interests without assuming whose quiz it is", () => {
     const answers = Object.fromEntries(INTEREST_ITEMS.map((i) => [i.id, i.area === "A" ? 5 : i.area === "S" ? 4 : i.area === "E" ? 3 : 1]));
     expect(topInterestsText(answers)).toBe("artistic, social and enterprising");
-    expect(interestAreasText("RI")).toBe("realistic and investigative");
-    expect(interestAreasText("C")).toBe("conventional");
     const saved = { ...emptySavedAssessment(), answers, savedAt: at(8, 23) };
     expect(describeSavedQuiz(saved, now)).toBe(
       "Someone finished the free interest quiz on this device yesterday. Their top interests were artistic, social and enterprising.",

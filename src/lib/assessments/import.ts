@@ -13,7 +13,8 @@ import { computeMatches, loadOccupationProfiles } from "../matching/service";
 import { consumeRateLimit } from "../rate-limit";
 import { type SavedAssessmentError, validateAreaScores, validateSavedAssessment } from "./anonymous";
 import { INSTRUMENTS, RIASEC, type Riasec } from "./instruments";
-import { SCORING_VERSION, score } from "./scoring";
+import { interestPattern, noAreaStandsOut } from "./interest-pattern";
+import { type InterestScores, SCORING_VERSION, score } from "./scoring";
 
 /**
  * Server side of the free interest quiz (see ./anonymous.ts): career matches for visitors without
@@ -93,21 +94,21 @@ export async function matchFreeAssessment(
   if (profiles.length === 0) return { ok: false, error: "unavailable" };
   const ranked = rankForStudent({ interests: areas }, profiles, FREE_MATCH_LIMITS);
   const interestsByCode = new Map(profiles.map((p) => [p.code, p.interests]));
-  const code = interestCode(areas);
   const explanation = templateExplanation(
-    code,
+    areas,
     ranked.map((r) => ({ occupationCode: r.code, interests: interestsByCode.get(r.code) })),
   );
   const why = new Map(explanation.careers.map((c) => [c.code, c.why]));
+  const noLead = noAreaStandsOut(interestPattern(areas));
   return {
     ok: true,
-    code,
+    code: interestCode(areas),
     overview: explanation.overview,
     careers: ranked.map((r) => ({
       code: r.code,
       title: r.title,
       pathway: pathwayFor(r.jobZone),
-      fit: fitLabel(r.score),
+      fit: fitLabel(r.score, { noLead }),
       why: why.get(r.code) ?? "",
     })),
   };
@@ -213,7 +214,7 @@ function isImported(attempt: { startedAt: Date; completedAt: Date | null }): boo
   return attempt.completedAt !== null && attempt.startedAt.getTime() === attempt.completedAt.getTime();
 }
 
-export type UndoableImport = { attemptId: string; code: string; undoUntil: Date };
+export type UndoableImport = { attemptId: string; code: string; areas: Record<Riasec, number>; undoUntil: Date };
 
 /** The student's interest results, when they came from the free quiz and can still be taken back. */
 export async function undoableImport(db: Db, studentUserId: string, now = new Date()): Promise<UndoableImport | null> {
@@ -238,7 +239,8 @@ export async function undoableImport(db: Db, studentUserId: string, now = new Da
   if (!latest?.completedAt || !isImported(latest)) return null;
   const undoUntil = new Date(latest.completedAt.getTime() + IMPORT_UNDO_DAYS * DAY);
   if (now >= undoUntil) return null;
-  return { attemptId: latest.id, code: String(latest.scores.code), undoUntil };
+  const { code, areas } = latest.scores as InterestScores;
+  return { attemptId: latest.id, code, areas, undoUntil };
 }
 
 export type RemoveImportResult = { ok: true } | { ok: false; error: "not_allowed" | "not_undoable" };

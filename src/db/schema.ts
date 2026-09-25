@@ -407,6 +407,8 @@ export type MatchExplanation = {
   careers: { code: string; why: string }[];
   /** "ai" when written by the model, "template" when generated without it. */
   source: "ai" | "template";
+  /** Which interest facts the model was given (see EXPLANATION_FACTS_VERSION); missing before version 2. */
+  factsVersion?: number;
 };
 
 export const matchRuns = pgTable(

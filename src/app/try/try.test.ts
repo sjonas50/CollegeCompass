@@ -227,7 +227,32 @@ describe("free quiz pages", () => {
     expect(state.user).toBe(student);
     const page = text(await render(SavedPage(savedPageProps())));
     expect(page).toContain("Your quiz results are saved to your account.");
-    expect(page).toContain("Your top interests are artistic, social and");
+    // The other four areas all scored 0, so none of them is named as a third top interest.
+    expect(page).toContain("Your top interests are artistic and social.");
+  });
+
+  it.each([
+    // Every answer "Not sure".
+    ["the same", { R: 3, I: 3, A: 3, S: 3, E: 3, C: 3 }, "You rated all six interest areas about the same."],
+    // "Dislike" on the Conventional activities and "Strongly dislike" on the rest.
+    ["below 'Not sure'", { C: 2 }, "You leaned toward disliking all six interest areas."],
+  ])("says why no area stands out when every area was rated %s", async (_, byArea: Partial<Record<Riasec, number>>, line: string) => {
+    await signInStudent();
+    const quiz = Object.fromEntries(INTEREST_ITEMS.map((i) => [i.id, byArea[i.area] ?? 1]));
+    expect(await importSavedResultsAction(serializeSavedAssessment({ ...emptySavedAssessment(), answers: quiz }))).toEqual({ ok: true });
+    const page = text(await render(SavedPage(savedPageProps())));
+    expect(page).toContain(`Your quiz results are saved to your account. ${line}`);
+    expect(page).not.toContain("Your top interests");
+  });
+
+  it("names only the areas that reached 'Not sure' as top interests", async () => {
+    await signInStudent();
+    // "Dislike" on every social activity: the code is "ASR", but Social isn't an interest.
+    const quiz = Object.fromEntries(INTEREST_ITEMS.map((i) => [i.id, i.area === "A" ? 5 : i.area === "S" ? 2 : 1]));
+    expect(await importSavedResultsAction(serializeSavedAssessment({ ...emptySavedAssessment(), answers: quiz }))).toEqual({ ok: true });
+    const page = text(await render(SavedPage(savedPageProps())));
+    expect(page).toContain("Your top interests are artistic.");
+    expect(page).not.toMatch(/social|You leaned/);
   });
 
   it("lets a student take back someone else's quiz and take it themselves", async () => {
@@ -351,7 +376,7 @@ describe("keeping the free results", () => {
     const finished = { ...emptySavedAssessment(), answers, savedAt: yesterday.getTime() };
     const unticked = renderToStaticMarkup(createElement(SavedQuizChoice, { saved: finished }));
     expect(text(unticked)).toContain(
-      "Someone finished the free interest quiz on this device yesterday. Their top interests were artistic, social and",
+      "Someone finished the free interest quiz on this device yesterday. Their top interests were artistic and social.",
     );
     expect(text(unticked)).toContain("Only add them if you took the quiz.");
     expect(unticked).not.toContain(SAVED_ASSESSMENT_FIELD);

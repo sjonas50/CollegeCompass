@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { finishAssessmentAction, saveAnswersAction } from "@/app/actions/discover";
 import { Button, FormMessage } from "@/components/ui";
-
-type Item = { id: string; text: string };
-type Option = { value: number; label: string };
+import { type Item, type Option, QuestionList, UnansweredHint, questionRange, showQuestion, usePageTurns } from "./question-list";
 
 const PAGE_SIZE = 6;
 
@@ -32,13 +30,16 @@ export function Questionnaire({
   const [answers, setAnswers] = useState<Record<string, number>>(initial);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
+  const { list, turned, announcement } = usePageTurns(questionRange(page, PAGE_SIZE, items.length));
+  const hintId = useId();
 
   const pageItems = items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  const pageComplete = pageItems.every((i) => answers[i.id] !== undefined);
+  const unanswered = pageItems.filter((i) => answers[i.id] === undefined).length;
   const answered = items.filter((i) => answers[i.id] !== undefined).length;
   const isLast = page === pages - 1;
 
   function next() {
+    if (pending) return;
     const pageAnswers = Object.fromEntries(pageItems.map((i) => [i.id, answers[i.id]]));
     setError(undefined);
     startTransition(async () => {
@@ -50,8 +51,13 @@ export function Questionnaire({
       const res = await saveAnswersAction(attemptId, pageAnswers);
       if (!res.ok) return setError("We couldn't save your answers. Please try again.");
       setPage(page + 1);
-      window.scrollTo({ top: 0 });
+      turned();
     });
+  }
+
+  function back() {
+    setPage(page - 1);
+    turned();
   }
 
   return (
@@ -66,55 +72,77 @@ export function Questionnaire({
         <div className="mt-2 h-2 rounded-full bg-border" aria-hidden>
           <div className="h-2 rounded-full bg-accent transition-all" style={{ width: `${(answered / items.length) * 100}%` }} />
         </div>
+        <p className="sr-only" aria-live="polite">
+          {announcement}
+        </p>
       </div>
 
-      <ol className="space-y-4">
-        {pageItems.map((item) => (
-          <li key={item.id} className="rounded-xl border border-border bg-surface p-4">
-            <fieldset>
-              <legend className="font-medium">{item.text}</legend>
-              <div className="mt-3 grid gap-2 sm:grid-cols-5">
-                {options.map((opt) => {
-                  const selected = answers[item.id] === opt.value;
-                  return (
-                    <label
-                      key={opt.value}
-                      className={`flex min-h-11 cursor-pointer items-center justify-center rounded-lg border px-2 text-center text-sm focus-within:outline-2 focus-within:outline-accent ${
-                        selected ? "border-accent bg-accent text-accent-foreground" : "border-border hover:bg-background"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={item.id}
-                        value={opt.value}
-                        checked={selected}
-                        onChange={() => setAnswers((a) => ({ ...a, [item.id]: opt.value }))}
-                        className="sr-only"
-                      />
-                      {opt.label}
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-          </li>
-        ))}
-      </ol>
+      <QuestionList
+        listRef={list}
+        items={pageItems}
+        options={options}
+        answers={answers}
+        onAnswer={(itemId, value) => setAnswers((a) => ({ ...a, [itemId]: value }))}
+      />
 
       <div className="mt-6 space-y-3">
         <FormMessage message={error} />
-        <div className="flex gap-2">
-          {page > 0 && (
-            <Button variant="secondary" onClick={() => setPage(page - 1)} disabled={pending}>
-              Back
-            </Button>
-          )}
-          <Button onClick={next} disabled={!pageComplete || pending}>
-            {pending ? "Saving…" : isLast ? "See my results" : "Next"}
-          </Button>
-        </div>
+        <PageButtons
+          back={page > 0 ? back : undefined}
+          next={next}
+          nextLabel={isLast ? "See my results" : "Next"}
+          unanswered={unanswered}
+          hintId={hintId}
+          pending={pending}
+        />
+        <UnansweredHint
+          id={hintId}
+          count={unanswered}
+          onShow={() => showQuestion(list.current, pageItems.findIndex((i) => answers[i.id] === undefined))}
+        />
         <p className="text-sm text-muted">Your answers save as you go, so you can stop and come back anytime.</p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Back and Next. While a page saves, Next stays focusable (aria-disabled, and `next` ignores it)
+ * rather than disabled: a disabled button drops keyboard focus to the start of the page, and if the
+ * save fails focus is still on Next, under the error, to try again. On success the page turn moves
+ * focus to the first new question (see usePageTurns).
+ */
+export function PageButtons({
+  back,
+  next,
+  nextLabel,
+  unanswered,
+  hintId,
+  pending,
+}: {
+  back?: () => void;
+  next: () => void;
+  nextLabel: string;
+  unanswered: number;
+  hintId: string;
+  pending: boolean;
+}) {
+  return (
+    <div className="flex gap-2">
+      {back && (
+        <Button variant="secondary" onClick={back} disabled={pending}>
+          Back
+        </Button>
+      )}
+      <Button
+        onClick={next}
+        disabled={unanswered > 0}
+        aria-disabled={pending || undefined}
+        aria-describedby={unanswered > 0 ? hintId : undefined}
+        className="aria-disabled:cursor-wait aria-disabled:opacity-60"
+      >
+        {pending ? "Saving…" : nextLabel}
+      </Button>
     </div>
   );
 }

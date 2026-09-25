@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { OnetDataAttribution, OnetToolsAttribution } from "@/components/attribution";
-import { PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { FreeResults } from "./free-results";
@@ -20,7 +19,7 @@ export default async function TryResultsPage() {
   const viewer = await resultsViewer(await getDb(), await getCurrentUser());
   return (
     <div className="space-y-8">
-      <PageHeading title="Your direction, for now" />
+      {/* The heading is there too: it depends on whether this browser holds a finished quiz. */}
       <FreeResults viewer={viewer} />
       <div className="space-y-1 border-t border-border pt-4">
         <OnetToolsAttribution />
