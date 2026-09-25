@@ -98,8 +98,9 @@ function parseCareerQuery(text: string): Alternative[] {
   const typed = titleWords(text.slice(0, 60))
     .filter((w) => w.length > 1 && !FILLER_WORDS.has(w))
     .slice(0, 6);
-  const synonym = (key: string) => CAREER_SYNONYMS[key];
-  const group = (key: string) => CAREER_GROUPS[key];
+  // Own keys only: "constructor" is a word someone might type, not something every object has.
+  const synonym = (key: string) => (Object.hasOwn(CAREER_SYNONYMS, key) ? CAREER_SYNONYMS[key] : undefined);
+  const group = (key: string) => (Object.hasOwn(CAREER_GROUPS, key) ? CAREER_GROUPS[key] : undefined);
   const segments: Alternative[][] = [];
   const term = (words: string): Alternative => ({ terms: [words.split(" ").map((word) => ({ word, forms: wordForms(word) }))], groups: [] });
   for (let i = 0; i < typed.length; i++) {

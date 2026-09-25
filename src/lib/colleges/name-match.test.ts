@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createTestDb } from "@/db";
 import { colleges } from "@/db/schema";
-import { initials, initialsSql, nameWords, wordMatch, wordsSql } from "./name-match";
+import { initials, initialsSql, nameWords, typedWords, wordMatch, wordsSql } from "./name-match";
 import { insertColleges } from "./test-fixtures";
 
 describe("nameWords", () => {
@@ -17,6 +17,12 @@ describe("nameWords", () => {
     // Only whole words are short forms.
     expect(nameWords("Fortis College Mountainside")).toEqual(["fortis", "college", "mountainside"]);
     expect(nameWords("  %  ")).toEqual([]);
+  });
+
+  it("reads words that are also JavaScript object properties as ordinary words", () => {
+    // Before: "constructor" came back as the built-in Object function, so it could never match.
+    expect(nameWords("Constructor Academy")).toEqual(["constructor", "academy"]);
+    expect(nameWords("toString __proto__ hasOwnProperty valueOf")).toEqual(["tostring", "proto", "hasownproperty", "valueof"]);
   });
 
   it("finds initials, leaving out small words", () => {
@@ -53,6 +59,25 @@ describe("nameWords", () => {
       expect(row.words, row.name).toBe(` ${nameWords(row.name).join(" ")} `);
       expect(row.initials, row.name).toBe(initials(nameWords(row.name)));
     }
+  });
+});
+
+describe("typedWords", () => {
+  it("reads a separate St at the end, after another word, as State", () => {
+    expect(typedWords("Penn St")).toEqual(["penn", "state"]);
+    expect(typedWords("ohio st.")).toEqual(["ohio", "state"]);
+    expect(typedWords("San Diego St. ")).toEqual(["san", "diego", "state"]);
+    expect(typedWords("Kent-St")).toEqual(["kent", "state"]);
+  });
+
+  it("reads St anywhere else, and Saint anywhere, as Saint", () => {
+    expect(typedWords("St Olaf")).toEqual(["st", "olaf"]);
+    expect(typedWords("St.")).toEqual(["st"]);
+    expect(typedWords("The St")).toEqual(["st"]);
+    expect(typedWords("Mount St. Mary's")).toEqual(["mt", "st", "marys"]);
+    expect(typedWords("Mount Saint")).toEqual(["mt", "st"]);
+    expect(typedWords("Pennst")).toEqual(["pennst"]);
+    expect(typedWords("constructor")).toEqual(["constructor"]);
   });
 });
 

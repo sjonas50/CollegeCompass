@@ -280,7 +280,8 @@ describe("searchColleges by name", () => {
       { unitId: 38, name: "Forsyth Technical Community College", city: "Winston-Salem", enrollment: 7_113 },
     ]);
     // Before: Louisiana State ("st" as in State, "louis" as in Louisiana) above Washington University.
-    expect(await names({ q: "Saint Louis" })).toEqual(["Saint Louis University", "Washington University in St Louis"]);
+    // One name starts with St Louis and the other ends with it, so the larger college comes first.
+    expect(await names({ q: "Saint Louis" })).toEqual(["Washington University in St Louis", "Saint Louis University"]);
     // Before: Thomas Edison State University.
     expect(await names({ q: "St Thomas" })).toEqual(["University of St Thomas"]);
     // Before: Monty Tech first ("mt" as initials) and Middle Tennessee State University.
@@ -288,6 +289,72 @@ describe("searchColleges by name", () => {
     expect(await names({ q: "Mt" })).toEqual(["Mount Holyoke College"]);
     // Before: Forsyth Technical Community College ("ft" as initials).
     expect(await names({ q: "Fort" })).toEqual(["Fort Lewis College"]);
+  });
+
+  it("reads a trailing St as State, and a leading or middle St as Saint", async () => {
+    await insertColleges(db, [
+      { unitId: 30, name: "Pennsylvania State University-Main Campus", city: "University Park", enrollment: 42_284 },
+      { unitId: 31, name: "Pennsylvania State University-Penn State Harrisburg", city: "Middletown", enrollment: 4_031 },
+      { unitId: 32, name: "University of Pennsylvania", city: "Philadelphia", enrollment: 10_650 },
+      { unitId: 33, name: "Michigan State University", city: "East Lansing", enrollment: 40_922 },
+      { unitId: 34, name: "University of Michigan-Ann Arbor", city: "Ann Arbor", enrollment: 34_177 },
+      { unitId: 35, name: "San Diego State University", city: "San Diego", enrollment: 35_377 },
+      { unitId: 36, name: "University of San Diego", city: "San Diego", enrollment: 5_671 },
+      { unitId: 37, name: "Kent State University at Kent", city: "Kent", enrollment: 19_320 },
+      { unitId: 38, name: "Ohio University-Eastern Campus", city: "Saint Clairsville", enrollment: 298 },
+      { unitId: 39, name: "Mount St. Mary's University", city: "Emmitsburg", enrollment: 1_768 },
+    ]);
+    // Before: nothing for "Penn St", "Michigan St", "San Diego St" and "Kent St".
+    for (const q of ["Penn St", "penn st.", "PENN ST"]) {
+      expect(await names({ q }), q).toEqual(["Pennsylvania State University-Main Campus", "Pennsylvania State University-Penn State Harrisburg"]);
+    }
+    expect(await names({ q: "Michigan St" })).toEqual(["Michigan State University"]);
+    expect(await names({ q: "San Diego St." })).toEqual(["San Diego State University"]);
+    expect(await names({ q: "Kent St" })).toEqual(["Kent State University at Kent"]);
+    // Before: only Ohio University-Eastern Campus, in St. Clairsville.
+    expect(await names({ q: "Ohio St" })).toEqual([
+      "Ohio State University-Main Campus",
+      "Ohio State University-Lima Campus",
+      "Ohio State College of Barber Styling",
+      "Ohio State Beauty Academy",
+    ]);
+    expect(await names({ q: "St Olaf" })).toEqual(["St Olaf College"]);
+    expect(await names({ q: "Mount St. Mary's" })).toEqual(["Mount St. Mary's University"]);
+  });
+
+  it("puts a campus named for the place typed with the names starting with it, larger colleges first", async () => {
+    await insertColleges(db, [
+      { unitId: 30, name: "University of California-Davis", city: "Davis", enrollment: 32_253 },
+      { unitId: 31, name: "Davis Technical College", city: "Kaysville", enrollment: 3_027 },
+      { unitId: 32, name: "Davis & Elkins College", city: "Elkins", enrollment: 661 },
+      { unitId: 33, name: "Davis College", city: "Pottersville", enrollment: 106 },
+      { unitId: 34, name: "University of Wisconsin-Madison", city: "Madison", enrollment: 36_902 },
+      { unitId: 35, name: "Madison Area Technical College", city: "Madison", enrollment: 10_073 },
+      { unitId: 36, name: "Herzing University-Madison", city: "Madison", enrollment: 2_494 },
+      { unitId: 37, name: "Madison Adult Career Center", city: "Mansfield", enrollment: 81 },
+    ]);
+    // Before: University of California-Davis after Davis College, and University of
+    // Wisconsin-Madison after Madison Adult Career Center.
+    expect(await names({ q: "davis" })).toEqual([
+      "University of California-Davis",
+      "Davis Technical College",
+      "Davis & Elkins College",
+      "Davis College",
+    ]);
+    expect(await names({ q: "madison" })).toEqual([
+      "University of Wisconsin-Madison",
+      "Madison Area Technical College",
+      "Herzing University-Madison",
+      "Madison Adult Career Center",
+    ]);
+  });
+
+  it("reads words that are also JavaScript object properties as ordinary words", async () => {
+    // A made-up name. Before: "constructor" was read as the built-in Object function and found nothing.
+    await insertColleges(db, [{ unitId: 30, name: "Constructor Trades Academy", city: "Toledo", enrollment: 50 }]);
+    expect(await names({ q: "constructor" })).toEqual(["Constructor Trades Academy"]);
+    expect(await names({ q: "toString" })).toEqual([]);
+    expect(await names({ q: "__proto__" })).toEqual([]);
   });
 
   it("puts names starting with the words first, larger colleges first", async () => {

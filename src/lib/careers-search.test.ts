@@ -188,6 +188,21 @@ describe("findCareers matching", () => {
     expect(await titles("high school")).toEqual(["Secondary School Teachers, Except Special and Career/Technical Education", "Special Education Teachers, Secondary School"]);
   });
 
+  it("reads words that are also JavaScript object properties as ordinary words", async () => {
+    // Before: "constructor" was read as a group of codes, so "home constructor" threw on Home Health Aides.
+    await insertCareers(db, [
+      ["31-1121.00", "Home Health Aides"],
+      ["47-2061.00", "Construction Laborers"],
+    ]);
+    for (const query of ["home constructor", "constructor", "constructors", "home toString", "__proto__", "construction __proto__"]) {
+      expect(await findCareers(db, query), query).toEqual({ total: 0, page: 1, pageSize: CAREER_PAGE_SIZE, results: [] });
+    }
+    // A made-up title with the word.
+    await insertCareers(db, [["99-0002.00", "Home Constructors"]]);
+    expect(await titles("home constructor")).toEqual(["Home Constructors"]);
+    expect(await titles("constructors")).toEqual(["Home Constructors"]);
+  });
+
   it("keeps the everyday-word lists small, lowercase and singular", () => {
     expect(Object.keys(CAREER_SYNONYMS).length + Object.keys(CAREER_GROUPS).length).toBeLessThanOrEqual(20);
     for (const [key, terms] of Object.entries(CAREER_SYNONYMS)) {

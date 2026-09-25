@@ -14,22 +14,38 @@ const SMALL_WORDS = new Set(["of", "the", "and", "at", "in", "for", "on"]);
 const ACCENTED = "áàâäãåéèêëíìîïóòôöõúùûüñçý’'";
 const PLAIN = "aaaaaaeeeeiiiiooooouuuuncy";
 
-/**
- * Lowercase words without accents or punctuation. "&" is "and", apostrophes are dropped
- * ("John's" → "johns"), Saint/Mount/Fort are st/mt/ft, and a leading "The" is left out:
- * "The College of St. John's" → ["college", "of", "st", "johns"].
- */
-export function nameWords(text: string): string[] {
-  const words = text
+/** Lowercase words without accents or punctuation, "&" as "and" and apostrophes dropped. */
+function plainWords(text: string): string[] {
+  return text
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
     .toLowerCase()
     .replace(/['’]/g, "")
     .replace(/&/g, " and ")
     .split(/[^a-z0-9]+/)
-    .filter(Boolean)
-    .map((w) => SHORT_FORMS[w] ?? w);
+    .filter(Boolean);
+}
+
+/**
+ * Lowercase words without accents or punctuation. "&" is "and", apostrophes are dropped
+ * ("John's" → "johns"), Saint/Mount/Fort are st/mt/ft, and a leading "The" is left out:
+ * "The College of St. John's" → ["college", "of", "st", "johns"].
+ */
+export function nameWords(text: string): string[] {
+  // Own keys only: a word like "constructor" is a word, not something every object has.
+  const words = plainWords(text).map((w) => (Object.hasOwn(SHORT_FORMS, w) ? SHORT_FORMS[w] : w));
   return words[0] === "the" ? words.slice(1) : words;
+}
+
+/**
+ * The words typed in the name box, as nameWords spells them, except that a separate "St" or "St."
+ * at the end, after another word, is State, as sports fans write it ("Penn St", "Ohio St", "San
+ * Diego St."). A leading "St" is Saint ("St Olaf"), and so is "Saint" wherever it's typed.
+ */
+export function typedWords(text: string): string[] {
+  const words = nameWords(text);
+  if (words.length > 1 && plainWords(text).at(-1) === "st") words[words.length - 1] = "state";
+  return words;
 }
 
 /** First letters of a name's words, leaving out "of", "the" and the like: "mit", "ucla", "nyu". */
@@ -119,12 +135,14 @@ export type NameMatch = {
  * Matches words typed in the name box. Each word must start a word of the college's name or
  * city ("tech" finds Technical College; "art" doesn't find Smart), or start the name's initials
  * ("mit"). Words of 4 or more letters may also be inside a word of the name ("tech" finds
- * Polytechnic). "st", "mt" and "ft" (and Saint, Mount and Fort) are whole words only.
+ * Polytechnic). "st", "mt" and "ft" (and Saint, Mount and Fort) are whole words only, and a
+ * trailing "St" is State (see typedWords).
  * Ranks, best first, with larger colleges first within each (see searchColleges):
  * 0. the name is what was typed, or its initials are ("MIT");
  * 1. the name starts with the words typed ("Ohio State University-Main Campus"; "The Ohio State
  *    University" too, since a leading "The" is left out), or with "University of" or "College of"
- *    and them ("University of Kentucky", "The University of Alabama");
+ *    and them ("University of Kentucky", "The University of Alabama"), or ends with them, as a
+ *    campus's name does ("University of California-Davis", "University of Wisconsin-Madison");
  * 2. every word typed starts a word in the name, or the name's initials start with it;
  * 3. every word typed is in the name, some inside a word ("Virginia Polytechnic Institute" for
  *    "virginia tech");
@@ -132,7 +150,7 @@ export type NameMatch = {
  * Null when nothing searchable was typed.
  */
 export function nameMatch(name: SQLWrapper, city: SQLWrapper, text: string | undefined): NameMatch | null {
-  const typed = nameWords((text ?? "").slice(0, 100)).slice(0, 6);
+  const typed = typedWords((text ?? "").slice(0, 100)).slice(0, 6);
   if (!typed.length) return null;
   const nameText = wordsSql(name);
   const nameInitials = initialsSql(nameText);
@@ -149,7 +167,7 @@ export function nameMatch(name: SQLWrapper, city: SQLWrapper, text: string | und
   const single = typed.length === 1 && mightBeInitials(phrase);
   const startsWord = (w: string) => sql`${nameText} like ${wordStart(w)}`;
   const inName = (w: string) => (matchesInside(w) ? sql`${nameText} like ${`%${w}%`}` : startsWord(w));
-  const named = [` ${phrase} %`, ` university of ${phrase} %`, ` college of ${phrase} %`].map((p) => sql`${nameText} like ${p}`);
+  const named = [` ${phrase} %`, ` university of ${phrase} %`, ` college of ${phrase} %`, `% ${phrase} `].map((p) => sql`${nameText} like ${p}`);
   const rank = sql`case
     when ${nameText} = ${` ${phrase} `}${single ? sql` or ${nameInitials} = ${phrase}` : sql``} then 0
     when ${or(...named)} then 1
