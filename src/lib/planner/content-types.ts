@@ -1,6 +1,7 @@
 import type { PlannerState, SchoolGrade, SchoolYear } from "./common";
 import type { CourseTypeId, CourseTypeLevel, CteCluster } from "./course-types";
 import type { CipRoutingRule, FamilyId, MathTarget } from "./families";
+import type { RigorTier } from "./engine-io";
 import type { CitationId, ContentHeader, PathKind, RuleSetId } from "./rules";
 
 // ---------------------------------------------------------------------------
@@ -9,7 +10,7 @@ import type { CitationId, ContentHeader, PathKind, RuleSetId } from "./rules";
 // ---------------------------------------------------------------------------
 
 /**
- * src/content/course-rules/{ut,tn,tx}/generic-catalog.json: "classes most <State> high schools
+ * src/content/planner/{ut,tn,tx}/generic-catalog.json: "classes most <State> high schools
  * offer", used for any grade (or subject) with no confirmed school list. Seeded from the state's
  * own lists: USBE's criteria list [UT S3], Policy 3.205 [TN S6b], §74.3(b)(2) [TX S2].
  */
@@ -51,7 +52,7 @@ export const GAP_OPTION_KINDS = [
 export type GapOptionKind = (typeof GAP_OPTION_KINDS)[number];
 
 /**
- * src/content/course-rules/{ut,tn,tx}/facts.json: verified facts the options menu and the fill
+ * src/content/planner/{ut,tn,tx}/facts.json: verified facts the options menu and the fill
  * step depend on. An option kind with no entry here is never offered in that state (except
  * test_score, which comes from a rule set's testRoutes, and lower_target and ask_counselor,
  * which need no facts).
@@ -63,6 +64,21 @@ export type FactsFile = ContentHeader & {
   options: OptionFact[];
   /** Middle-school math notes shown on the grade 7-8 placement card. */
   middleSchoolMath: { text: string; cite: CitationId[] }[];
+  /**
+   * What the state calls things families will see ("concurrent enrollment (CE)" in Utah, "dual
+   * credit" in Texas), and words that mean something else there (Utah's "dual enrollment").
+   * The level labels in course-types.ts (STATE_LEVEL_LABELS) must agree (a content test pins it).
+   */
+  terms?: StateTerm[];
+};
+
+export type StateTerm = {
+  id: string;
+  /** "Concurrent enrollment (CE)". */
+  term: string;
+  /** Plain explanation, grade 9 reading level. */
+  meaning: string;
+  cite: CitationId[];
 };
 
 export type OptionFact = {
@@ -79,7 +95,7 @@ export type OptionFact = {
 };
 
 /**
- * src/content/major-prep/families.json: one entry per family (all 32), the research's reviewed
+ * src/content/planner/major-prep/families.json: one entry per family (all 32), the research's reviewed
  * targets. Three kinds of claim render differently: published gates ("UT Austin requires"),
  * reviewed targets ("College Compass suggests"), and product heuristics (load warnings).
  */
@@ -121,7 +137,49 @@ export type MajorFamilyContent = {
   cautions: { id: string; text: string; cite: CitationId[] }[];
 };
 
-/** src/content/major-prep/cip-routing.json: ordered, first match wins. */
+/** src/content/planner/major-prep/cip-routing.json: ordered, first match wins. */
 export type CipRoutingFile = ContentHeader & {
   rules: CipRoutingRule[];
+};
+
+/**
+ * src/content/planner/major-prep/rigor.json: rigor guidance by how selective the student's target
+ * colleges are (design §5.3, Appendix C). The tier comes from the most selective target college's
+ * admission rate using the app's cutoffs (RIGOR_CUTOFFS); the tier only shapes *level* choices
+ * (honors, AP, IB, college credit) in the family's "rigor first" subjects. It never adds a class,
+ * never counts AP classes, and never goes past the student's own load cap.
+ */
+export type RigorFile = ContentHeader & {
+  /** Exactly one per RIGOR_TIERS entry, in that order. */
+  tiers: RigorTierContent[];
+  /** Published program gates that raise the tier one step for a college and family. */
+  raises: RigorRaise[];
+  /** Product guardrails (heuristics drawn from the evidence, not published rules). */
+  guardrails: { id: string; text: string; cite: CitationId[] }[];
+};
+
+export type RigorTierContent = {
+  id: RigorTier;
+  /** "Admits most". */
+  label: string;
+  /** How the tier is detected, in plain words. */
+  detection: string;
+  /** What colleges in the tier expect, from their own pages (cited). */
+  expects: string;
+  /** What the planner aims for: a College Compass suggestion, not a published rule. */
+  target: string;
+  /** The earliest grade the planner may suggest a college-level version of a "rigor first" class; null = never. */
+  collegeLevelFromGrade: SchoolGrade | null;
+  /** How many of the family's "rigor first" subjects (at most 3) get a level suggestion. */
+  rigorFirstSubjects: number;
+  cite: CitationId[];
+};
+
+export type RigorRaise = {
+  id: string;
+  colleges: number[];
+  families: FamilyId[];
+  /** "UT Austin requires calculus readiness for these majors." */
+  text: string;
+  cite: CitationId[];
 };

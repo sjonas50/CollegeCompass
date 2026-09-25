@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { type IsoDate, type SchoolYear, schoolYearLabel } from "./common";
-import type { ContentHeader, Review } from "./rules";
+import type { ReviewNotice } from "./engine-io";
+import type { ContentHeader, Review, RuleSet } from "./rules";
 
 // Review status, fingerprints and staleness for planner content. For the proof of concept nothing
 // is hidden on review status: draft content shows to everyone with the "not yet reviewed" label.
@@ -49,4 +50,42 @@ export function isStale(today: IsoDate, verifiedForSchoolYear: SchoolYear, reche
 /** "Checked for 2026-27; being re-checked. Ask your counselor." */
 export function staleLabel(verifiedForSchoolYear: SchoolYear): string {
   return `Checked for ${schoolYearLabel(verifiedForSchoolYear)}; being re-checked. Ask your counselor.`;
+}
+
+/** The notice the path, print view and graduation pages show for one content file on `today`. */
+export function reviewNotice(file: ContentHeader, today: IsoDate): ReviewNotice {
+  const stale = isStale(today, file.verifiedForSchoolYear);
+  return {
+    fileId: file.id,
+    status: file.review.status,
+    label: reviewLabel(file.review),
+    stale,
+    staleLabel: stale ? staleLabel(file.verifiedForSchoolYear) : null,
+  };
+}
+
+/**
+ * Whether one rule set is past its file's school year or its own re-check date. A stale rule set
+ * shows "being re-checked" on every line and nothing from it can show Done.
+ */
+export function ruleSetFreshness(ruleSet: Pick<RuleSet, "recheckBy">, file: ContentHeader, today: IsoDate): { stale: boolean; label: string | null } {
+  const stale = isStale(today, file.verifiedForSchoolYear, ruleSet.recheckBy);
+  return { stale, label: stale ? staleLabel(file.verifiedForSchoolYear) : null };
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Days from `today` until content goes stale (the earlier of July 31 after its school year and
+ * its re-check date); negative once it is. `npm run check:rules` warns from 60 days ahead, but
+ * dates never fail CI, so safety fixes can always deploy.
+ */
+export function daysUntilStale(today: IsoDate, verifiedForSchoolYear: SchoolYear, recheckBy?: IsoDate): number {
+  const limit = recheckBy !== undefined && recheckBy < staleAfter(verifiedForSchoolYear) ? recheckBy : staleAfter(verifiedForSchoolYear);
+  return Math.round((Date.parse(`${limit}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY_MS);
+}
+
+/** A counselor-reviewed file whose fingerprint still matches what the counselor saw. */
+export function isReviewCurrent(file: ContentHeader): boolean {
+  return file.review.status === "counselor-reviewed" && file.review.contentFingerprint === contentFingerprint(file);
 }

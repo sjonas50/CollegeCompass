@@ -1,0 +1,603 @@
+{
+  "schemaVersion": 1,
+  "id": "tn.options",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "TN-S1": {
+      "title": "High School Policy 2.103 (revised 02/21/2025)",
+      "url": "https://www.tn.gov/content/dam/tn/stateboardofeducation/documents/2025-sbe-meetings/february-21%2c-2025-sbe-meeting/2-21-25%20VII%20E%20High%20School%20Policy%202.103%20Attachment.pdf",
+      "publisher": "Tennessee State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S3": {
+      "title": "Graduation Permissions and Substitutions Policy 3.103 (revised 02/27/2026)",
+      "url": "https://www.tn.gov/content/dam/tn/stateboardofeducation/documents/2026-sbe-meetings/february-27%2c-2026-sbe-meeting/02-27-26%20VI%20F%20Graduation%20Permissions%20and%20Substitutions%20Policy%203.103%20Clean.pdf",
+      "publisher": "Tennessee State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "tn-2103-i-18",
+      "source": "TN-S1",
+      "pinpoint": "I(18)",
+      "quote": "Students shall complete three (3) credits in an elective focus."
+    },
+    {
+      "id": "tn-2103-i-18a",
+      "source": "TN-S1",
+      "pinpoint": "I(18)(a)",
+      "quote": "The elective focus may be CTE, science and math, humanities, fine arts, AP/IB, Cambridge, computer science or other areas approved by the local board of education."
+    },
+    {
+      "id": "tn-2103-i-18a-cte",
+      "source": "TN-S1",
+      "pinpoint": "I(18)(a)",
+      "quote": "Students completing a CTE elective focus shall complete three (3) credits in the same CTE career cluster or state- approved program of study."
+    },
+    {
+      "id": "tn-2103-iii-hsbp-focus",
+      "source": "TN-S1",
+      "pinpoint": "III(d)",
+      "quote": "Select an elective focus and plan courses accordingly by the end of grade ten (10);"
+    },
+    {
+      "id": "tn-3103-i-4b",
+      "source": "TN-S3",
+      "pinpoint": "I(4)(b)",
+      "quote": "A course used to substitute for a graduation requirement course may also fulfill the requirements toward the student’s elective focus"
+    }
+  ],
+  "state": "TN",
+  "kind": "options",
+  "ruleSets": [
+    {
+      "id": "tn.focus.cte",
+      "state": "TN",
+      "kind": "graduation_option",
+      "title": "Elective focus: Career and technical education",
+      "issuer": { "kind": "state", "name": "Tennessee" },
+      "plainSummary": "Your elective focus is 3 credits on top of your other requirements. This one is career and technical education. Choose your focus by the end of 10th grade; you can change it with your counselor.",
+      "strength": "required",
+      "strengthCite": "tn-2103-i-18",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": { "choice": { "key": "tnElectiveFocus", "value": "cte" } },
+      "variants": [
+        {
+          "id": "tn.focus.cte.2023",
+          "cohort": { "to": 2023 },
+          "extends": "tn.grad.2023",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 credits in one career and technical program",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "cte": true }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-18a-cte"],
+              "note": "All three credits must be in the same career cluster or state program of study.",
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "focus.list",
+              "text": "We couldn't confirm Tennessee's list of career and technical programs of study. Your school's own list decides which classes go together."
+            }
+          ]
+        },
+        {
+          "id": "tn.focus.cte.2024",
+          "cohort": { "from": 2024 },
+          "extends": "tn.grad.2024",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 credits in one career and technical program",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "cte": true }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-18a-cte"],
+              "note": "All three credits must be in the same career cluster or state program of study.",
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "focus.list",
+              "text": "We couldn't confirm Tennessee's list of career and technical programs of study. Your school's own list decides which classes go together."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tn.focus.math-science",
+      "state": "TN",
+      "kind": "graduation_option",
+      "title": "Elective focus: Math and science",
+      "issuer": { "kind": "state", "name": "Tennessee" },
+      "plainSummary": "Your elective focus is 3 credits on top of your other requirements. This one is math and science. Choose your focus by the end of 10th grade; you can change it with your counselor.",
+      "strength": "required",
+      "strengthCite": "tn-2103-i-18",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": { "choice": { "key": "tnElectiveFocus", "value": "math_science" } },
+      "variants": [
+        {
+          "id": "tn.focus.math-science.2023",
+          "cohort": { "to": 2023 },
+          "extends": "tn.grad.2023",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 more math or science credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["math", "science"], "exclude": ["math.ms", "sci.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ]
+        },
+        {
+          "id": "tn.focus.math-science.2024",
+          "cohort": { "from": 2024 },
+          "extends": "tn.grad.2024",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 more math or science credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["math", "science"], "exclude": ["math.ms", "sci.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tn.focus.humanities",
+      "state": "TN",
+      "kind": "graduation_option",
+      "title": "Elective focus: Humanities",
+      "issuer": { "kind": "state", "name": "Tennessee" },
+      "plainSummary": "Your elective focus is 3 credits on top of your other requirements. This one is humanities. Choose your focus by the end of 10th grade; you can change it with your counselor.",
+      "strength": "required",
+      "strengthCite": "tn-2103-i-18",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": { "choice": { "key": "tnElectiveFocus", "value": "humanities" } },
+      "variants": [
+        {
+          "id": "tn.focus.humanities.2023",
+          "cohort": { "to": 2023 },
+          "extends": "tn.grad.2023",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 more humanities credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["english", "social_studies", "world_language"], "exclude": ["ela.ms", "ss.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "focus.list",
+              "text": "Tennessee doesn't list which classes count as humanities. Ask your counselor which classes your school counts."
+            }
+          ]
+        },
+        {
+          "id": "tn.focus.humanities.2024",
+          "cohort": { "from": 2024 },
+          "extends": "tn.grad.2024",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 more humanities credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["english", "social_studies", "world_language"], "exclude": ["ela.ms", "ss.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "focus.list",
+              "text": "Tennessee doesn't list which classes count as humanities. Ask your counselor which classes your school counts."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tn.focus.fine-arts",
+      "state": "TN",
+      "kind": "graduation_option",
+      "title": "Elective focus: Fine arts",
+      "issuer": { "kind": "state", "name": "Tennessee" },
+      "plainSummary": "Your elective focus is 3 credits on top of your other requirements. This one is fine arts. Choose your focus by the end of 10th grade; you can change it with your counselor.",
+      "strength": "required",
+      "strengthCite": "tn-2103-i-18",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": { "choice": { "key": "tnElectiveFocus", "value": "fine_arts" } },
+      "variants": [
+        {
+          "id": "tn.focus.fine-arts.2023",
+          "cohort": { "to": 2023 },
+          "extends": "tn.grad.2023",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 more fine arts credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ]
+        },
+        {
+          "id": "tn.focus.fine-arts.2024",
+          "cohort": { "from": 2024 },
+          "extends": "tn.grad.2024",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 more fine arts credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tn.focus.ap-ib",
+      "state": "TN",
+      "kind": "graduation_option",
+      "title": "Elective focus: AP or IB",
+      "issuer": { "kind": "state", "name": "Tennessee" },
+      "plainSummary": "Your elective focus is 3 credits on top of your other requirements. This one is ap or ib. Choose your focus by the end of 10th grade; you can change it with your counselor.",
+      "strength": "required",
+      "strengthCite": "tn-2103-i-18",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": { "choice": { "key": "tnElectiveFocus", "value": "ap_ib" } },
+      "variants": [
+        {
+          "id": "tn.focus.ap-ib.2023",
+          "cohort": { "to": 2023 },
+          "extends": "tn.grad.2023",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 AP or IB credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "levels": ["ap", "ib"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ]
+        },
+        {
+          "id": "tn.focus.ap-ib.2024",
+          "cohort": { "from": 2024 },
+          "extends": "tn.grad.2024",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 AP or IB credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "levels": ["ap", "ib"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tn.focus.cambridge",
+      "state": "TN",
+      "kind": "graduation_option",
+      "title": "Elective focus: Cambridge",
+      "issuer": { "kind": "state", "name": "Tennessee" },
+      "plainSummary": "Your elective focus is 3 credits on top of your other requirements. This one is cambridge. Choose your focus by the end of 10th grade; you can change it with your counselor.",
+      "strength": "required",
+      "strengthCite": "tn-2103-i-18",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": { "choice": { "key": "tnElectiveFocus", "value": "cambridge" } },
+      "variants": [
+        {
+          "id": "tn.focus.cambridge.2023",
+          "cohort": { "to": 2023 },
+          "extends": "tn.grad.2023",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 Cambridge credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "levels": ["cambridge"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ]
+        },
+        {
+          "id": "tn.focus.cambridge.2024",
+          "cohort": { "from": 2024 },
+          "extends": "tn.grad.2024",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 Cambridge credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "levels": ["cambridge"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tn.focus.computer-science",
+      "state": "TN",
+      "kind": "graduation_option",
+      "title": "Elective focus: Computer science",
+      "issuer": { "kind": "state", "name": "Tennessee" },
+      "plainSummary": "Your elective focus is 3 credits on top of your other requirements. This one is computer science. Choose your focus by the end of 10th grade; you can change it with your counselor.",
+      "strength": "required",
+      "strengthCite": "tn-2103-i-18",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": { "choice": { "key": "tnElectiveFocus", "value": "computer_science" } },
+      "variants": [
+        {
+          "id": "tn.focus.computer-science.2023",
+          "cohort": { "to": 2023 },
+          "extends": "tn.grad.2023",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 computer science credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ]
+        },
+        {
+          "id": "tn.focus.computer-science.2024",
+          "cohort": { "from": 2024 },
+          "extends": "tn.grad.2024",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "focus",
+              "label": "3 computer science credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "area": "electives"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "focus.by-10",
+              "text": "Choose your elective focus by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus"]
+            },
+            {
+              "id": "focus.substitutes",
+              "text": "A class that stands in for another requirement can also count toward your focus.",
+              "cite": ["tn-3103-i-4b"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

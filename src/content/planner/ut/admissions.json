@@ -1,0 +1,331 @@
+{
+  "schemaVersion": 1,
+  "id": "ut.admissions",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "UT-S18": {
+      "title": "Utah launches Admit Utah, a simplified path to college admissions for all high school students",
+      "url": "https://ushe.edu/utah-launches-admit-utah-a-simplified-path-to-college-admissions-for-all-high-school-students/",
+      "publisher": "Utah System of Higher Education",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S20": {
+      "title": "Freshman Admission Standards",
+      "url": "https://admissions.utah.edu/apply/freshman-students/undergraduate-admissions-standards/",
+      "publisher": "University of Utah",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S22": {
+      "title": "Utah Direct",
+      "url": "https://admissions.utah.edu/information-resources/utah-direct/",
+      "publisher": "University of Utah",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S25": {
+      "title": "Admission Requirements",
+      "url": "https://www.usu.edu/admissions/apply/index.php",
+      "publisher": "Utah State University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S28": {
+      "title": "New Freshmen (In-State)",
+      "url": "https://www.weber.edu/admissions/new-freshman-in-state.html",
+      "publisher": "Weber State University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S31": {
+      "title": "Admissions FAQ",
+      "url": "https://www.uvu.edu/admissions/faq/",
+      "publisher": "Utah Valley University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S32": {
+      "title": "First-Year Student Admission",
+      "url": "https://www.suu.edu/admissions/first-year/index.html",
+      "publisher": "Southern Utah University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S34": {
+      "title": "First-Year Admissions",
+      "url": "https://admissions.utahtech.edu/first-year-admissions/",
+      "publisher": "Utah Tech University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "ut-admitutah-guarantee",
+      "source": "UT-S18",
+      "quote": "Every Utah high school student will receive a notification of their guaranteed admission to one or more of the 16 public colleges and universities in Utah, regardless of their GPA, making higher education more accessible than ever before."
+    },
+    {
+      "id": "ut-suu-gpa",
+      "source": "UT-S32",
+      "quote": "First-time freshmen with a cumulative unweighted GPA of 2.4 or higher will be fully admitted. First-time freshmen with a GPA of 2.39 and below will be provisionally admitted to SUU and the Comprehensive Academic Support & Success (COMPASS) program."
+    },
+    {
+      "id": "ut-uofu-gpa",
+      "source": "UT-S20",
+      "pinpoint": "Secondary Factors",
+      "quote": "While there is no minimum GPA to be admitted, 75% of freshmen admits to the U over the last few years had an unweighted high school GPA of 3.5 or higher."
+    },
+    {
+      "id": "ut-uofu-graduation",
+      "source": "UT-S20",
+      "pinpoint": "Primary Factors",
+      "quote": "Satisfactory completion of all high school graduation requirements"
+    },
+    {
+      "id": "ut-uofu-holistic",
+      "source": "UT-S20",
+      "quote": "We assess applicants using a holistic review process that goes beyond GPA to evaluate each student’s individual qualifications and potential."
+    },
+    {
+      "id": "ut-uofu-rigor",
+      "source": "UT-S20",
+      "pinpoint": "Primary Factors",
+      "quote": "Rigorous course selection throughout high school career (particularly college-level courses such as AP, IB, and dual/concurrent enrollment)"
+    },
+    {
+      "id": "ut-uofu-test-optional",
+      "source": "UT-S20",
+      "pinpoint": "Test Optional FAQs",
+      "quote": "The University of Utah is Test Optional for freshman applications for admission."
+    },
+    { "id": "ut-usu-gpa", "source": "UT-S25", "quote": "2.8-4.0 GPA - Admitted in Good Standing" },
+    {
+      "id": "ut-usu-prep-1",
+      "source": "UT-S25",
+      "pinpoint": "Recommended High School Prep Work",
+      "quote": "4 years of English 4 years of Math (One class beyond math 3) 3.5 years of Social Science"
+    },
+    {
+      "id": "ut-usu-prep-2",
+      "source": "UT-S25",
+      "pinpoint": "Recommended High School Prep Work",
+      "quote": "3 years of Lab-Based Science (one each: biology, chemistry, and physics) 2 years of a world language (same language, taken progressively during grades 9-12)"
+    },
+    { "id": "ut-usu-recommended", "source": "UT-S25", "quote": "Recommended High School Prep Work" },
+    { "id": "ut-usu-test-optional", "source": "UT-S25", "quote": "Admission to USU is test optional" },
+    {
+      "id": "ut-utah-direct",
+      "source": "UT-S22",
+      "quote": "Students who receive Utah Direct letters have taken a full load of core academic courses and have earned strong grades in all high school classes. Additionally, students who have maintained a cumulative unweighted GPA of 3.5 will receive an offer of guaranteed admission."
+    },
+    {
+      "id": "ut-utahtech-open",
+      "source": "UT-S34",
+      "quote": "As an open-enrollment institution, we prioritize your education and help navigate your path toward a successful career."
+    },
+    {
+      "id": "ut-uvu-open",
+      "source": "UT-S31",
+      "quote": "Utah Valley University is an open-admissions institution. UVU does not require a minimum GPA or ACT/SAT score for admissions, nor are there any course requirements."
+    },
+    { "id": "ut-weber-open", "source": "UT-S28", "quote": "There is no GPA Requirement to enroll at Weber State." },
+    { "id": "ut-weber-open-enrollment", "source": "UT-S28", "quote": "Weber is an open-enrollment university" }
+  ],
+  "state": "UT",
+  "kind": "admissions",
+  "ruleSets": [
+    {
+      "id": "usu.recommended",
+      "state": "UT",
+      "kind": "college_admission",
+      "title": "Utah State University recommended high school classes",
+      "issuer": { "kind": "college", "name": "Utah State University" },
+      "plainSummary": "Utah State recommends 4 years of English, 4 years of math (one class beyond Secondary Math III), 3.5 years of social science, 3 years of lab science (biology, chemistry and physics), and 2 years of one world language. It's the only Utah public university that publishes a course pattern, so we use it when you haven't picked a Utah college.",
+      "strength": "recommended",
+      "strengthCite": "ut-usu-recommended",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "appliesWhen": { "colleges": [230728], "stateDefault": true },
+      "variants": [
+        {
+          "id": "usu.recommended.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "english",
+              "label": "English (4 years)",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+              "cite": ["ut-usu-prep-1"],
+              "area": "english"
+            },
+            {
+              "id": "math",
+              "label": "Math (4 years)",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "math.four",
+                  "label": "4 years of math",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [{ "subjects": ["math"], "exclude": ["math.ms"] }],
+                  "cite": ["ut-usu-prep-1"]
+                },
+                {
+                  "id": "math.beyond3",
+                  "label": "One class beyond Secondary Math III",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "capabilities": ["advanced_math_after_alg2"] }],
+                  "cite": ["ut-usu-prep-1"]
+                }
+              ],
+              "area": "math"
+            },
+            {
+              "id": "social",
+              "label": "Social science (3.5 years)",
+              "kind": "credits",
+              "units": 14,
+              "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+              "cite": ["ut-usu-prep-1"],
+              "area": "social_studies"
+            },
+            {
+              "id": "science",
+              "label": "Lab science (3 years)",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "science.bio",
+                  "label": "Biology",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.bio", "sci.bio2"] }],
+                  "cite": ["ut-usu-prep-2"]
+                },
+                {
+                  "id": "science.chem",
+                  "label": "Chemistry",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.chem", "sci.chem2"] }],
+                  "cite": ["ut-usu-prep-2"]
+                },
+                {
+                  "id": "science.phys",
+                  "label": "Physics",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.phys", "sci.phys2", "sci.phys_eng"] }],
+                  "cite": ["ut-usu-prep-2"]
+                }
+              ],
+              "area": "science"
+            },
+            {
+              "id": "language",
+              "label": "2 years of one world language",
+              "kind": "same_language",
+              "levels": 2,
+              "cite": ["ut-usu-prep-2"],
+              "area": "world_language",
+              "note": "The same language, taken in order in grades 9-12."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "infoCards": [
+    {
+      "id": "ut.card.admit-utah",
+      "title": "Admit Utah",
+      "text": "Every Utah high school student gets a notice of guaranteed admission to at least one of Utah's 16 public colleges and universities, whatever their GPA. You still apply to each school.",
+      "confidence": "verified",
+      "cite": ["ut-admitutah-guarantee"]
+    },
+    {
+      "id": "ut.card.uofu",
+      "title": "University of Utah",
+      "unitId": 230764,
+      "tests": "optional",
+      "text": "The U uses holistic review and publishes no required course list. It looks most at the rigor of your classes (especially AP, IB and concurrent enrollment), your grade trends, your unweighted GPA and finishing Utah's graduation requirements. There's no minimum GPA; 75% of recent admitted freshmen had an unweighted GPA of 3.5 or higher.",
+      "confidence": "verified",
+      "cite": ["ut-uofu-holistic", "ut-uofu-rigor", "ut-uofu-graduation", "ut-uofu-gpa", "ut-uofu-test-optional"]
+    },
+    {
+      "id": "ut.card.utah-direct",
+      "title": "Utah Direct (University of Utah)",
+      "unitId": 230764,
+      "text": "In partner districts, students who took a full load of core academic classes and kept a cumulative unweighted GPA of 3.5 get a letter offering guaranteed admission to the U. The U doesn't define a full load of core classes, so ask your counselor.",
+      "confidence": "verified",
+      "cite": ["ut-utah-direct"]
+    },
+    {
+      "id": "ut.card.usu",
+      "title": "Utah State University",
+      "unitId": 230728,
+      "tests": "optional",
+      "text": "Utah State is test optional. A 2.8 to 4.0 high school GPA is admitted in good standing; other routes exist below that. Its recommended classes are listed above.",
+      "confidence": "verified",
+      "cite": ["ut-usu-test-optional", "ut-usu-gpa"]
+    },
+    {
+      "id": "ut.card.weber",
+      "title": "Weber State University",
+      "unitId": 230782,
+      "text": "Weber State is an open-enrollment university with no GPA requirement to enroll.",
+      "confidence": "verified",
+      "cite": ["ut-weber-open", "ut-weber-open-enrollment"]
+    },
+    {
+      "id": "ut.card.uvu",
+      "title": "Utah Valley University",
+      "unitId": 230737,
+      "tests": "not_required",
+      "text": "Utah Valley is open admission: no minimum GPA, no ACT or SAT score, and no course requirements for admission.",
+      "confidence": "verified",
+      "cite": ["ut-uvu-open"]
+    },
+    {
+      "id": "ut.card.suu",
+      "title": "Southern Utah University",
+      "unitId": 230603,
+      "text": "Southern Utah fully admits first-year students with a cumulative unweighted GPA of 2.4 or higher. Below that, students are admitted provisionally with an academic support program.",
+      "confidence": "verified",
+      "cite": ["ut-suu-gpa"]
+    },
+    {
+      "id": "ut.card.utah-tech",
+      "title": "Utah Tech University",
+      "unitId": 230171,
+      "text": "Utah Tech is an open-enrollment university.",
+      "confidence": "verified",
+      "cite": ["ut-utahtech-open"]
+    },
+    {
+      "id": "ut.card.snow",
+      "title": "Snow College",
+      "unitId": 230597,
+      "text": "We couldn't confirm Snow College's admission requirements. It's one of the 16 schools in Admit Utah. Check its admissions page or ask your counselor.",
+      "confidence": "unverified",
+      "cite": ["ut-admitutah-guarantee"]
+    },
+    {
+      "id": "ut.card.slcc",
+      "title": "Salt Lake Community College",
+      "unitId": 230746,
+      "text": "We couldn't confirm Salt Lake Community College's admission requirements. It's one of the 16 schools in Admit Utah. Check its admissions page or ask your counselor.",
+      "confidence": "unverified",
+      "cite": ["ut-admitutah-guarantee"]
+    }
+  ]
+}

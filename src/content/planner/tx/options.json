@@ -1,0 +1,1893 @@
+{
+  "schemaVersion": 1,
+  "id": "tx.options",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "TX-S1": {
+      "title": "19 TAC Chapter 74, Subchapter B, Graduation Requirements (August 2026 update)",
+      "url": "https://tea.texas.gov/laws-and-rules/sboe-rules-tac/sboe-tac-currently-effect/ch074b.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S13": {
+      "title": "Texas Education Code, Chapter 28",
+      "url": "https://statutes.capitol.texas.gov/Docs/ED/htm/ED.28.htm",
+      "publisher": "Texas Legislature",
+      "kind": "statute",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S14": {
+      "title": "Texas Education Code, Chapter 51",
+      "url": "https://statutes.capitol.texas.gov/Docs/ED/htm/ED.51.htm",
+      "publisher": "Texas Legislature",
+      "kind": "statute",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S15": {
+      "title": "Texas Education Code, Chapter 56",
+      "url": "https://statutes.capitol.texas.gov/Docs/ED/htm/ED.56.htm",
+      "publisher": "Texas Legislature",
+      "kind": "statute",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S26": {
+      "title": "19 TAC §22.233, TEXAS Grant priority",
+      "url": "https://texas-sos.appianportalsgov.com/rules-and-meetings?interface=VIEW_TAC_SUMMARY&recordId=228479",
+      "publisher": "Texas Higher Education Coordinating Board",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S37": {
+      "title": "Review and Decision Process",
+      "url": "https://admissions.utexas.edu/apply/review-decision-process/",
+      "publisher": "The University of Texas at Austin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "tx-22-233-h2",
+      "source": "TX-S26",
+      "pinpoint": "§22.233(h)(2)",
+      "quote": "have accomplished, or are on track to accomplish, any two or more of the following at the time a TEXAS Grant was offered:"
+    },
+    {
+      "id": "tx-74-11-g",
+      "source": "TX-S1",
+      "pinpoint": "§74.11(g)",
+      "quote": "A student may earn a distinguished level of achievement by successfully completing the curriculum requirements for the Foundation High School Program and the curriculum requirements for at least one endorsement"
+    },
+    {
+      "id": "tx-74-11-g-math-science",
+      "source": "TX-S1",
+      "pinpoint": "§74.11(g)",
+      "quote": "including four credits in science and four credits in mathematics to include Algebra II."
+    },
+    {
+      "id": "tx-74-13-a",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(a)",
+      "quote": "A student shall specify in writing an endorsement the student intends to earn upon entering Grade 9."
+    },
+    {
+      "id": "tx-74-13-b",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(b)",
+      "quote": "A district shall permit a student to enroll in courses under more than one endorsement before the student's junior year and to choose, at any time, to earn an endorsement other than the endorsement the student previously indicated."
+    },
+    {
+      "id": "tx-74-13-c",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(c)",
+      "quote": "A student must earn at least 26 credits to earn an endorsement."
+    },
+    {
+      "id": "tx-74-13-d",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(d)",
+      "quote": "A school district may define advanced courses and determine a coherent sequence of courses for an endorsement area,"
+    },
+    {
+      "id": "tx-74-13-e2",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(e)(2)",
+      "quote": "A fourth credit in mathematics that may be selected from one full credit or a combination of two half credits from two different courses, subject to prerequisite requirements, from the following courses:"
+    },
+    {
+      "id": "tx-74-13-e2-list",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(e)(2)(A)-(H)",
+      "quote": "(A) Algebra II; (B) Precalculus; (C) Advanced Quantitative Reasoning; (D) Independent Study in Mathematics; (E) Discrete Mathematics for Problem Solving; (F) Algebraic Reasoning; (G) Statistics; (H) a comparable Advanced Placement (AP) mathematics course"
+    },
+    {
+      "id": "tx-74-13-e2-list-2",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(e)(2)(I)-(N)",
+      "quote": "(I) AP Computer Science A; (J) International Baccalaureate (IB) Computer Science Higher Level; (K) Engineering Mathematics; (L) Statistics and Business Decision Making; (M) Mathematics for Medical Professionals; (N) Discrete Mathematics for Computer Science;"
+    },
+    {
+      "id": "tx-74-13-e4",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(e)(4)",
+      "quote": "The fourth mathematics credit may be a college preparatory mathematics course that is developed and offered pursuant to the TEC, §28.014."
+    },
+    {
+      "id": "tx-74-13-e6",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(e)(6)",
+      "quote": "An additional credit in science that may be selected from one full credit or a combination of two half credits from two different courses, subject to prerequisite requirements, from the following courses:"
+    },
+    {
+      "id": "tx-74-13-e6-list",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(e)(6)(A)-(H)",
+      "quote": "(A) Chemistry; (B) Physics; (C) Aquatic Science; (D) Astronomy; (E) Earth Systems Science; (F) Environmental Systems; (G) Specialized Topics in Science; (H) a comparable AP science course that does not count toward another credit required for graduation;"
+    },
+    {
+      "id": "tx-74-13-e6-list-2",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(e)(6)(I)-(S)",
+      "quote": "(I) Advanced Animal Science; (J) Advanced Plant and Soil Science; (K) Anatomy and Physiology; (L) Medical Microbiology; (M) Pathophysiology; (N) Food Science; (O) Forensic Science; (P) Biotechnology I; (Q) Biotechnology II; (R) Physics for Engineering; (S) Scientific Research and Design;"
+    },
+    {
+      "id": "tx-74-13-e6x",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(e)(6)(X)",
+      "quote": "a student pursuing an arts and humanities endorsement who has the written permission of the student's parent or a person standing in parental relation to the student may substitute a course that is not being used to satisfy another specific graduation requirement selected from:"
+    },
+    {
+      "id": "tx-74-13-e7",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(e)(7)",
+      "quote": "Two additional elective credits that may be selected from the list of courses specified in §74.11(g) or (h) of this title"
+    },
+    {
+      "id": "tx-74-13-f4",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(4)",
+      "quote": "Arts and humanities. A student may earn an arts and humanities endorsement by completing the requirements specified in subsection (e) of this section and:"
+    },
+    {
+      "id": "tx-74-13-f4ab",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(4)(A)-(B)",
+      "quote": "(A) five social studies credits by selecting courses from Chapter 113 of this title; or (B) four levels of the same language in a language other than English"
+    },
+    {
+      "id": "tx-74-13-f4e",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(4)(E)",
+      "quote": "(E) a coherent sequence of four credits by selecting courses from one or two categories or disciplines in fine arts from Chapter 117 of this title or innovative courses approved by the commissioner; or"
+    },
+    {
+      "id": "tx-74-13-f5",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(5)",
+      "quote": "Multidisciplinary studies. A student may earn a multidisciplinary studies endorsement by completing the requirements specified in subsection (e) of this section and:"
+    },
+    {
+      "id": "tx-74-13-f5a",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(5)(A)",
+      "quote": "(A) four advanced courses that prepare a student to enter the workforce successfully or postsecondary education without remediation from within one endorsement area or among endorsement areas that are not in a coherent sequence; or"
+    },
+    {
+      "id": "tx-74-13-f5b",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(5)(B)",
+      "quote": "(B) four credits in each of the four foundation subject areas to include chemistry and/or physics and English IV or a comparable AP or IB English course; or"
+    },
+    {
+      "id": "tx-74-13-f5c",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(5)(C)",
+      "quote": "(C) four credits in Advanced Placement, International Baccalaureate, or dual credit selected from English, mathematics, science, social studies, economics, languages other than English, or fine arts."
+    },
+    {
+      "id": "tx-74-13-f6",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(6)",
+      "quote": "STEM. Students who entered high school in the 2022-2023 school year or later may earn a STEM endorsement by completing the requirements specified in subsection (e) of this section, including Algebra II, chemistry, and physics or Physics for Engineering and:"
+    },
+    {
+      "id": "tx-74-13-f6a",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(6)(A)",
+      "quote": "(A) courses required to be designated a CTE completer in one of the following TEA-approved programs of study related to STEM: (i) biomedical sciences; (ii) civil engineering; (iii) cybersecurity; (iv) electrical engineering; (v) engineering foundations;"
+    },
+    {
+      "id": "tx-74-13-f6a-2",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(6)(A)",
+      "quote": "(vi) geospatial engineering and land surveying; (vii) mechanical and aerospace engineering; (viii) networking systems; (ix) nursing science; (x) programming and software development; (xi) renewable energy; (xii) robotics and automation technology; or (xiii) web development;"
+    },
+    {
+      "id": "tx-74-13-f6b",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(6)(B)",
+      "quote": "(B) three credits in mathematics by successfully completing Algebra II and two additional mathematics courses for which Algebra II is a prerequisite by selecting courses from subsection (e)(2) of this section;"
+    },
+    {
+      "id": "tx-74-13-f6c",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(6)(C)",
+      "quote": "(C) four credits in science by successfully completing chemistry, physics, and two additional science courses by selecting courses from subsection (e)(6) of this section; or"
+    },
+    {
+      "id": "tx-74-13-f6d",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(6)(D)",
+      "quote": "(D) in addition to chemistry, physics, and Algebra II, one additional mathematics course listed in subsection (e)(2) of this section for which Algebra II is a prerequisite and one additional science course listed in subsection (e)(6) of this section."
+    },
+    {
+      "id": "tx-74-13-f7",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(7)",
+      "quote": "Business and industry. Students who entered high school in the 2022- 2023 school year or later may earn a business and industry endorsement by completing the requirements specified in subsection (e) of this section and:"
+    },
+    {
+      "id": "tx-74-13-f7a",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(7)(A)",
+      "quote": "(A) courses required to be designated a CTE completer in one of the following TEA -approved programs of study related to business and industry:"
+    },
+    {
+      "id": "tx-74-13-f7b",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(7)(B)",
+      "quote": "(B) courses required to be designated a CTE completer in one of the following TEA -approved programs of study related to business and industry, if the mathematics and science requirements for the STEM endorsement are not met:"
+    },
+    {
+      "id": "tx-74-13-f7c",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(7)(C)",
+      "quote": "(C) four English credits by selecting courses from Chapter 110 of this title to include three levels in one of the following areas: (i) public speaking; (ii) debate; (iii) advanced broadcast journalism;"
+    },
+    {
+      "id": "tx-74-13-f8",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(8)",
+      "quote": "Public services. Students who entered high school in the 2022-2023 school year or later may earn a public services endorsement by completing the requirements specified in subsection (e) of this section and:"
+    },
+    {
+      "id": "tx-74-13-f8a",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(8)(A)",
+      "quote": "(A) courses required to be designated a CTE completer in one of the following TEA -approved programs of study related to public services:"
+    },
+    {
+      "id": "tx-74-13-f8b",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(8)(B)",
+      "quote": "(B) four courses in Junior Reserve Officer Training Corps (JROTC)."
+    },
+    {
+      "id": "tx-74-13-g",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(g)",
+      "quote": "A course completed as part of the set of four courses needed to satisfy an endorsement requirement may also satisfy a requirement under §74.12(b) and (c) of this title and subsection (e)(2), (4), (5), and (6) of this"
+    },
+    {
+      "id": "tx-tec-28-02123-a",
+      "source": "TX-S13",
+      "pinpoint": "§28.02123(a)",
+      "quote": "that the student is not required to complete an Algebra II course to graduate under the foundation high school program."
+    },
+    {
+      "id": "tx-tec-51-803-a",
+      "source": "TX-S14",
+      "pinpoint": "§51.803(a)",
+      "quote": "each general academic teaching institution shall admit an applicant for admission to the institution as an undergraduate student if the applicant graduated with a grade point average in the top 10 percent of the student's high school graduating class"
+    },
+    {
+      "id": "tx-tec-51-803-a2a",
+      "source": "TX-S14",
+      "pinpoint": "§51.803(a)(2)(A)(i)",
+      "quote": "at a public high school, the curriculum requirements established under Section 28.025 for the distinguished level of achievement under the foundation high school program; or"
+    },
+    {
+      "id": "tx-tec-51-803-a2b",
+      "source": "TX-S14",
+      "pinpoint": "§51.803(a)(2)(B)",
+      "quote": "achieved a score set by the Texas Higher Education Coordinating Board on a college entrance examination designated by coordinating board rule; and"
+    },
+    {
+      "id": "tx-tec-51-803-b",
+      "source": "TX-S14",
+      "pinpoint": "§51.803(b)",
+      "quote": "An applicant who does not satisfy the curriculum requirements prescribed by Subsection (a)(2)(A)(i) or (ii) is considered to have satisfied those requirements if the student completed the portion of the distinguished level of achievement under the foundation high school program curriculum"
+    },
+    {
+      "id": "tx-tec-51-803-d",
+      "source": "TX-S14",
+      "pinpoint": "§51.803(d)",
+      "quote": "a student's official transcript or diploma must, not later than the end of the student's junior year, indicate: (1) whether the student has satisfied or is on schedule to satisfy the requirements of Subsection (a)(2)(A)(i) or (ii), as applicable;"
+    },
+    {
+      "id": "tx-tec-56-3041-a2a-iv",
+      "source": "TX-S15",
+      "pinpoint": "§56.3041(a)(2)(A)(iv)",
+      "quote": "completion for high school credit of at least one advanced mathematics course following the successful completion of an Algebra II course or at least one advanced career and technical or technology applications course;"
+    },
+    {
+      "id": "tx-ut-top-5",
+      "source": "TX-S37",
+      "pinpoint": "Automatic Admission Decisions",
+      "quote": "Summer/Fall 2026 and Spring 2027 applicants: Top 5% • Summer/Fall 2027 and Spring 2028 applicants: Top 5%"
+    }
+  ],
+  "state": "TX",
+  "kind": "options",
+  "ruleSets": [
+    {
+      "id": "tx.endorse.stem",
+      "state": "TX",
+      "kind": "graduation_option",
+      "title": "STEM endorsement",
+      "issuer": { "kind": "program", "name": "the STEM endorsement" },
+      "plainSummary": "The STEM endorsement adds a 4th math, a 4th science and 2 electives to the Foundation program, and requires Algebra II, chemistry and physics plus one more set: extra math, extra science, one of each, or a STEM career and technical program.",
+      "strength": "required",
+      "strengthCite": "tx-74-13-f6",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": { "choice": { "key": "txEndorsements", "value": "stem" } },
+      "variants": [
+        {
+          "id": "tx.endorse.stem.pre2026",
+          "cohort": { "from": 2022, "to": 2025 },
+          "extends": "tx.fhsp.grad.pre2026",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "e.math4",
+              "label": "A 4th math credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                },
+                { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e2", "tx-74-13-e2-list", "tx-74-13-e2-list-2", "tx-74-13-e4"],
+              "area": "math",
+              "note": "Applied classes such as Mathematical Models with Applications don't count as this 4th math."
+            },
+            {
+              "id": "e.science4",
+              "label": "A 4th science credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                },
+                { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e6", "tx-74-13-e6-list", "tx-74-13-e6-list-2"],
+              "area": "science"
+            },
+            {
+              "id": "e.electives",
+              "label": "2 more elective credits",
+              "kind": "remaining_electives",
+              "units": 8,
+              "cite": ["tx-74-13-e7", "tx-74-13-c"],
+              "area": "electives"
+            },
+            {
+              "id": "stem.core",
+              "label": "Algebra II, chemistry and physics",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "stem.alg2",
+                  "label": "Algebra II",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg2"] }],
+                  "cite": ["tx-74-13-f6"],
+                  "shareable": true
+                },
+                {
+                  "id": "stem.chem",
+                  "label": "Chemistry",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.chem"] }, { "types": ["sci.chem2"], "levels": ["ap", "ib"] }],
+                  "cite": ["tx-74-13-f6"],
+                  "shareable": true
+                },
+                {
+                  "id": "stem.phys",
+                  "label": "Physics or Physics for Engineering",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.phys", "sci.phys_eng"] }, { "types": ["sci.phys2"], "levels": ["ap", "ib"] }],
+                  "cite": ["tx-74-13-f6"],
+                  "shareable": true
+                }
+              ],
+              "cite": ["tx-74-13-g"]
+            },
+            {
+              "id": "stem.set",
+              "label": "One more set of STEM classes",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "stem.math",
+                  "label": "Two more math classes that need Algebra II",
+                  "kind": "credits",
+                  "units": 8,
+                  "select": [{ "capabilities": ["advanced_math_after_alg2"] }],
+                  "cite": ["tx-74-13-f6b"],
+                  "shareable": true
+                },
+                {
+                  "id": "stem.science",
+                  "label": "Two more science classes beyond chemistry and physics",
+                  "kind": "credits",
+                  "units": 8,
+                  "select": [
+                    {
+                      "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"],
+                      "exclude": ["sci.chem", "sci.phys", "sci.phys_eng"]
+                    },
+                    {
+                      "subjects": ["science"],
+                      "levels": ["ap", "ib"],
+                      "exclude": ["sci.ms", "sci.chem", "sci.phys", "sci.phys_eng"]
+                    }
+                  ],
+                  "cite": ["tx-74-13-f6c"],
+                  "shareable": true
+                },
+                {
+                  "id": "stem.mixed",
+                  "label": "One more math class that needs Algebra II and one more science",
+                  "kind": "all",
+                  "of": [
+                    {
+                      "id": "stem.mixed.math",
+                      "label": "One more math class that needs Algebra II",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "capabilities": ["advanced_math_after_alg2"] }],
+                      "cite": ["tx-74-13-f6d"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "stem.mixed.science",
+                      "label": "One more science class",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [
+                        {
+                          "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"],
+                          "exclude": ["sci.chem", "sci.phys", "sci.phys_eng"]
+                        },
+                        {
+                          "subjects": ["science"],
+                          "levels": ["ap", "ib"],
+                          "exclude": ["sci.ms", "sci.chem", "sci.phys", "sci.phys_eng"]
+                        }
+                      ],
+                      "cite": ["tx-74-13-f6d"],
+                      "shareable": true
+                    }
+                  ]
+                },
+                {
+                  "id": "stem.cte",
+                  "label": "A STEM career and technical program of study",
+                  "kind": "credits",
+                  "units": 12,
+                  "select": [
+                    {
+                      "cte": true,
+                      "types": ["math.applied.medical", "math.applied.engineering", "sci.phys_eng", "sci.anat", "sci.biotech", "sci.microbio", "cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber", "cs.web", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.biomed", "cte.health_principles", "cte.medical_terminology", "cte.nurse_aide", "cte.energy.1", "cte.energy.2", "cte.energy.3", "cte.energy.4", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4", "cte.health.1", "cte.health.2", "cte.health.3", "cte.health.4", "cte.it.1", "cte.it.2", "cte.it.3", "cte.it.4"]
+                    }
+                  ],
+                  "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
+                  "shareable": true,
+                  "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                }
+              ],
+              "cite": ["tx-74-13-g"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "endorse.choose",
+              "text": "You name the endorsement you plan to earn when you start 9th grade, and you can switch at any time.",
+              "cite": ["tx-74-13-a", "tx-74-13-b"]
+            },
+            { "id": "endorse.26", "text": "An endorsement takes at least 26 credits.", "cite": ["tx-74-13-c"] }
+          ],
+          "unverified": [
+            {
+              "id": "cte-completer",
+              "text": "How many classes make you a 'completer' in a career and technical program of study depends on the program. We plan for three; ask your counselor what your program needs."
+            }
+          ]
+        },
+        {
+          "id": "tx.endorse.stem.2026",
+          "cohort": { "from": 2026 },
+          "extends": "tx.fhsp.grad.2026",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "e.math4",
+              "label": "A 4th math credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                },
+                { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e2", "tx-74-13-e2-list", "tx-74-13-e2-list-2", "tx-74-13-e4"],
+              "area": "math",
+              "note": "Applied classes such as Mathematical Models with Applications don't count as this 4th math."
+            },
+            {
+              "id": "e.science4",
+              "label": "A 4th science credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                },
+                { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e6", "tx-74-13-e6-list", "tx-74-13-e6-list-2"],
+              "area": "science"
+            },
+            {
+              "id": "e.electives",
+              "label": "2 more elective credits",
+              "kind": "remaining_electives",
+              "units": 8,
+              "cite": ["tx-74-13-e7", "tx-74-13-c"],
+              "area": "electives"
+            },
+            {
+              "id": "stem.core",
+              "label": "Algebra II, chemistry and physics",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "stem.alg2",
+                  "label": "Algebra II",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg2"] }],
+                  "cite": ["tx-74-13-f6"],
+                  "shareable": true
+                },
+                {
+                  "id": "stem.chem",
+                  "label": "Chemistry",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.chem"] }, { "types": ["sci.chem2"], "levels": ["ap", "ib"] }],
+                  "cite": ["tx-74-13-f6"],
+                  "shareable": true
+                },
+                {
+                  "id": "stem.phys",
+                  "label": "Physics or Physics for Engineering",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.phys", "sci.phys_eng"] }, { "types": ["sci.phys2"], "levels": ["ap", "ib"] }],
+                  "cite": ["tx-74-13-f6"],
+                  "shareable": true
+                }
+              ],
+              "cite": ["tx-74-13-g"]
+            },
+            {
+              "id": "stem.set",
+              "label": "One more set of STEM classes",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "stem.math",
+                  "label": "Two more math classes that need Algebra II",
+                  "kind": "credits",
+                  "units": 8,
+                  "select": [{ "capabilities": ["advanced_math_after_alg2"] }],
+                  "cite": ["tx-74-13-f6b"],
+                  "shareable": true
+                },
+                {
+                  "id": "stem.science",
+                  "label": "Two more science classes beyond chemistry and physics",
+                  "kind": "credits",
+                  "units": 8,
+                  "select": [
+                    {
+                      "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"],
+                      "exclude": ["sci.chem", "sci.phys", "sci.phys_eng"]
+                    },
+                    {
+                      "subjects": ["science"],
+                      "levels": ["ap", "ib"],
+                      "exclude": ["sci.ms", "sci.chem", "sci.phys", "sci.phys_eng"]
+                    }
+                  ],
+                  "cite": ["tx-74-13-f6c"],
+                  "shareable": true
+                },
+                {
+                  "id": "stem.mixed",
+                  "label": "One more math class that needs Algebra II and one more science",
+                  "kind": "all",
+                  "of": [
+                    {
+                      "id": "stem.mixed.math",
+                      "label": "One more math class that needs Algebra II",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "capabilities": ["advanced_math_after_alg2"] }],
+                      "cite": ["tx-74-13-f6d"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "stem.mixed.science",
+                      "label": "One more science class",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [
+                        {
+                          "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"],
+                          "exclude": ["sci.chem", "sci.phys", "sci.phys_eng"]
+                        },
+                        {
+                          "subjects": ["science"],
+                          "levels": ["ap", "ib"],
+                          "exclude": ["sci.ms", "sci.chem", "sci.phys", "sci.phys_eng"]
+                        }
+                      ],
+                      "cite": ["tx-74-13-f6d"],
+                      "shareable": true
+                    }
+                  ]
+                },
+                {
+                  "id": "stem.cte",
+                  "label": "A STEM career and technical program of study",
+                  "kind": "credits",
+                  "units": 12,
+                  "select": [
+                    {
+                      "cte": true,
+                      "types": ["math.applied.medical", "math.applied.engineering", "sci.phys_eng", "sci.anat", "sci.biotech", "sci.microbio", "cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber", "cs.web", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.biomed", "cte.health_principles", "cte.medical_terminology", "cte.nurse_aide", "cte.energy.1", "cte.energy.2", "cte.energy.3", "cte.energy.4", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4", "cte.health.1", "cte.health.2", "cte.health.3", "cte.health.4", "cte.it.1", "cte.it.2", "cte.it.3", "cte.it.4"]
+                    }
+                  ],
+                  "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
+                  "shareable": true,
+                  "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                }
+              ],
+              "cite": ["tx-74-13-g"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "endorse.choose",
+              "text": "You name the endorsement you plan to earn when you start 9th grade, and you can switch at any time.",
+              "cite": ["tx-74-13-a", "tx-74-13-b"]
+            },
+            { "id": "endorse.26", "text": "An endorsement takes at least 26 credits.", "cite": ["tx-74-13-c"] }
+          ],
+          "unverified": [
+            {
+              "id": "cte-completer",
+              "text": "How many classes make you a 'completer' in a career and technical program of study depends on the program. We plan for three; ask your counselor what your program needs."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tx.endorse.business",
+      "state": "TX",
+      "kind": "graduation_option",
+      "title": "Business and Industry endorsement",
+      "issuer": { "kind": "program", "name": "the Business and Industry endorsement" },
+      "plainSummary": "The Business and Industry endorsement adds a 4th math, a 4th science and 2 electives to the Foundation program, plus a business and industry career and technical program, or four English credits including three levels of speech, debate or journalism.",
+      "strength": "required",
+      "strengthCite": "tx-74-13-f7",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": { "choice": { "key": "txEndorsements", "value": "business_industry" } },
+      "variants": [
+        {
+          "id": "tx.endorse.business.pre2026",
+          "cohort": { "from": 2022, "to": 2025 },
+          "extends": "tx.fhsp.grad.pre2026",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "e.math4",
+              "label": "A 4th math credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                },
+                { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e2", "tx-74-13-e2-list", "tx-74-13-e2-list-2", "tx-74-13-e4"],
+              "area": "math",
+              "note": "Applied classes such as Mathematical Models with Applications don't count as this 4th math."
+            },
+            {
+              "id": "e.science4",
+              "label": "A 4th science credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                },
+                { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e6", "tx-74-13-e6-list", "tx-74-13-e6-list-2"],
+              "area": "science"
+            },
+            {
+              "id": "e.electives",
+              "label": "2 more elective credits",
+              "kind": "remaining_electives",
+              "units": 8,
+              "cite": ["tx-74-13-e7", "tx-74-13-c"],
+              "area": "electives"
+            },
+            {
+              "id": "bi.set",
+              "label": "A business and industry program or English sequence",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "bi.cte",
+                  "label": "A business and industry career and technical program of study",
+                  "kind": "credits",
+                  "units": 12,
+                  "select": [
+                    {
+                      "cte": true,
+                      "types": ["ela.professional_comm", "math.stats", "math.applied.finance", "math.applied.technical", "math.applied.business", "math.applied.engineering", "sci.phys_eng", "arts.media", "cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber", "cs.web", "cte.accounting", "cte.business_office", "cte.floral_design", "cte.landscape_design", "cte.design_foundations", "cte.agriscience", "cte.animal_science", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.ag.1", "cte.ag.2", "cte.ag.3", "cte.ag.4", "cte.architecture_construction.1", "cte.architecture_construction.2", "cte.architecture_construction.3", "cte.architecture_construction.4", "cte.arts_av.1", "cte.arts_av.2", "cte.arts_av.3", "cte.arts_av.4", "cte.business.1", "cte.business.2", "cte.business.3", "cte.business.4", "cte.energy.1", "cte.energy.2", "cte.energy.3", "cte.energy.4", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4", "cte.hospitality.1", "cte.hospitality.2", "cte.hospitality.3", "cte.hospitality.4", "cte.human_services.1", "cte.human_services.2", "cte.human_services.3", "cte.human_services.4", "cte.it.1", "cte.it.2", "cte.it.3", "cte.it.4", "cte.manufacturing.1", "cte.manufacturing.2", "cte.manufacturing.3", "cte.manufacturing.4", "cte.transportation.1", "cte.transportation.2", "cte.transportation.3", "cte.transportation.4"]
+                    }
+                  ],
+                  "cite": ["tx-74-13-f7a", "tx-74-13-f7b"],
+                  "shareable": true,
+                  "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                },
+                {
+                  "id": "bi.english",
+                  "label": "Three levels of public speaking, debate or journalism",
+                  "kind": "credits",
+                  "units": 12,
+                  "select": [{ "types": ["ela.speech", "ela.debate", "ela.journalism"] }],
+                  "cite": ["tx-74-13-f7c"],
+                  "shareable": true,
+                  "note": "All three levels in the same area, within four English credits."
+                }
+              ],
+              "cite": ["tx-74-13-g"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "endorse.choose",
+              "text": "You name the endorsement you plan to earn when you start 9th grade, and you can switch at any time.",
+              "cite": ["tx-74-13-a", "tx-74-13-b"]
+            },
+            { "id": "endorse.26", "text": "An endorsement takes at least 26 credits.", "cite": ["tx-74-13-c"] }
+          ],
+          "unverified": [
+            {
+              "id": "cte-completer",
+              "text": "How many classes make you a 'completer' in a career and technical program of study depends on the program. We plan for three; ask your counselor what your program needs."
+            }
+          ]
+        },
+        {
+          "id": "tx.endorse.business.2026",
+          "cohort": { "from": 2026 },
+          "extends": "tx.fhsp.grad.2026",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "e.math4",
+              "label": "A 4th math credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                },
+                { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e2", "tx-74-13-e2-list", "tx-74-13-e2-list-2", "tx-74-13-e4"],
+              "area": "math",
+              "note": "Applied classes such as Mathematical Models with Applications don't count as this 4th math."
+            },
+            {
+              "id": "e.science4",
+              "label": "A 4th science credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                },
+                { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e6", "tx-74-13-e6-list", "tx-74-13-e6-list-2"],
+              "area": "science"
+            },
+            {
+              "id": "e.electives",
+              "label": "2 more elective credits",
+              "kind": "remaining_electives",
+              "units": 8,
+              "cite": ["tx-74-13-e7", "tx-74-13-c"],
+              "area": "electives"
+            },
+            {
+              "id": "bi.set",
+              "label": "A business and industry program or English sequence",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "bi.cte",
+                  "label": "A business and industry career and technical program of study",
+                  "kind": "credits",
+                  "units": 12,
+                  "select": [
+                    {
+                      "cte": true,
+                      "types": ["ela.professional_comm", "math.stats", "math.applied.finance", "math.applied.technical", "math.applied.business", "math.applied.engineering", "sci.phys_eng", "arts.media", "cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber", "cs.web", "cte.accounting", "cte.business_office", "cte.floral_design", "cte.landscape_design", "cte.design_foundations", "cte.agriscience", "cte.animal_science", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.ag.1", "cte.ag.2", "cte.ag.3", "cte.ag.4", "cte.architecture_construction.1", "cte.architecture_construction.2", "cte.architecture_construction.3", "cte.architecture_construction.4", "cte.arts_av.1", "cte.arts_av.2", "cte.arts_av.3", "cte.arts_av.4", "cte.business.1", "cte.business.2", "cte.business.3", "cte.business.4", "cte.energy.1", "cte.energy.2", "cte.energy.3", "cte.energy.4", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4", "cte.hospitality.1", "cte.hospitality.2", "cte.hospitality.3", "cte.hospitality.4", "cte.human_services.1", "cte.human_services.2", "cte.human_services.3", "cte.human_services.4", "cte.it.1", "cte.it.2", "cte.it.3", "cte.it.4", "cte.manufacturing.1", "cte.manufacturing.2", "cte.manufacturing.3", "cte.manufacturing.4", "cte.transportation.1", "cte.transportation.2", "cte.transportation.3", "cte.transportation.4"]
+                    }
+                  ],
+                  "cite": ["tx-74-13-f7a", "tx-74-13-f7b"],
+                  "shareable": true,
+                  "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                },
+                {
+                  "id": "bi.english",
+                  "label": "Three levels of public speaking, debate or journalism",
+                  "kind": "credits",
+                  "units": 12,
+                  "select": [{ "types": ["ela.speech", "ela.debate", "ela.journalism"] }],
+                  "cite": ["tx-74-13-f7c"],
+                  "shareable": true,
+                  "note": "All three levels in the same area, within four English credits."
+                }
+              ],
+              "cite": ["tx-74-13-g"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "endorse.choose",
+              "text": "You name the endorsement you plan to earn when you start 9th grade, and you can switch at any time.",
+              "cite": ["tx-74-13-a", "tx-74-13-b"]
+            },
+            { "id": "endorse.26", "text": "An endorsement takes at least 26 credits.", "cite": ["tx-74-13-c"] }
+          ],
+          "unverified": [
+            {
+              "id": "cte-completer",
+              "text": "How many classes make you a 'completer' in a career and technical program of study depends on the program. We plan for three; ask your counselor what your program needs."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tx.endorse.public-services",
+      "state": "TX",
+      "kind": "graduation_option",
+      "title": "Public Services endorsement",
+      "issuer": { "kind": "program", "name": "the Public Services endorsement" },
+      "plainSummary": "The Public Services endorsement adds a 4th math, a 4th science and 2 electives to the Foundation program, plus a public services career and technical program (such as health science, teaching or law enforcement), or four JROTC courses.",
+      "strength": "required",
+      "strengthCite": "tx-74-13-f8",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": { "choice": { "key": "txEndorsements", "value": "public_services" } },
+      "variants": [
+        {
+          "id": "tx.endorse.public-services.pre2026",
+          "cohort": { "from": 2022, "to": 2025 },
+          "extends": "tx.fhsp.grad.pre2026",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "e.math4",
+              "label": "A 4th math credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                },
+                { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e2", "tx-74-13-e2-list", "tx-74-13-e2-list-2", "tx-74-13-e4"],
+              "area": "math",
+              "note": "Applied classes such as Mathematical Models with Applications don't count as this 4th math."
+            },
+            {
+              "id": "e.science4",
+              "label": "A 4th science credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                },
+                { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e6", "tx-74-13-e6-list", "tx-74-13-e6-list-2"],
+              "area": "science"
+            },
+            {
+              "id": "e.electives",
+              "label": "2 more elective credits",
+              "kind": "remaining_electives",
+              "units": 8,
+              "cite": ["tx-74-13-e7", "tx-74-13-c"],
+              "area": "electives"
+            },
+            {
+              "id": "ps.set",
+              "label": "A public services program or JROTC",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "ps.cte",
+                  "label": "A public services career and technical program of study",
+                  "kind": "credits",
+                  "units": 12,
+                  "select": [
+                    {
+                      "cte": true,
+                      "types": ["math.applied.medical", "sci.anat", "sci.forensic", "sci.biotech", "sci.microbio", "cte.biomed", "cte.health_principles", "cte.medical_terminology", "cte.nurse_aide", "cte.emt", "cte.education.1", "cte.education.2", "cte.education.3", "cte.education.4", "cte.health.1", "cte.health.2", "cte.health.3", "cte.health.4", "cte.human_services.1", "cte.human_services.2", "cte.human_services.3", "cte.human_services.4", "cte.law.1", "cte.law.2", "cte.law.3", "cte.law.4"]
+                    }
+                  ],
+                  "cite": ["tx-74-13-f8a"],
+                  "shareable": true,
+                  "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                },
+                {
+                  "id": "ps.jrotc",
+                  "label": "Four JROTC courses",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [{ "types": ["other.jrotc"] }],
+                  "cite": ["tx-74-13-f8b"],
+                  "shareable": true
+                }
+              ],
+              "cite": ["tx-74-13-g"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "endorse.choose",
+              "text": "You name the endorsement you plan to earn when you start 9th grade, and you can switch at any time.",
+              "cite": ["tx-74-13-a", "tx-74-13-b"]
+            },
+            { "id": "endorse.26", "text": "An endorsement takes at least 26 credits.", "cite": ["tx-74-13-c"] }
+          ],
+          "unverified": [
+            {
+              "id": "cte-completer",
+              "text": "How many classes make you a 'completer' in a career and technical program of study depends on the program. We plan for three; ask your counselor what your program needs."
+            }
+          ]
+        },
+        {
+          "id": "tx.endorse.public-services.2026",
+          "cohort": { "from": 2026 },
+          "extends": "tx.fhsp.grad.2026",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "e.math4",
+              "label": "A 4th math credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                },
+                { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e2", "tx-74-13-e2-list", "tx-74-13-e2-list-2", "tx-74-13-e4"],
+              "area": "math",
+              "note": "Applied classes such as Mathematical Models with Applications don't count as this 4th math."
+            },
+            {
+              "id": "e.science4",
+              "label": "A 4th science credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                },
+                { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e6", "tx-74-13-e6-list", "tx-74-13-e6-list-2"],
+              "area": "science"
+            },
+            {
+              "id": "e.electives",
+              "label": "2 more elective credits",
+              "kind": "remaining_electives",
+              "units": 8,
+              "cite": ["tx-74-13-e7", "tx-74-13-c"],
+              "area": "electives"
+            },
+            {
+              "id": "ps.set",
+              "label": "A public services program or JROTC",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "ps.cte",
+                  "label": "A public services career and technical program of study",
+                  "kind": "credits",
+                  "units": 12,
+                  "select": [
+                    {
+                      "cte": true,
+                      "types": ["math.applied.medical", "sci.anat", "sci.forensic", "sci.biotech", "sci.microbio", "cte.biomed", "cte.health_principles", "cte.medical_terminology", "cte.nurse_aide", "cte.emt", "cte.education.1", "cte.education.2", "cte.education.3", "cte.education.4", "cte.health.1", "cte.health.2", "cte.health.3", "cte.health.4", "cte.human_services.1", "cte.human_services.2", "cte.human_services.3", "cte.human_services.4", "cte.law.1", "cte.law.2", "cte.law.3", "cte.law.4"]
+                    }
+                  ],
+                  "cite": ["tx-74-13-f8a"],
+                  "shareable": true,
+                  "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                },
+                {
+                  "id": "ps.jrotc",
+                  "label": "Four JROTC courses",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [{ "types": ["other.jrotc"] }],
+                  "cite": ["tx-74-13-f8b"],
+                  "shareable": true
+                }
+              ],
+              "cite": ["tx-74-13-g"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "endorse.choose",
+              "text": "You name the endorsement you plan to earn when you start 9th grade, and you can switch at any time.",
+              "cite": ["tx-74-13-a", "tx-74-13-b"]
+            },
+            { "id": "endorse.26", "text": "An endorsement takes at least 26 credits.", "cite": ["tx-74-13-c"] }
+          ],
+          "unverified": [
+            {
+              "id": "cte-completer",
+              "text": "How many classes make you a 'completer' in a career and technical program of study depends on the program. We plan for three; ask your counselor what your program needs."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tx.endorse.arts-humanities",
+      "state": "TX",
+      "kind": "graduation_option",
+      "title": "Arts and Humanities endorsement",
+      "issuer": { "kind": "program", "name": "the Arts and Humanities endorsement" },
+      "plainSummary": "The Arts and Humanities endorsement adds a 4th math, a 4th science and 2 electives to the Foundation program, plus five social studies credits, four levels of one language (including ASL), or four fine arts credits in one or two art forms. With a parent's written permission, the 4th science can be swapped for an English, social studies, language or fine arts class.",
+      "strength": "required",
+      "strengthCite": "tx-74-13-f4",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": { "choice": { "key": "txEndorsements", "value": "arts_humanities" } },
+      "variants": [
+        {
+          "id": "tx.endorse.arts-humanities.pre2026",
+          "cohort": { "from": 2022, "to": 2025 },
+          "extends": "tx.fhsp.grad.pre2026",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "e.math4",
+              "label": "A 4th math credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                },
+                { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e2", "tx-74-13-e2-list", "tx-74-13-e2-list-2", "tx-74-13-e4"],
+              "area": "math",
+              "note": "Applied classes such as Mathematical Models with Applications don't count as this 4th math."
+            },
+            {
+              "id": "e.science4",
+              "label": "A 4th science credit",
+              "kind": "option",
+              "pref": "txArtsHumanitiesScienceSwap",
+              "on": {
+                "id": "e.science4.swap",
+                "label": "An English, social studies, language or fine arts class instead of a 4th science",
+                "kind": "credits",
+                "units": 4,
+                "select": [
+                  {
+                    "subjects": ["english", "social_studies", "world_language", "arts"],
+                    "exclude": ["ela.ms", "ss.ms", "arts.ms"]
+                  }
+                ],
+                "cite": ["tx-74-13-e6x"]
+              },
+              "off": {
+                "id": "e.science4.lab",
+                "label": "A 4th science credit",
+                "kind": "credits",
+                "units": 4,
+                "select": [
+                  {
+                    "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                  },
+                  { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                  { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+                ],
+                "cite": ["tx-74-13-e6", "tx-74-13-e6-list", "tx-74-13-e6-list-2"]
+              },
+              "cite": ["tx-74-13-e6x"],
+              "area": "science"
+            },
+            {
+              "id": "e.electives",
+              "label": "2 more elective credits",
+              "kind": "remaining_electives",
+              "units": 8,
+              "cite": ["tx-74-13-e7", "tx-74-13-c"],
+              "area": "electives"
+            },
+            {
+              "id": "ah.set",
+              "label": "Social studies, a language or fine arts",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "ah.social",
+                  "label": "Five social studies credits",
+                  "kind": "credits",
+                  "units": 20,
+                  "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+                  "cite": ["tx-74-13-f4ab"],
+                  "shareable": true
+                },
+                {
+                  "id": "ah.language",
+                  "label": "Four levels of one language",
+                  "kind": "same_language",
+                  "levels": 4,
+                  "cite": ["tx-74-13-f4ab"]
+                },
+                {
+                  "id": "ah.arts",
+                  "label": "Four fine arts credits in one or two art forms",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+                  "cite": ["tx-74-13-f4e"],
+                  "shareable": true
+                }
+              ],
+              "cite": ["tx-74-13-g"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "endorse.choose",
+              "text": "You name the endorsement you plan to earn when you start 9th grade, and you can switch at any time.",
+              "cite": ["tx-74-13-a", "tx-74-13-b"]
+            },
+            { "id": "endorse.26", "text": "An endorsement takes at least 26 credits.", "cite": ["tx-74-13-c"] }
+          ],
+          "unverified": [
+            {
+              "id": "ah.two-languages",
+              "text": "Two levels each of two different languages also completes this endorsement. Ask your counselor to check that route."
+            },
+            {
+              "id": "ah.english",
+              "text": "Texas also allows an advanced English route (four English credits from a list), but whether English I-III count toward it isn't clear. Ask your counselor."
+            }
+          ]
+        },
+        {
+          "id": "tx.endorse.arts-humanities.2026",
+          "cohort": { "from": 2026 },
+          "extends": "tx.fhsp.grad.2026",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "e.math4",
+              "label": "A 4th math credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                },
+                { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e2", "tx-74-13-e2-list", "tx-74-13-e2-list-2", "tx-74-13-e4"],
+              "area": "math",
+              "note": "Applied classes such as Mathematical Models with Applications don't count as this 4th math."
+            },
+            {
+              "id": "e.science4",
+              "label": "A 4th science credit",
+              "kind": "option",
+              "pref": "txArtsHumanitiesScienceSwap",
+              "on": {
+                "id": "e.science4.swap",
+                "label": "An English, social studies, language or fine arts class instead of a 4th science",
+                "kind": "credits",
+                "units": 4,
+                "select": [
+                  {
+                    "subjects": ["english", "social_studies", "world_language", "arts"],
+                    "exclude": ["ela.ms", "ss.ms", "arts.ms"]
+                  }
+                ],
+                "cite": ["tx-74-13-e6x"]
+              },
+              "off": {
+                "id": "e.science4.lab",
+                "label": "A 4th science credit",
+                "kind": "credits",
+                "units": 4,
+                "select": [
+                  {
+                    "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                  },
+                  { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                  { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+                ],
+                "cite": ["tx-74-13-e6", "tx-74-13-e6-list", "tx-74-13-e6-list-2"]
+              },
+              "cite": ["tx-74-13-e6x"],
+              "area": "science"
+            },
+            {
+              "id": "e.electives",
+              "label": "2 more elective credits",
+              "kind": "remaining_electives",
+              "units": 8,
+              "cite": ["tx-74-13-e7", "tx-74-13-c"],
+              "area": "electives"
+            },
+            {
+              "id": "ah.set",
+              "label": "Social studies, a language or fine arts",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "ah.social",
+                  "label": "Five social studies credits",
+                  "kind": "credits",
+                  "units": 20,
+                  "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+                  "cite": ["tx-74-13-f4ab"],
+                  "shareable": true
+                },
+                {
+                  "id": "ah.language",
+                  "label": "Four levels of one language",
+                  "kind": "same_language",
+                  "levels": 4,
+                  "cite": ["tx-74-13-f4ab"]
+                },
+                {
+                  "id": "ah.arts",
+                  "label": "Four fine arts credits in one or two art forms",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+                  "cite": ["tx-74-13-f4e"],
+                  "shareable": true
+                }
+              ],
+              "cite": ["tx-74-13-g"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "endorse.choose",
+              "text": "You name the endorsement you plan to earn when you start 9th grade, and you can switch at any time.",
+              "cite": ["tx-74-13-a", "tx-74-13-b"]
+            },
+            { "id": "endorse.26", "text": "An endorsement takes at least 26 credits.", "cite": ["tx-74-13-c"] }
+          ],
+          "unverified": [
+            {
+              "id": "ah.two-languages",
+              "text": "Two levels each of two different languages also completes this endorsement. Ask your counselor to check that route."
+            },
+            {
+              "id": "ah.english",
+              "text": "Texas also allows an advanced English route (four English credits from a list), but whether English I-III count toward it isn't clear. Ask your counselor."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tx.endorse.multidisciplinary",
+      "state": "TX",
+      "kind": "graduation_option",
+      "title": "Multidisciplinary Studies endorsement",
+      "issuer": { "kind": "program", "name": "the Multidisciplinary Studies endorsement" },
+      "plainSummary": "The Multidisciplinary Studies endorsement adds a 4th math, a 4th science and 2 electives to the Foundation program, plus four advanced courses, four credits in each core subject, or four AP, IB or dual credit courses.",
+      "strength": "required",
+      "strengthCite": "tx-74-13-f5",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": { "choice": { "key": "txEndorsements", "value": "multidisciplinary" } },
+      "variants": [
+        {
+          "id": "tx.endorse.multidisciplinary.pre2026",
+          "cohort": { "from": 2022, "to": 2025 },
+          "extends": "tx.fhsp.grad.pre2026",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "e.math4",
+              "label": "A 4th math credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                },
+                { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e2", "tx-74-13-e2-list", "tx-74-13-e2-list-2", "tx-74-13-e4"],
+              "area": "math",
+              "note": "Applied classes such as Mathematical Models with Applications don't count as this 4th math."
+            },
+            {
+              "id": "e.science4",
+              "label": "A 4th science credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                },
+                { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e6", "tx-74-13-e6-list", "tx-74-13-e6-list-2"],
+              "area": "science"
+            },
+            {
+              "id": "e.electives",
+              "label": "2 more elective credits",
+              "kind": "remaining_electives",
+              "units": 8,
+              "cite": ["tx-74-13-e7", "tx-74-13-c"],
+              "area": "electives"
+            },
+            {
+              "id": "md.set",
+              "label": "Advanced courses, four of each core subject, or AP, IB or dual credit",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "md.advanced",
+                  "label": "Four advanced courses",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [{ "levels": ["honors", "ap", "ib", "cambridge", "dual_enrollment"] }],
+                  "cite": ["tx-74-13-f5a", "tx-74-13-d"],
+                  "shareable": true,
+                  "note": "Your district decides which courses count as advanced."
+                },
+                {
+                  "id": "md.core",
+                  "label": "Four credits in each core subject",
+                  "kind": "all",
+                  "of": [
+                    {
+                      "id": "md.core.english",
+                      "label": "Four English credits including English IV (or AP or IB English)",
+                      "kind": "credits",
+                      "units": 16,
+                      "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+                      "cite": ["tx-74-13-f5b"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "md.core.english4",
+                      "label": "English IV or AP or IB English",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["ela.12"] }, { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] }],
+                      "cite": ["tx-74-13-f5b"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "md.core.math",
+                      "label": "Four math credits",
+                      "kind": "credits",
+                      "units": 16,
+                      "select": [{ "subjects": ["math"], "exclude": ["math.ms"] }],
+                      "cite": ["tx-74-13-f5b"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "md.core.science",
+                      "label": "Four science credits",
+                      "kind": "credits",
+                      "units": 16,
+                      "select": [{ "subjects": ["science"], "exclude": ["sci.ms"] }],
+                      "cite": ["tx-74-13-f5b"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "md.core.chem_phys",
+                      "label": "Chemistry or physics",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["sci.chem", "sci.phys", "sci.phys_eng", "sci.chem2", "sci.phys2"] }],
+                      "cite": ["tx-74-13-f5b"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "md.core.social",
+                      "label": "Four social studies credits",
+                      "kind": "credits",
+                      "units": 16,
+                      "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+                      "cite": ["tx-74-13-f5b"],
+                      "shareable": true
+                    }
+                  ]
+                },
+                {
+                  "id": "md.ap",
+                  "label": "Four AP, IB or dual credit courses",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [
+                    {
+                      "levels": ["ap", "ib", "dual_enrollment"],
+                      "subjects": ["english", "math", "science", "social_studies", "world_language", "arts"]
+                    }
+                  ],
+                  "cite": ["tx-74-13-f5c"],
+                  "shareable": true
+                }
+              ],
+              "cite": ["tx-74-13-g"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "endorse.choose",
+              "text": "You name the endorsement you plan to earn when you start 9th grade, and you can switch at any time.",
+              "cite": ["tx-74-13-a", "tx-74-13-b"]
+            },
+            { "id": "endorse.26", "text": "An endorsement takes at least 26 credits.", "cite": ["tx-74-13-c"] }
+          ]
+        },
+        {
+          "id": "tx.endorse.multidisciplinary.2026",
+          "cohort": { "from": 2026 },
+          "extends": "tx.fhsp.grad.2026",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "e.math4",
+              "label": "A 4th math credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                },
+                { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e2", "tx-74-13-e2-list", "tx-74-13-e2-list-2", "tx-74-13-e4"],
+              "area": "math",
+              "note": "Applied classes such as Mathematical Models with Applications don't count as this 4th math."
+            },
+            {
+              "id": "e.science4",
+              "label": "A 4th science credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                },
+                { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-13-e6", "tx-74-13-e6-list", "tx-74-13-e6-list-2"],
+              "area": "science"
+            },
+            {
+              "id": "e.electives",
+              "label": "2 more elective credits",
+              "kind": "remaining_electives",
+              "units": 8,
+              "cite": ["tx-74-13-e7", "tx-74-13-c"],
+              "area": "electives"
+            },
+            {
+              "id": "md.set",
+              "label": "Advanced courses, four of each core subject, or AP, IB or dual credit",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "md.advanced",
+                  "label": "Four advanced courses",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [{ "levels": ["honors", "ap", "ib", "cambridge", "dual_enrollment"] }],
+                  "cite": ["tx-74-13-f5a", "tx-74-13-d"],
+                  "shareable": true,
+                  "note": "Your district decides which courses count as advanced."
+                },
+                {
+                  "id": "md.core",
+                  "label": "Four credits in each core subject",
+                  "kind": "all",
+                  "of": [
+                    {
+                      "id": "md.core.english",
+                      "label": "Four English credits including English IV (or AP or IB English)",
+                      "kind": "credits",
+                      "units": 16,
+                      "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+                      "cite": ["tx-74-13-f5b"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "md.core.english4",
+                      "label": "English IV or AP or IB English",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["ela.12"] }, { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] }],
+                      "cite": ["tx-74-13-f5b"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "md.core.math",
+                      "label": "Four math credits",
+                      "kind": "credits",
+                      "units": 16,
+                      "select": [{ "subjects": ["math"], "exclude": ["math.ms"] }],
+                      "cite": ["tx-74-13-f5b"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "md.core.science",
+                      "label": "Four science credits",
+                      "kind": "credits",
+                      "units": 16,
+                      "select": [{ "subjects": ["science"], "exclude": ["sci.ms"] }],
+                      "cite": ["tx-74-13-f5b"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "md.core.chem_phys",
+                      "label": "Chemistry or physics",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["sci.chem", "sci.phys", "sci.phys_eng", "sci.chem2", "sci.phys2"] }],
+                      "cite": ["tx-74-13-f5b"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "md.core.social",
+                      "label": "Four social studies credits",
+                      "kind": "credits",
+                      "units": 16,
+                      "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+                      "cite": ["tx-74-13-f5b"],
+                      "shareable": true
+                    }
+                  ]
+                },
+                {
+                  "id": "md.ap",
+                  "label": "Four AP, IB or dual credit courses",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [
+                    {
+                      "levels": ["ap", "ib", "dual_enrollment"],
+                      "subjects": ["english", "math", "science", "social_studies", "world_language", "arts"]
+                    }
+                  ],
+                  "cite": ["tx-74-13-f5c"],
+                  "shareable": true
+                }
+              ],
+              "cite": ["tx-74-13-g"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "endorse.choose",
+              "text": "You name the endorsement you plan to earn when you start 9th grade, and you can switch at any time.",
+              "cite": ["tx-74-13-a", "tx-74-13-b"]
+            },
+            { "id": "endorse.26", "text": "An endorsement takes at least 26 credits.", "cite": ["tx-74-13-c"] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tx.dla",
+      "state": "TX",
+      "kind": "graduation_option",
+      "title": "Distinguished Level of Achievement (the course route to automatic admission)",
+      "issuer": { "kind": "program", "name": "the Distinguished Level of Achievement" },
+      "plainSummary": "The Distinguished Level of Achievement (DLA) is the course route to automatic admission at Texas public universities: the Foundation program plus an endorsement, with 4 math credits including Algebra II and 4 science credits. Your transcript should show you're on schedule for it by the end of 11th grade. There's also a test-score route.",
+      "strength": "required",
+      "strengthCite": "tx-74-11-g",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "recheckBy": "2027-06-30",
+      "appliesWhen": { "choice": { "key": "txAimDla", "value": true } },
+      "variants": [
+        {
+          "id": "tx.dla.pre2026",
+          "cohort": { "from": 2022, "to": 2025 },
+          "extends": "tx.fhsp.grad.pre2026",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "dla.alg2",
+              "label": "Algebra II",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["math.alg2"] }],
+              "cite": ["tx-74-11-g-math-science", "tx-tec-51-803-d"],
+              "shareable": true,
+              "deadlineGrade": 11,
+              "area": "math"
+            },
+            {
+              "id": "dla.math4",
+              "label": "A 4th math credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                },
+                { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-11-g-math-science", "tx-74-13-e2", "tx-74-13-e2-list"],
+              "area": "math"
+            },
+            {
+              "id": "dla.science4",
+              "label": "A 4th science credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                },
+                { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-11-g-math-science", "tx-74-13-e6", "tx-74-13-e6-list"],
+              "area": "science"
+            }
+          ],
+          "checks": [
+            {
+              "id": "dla.on-schedule",
+              "kind": "on_schedule_by",
+              "req": "dla.alg2",
+              "grade": 11,
+              "cite": ["tx-tec-51-803-d"]
+            },
+            {
+              "id": "dla.endorsement",
+              "kind": "requires_rule_set",
+              "anyOf": ["tx.endorse.stem", "tx.endorse.business", "tx.endorse.public-services", "tx.endorse.arts-humanities", "tx.endorse.multidisciplinary"],
+              "cite": ["tx-74-11-g"]
+            }
+          ],
+          "conditions": [
+            {
+              "id": "dla.top-10",
+              "label": "Automatic admission also needs a top-10% class rank (UT Austin uses a smaller percentage)",
+              "kind": "class_rank",
+              "cite": ["tx-tec-51-803-a", "tx-ut-top-5"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "dla.algebra-2",
+              "text": "Algebra II isn't required to graduate. Skipping it rules out the Distinguished Level of Achievement, the course route to automatic admission, and lowers your priority for the TEXAS Grant.",
+              "cite": ["tx-tec-28-02123-a", "tx-74-11-g-math-science", "tx-22-233-h2", "tx-tec-56-3041-a2a-iv"]
+            },
+            {
+              "id": "dla.unavailable",
+              "text": "If your school didn't offer a DLA class when you needed it, the courses you could take still count for automatic admission. Ask your counselor.",
+              "cite": ["tx-tec-51-803-b"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "dla.test-scores",
+              "text": "Texas is changing which test scores qualify for the test-score route (a 2025 law). Ask your counselor for the current scores."
+            }
+          ]
+        },
+        {
+          "id": "tx.dla.2026",
+          "cohort": { "from": 2026 },
+          "extends": "tx.fhsp.grad.2026",
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "dla.alg2",
+              "label": "Algebra II",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["math.alg2"] }],
+              "cite": ["tx-74-11-g-math-science", "tx-tec-51-803-d"],
+              "shareable": true,
+              "deadlineGrade": 11,
+              "area": "math"
+            },
+            {
+              "id": "dla.math4",
+              "label": "A 4th math credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                },
+                { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-11-g-math-science", "tx-74-13-e2", "tx-74-13-e2-list"],
+              "area": "math"
+            },
+            {
+              "id": "dla.science4",
+              "label": "A 4th science credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                },
+                { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+              ],
+              "cite": ["tx-74-11-g-math-science", "tx-74-13-e6", "tx-74-13-e6-list"],
+              "area": "science"
+            }
+          ],
+          "checks": [
+            {
+              "id": "dla.on-schedule",
+              "kind": "on_schedule_by",
+              "req": "dla.alg2",
+              "grade": 11,
+              "cite": ["tx-tec-51-803-d"]
+            },
+            {
+              "id": "dla.endorsement",
+              "kind": "requires_rule_set",
+              "anyOf": ["tx.endorse.stem", "tx.endorse.business", "tx.endorse.public-services", "tx.endorse.arts-humanities", "tx.endorse.multidisciplinary"],
+              "cite": ["tx-74-11-g"]
+            }
+          ],
+          "conditions": [
+            {
+              "id": "dla.top-10",
+              "label": "Automatic admission also needs a top-10% class rank (UT Austin uses a smaller percentage)",
+              "kind": "class_rank",
+              "cite": ["tx-tec-51-803-a", "tx-ut-top-5"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "dla.algebra-2",
+              "text": "Algebra II isn't required to graduate. Skipping it rules out the Distinguished Level of Achievement, the course route to automatic admission, and lowers your priority for the TEXAS Grant.",
+              "cite": ["tx-tec-28-02123-a", "tx-74-11-g-math-science", "tx-22-233-h2", "tx-tec-56-3041-a2a-iv"]
+            },
+            {
+              "id": "dla.unavailable",
+              "text": "If your school didn't offer a DLA class when you needed it, the courses you could take still count for automatic admission. Ask your counselor.",
+              "cite": ["tx-tec-51-803-b"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "dla.test-scores",
+              "text": "Texas is changing which test scores qualify for the test-score route (a 2025 law). Ask your counselor for the current scores."
+            }
+          ]
+        }
+      ],
+      "testRoutes": [
+        {
+          "id": "dla.test-route",
+          "text": "Automatic admission also has a test-score route: a score the Texas Higher Education Coordinating Board sets on a college entrance exam, in place of the DLA's classes. That rule is changing, so ask your counselor for the current scores.",
+          "cite": ["tx-tec-51-803-a2b", "tx-tec-51-803-a2a"]
+        }
+      ]
+    }
+  ]
+}

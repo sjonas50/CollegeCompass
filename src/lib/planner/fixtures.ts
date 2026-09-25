@@ -1,6 +1,6 @@
 import { deriveCohort } from "./cohort";
-import type { CipRoutingFile, FactsFile, GenericCatalogFile, MajorFamiliesFile } from "./content-types";
-import { DEFAULT_LIMITS, type PlannerInput } from "./engine-io";
+import type { CipRoutingFile, FactsFile, GenericCatalogFile, MajorFamiliesFile, RigorFile } from "./content-types";
+import { DEFAULT_LIMITS, type PlannerInput, RIGOR_TIERS } from "./engine-io";
 import { FAMILY_IDS } from "./families";
 import type { RuleFile, Source } from "./rules";
 
@@ -278,6 +278,26 @@ export function fixtureCipRouting(): CipRoutingFile {
       { match: ["14"], family: "engineering" },
       { match: ["15"], family: "engineering_tech" },
     ],
+  };
+}
+
+/** The four rigor tiers (open first), one tier raise and one guardrail. */
+export function fixtureRigorFile(): RigorFile {
+  return {
+    ...header("fixture.major-prep.rigor"),
+    citations: [{ id: "fx-rigor", source: "FX-1", quote: "Fixture: selective colleges weigh rigor more." }],
+    tiers: RIGOR_TIERS.map((id, i) => ({
+      id,
+      label: `Fixture ${id}`,
+      detection: "Fixture detection.",
+      expects: "Fixture expectations.",
+      target: "Fixture target.",
+      collegeLevelFromGrade: i === 0 ? null : 11,
+      rigorFirstSubjects: i === 0 ? 0 : 2,
+      cite: ["fx-rigor"],
+    })),
+    raises: [{ id: "fx-raise", colleges: [228778], families: ["engineering"], text: "Fixture raise.", cite: ["fx-rigor"] }],
+    guardrails: [{ id: "fx-guardrail", text: "Fixture guardrail.", cite: ["fx-rigor"] }],
   };
 }
 

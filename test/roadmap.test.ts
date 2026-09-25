@@ -169,7 +169,10 @@ describe("weekly steps", () => {
 
   it("removes finished steps too, which takes them out of the finished count", async () => {
     for (const text of ["One", "Two", "Three"]) await addStep(db, ana, { text }, { now });
-    const [first, second] = await listWeek(db, ana, "2026-09-21");
+    // Picked by text: steps added in the same millisecond can list in either order.
+    const week = await listWeek(db, ana, "2026-09-21");
+    const first = week.find((s) => s.text === "One")!;
+    const second = week.find((s) => s.text === "Two")!;
     await completeStep(db, ana, first.id, now);
     await completeStep(db, ana, second.id, now);
     expect(await stepStats(db, ana)).toEqual({ stepsCompleted: 2, weeksWithProgress: 1 });
@@ -182,7 +185,7 @@ describe("weekly steps", () => {
 
     expect(await removeStep(db, ana, first.id)).toBe(true);
     expect(await stepStats(db, ana)).toEqual({ stepsCompleted: 1, weeksWithProgress: 1 });
-    expect((await listWeek(db, ana, "2026-09-21")).map((s) => s.text)).toEqual(["Two", "Three"]);
+    expect((await listWeek(db, ana, "2026-09-21")).map((s) => s.text).sort()).toEqual(["Three", "Two"]);
     expect(await addStep(db, ana, { text: "Four" }, { now })).toMatchObject({ ok: true });
 
     // The last finished step of a week takes that week out of the count too.

@@ -7,7 +7,7 @@ import type { FamilyId } from "./families";
 // ---------------------------------------------------------------------------
 // The rule language (design §5.4): how reviewed content describes graduation rules, college
 // admission patterns, program gates, Texas endorsements and the DLA, Tennessee's elective focus,
-// and the course parts of state scholarships. The JSON files under src/content/course-rules/ are
+// and the course parts of state scholarships. The JSON files under src/content/planner/ are
 // checked against content-schema.ts, which mirrors these types exactly (a test pins that).
 //
 // Conventions:
@@ -397,9 +397,35 @@ export const RULE_FILE_HOLDS: Record<RuleFileKind, readonly RuleSetKind[]> = {
   aid: ["state_aid", "college_credit_program"],
 };
 
-/** src/content/course-rules/{ut,tn,tx}/{graduation,options,admissions,aid}.json */
+export const INFO_CARD_TESTS = ["required", "optional", "not_required"] as const;
+
+/**
+ * Information shown beside rule sets and never evaluated: a college with no course pattern to
+ * check (open admission, a GPA cutoff, holistic review), a college's test policy, or a scholarship
+ * decided by GPA and test scores rather than classes (Tennessee HOPE). Admissions and aid files
+ * only. Anything a source doesn't confirm is `confidence` "unverified" or "conflicting" and reads
+ * as "Ask your counselor".
+ */
+export type InfoCard = {
+  /** Unique across all content: "tn.card.etsu". */
+  id: string;
+  /** "East Tennessee State University", "HOPE Scholarship". */
+  title: string;
+  /** Plain words, grade 9 reading level. No promises ("you qualify"), no income questions. */
+  text: string;
+  /** The college the card is about (admissions files). */
+  unitId?: number;
+  /** A college's admission test policy, as its own page states it (cited). */
+  tests?: (typeof INFO_CARD_TESTS)[number];
+  confidence: Confidence;
+  cite: CitationId[];
+};
+
+/** src/content/planner/{ut,tn,tx}/{graduation,options,admissions,aid}.json */
 export type RuleFile = ContentHeader & {
   state: PlannerState;
   kind: RuleFileKind;
+  /** May be empty when the file only holds information cards (Tennessee aid has no course parts). */
   ruleSets: RuleSet[];
+  infoCards?: InfoCard[];
 };
