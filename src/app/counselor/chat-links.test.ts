@@ -311,6 +311,90 @@ describe("chat links to colleges and careers", () => {
   });
 });
 
+describe("chat links named from our data", () => {
+  const names = {
+    "/colleges/204796": "Ohio State University-Main Campus",
+    "/colleges/204024": "Miami University-Oxford",
+    "/colleges/110662": "University of California-Los Angeles",
+    "/careers/29-1141.00": "Registered Nurses",
+  };
+  const named = (text: string) =>
+    chatLinks(text, names)
+      .filter((s): s is Link => s.type === "link")
+      .map((s) => [s.href, s.text]);
+  const shown = (text: string) => chatLinks(text, names).map((s) => s.text).join("");
+  const writtenWith = (text: string) => chatLinks(text, names).map((s) => s.source ?? s.text).join("");
+
+  it("names every college and career link after its page, wherever the counselor put the path", () => {
+    // The replies from the bug reports: the path ends a list item, stands alone, or follows other details.
+    const list = [
+      "- Ohio State University, Columbus — net price averages about $17,300, and 88% of students finish. /colleges/204796",
+      "- Miami University, Oxford — about $21,000 a year. /colleges/204024",
+    ].join("\n");
+    expect(named(list)).toEqual([
+      ["/colleges/204796", "Ohio State University-Main Campus"],
+      ["/colleges/204024", "Miami University-Oxford"],
+    ]);
+    expect(shown("Its page is /colleges/204796, and it links the calculator.")).toBe(
+      "Its page is Ohio State University-Main Campus, and it links the calculator.",
+    );
+    expect(shown("Ohio State University–Main Campus, Columbus, OH — public, about 45,600 undergrads (/colleges/204796)")).toBe(
+      "Ohio State University–Main Campus, Columbus, OH — public, about 45,600 undergrads (Ohio State University-Main Campus)",
+    );
+    expect(named("- Registered nurses care for patients. /careers/29-1141.00")).toEqual([["/careers/29-1141.00", "Registered Nurses"]]);
+    // A markdown label gives way to the real name too.
+    expect(named("See [its page](/colleges/204796) or [Ohio State](/colleges/204796).")).toEqual([
+      ["/colleges/204796", "Ohio State University-Main Campus"],
+      ["/colleges/204796", "Ohio State University-Main Campus"],
+    ]);
+  });
+
+  it("links the name written with the path when it's part of the real name, showing the real one", () => {
+    expect(shown("You might like Ohio State (/colleges/204796).")).toBe("You might like Ohio State University-Main Campus.");
+    expect(shown("Ohio State University, Columbus OH — /colleges/204796")).toBe("Ohio State University-Main Campus, Columbus OH");
+    expect(shown("Registered Nurses: /careers/29-1141.00 and Nurses (/careers/29-1141.00)")).toBe("Registered Nurses and Registered Nurses");
+    // Otherwise the words the counselor wrote stay, and only the path becomes the link.
+    expect(shown("UCLA (/colleges/110662) is big.")).toBe("UCLA (University of California-Los Angeles) is big.");
+    expect(shown("Tuition at Ohio State: /colleges/204796")).toBe("Tuition at Ohio State: Ohio State University-Main Campus");
+    for (const text of ["You might like Ohio State (/colleges/204796).", "UCLA (/colleges/110662) is big.", "Tuition at Ohio State: /colleges/204796"]) {
+      expect(writtenWith(text), text).toBe(text);
+    }
+  });
+
+  it("falls back to the counselor's words, then 'college page', for a page with no name", () => {
+    expect(named("Boston College (/colleges/164924), and see /colleges/190415 and /careers/47-2111.00")).toEqual([
+      ["/colleges/164924", "Boston College"],
+      ["/colleges/190415", "college page"],
+      ["/careers/47-2111.00", "career page"],
+    ]);
+  });
+
+  it("never links anything else because of a name", () => {
+    const risky = {
+      ...names,
+      "/admin": "Admin",
+      "/colleges/1?q=x": "Search",
+      "/colleges/../admin": "Admin",
+      "https://studentaid.gov.example.xyz/login": "Student aid",
+    };
+    const links = (text: string) =>
+      chatLinks(text, risky)
+        .filter((s): s is Link => s.type === "link")
+        .map((s) => [s.href, s.text]);
+    expect(links("See /admin and /colleges/../admin and https://studentaid.gov.example.xyz/login")).toEqual([]);
+    // Names only ever label college and career pages, never the guide or a search.
+    expect(links("Read /aid/en and try /colleges?q=x")).toEqual([
+      ["/aid/en", "Financial aid guide"],
+      ["/colleges?q=x", "matching colleges"],
+    ]);
+  });
+
+  it("renders the real name as the link", () => {
+    const html = renderToStaticMarkup(createElement(Linked, { text: "Its page is /colleges/204796.", names }));
+    expect(anchors(html)).toEqual([{ attrs: { href: "/colleges/204796", class: "underline underline-offset-2" }, inner: "Ohio State University-Main Campus" }]);
+  });
+});
+
 describe("chat links to trusted sites written without https://", () => {
   it("links them over https, showing what the counselor wrote", () => {
     expect(links("Confirm dates at studentaid.gov. For pay, see bls.gov/ooh, or call or text 988 (988lifeline.org).")).toEqual([
