@@ -13,32 +13,37 @@ export const STAFF_GRANT_KINDS = ["comp", "sponsored"] as const;
 export type StaffGrantKind = (typeof STAFF_GRANT_KINDS)[number];
 
 export type StaffGrantError = "household_not_found" | "ended";
-export type StaffGrantResult = { ok: true; householdId: string; endsAt: Date | null } | { ok: false; error: StaffGrantError };
+export type StaffGrantResult =
+  /** `forStudent`: the grant was made for the student named by email or username (see findHousehold). */
+  | { ok: true; householdId: string; endsAt: Date | null; forStudent: boolean }
+  | { ok: false; error: StaffGrantError };
 
 /**
- * The household a staff member means: its id, or the email or username of a student in it.
- * Returns null when nothing matches.
+ * The household a staff member means: its id, or the email or username of a student in it (then
+ * `studentId` is that student's). Returns null when nothing matches.
  */
-export async function findHousehold(db: Db, ref: string): Promise<string | null> {
+export async function findHousehold(db: Db, ref: string): Promise<{ householdId: string; studentId: string | null } | null> {
   const value = ref.trim();
   if (!value) return null;
   if (z.uuid().safeParse(value).success) {
     const [household] = await db.select({ id: households.id }).from(households).where(eq(households.id, value));
-    return household?.id ?? null;
+    return household ? { householdId: household.id, studentId: null } : null;
   }
   const lower = value.toLowerCase();
   const [student] = await db
-    .select({ householdId: users.householdId })
+    .select({ id: users.id, householdId: users.householdId })
     .from(users)
     .where(and(eq(users.role, "student"), or(sql`lower(${users.email}) = ${lower}`, sql`lower(${users.username}) = ${lower}`)))
     .limit(1);
-  return student?.householdId ?? null;
+  return student?.householdId ? { householdId: student.householdId, studentId: student.id } : null;
 }
 
 /**
  * Gives a household full access as staff, from now until `endsAt` (null: no end). The actor must be
- * a staff admin, checked in the database. The grant records who gave it, and the audit entry keeps
- * only the kind and length: no names, emails or household ids.
+ * a staff admin, checked in the database. The grant records who gave it and, when `household` named
+ * a student (by email or username), that it's for that student: if they later leave the household,
+ * it goes with them. The audit entry keeps only the kind and length: no names, emails or household
+ * ids.
  */
 export async function grantStaffAccess(
   db: Db,
@@ -49,17 +54,20 @@ export async function grantStaffAccess(
   await assertAdmin(db, actorId);
   if (!STAFF_GRANT_KINDS.includes(input.kind)) throw new Error("Unknown grant kind");
   if (input.endsAt && input.endsAt.getTime() <= now.getTime()) return { ok: false, error: "ended" };
-  const householdId = await findHousehold(db, input.household);
-  if (!householdId) return { ok: false, error: "household_not_found" };
+  const target = await findHousehold(db, input.household);
+  if (!target) return { ok: false, error: "household_not_found" };
+  const { householdId, studentId } = target;
 
-  await db.insert(accessGrants).values({ householdId, kind: input.kind, startsAt: now, endsAt: input.endsAt, grantedByUserId: actorId });
+  await db
+    .insert(accessGrants)
+    .values({ householdId, kind: input.kind, startsAt: now, endsAt: input.endsAt, grantedByUserId: actorId, forUserId: studentId });
   await audit(db, "access.granted_by_staff", {
     actorUserId: actorId,
     metadata: input.endsAt
       ? { kind: input.kind, days: Math.ceil((input.endsAt.getTime() - now.getTime()) / DAY_MS) }
       : { kind: input.kind, noEnd: true },
   });
-  return { ok: true, householdId, endsAt: input.endsAt };
+  return { ok: true, householdId, endsAt: input.endsAt, forStudent: studentId !== null };
 }
 
 /** A staff admin's id from their email, or null. */

@@ -187,13 +187,15 @@ export async function grantFreeAccess(db: Db, userId: string, now = new Date()):
 
 /**
  * The household's access for a student's data export: each grant's kind and dates, and the
- * subscription's status, plan and period end. Stripe ids and who granted what are left out.
+ * subscription's status, plan and period end. With `studentId`, each grant also says whether it was
+ * given for that student (`forThisStudent`, see accessGrants.forUserId). Stripe ids and who granted
+ * what, or whom else a grant is for, are left out.
  */
-export async function exportHouseholdAccess(db: Db, householdId: string | null, now = new Date()) {
+export async function exportHouseholdAccess(db: Db, householdId: string | null, now = new Date(), studentId?: string) {
   if (!householdId) return { fullAccess: false, grants: [], subscription: null };
-  const [grants, billing] = await Promise.all([
+  const [rows, billing] = await Promise.all([
     db
-      .select({ kind: accessGrants.kind, startsAt: accessGrants.startsAt, endsAt: accessGrants.endsAt })
+      .select({ kind: accessGrants.kind, startsAt: accessGrants.startsAt, endsAt: accessGrants.endsAt, forUserId: accessGrants.forUserId })
       .from(accessGrants)
       .where(eq(accessGrants.householdId, householdId))
       .orderBy(accessGrants.startsAt, accessGrants.createdAt),
@@ -207,6 +209,7 @@ export async function exportHouseholdAccess(db: Db, householdId: string | null, 
       .from(billingAccounts)
       .where(eq(billingAccounts.householdId, householdId)),
   ]);
+  const grants = rows.map(({ forUserId, ...grant }) => (studentId ? { ...grant, forThisStudent: forUserId === studentId } : grant));
   const access = evaluateAccess({ householdId, grants, billing: billing[0] ?? null }, now);
   return { fullAccess: access.full, grants, subscription: billing[0] ?? null };
 }

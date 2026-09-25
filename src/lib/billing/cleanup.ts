@@ -58,7 +58,7 @@ function perform(stripe: Stripe, job: CleanupJob, retry: boolean): Promise<Outco
 
 const FAILURE_LOG: Record<CleanupJob["action"], string> = {
   delete_customer: "[billing] couldn't delete a Stripe customer",
-  cancel_at_period_end: "[billing] couldn't end a plan without a parent",
+  cancel_at_period_end: "[billing] couldn't set a plan to end",
 };
 
 /**
@@ -80,6 +80,58 @@ export async function runOrQueueCleanup(db: Db, stripe: Stripe | null, job: Clea
     createdAt: now,
   });
   return false;
+}
+
+/**
+ * Queues a clean-up job as part of the caller's transaction, so it can't be lost if the process
+ * stops between the commit and the call to Stripe. Try it right away with runQueuedCleanup once the
+ * transaction commits; otherwise the daily sweep does it. It's due an hour from now, so a sweep
+ * running at that moment doesn't try it at the same time. Returns the job's id.
+ */
+export async function queueCleanup(db: Db, job: CleanupJob, now = new Date()): Promise<string> {
+  const [row] = await db
+    .insert(stripeCleanup)
+    .values({
+      action: job.action,
+      stripeCustomerId: job.action === "delete_customer" ? job.stripeCustomerId : null,
+      stripeSubscriptionId: job.action === "cancel_at_period_end" ? job.stripeSubscriptionId : null,
+      attempts: 0,
+      nextAttemptAt: new Date(now.getTime() + cleanupBackoffMs(1)),
+      createdAt: now,
+    })
+    .returning({ id: stripeCleanup.id });
+  return row.id;
+}
+
+/**
+ * Tries a job queueCleanup queued, now. Once it's done, a plan set to end is marked on its billing
+ * account (and audited), then the job is removed. If Stripe fails (or isn't set up), the error's
+ * name is logged and the job waits for the daily sweep. Stripe errors never throw; a database
+ * error can, and leaves the job queued. Returns whether it's done.
+ */
+export async function runQueuedCleanup(db: Db, stripe: Stripe | null, jobId: string, now = new Date()): Promise<boolean> {
+  const [row] = await db.select().from(stripeCleanup).where(eq(stripeCleanup.id, jobId));
+  // The sweep got to it first.
+  if (!row) return true;
+  const job = jobOf(row);
+  const outcome: Outcome = !job ? { ok: true } : stripe ? await perform(stripe, job, false) : { ok: false, error: "StripeNotConfigured" };
+  if (!outcome.ok) {
+    console.error(FAILURE_LOG[row.action], outcome.error);
+    await db.update(stripeCleanup).set({ attempts: row.attempts + 1, lastError: outcome.error }).where(eq(stripeCleanup.id, row.id));
+    return false;
+  }
+  if (job?.action === "cancel_at_period_end") {
+    const marked = await db
+      .update(billingAccounts)
+      .set({ cancelAtPeriodEnd: true, updatedAt: now })
+      .where(eq(billingAccounts.stripeSubscriptionId, job.stripeSubscriptionId))
+      .returning({ status: billingAccounts.status });
+    for (const b of marked) {
+      await audit(db, "billing.subscription_changed", { metadata: { status: b.status ?? "unknown", cancelAtPeriodEnd: true } });
+    }
+  }
+  await db.delete(stripeCleanup).where(eq(stripeCleanup.id, row.id));
+  return true;
 }
 
 function jobOf(row: typeof stripeCleanup.$inferSelect): CleanupJob | null {

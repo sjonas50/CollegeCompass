@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { and, asc, count, eq, gt, isNull, ne, or } from "drizzle-orm";
+import { and, asc, count, eq, gt, isNotNull, isNull, lte, ne, or } from "drizzle-orm";
 import * as z from "zod";
 import type { Db } from "@/db";
 import { env } from "@/env";
@@ -18,7 +18,8 @@ import { type Email, isUncertainSend } from "./email";
 import { consumeRateLimit } from "./rate-limit";
 
 // A teen who signed up on their own invites a parent or guardian to link to their account. We
-// email the invitation and keep only a hash of its token: never the email address.
+// email the invitation and keep a hash of its token, never the token. The address the teen typed is
+// kept only to show that teen where the invitation went (see parentInvites.sentTo in the schema).
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const INVITE_TTL_DAYS = 14;
@@ -87,7 +88,8 @@ export function inviteEmailName(displayName: string): string | null {
 }
 
 export function inviteEmail(to: string, displayName: string, link: string): Email {
-  const who = inviteEmailName(displayName) ?? "A student";
+  const name = inviteEmailName(displayName);
+  const who = name ?? "A student";
   return {
     to,
     // Nothing a student typed goes in the subject.
@@ -110,7 +112,7 @@ export function inviteEmail(to: string, displayName: string, link: string): Emai
       link,
       "",
       `The link works for ${INVITE_TTL_DAYS} days. If you weren't expecting this email, you can ignore it.`,
-      "We didn't save your email address, and we won't write to you again about this.",
+      `We keep your email address only to show ${name ?? "the student"} where this invitation went. If nobody accepts it, we delete your address after the link expires. We won't write to you again about this.`,
     ].join("\n"),
   };
 }
@@ -135,8 +137,8 @@ export function inviteRecipientKey(address: string, now: Date): string {
 /**
  * Invites a parent or guardian by email. Only students who own their account (13+, signed up on
  * their own) and have no linked parent can invite. At most 3 invitations wait at once and 5 are
- * sent a day; one address gets at most 3 a day from anyone. The email address is used to send and
- * then forgotten; only the token's hash is kept.
+ * sent a day; one address gets at most 3 a day from anyone. The address is kept on the invitation
+ * only to show this student where it went; the token is kept only as a hash.
  */
 export async function createInvite(
   db: Db,
@@ -175,7 +177,7 @@ export async function createInvite(
 
     const [invite] = await tx
       .insert(parentInvites)
-      .values({ studentUserId: studentId, tokenHash: hashToken(token), expiresAt, createdAt: now })
+      .values({ studentUserId: studentId, sentTo: to, tokenHash: hashToken(token), expiresAt, createdAt: now })
       .returning({ id: parentInvites.id });
     return { ok: true as const, inviteId: invite.id, studentName: student.displayName };
   });
@@ -199,12 +201,13 @@ export async function createInvite(
   return { ok: true, inviteId: created.inviteId, expiresAt, ...(delayed && { delayed: true as const }) };
 }
 
-export type PendingInvite = { id: string; createdAt: Date; expiresAt: Date };
+/** `sentTo`: the address the student typed (null for invitations from before addresses were kept). */
+export type PendingInvite = { id: string; sentTo: string | null; createdAt: Date; expiresAt: Date };
 
-/** A student's invitations still waiting for an answer, oldest first. */
+/** A student's invitations still waiting for an answer, oldest first. Only for that student. */
 export async function listPendingInvites(db: Db, studentId: string, now: Date = new Date()): Promise<PendingInvite[]> {
   return db
-    .select({ id: parentInvites.id, createdAt: parentInvites.createdAt, expiresAt: parentInvites.expiresAt })
+    .select({ id: parentInvites.id, sentTo: parentInvites.sentTo, createdAt: parentInvites.createdAt, expiresAt: parentInvites.expiresAt })
     .from(parentInvites)
     .where(and(eq(parentInvites.studentUserId, studentId), pending(now)))
     .orderBy(asc(parentInvites.createdAt), asc(parentInvites.id));
@@ -301,7 +304,7 @@ export type HouseholdMerge = {
   billing: "none" | "moved" | "swapped" | "parked" | "stayed";
   /**
    * The end of the time already paid for on a plan left behind (parked, stayed or swapped out),
-   * carried into the parent's household as a comp grant so the student keeps it.
+   * carried into the parent's household as a comp grant for the student, so they keep it.
    */
   paidUntil?: Date;
   /** The old household was deleted: nobody was left in it and no billing account was parked there. */
@@ -317,7 +320,8 @@ export type HouseholdMerge = {
 const NO_MERGE: HouseholdMerge = { moved: false, grantsMoved: 0, grantsCopied: 0, billing: "none", oldHouseholdDeleted: false };
 
 /**
- * Puts the student into the parent's household. Access grants still active come along. The old
+ * Puts the student into the parent's household. Access grants still active come along, marked as
+ * the student's (forUserId). The old
  * household's billing account comes along only when the accepting parent is the one who pays
  * through it; any other plan stays behind and ends, and the time already paid for on it comes along
  * as a grant. Linking is never blocked by a plan in the student's old household: nobody could
@@ -354,14 +358,18 @@ async function mergeIntoParentHousehold(
   const merge: HouseholdMerge = { ...NO_MERGE, moved: true };
   if (!from) return merge;
 
+  // The grants the student brings along are theirs (forUserId): if they leave the parent's
+  // household later, the grants go with them (see removeLinkedParent).
   const active = and(eq(accessGrants.householdId, from), or(isNull(accessGrants.endsAt), gt(accessGrants.endsAt, now)));
   if (leaving) {
-    const moved = await tx.update(accessGrants).set({ householdId: target }).where(active).returning({ id: accessGrants.id });
+    const moved = await tx.update(accessGrants).set({ householdId: target, forUserId: student.id }).where(active).returning({ id: accessGrants.id });
     merge.grantsMoved = moved.length;
   } else {
     const grants = await tx.select().from(accessGrants).where(active);
     if (grants.length > 0) {
-      await tx.insert(accessGrants).values(grants.map(({ id: _id, householdId: _household, ...grant }) => ({ ...grant, householdId: target })));
+      await tx
+        .insert(accessGrants)
+        .values(grants.map(({ id: _id, householdId: _household, ...grant }) => ({ ...grant, householdId: target, forUserId: student.id })));
     }
     merge.grantsCopied = grants.length;
   }
@@ -388,10 +396,11 @@ async function mergeIntoParentHousehold(
       merge.billing = "parked";
     }
     // Time already paid for on a plan left behind comes along, so linking never costs the student
-    // days of access.
+    // days of access. It's the student's, unless the plan left behind is the parent's own (swapped).
     const paidUntil = leftBehind?.currentPeriodEnd;
     if (leftBehind && paidUntil && subscriptionGrantsAccess(leftBehind.status) && paidUntil > now) {
-      await tx.insert(accessGrants).values({ householdId: target, kind: "comp", startsAt: now, endsAt: paidUntil });
+      const forUserId = merge.billing === "swapped" ? null : student.id;
+      await tx.insert(accessGrants).values({ householdId: target, kind: "comp", startsAt: now, endsAt: paidUntil, forUserId });
       merge.paidUntil = paidUntil;
     }
   }
@@ -489,15 +498,33 @@ export async function acceptInvite(db: Db, token: string, parentUserId: string, 
 // Privacy
 // ---------------------------------------------------------------------------
 
-/** A student's invitations for their data export. There's no address to include: we never kept it. */
-export async function exportParentInvites(db: Db, studentId: string, now: Date = new Date()) {
+/**
+ * A student's invitations for a data export. The addresses they were sent to are only in the
+ * student's own copy (`withAddresses`): a linked parent's copy leaves them out, since the parent who
+ * accepted may not be the person the student meant to invite.
+ */
+export async function exportParentInvites(db: Db, studentId: string, now: Date = new Date(), { withAddresses = false } = {}) {
   const rows = await db
-    .select({ createdAt: parentInvites.createdAt, expiresAt: parentInvites.expiresAt, acceptedAt: parentInvites.acceptedAt })
+    .select({ sentTo: parentInvites.sentTo, createdAt: parentInvites.createdAt, expiresAt: parentInvites.expiresAt, acceptedAt: parentInvites.acceptedAt })
     .from(parentInvites)
     .where(eq(parentInvites.studentUserId, studentId))
     .orderBy(asc(parentInvites.createdAt));
-  return rows.map((r) => ({
+  return rows.map(({ sentTo, ...r }) => ({
+    ...(withAddresses && { sentTo }),
     ...r,
     status: r.acceptedAt ? ("accepted" as const) : r.expiresAt <= now ? ("expired" as const) : ("pending" as const),
   }));
+}
+
+/**
+ * The daily sweep: forgets the address on invitations that expired without an answer. The rest of
+ * the record stays for the student's history (and their data export). Returns how many it cleared.
+ */
+export async function forgetExpiredInviteAddresses(db: Db, now: Date = new Date()): Promise<number> {
+  const cleared = await db
+    .update(parentInvites)
+    .set({ sentTo: null })
+    .where(and(isNull(parentInvites.acceptedAt), lte(parentInvites.expiresAt, now), isNotNull(parentInvites.sentTo)))
+    .returning({ id: parentInvites.id });
+  return cleared.length;
 }

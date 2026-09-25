@@ -24,6 +24,7 @@ import {
   createInvite,
   exportParentInvites,
   findInvite,
+  forgetExpiredInviteAddresses,
   inviteCardState,
   inviteEmail,
   listPendingInvites,
@@ -89,7 +90,7 @@ async function invite(studentId: string, at = now, to = PARENT_EMAIL) {
 }
 
 describe("sending an invitation", () => {
-  it("emails a link with the student's name and keeps only the token's hash", async () => {
+  it("emails a link with the student's name, keeps only the token's hash, and keeps the address only for the student", async () => {
     const studentId = await teen();
     const { token, expiresAt } = await invite(studentId);
 
@@ -107,12 +108,18 @@ describe("sending an invitation", () => {
     expect(expiresAt.getTime() - now.getTime()).toBe(INVITE_TTL_DAYS * DAY);
     expect(rows[0].expiresAt.getTime()).toBe(expiresAt.getTime());
 
-    // The address is nowhere in the database: not in invites, audit entries or rate limits.
-    for (const table of [schema.parentInvites, schema.auditLog, schema.rateLimits]) {
+    // The address is kept once, as typed (trimmed, lower case), to show the student where it went.
+    expect(rows[0].sentTo).toBe("rosa.parent@example.com");
+    const { sentTo: _sentTo, ...rest } = rows[0];
+    expect(JSON.stringify(rest).toLowerCase()).not.toContain("rosa.parent");
+    // Nowhere else: not in audit entries or rate limits, not even hashed.
+    for (const table of [schema.auditLog, schema.rateLimits]) {
       const dump = JSON.stringify(await db.select().from(table)).toLowerCase();
       expect(dump).not.toContain("rosa.parent");
       expect(dump).not.toContain(hashToken("rosa.parent@example.com"));
     }
+    expect(sent[0].text).toContain("We keep your email address only to show Ana where this invitation went.");
+    expect(sent[0].text).not.toContain("We didn't save your email address");
     const [entry] = await db.select().from(schema.auditLog).where(eq(schema.auditLog.action, "parent_invite.sent"));
     expect(entry).toMatchObject({ actorUserId: studentId, subjectUserId: studentId, metadata: null });
   });
@@ -355,11 +362,12 @@ describe("household merge", () => {
     (await db.select().from(schema.billingAccounts).where(eq(schema.billingAccounts.householdId, householdId)))[0];
 
   it("carries a teen's running trial into the parent's household", async () => {
-    const { parentId, token, from, to } = await setup();
+    const { studentId, parentId, token, from, to } = await setup();
     const trial = (await grantsIn(from)).find((g) => g.kind === "trial");
     expect(trial).toBeTruthy();
     await acceptInvite(db, token, parentId, now);
-    expect((await grantsIn(to)).map((g) => g.id)).toContain(trial!.id);
+    // The same grant, now marked as the teen's.
+    expect(await grantsIn(to)).toContainEqual(expect.objectContaining({ id: trial!.id, forUserId: studentId }));
   });
 
   it("moves grants that are still active; ended ones are deleted with the old household", async () => {
@@ -488,7 +496,10 @@ describe("household merge", () => {
     expect(res.ok && res.merge).toMatchObject({ billing: "parked", paidUntil, parkedHouseholdId: from });
     expect(await billingIn(to)).toMatchObject({ stripeCustomerId: "cus_parent" });
     expect(await billingIn(from)).toMatchObject({ stripeCustomerId: "cus_teen" });
-    expect(await grantsIn(to)).toContainEqual(expect.objectContaining({ kind: "comp", startsAt: now, endsAt: paidUntil, grantedByUserId: null }));
+    // The paid time is the teen's: it goes with them if they later remove this parent.
+    expect(await grantsIn(to)).toContainEqual(
+      expect.objectContaining({ kind: "comp", startsAt: now, endsAt: paidUntil, grantedByUserId: null, forUserId: studentId }),
+    );
     const audit = (await db.select().from(schema.auditLog)).find((a) => a.action === "parent_invite.accepted");
     expect(audit?.metadata).toMatchObject({ billing: "parked", paidTimeCarried: true });
     expect(await householdOf(studentId)).toBe(to);
@@ -504,6 +515,19 @@ describe("household merge", () => {
     expect(res.ok && res.merge).toMatchObject({ billing: "swapped", parkedHouseholdId: from });
     expect(await billingIn(to)).toMatchObject({ stripeCustomerId: "cus_live", plan: "annual" });
     expect(await billingIn(from)).toMatchObject({ stripeCustomerId: "cus_old" });
+  });
+
+  it("keeps the paid time on the parent's own swapped-out plan as the family's, not the teen's", async () => {
+    const { parentId, token, from, to } = await setup();
+    const paidUntil = new Date(now.getTime() + 12 * DAY);
+    await db.insert(schema.billingAccounts).values([
+      { householdId: from, stripeCustomerId: "cus_live", payerUserId: parentId, stripeSubscriptionId: "sub_live", status: "active", plan: "annual" },
+      // Rosa's own older plan, already set to end: it gives way, and its paid time comes along.
+      { householdId: to, stripeCustomerId: "cus_old", payerUserId: parentId, stripeSubscriptionId: "sub_old", status: "active", cancelAtPeriodEnd: true, currentPeriodEnd: paidUntil },
+    ]);
+    const res = await acceptInvite(db, token, parentId, now);
+    expect(res.ok && res.merge).toMatchObject({ billing: "swapped", paidUntil });
+    expect(await grantsIn(to)).toContainEqual(expect.objectContaining({ kind: "comp", endsAt: paidUntil, forUserId: null }));
   });
 
   it("links even when both households have a plan that renews: the teen's old one is left behind and ended", async () => {
@@ -554,9 +578,12 @@ describe("household merge", () => {
     expect(res.ok && res.merge).toMatchObject({ moved: true, grantsMoved: 0, grantsCopied: 1, billing: "stayed", oldHouseholdDeleted: false });
     expect(await householdOf(a)).toBe(await householdOf(newParent));
     expect(await householdOf(b)).toBe(shared);
-    expect(await grantsIn(shared)).toHaveLength(1);
-    // The new parent's own trial, plus the copied free access.
-    expect((await grantsIn(await householdOf(newParent))).map((g) => g.kind).sort()).toEqual(["free_access", "trial"]);
+    expect(await grantsIn(shared)).toEqual([expect.objectContaining({ forUserId: null })]);
+    // The new parent's own trial, plus the copied free access, now marked as the teen's.
+    expect((await grantsIn(await householdOf(newParent))).map((g) => [g.kind, g.forUserId]).sort()).toEqual([
+      ["free_access", a],
+      ["trial", null],
+    ]);
     expect((await billingIn(shared)).stripeCustomerId).toBe("cus_shared");
   });
 
@@ -573,7 +600,7 @@ describe("household merge", () => {
 });
 
 describe("invitation data and privacy", () => {
-  it("is exported without any address and deleted with the student", async () => {
+  it("is exported with the address only when asked (the student's own copy), and deleted with the student", async () => {
     const studentId = await teen();
     await invite(studentId);
     const { token } = await invite(studentId, now, "dad@example.com");
@@ -581,14 +608,37 @@ describe("invitation data and privacy", () => {
     await invite(await teen("Bo", "bo@example.com"));
 
     const exported = await exportParentInvites(db, studentId, now);
-    // The first invitation was cancelled when the second was accepted.
+    // The first invitation was cancelled (and its address deleted) when the second was accepted.
     expect(exported).toEqual([{ createdAt: expect.any(Date), expiresAt: expect.any(Date), acceptedAt: now, status: "accepted" }]);
     expect(JSON.stringify(exported)).not.toMatch(/@|token/i);
+    expect(await exportParentInvites(db, studentId, now, { withAddresses: true })).toEqual([
+      { sentTo: "dad@example.com", createdAt: expect.any(Date), expiresAt: expect.any(Date), acceptedAt: now, status: "accepted" },
+    ]);
 
     expect(await deleteStudent(db, studentId, studentId)).toBe(true);
     const left = await db.select().from(schema.parentInvites);
     expect(left).toHaveLength(1);
     expect(left[0].studentUserId).not.toBe(studentId);
+  });
+
+  it("forgets the address of an invitation that expired unanswered, and only that", async () => {
+    const studentId = await teen();
+    await invite(studentId, now, "waiting@example.com");
+    await invite(studentId, new Date(now.getTime() - (INVITE_TTL_DAYS + 2) * DAY), "old@example.com");
+    const other = await teen("Bo", "bo@example.com");
+    const { token } = await invite(other, new Date(now.getTime() - (INVITE_TTL_DAYS + 2) * DAY), "dad@example.com");
+    await acceptInvite(db, token, await parent(), new Date(now.getTime() - (INVITE_TTL_DAYS + 1) * DAY));
+
+    expect(await forgetExpiredInviteAddresses(db, now)).toBe(1);
+    const addresses = (await db.select().from(schema.parentInvites)).map((r) => r.sentTo).sort();
+    // The accepted one stays while that parent is linked.
+    expect(addresses).toEqual(["dad@example.com", null, "waiting@example.com"]);
+    const statuses = (await exportParentInvites(db, studentId, now, { withAddresses: true })).map((r) => [r.status, r.sentTo]);
+    expect(statuses).toEqual([
+      ["expired", null],
+      ["pending", "waiting@example.com"],
+    ]);
+    expect(await forgetExpiredInviteAddresses(db, now)).toBe(0);
   });
 
   it("shows a waiting and an expired invitation in the export", async () => {
@@ -699,6 +749,8 @@ describe("the invite card", () => {
     await signIn(studentId);
     const html = await render(InviteParentCard());
     expect(text(html)).toContain("Invitations sent");
+    // Each with the address the student typed.
+    for (let i = 0; i < MAX_PENDING_INVITES; i++) expect(text(html)).toMatch(new RegExp(`Sent to p${i}@example\\.com on \\w+ \\d+, \\d{4}`));
     expect(html.match(/<button type="button"[^>]*>Cancel<span class="sr-only"> the invitation sent/g)).toHaveLength(MAX_PENDING_INVITES);
     // Cancel asks first: nothing on the card posts an invitation id until the student confirms.
     expect(html).not.toContain('name="inviteId"');
@@ -749,5 +801,16 @@ describe("the invite card", () => {
     await acceptInvite(db, token, await parent());
     await signIn(studentId);
     expect(await render(InviteParentCard())).toBe("");
+  });
+
+  it("shows an invitation from before addresses were kept without one, and says a wrong person can be removed", async () => {
+    const studentId = await teen();
+    await invite(studentId, new Date());
+    await db.update(schema.parentInvites).set({ sentTo: null });
+    await signIn(studentId);
+    const t = text(await render(InviteParentCard()));
+    expect(t).toMatch(/Sent \w+ \d+, \d{4} The link works until/);
+    expect(t).not.toContain("Sent to");
+    expect(t).toContain("Once someone accepts, you'll see their name in Settings. If it isn't the person you invited, you can remove them there.");
   });
 });

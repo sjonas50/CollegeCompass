@@ -39,7 +39,7 @@ function WhatLinkingMeans({ name }: { name: string }) {
       <p className="mt-1 text-sm">
         Conversations with the AI counselor stay private to {name}. You won&apos;t see them on your parent page, and
         your download of {name}&apos;s data leaves them out, along with the counselor&apos;s notes and any safety
-        flags. {name} keeps their own account and sign-in.
+        flags. {name} keeps their own account and sign-in, and can remove the link from their settings.
       </p>
     </Card>
   );

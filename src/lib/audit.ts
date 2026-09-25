@@ -3,6 +3,7 @@ import { auditLog } from "@/db/schema";
 
 export type AuditAction =
   | "account.created"
+  | "account.password_changed"
   | "auth.login"
   | "auth.login_failed"
   | "consent.requested"
@@ -21,6 +22,7 @@ export type AuditAction =
   | "parent_invite.sent"
   | "parent_invite.accepted"
   | "parent_invite.cancelled"
+  | "parent_link.removed_by_student"
   | "assessment.imported"
   | "assessment.import_removed"
   | "safety.reviewed"

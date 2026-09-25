@@ -38,8 +38,12 @@ export async function InviteParentCard() {
         They can&apos;t read your chats with the AI counselor. When they download your data, it leaves out your
         chats, what the counselor remembers about you, and any safety flags.
       </p>
+      <p className="mt-2 text-sm text-muted">
+        Once someone accepts, you&apos;ll see their name in Settings. If it isn&apos;t the person you invited, you can remove
+        them there.
+      </p>
       <InviteParentForm
-        pending={state.pending.map((i) => ({ id: i.id, sentOn: day(i.createdAt), worksUntil: day(i.expiresAt) }))}
+        pending={state.pending.map((i) => ({ id: i.id, sentTo: i.sentTo, sentOn: day(i.createdAt), worksUntil: day(i.expiresAt) }))}
         canSend={state.canSend}
         max={MAX_PENDING_INVITES}
       />

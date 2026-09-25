@@ -49,18 +49,20 @@ export function FieldError({ id, errors, alert = false }: { id: string; errors?:
   );
 }
 
+/** A labeled input. Its id is `name`, unless `id` gives another (for a form shown more than once). */
 export function Field({
   label,
   name,
+  id = name,
   errors,
   hint,
   ...inputProps
 }: ComponentProps<"input"> & { label: string; name: string; errors?: string[]; hint?: string }) {
-  const errorId = `${name}-error`;
-  const hintId = `${name}-hint`;
+  const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
   return (
     <div>
-      <label htmlFor={name} className="block text-sm font-medium">
+      <label htmlFor={id} className="block text-sm font-medium">
         {label}
       </label>
       {hint && (
@@ -69,7 +71,7 @@ export function Field({
         </p>
       )}
       <input
-        id={name}
+        id={id}
         name={name}
         aria-invalid={errors?.length ? true : undefined}
         aria-describedby={[hint && hintId, errors?.length && errorId].filter(Boolean).join(" ") || undefined}
