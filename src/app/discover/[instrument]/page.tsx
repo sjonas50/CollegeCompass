@@ -16,7 +16,7 @@ import {
   isInstrumentId,
 } from "@/lib/assessments/instruments";
 import { instrumentStatuses, startOrResumeAttempt } from "@/lib/assessments/service";
-import { undoableImport } from "@/lib/assessments/import";
+import { strengthsFromUndoableImport, undoableImport } from "@/lib/assessments/import";
 import { requireUser } from "@/lib/auth/dal";
 import { RemoveImportButton } from "@/app/try/saved/remove-import";
 import { Questionnaire } from "../questionnaire";
@@ -83,8 +83,10 @@ export default async function InstrumentPage({ params }: PageProps<"/discover/[i
   }
 
   const canStart = status.state === "not_started" || status.retakeAfter <= new Date();
-  // Interests brought in from the free quiz on this device can still be taken back for a while.
-  const imported = instrument === "interests" && status.state === "done" ? await undoableImport(await getDb(), student.id) : null;
+  // Interests brought in from the free quiz on this device can still be taken back for a while, with
+  // the strengths brought in with them. Those strengths are taken back from the interests page.
+  const imported = instrument === "interests" && status.state === "done" ? await undoableImport(db, student.id) : null;
+  const importedStrengths = instrument === "personality" && status.state === "done" && (await strengthsFromUndoableImport(db, student.id));
   return (
     <>
       <PageHeading title={info.title} lead={info.tagline} />
@@ -92,11 +94,24 @@ export default async function InstrumentPage({ params }: PageProps<"/discover/[i
         <p>{INTRO[instrument].why}</p>
         {imported && (
           <div className="rounded-lg border border-border p-3 text-sm">
-            <p>Not your answers? These came from the free quiz on this device. You can remove them and take the quiz yourself.</p>
+            <p>
+              {imported.strengthsAttemptId
+                ? "Not your answers? These results and strengths came from the free quiz on this device. You can remove both and take them yourself."
+                : "Not your answers? These came from the free quiz on this device. You can remove them and take the quiz yourself."}
+            </p>
             <div className="mt-2">
-              <RemoveImportButton attemptId={imported.attemptId} />
+              <RemoveImportButton attemptId={imported.attemptId} strengths={Boolean(imported.strengthsAttemptId)} />
             </div>
           </div>
+        )}
+        {importedStrengths && (
+          <p className="rounded-lg border border-border p-3 text-sm">
+            Not your answers? These strengths came with the free quiz results from this device. You can remove both from{" "}
+            <Link href="/discover/interests" className="underline underline-offset-2">
+              your interests
+            </Link>
+            .
+          </p>
         )}
         {status.state === "done" && (
           <p className="text-sm text-muted">

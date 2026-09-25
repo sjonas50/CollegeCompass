@@ -7,19 +7,46 @@ import { displayTrait } from "@/lib/assessments/descriptions";
 import { BIG_FIVE, PERSONALITY_ITEMS } from "@/lib/assessments/instruments";
 import { scorePersonality } from "@/lib/assessments/scoring";
 import { forgetSavedStrengths } from "../saved-store";
+import type { ResultsViewer } from "./save-card";
 
 /**
  * The strengths add-on on the free results: an offer until it's taken, then the strengths, scored
  * here in the browser with the same code as signed-in students. `saved` is undefined until the
  * browser's copy is read.
+ *
+ * Signed-in students answer the same statements in their account (/try/strengths sends them
+ * there), where the answers are saved, so they're offered that instead, and told so. A student
+ * whose account already has interest results is offered nothing here: their account has it all.
  */
-export function StrengthsCard({ saved }: { saved: SavedStrengths | null | undefined }) {
+export function StrengthsCard({ saved, viewer }: { saved: SavedStrengths | null | undefined; viewer: ResultsViewer }) {
   if (saved === undefined) return null;
+  const complete = isComplete(saved);
+  if (!complete && viewer === "student_with_results") return null;
   return (
     // The strengths activity comes back here, to this card.
     <div id="strengths" className="scroll-mt-6">
-      {isComplete(saved) ? <YourStrengths saved={saved} /> : <StrengthsOffer answered={answeredCount(saved)} />}
+      {complete ? (
+        <YourStrengths saved={saved} />
+      ) : viewer === "student" ? (
+        <AccountStrengthsOffer />
+      ) : (
+        <StrengthsOffer answered={answeredCount(saved)} />
+      )}
     </div>
+  );
+}
+
+/** The time is the one the account's activity gives (INSTRUMENTS.personality). */
+function AccountStrengthsOffer() {
+  return (
+    <Card className="space-y-3">
+      <h2 className="text-lg font-medium">See your strengths too?</h2>
+      <p className="text-sm">
+        Answer 20 statements in your account, about 5 minutes. You&apos;ll see strengths like how you work with people and
+        how you get things done. Your answers are saved in your account.
+      </p>
+      <ButtonLink href="/discover/personality">See my strengths</ButtonLink>
+    </Card>
   );
 }
 

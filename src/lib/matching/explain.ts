@@ -30,6 +30,7 @@ import { assertWithinBudget, recordMessageUsage } from "../ai/usage";
 import { currentGrade } from "../auth/age";
 import { latestMatchRun, loadOccupationProfiles } from "./service";
 import { pathwayFor } from "./match";
+import { JOB_ZONE_INFO } from "../job-zones";
 
 const Explanation = z.object({
   overview: z.string().describe("2–3 sentences about what the student's results suggest."),
@@ -73,15 +74,6 @@ export const AREA_PHRASE: Record<Riasec, string> = {
   C: "keeping things organized",
 };
 
-/** O*NET Job Zones (how much preparation a career needs), in plain words that start a reason. */
-const PREPARATION: Record<number, string> = {
-  1: "With little or no training",
-  2: "With some on-the-job training",
-  3: "With career training or a two-year degree",
-  4: "With a bachelor's degree",
-  5: "With a graduate degree",
-};
-
 /** Longest clause kept from a career's description; reasons stay about 20 words. */
 const MAX_CLAUSE_WORDS = 14;
 /** Words a long description is cut before: what comes after says how, where or why. */
@@ -89,33 +81,142 @@ const CUT_BEFORE = new Set([
   "to", "for", "in", "of", "by", "that", "which", "who", "with", "at", "on", "from", "using", "within", "into",
   "through", "during", "according", "under", "while", "when", "where", "so", "as", "throughout", "without",
   "used", "designed", "intended", "engaged", "involving", "following", "regarding", "usually", "often", "related",
-  "associated", "affecting", "coping", "located", "required", "needed",
+  "associated", "affecting", "coping", "located", "required", "needed", "necessary",
 ]);
-/** Longest reason, in words, before it's trimmed (see reasonFacts). */
+/** Longest reason, in words (see reasonFacts). */
 export const MAX_REASON_WORDS = 24;
 
 const words = (text: string) => text.split(/\s+/).filter(Boolean);
+/** A word without the comma after it, lowercased. */
+const bare = (word: string | undefined) => (word ?? "").replace(/[,.]$/, "").toLowerCase();
 
-/** A clause never ends on these ("…using any", "…the", "…a wide variety"). */
-const NOT_LAST = new Set([
-  "a", "an", "the", "any", "all", "some", "each", "every", "its", "their", "one", "more", "other", "to",
-  "variety", "number", "range", "kind", "kinds", "type", "types", "part", "parts",
+/** Prepositions, joining words and words like "the" or "any": they need what comes after them. */
+const FUNCTION_WORDS = new Set([
+  "a", "an", "the", "any", "all", "some", "each", "every", "its", "their", "this", "these", "those", "both", "either",
+  "many", "several", "various", "one", "more", "other", "such", "and", "or", "nor", "but", "than", "may", "can", "must",
+  "about", "across", "after", "against", "along", "among", "around", "before", "between", "beyond", "like", "onto",
+  "per", "toward", "towards", "upon", "via", "including",
 ]);
+
+/**
+ * A clause never ends on these: a function word or a linking word, or a word that needs what comes
+ * after it ("…a wide variety", "…the selling of", "…duties related", "…and participate", "…goods in
+ * connection", "…resources necessary", "…research dealing", "…and ensure", "…fixtures made").
+ */
+const NOT_LAST = new Set([
+  ...FUNCTION_WORDS,
+  ...CUT_BEFORE,
+  "variety", "number", "range", "kind", "kinds", "type", "types", "part", "array", "series", "amount",
+  "participate", "connection", "enabling", "assist", "dealing", "relating", "resulting",
+  "specializing", "concerning", "consisting", "working", "applying", "vicinity", "conformity", "accordance",
+  "movement", "responsibility", "exposure", "areas", "use", "ensure", "verify",
+]);
+/** …nor on the word right after these ("…claims to determine", "…and may participate", "…enabling patrons"). */
+const NOT_NEXT_TO_LAST = new Set(["to", "may", "enabling"]);
+/** …nor on one of these after "and" or "or": "…fires or respond", "…decisions and act", "…office, or work". */
+const NOT_LAST_JOINED = new Set(["act", "respond", "work", "engage", "deal", "cope", "comply", "contribute"]);
+
+/**
+ * Whether a clause starts with what the worker does: a verb ("Teach…"), maybe after an adverb
+ * ("Directly supervise…"), not a phrase about how or where ("Using…", "In a…").
+ */
+function startsWithVerb(clause: string[]): boolean {
+  const adverb = /^[a-z]{4,}ly$/i.test(clause[0]) && !["supply", "comply", "multiply"].includes(bare(clause[0]));
+  const first = bare(clause[adverb ? 1 : 0]);
+  return /^[a-z]/.test(first) && !FUNCTION_WORDS.has(first) && !CUT_BEFORE.has(first) && !/ing$/.test(first);
+}
+
+const IRREGULAR_PARTICIPLES = new Set(["made", "built", "known", "found", "held", "done", "given", "taken", "shown", "seen", "grown", "drawn", "sold"]);
+/**
+ * A past participle that needs what came after it ("…drugs delivered", "…data, gathered",
+ * "…fixtures made"), but not "as prescribed" or "are made".
+ */
+function participleAtEnd(clause: string[]): boolean {
+  const last = bare(clause.at(-1));
+  const participle = (/[^e]ed$/.test(last) && last.length > 4) || IRREGULAR_PARTICIPLES.has(last);
+  return participle && !["as", "is", "are", "be", "been", "was", "were"].includes(bare(clause.at(-2)));
+}
+
+/**
+ * Whether the start of a description, cut short, still reads as a whole. It doesn't end on a word
+ * in NOT_LAST, on a word right after "to", "may" or "enabling", on a participle, or partway through
+ * "too … to"; and it has something for its verbs to act on ("plan, direct, or coordinate" doesn't).
+ * A list in it has "and" or "or" before its last item ("install, inspect, test, maintain" and "by
+ * telephone, mail" stop partway through one). And a word like "into" in "feed materials into or
+ * remove materials from machines" isn't left without the rest of its phrase.
+ */
+function readsWhole(clause: string[]): boolean {
+  const [last, beforeLast] = [bare(clause.at(-1)), bare(clause.at(-2))];
+  if (clause.length < 2 || NOT_LAST.has(last) || NOT_NEXT_TO_LAST.has(beforeLast) || participleAtEnd(clause)) return false;
+  if (NOT_LAST_JOINED.has(last) && ["and", "or"].includes(beforeLast)) return false;
+  // "…duties too varied and diverse" (to be classified…).
+  if (clause.some((w) => bare(w) === "too")) return false;
+  // Only the verbs, with nothing to act on: "plan, direct, or coordinate", "pack or package".
+  const joined = clause.findIndex((w) => w === "and" || w === "or");
+  if ((clause[0].endsWith(",") || joined === 1) && joined >= clause.length - 2) return false;
+  const lastComma = clause.findLastIndex((w) => w.endsWith(","));
+  if (lastComma >= 0 && !["and", "or"].includes(clause[lastComma + 1])) return false;
+  const dangling = clause.findIndex((w, i) => CUT_BEFORE.has(bare(w)) && ["and", "or"].includes(clause[i + 1]));
+  return dangling < 0 || clause.slice(dangling + 2, -1).some((w) => CUT_BEFORE.has(w));
+}
+
+/** Linking words that start a phrase of their own, so "…structures or to loosen rock" can lose "or to…". */
+const PREPOSITIONS = new Set([
+  "to", "for", "in", "of", "by", "with", "at", "on", "from", "into", "through", "during", "under", "within", "throughout",
+  "without", "as",
+]);
+
+/**
+ * The first `n` words of a description, without a comma, "and" or "or" at the end ("…roads,
+ * sidewalks, or utilities, or to improve" ends "…or utilities"), when that reads as a whole. Null
+ * when it doesn't, or when the cut splits two words joined without a comma ("grinding and related
+ * tools" isn't "grinding"), unless what's left out is a phrase of its own ("…structures or to…").
+ */
+function cutAt(all: string[], n: number): string[] | null {
+  const kept = all.slice(0, n);
+  while (["and", "or"].includes(kept.at(-1) ?? "")) {
+    if (!kept.at(-2)?.endsWith(",") && !PREPOSITIONS.has(all[n])) return null;
+    kept.pop();
+  }
+  kept[kept.length - 1] = kept.at(-1)!.replace(/,$/, "");
+  return readsWhole(kept) ? kept : null;
+}
 
 /**
  * Where to cut a description of more than `max` words, as a word count. In order: before the first
  * linking word after a few words ("…to promote…", "…in laboratories", "…used in…"), so what the
  * worker does comes first and how, where or why after, but not before "of" ("activities of
  * workers" belong together); at the first comma that doesn't split a list ("Assess patient health
- * problems and needs, develop…"); before "of" after all; before any linking word; and, only when
- * `anyComma`, at the first comma. Never right after "to" ("…claims to determine") or "the".
+ * problems and needs, develop…"); only when `listComma`, at a comma in a list after a whole item:
+ * a plural ("…operation of farms, ranches…") or before a phrase ("…local area network, wide area
+ * network, …"), never a word that shares the words ending the list ("the academic,
+ * administrative, or auxiliary activities", "live farm, ranch, open range or aquacultural
+ * animals"); before "of" after all, but never after "the …" or a word like "safekeeping" ("the
+ * determinants and distribution of disease" belong together); and before any linking word. Only
+ * where what's left reads as a whole (see cutAt).
  */
-function cutPoint(all: string[], max: number, { anyComma }: { anyComma: boolean }): number {
-  const endsWell = (n: number) => !NOT_LAST.has(all[n - 1].toLowerCase()) && all[n - 2] !== "to";
-  const linking = (n: number, of: boolean) => CUT_BEFORE.has(all[n]) && (of || all[n] !== "of") && endsWell(n);
+function cutPoint(all: string[], max: number, { listComma }: { listComma: boolean }): number {
+  const whole = (n: number) => cutAt(all, n) !== null;
+  // "…the preparation, seasoning, and cooking of foods": "the" before "of", with no linking word
+  // between, or a word like "safekeeping of records" right before it.
+  const ofBelongs = (n: number) => {
+    if (/ing$/.test(bare(all[n - 1]))) return true;
+    for (let k = n - 1; k >= 0 && !CUT_BEFORE.has(bare(all[k])); k--) if (bare(all[k]) === "the") return true;
+    return false;
+  };
+  // "Provide individuals, families, and groups with…": what they're provided comes after "with".
+  const withAfterVerb = (n: number) => all[n] === "with" && ["provide", "supply", "equip", "furnish", "present"].includes(bare(all[0]));
+  const linking = (n: number, of: boolean) =>
+    CUT_BEFORE.has(all[n]) && (all[n] !== "of" || (of && !ofBelongs(n))) && !withAfterVerb(n) && whole(n);
   // "…of commercial, real estate, or credit loans": another comma, "and" or "or" within three words.
   const inList = (n: number) => all.slice(n, n + 3).some((w) => w.endsWith(",")) || all[n] === "and" || all[n] === "or";
-  const comma = (n: number) => all[n - 1].endsWith(",") && endsWell(n);
+  // The words in the list item after a comma, up to the next comma, "and" or "or".
+  const nextItem = (n: number) => {
+    let k = n;
+    while (k < all.length && !all[k].endsWith(",") && !["and", "or"].includes(all[k])) k++;
+    return (all[k]?.endsWith(",") ? k + 1 : k) - n;
+  };
+  const comma = (n: number) => all[n - 1].endsWith(",") && whole(n);
   const find = (from: number, test: (n: number) => boolean) => {
     for (let n = from; n <= Math.min(max, all.length - 1); n++) if (test(n)) return n;
     return 0;
@@ -123,9 +224,9 @@ function cutPoint(all: string[], max: number, { anyComma }: { anyComma: boolean 
   return (
     find(5, (n) => linking(n, false)) ||
     find(4, (n) => comma(n) && !inList(n)) ||
+    (listComma ? find(4, (n) => comma(n) && (nextItem(n) !== 1 || /[^su]s,$/.test(all[n - 1]))) : 0) ||
     find(5, (n) => linking(n, true)) ||
-    find(3, (n) => linking(n, true)) ||
-    (anyComma ? find(4, comma) : 0)
+    find(3, (n) => linking(n, true))
   );
 }
 
@@ -133,29 +234,44 @@ function cutPoint(all: string[], max: number, { anyComma }: { anyComma: boolean 
  * What a career involves, from the first sentence of its O*NET description, cut to a short clause
  * that follows "you could": "Design or create graphics to meet specific commercial or promotional
  * needs, such as packaging…" becomes "design or create graphics to meet specific commercial or
- * promotional needs". O*NET descriptions start with what the worker does ("Design…", "Teach…").
- * Null when there's no description to use.
+ * promotional needs". O*NET descriptions start with what the worker does ("Design…", "Teach…"),
+ * sometimes after how or where ("Using climbing techniques, cut away…", "In a gambling
+ * establishment, conduct…"), which is left out. Null when there's no description to use, or no
+ * clean clause: one that starts with a verb and doesn't stop partway through a phrase or a list.
  */
 export function careerClause(description: string | null | undefined, maxWords = MAX_CLAUSE_WORDS): string | null {
   if (!description?.trim()) return null;
   // The first sentence: up to a period before a capital letter, but not the one in "U.S. Army".
   let text = description.trim().split(/(?<!\b[A-Z])\.\s+(?=[A-Z])/)[0].replace(/\.$/, "");
-  // Asides like "(MEMS)" or "(LAN)", "Under the direction of…," openings, and "courses pertaining to".
+  // Asides like "(MEMS)" or "(LAN)", openings like "Under the direction of…," and "Using…,", and
+  // "courses pertaining to".
   text = text
     .replace(/\s*\([^)]*\)/g, "")
-    .replace(/^Under [^,]+,\s*/, "")
+    .replace(/^(?:Under|Using|In|With|At|As|For|On|During|Through|Following|Working)\b[^,]+,\s*/, "")
     .replace(/\bpertaining to\b/g, "in");
   // Lists of examples and second parts: "…, such as…", "…; …", "…, including…".
-  text = text.split(/\s*[;:]\s*|,?\s+(?:such as|including|especially|e\.g\.)\s+/i)[0].replace(/,$/, "").trim();
-  const all = words(text);
-  if (all.length < 2) return null;
-  if (all.length > maxWords) {
-    // A comma that may split a list is a last resort for the first cut, never for a shorter one
-    // ("play parts in stage, television, radio…" isn't "play parts in stage").
-    const cut = cutPoint(all, maxWords, { anyComma: maxWords === MAX_CLAUSE_WORDS });
+  // Without its examples, "…in areas" or "…to areas" says nothing: "Transport patients to areas
+  // such as operating rooms" is "transport patients". And "material movers, hand" is an O*NET name.
+  text = text
+    .split(/\s*[;:]\s*|,?\s+(?:such as|including|especially|e\.g\.)\s+/i)[0]
+    .replace(/,$/, "")
+    .replace(/,?\s+(?:[a-z]+ly\s+)?(?:in|to)\s+(?:areas|fields|settings|places)$/, "")
+    .replace(/,\s*hand$/, "")
+    .trim();
+  // "…perform any or all of the following functions" points to a list that isn't shown.
+  if (/\bthe following\b/i.test(text)) return null;
+  let clause = words(text);
+  if (clause.length < 2 || !startsWithVerb(clause)) return null;
+  if (clause.length <= maxWords) {
+    // The whole first sentence ends where the sentence does ("…to run", "…as needed").
+    if (FUNCTION_WORDS.has(bare(clause.at(-1)))) return null;
+  } else {
+    // A comma in a list only for the first cut, never a shorter one ("play parts in stage, television…").
+    const cut = cutPoint(clause, maxWords, { listComma: maxWords === MAX_CLAUSE_WORDS });
     if (!cut) return null;
-    text = all.slice(0, cut).join(" ").replace(/(?:,|\s+and|\s+or)+$/, "");
+    clause = cutAt(clause, cut)!;
   }
+  text = clause.join(" ");
   // Lowercase the verb that starts it, but not an acronym ("GIS").
   return /^[A-Z][a-z]/.test(text) ? text[0].toLowerCase() + text.slice(1) : text;
 }
@@ -203,24 +319,33 @@ function reasonWordings({ title, clause, preparation, shared }: ReasonFacts, var
   return ordered;
 }
 
-/** A career's facts for its reason, trimmed until the reason is short enough to read at a glance. */
+/**
+ * A career's facts for its reason, trimmed until the reason is short enough to read at a glance
+ * (MAX_REASON_WORDS). In order: one interest area instead of two; a shorter clause for what the
+ * career involves; no interest area; and last, no clause ("…this career uses your interest in…").
+ */
 function reasonFacts(
   career: { title: string; description?: string | null; jobZone?: number | null },
   shared: Riasec[],
 ): ReasonFacts {
-  const preparation = career.jobZone ? (PREPARATION[career.jobZone] ?? null) : null;
-  let facts: ReasonFacts = { title: career.title, clause: careerClause(career.description), preparation, shared };
-  const length = (f: ReasonFacts) => words(reasonWordings(f, 0)[0]).length;
-  // First name one interest area instead of two, then shorten what the career involves.
-  if (length(facts) > MAX_REASON_WORDS && shared.length > 1) facts = { ...facts, shared: shared.slice(0, 1) };
-  // When there's no good shorter cut, a reason a few words over is better than a clause that says
-  // too little.
-  for (let max = MAX_CLAUSE_WORDS - 1; length(facts) > MAX_REASON_WORDS && max >= 3; max--) {
+  const preparation = career.jobZone ? (JOB_ZONE_INFO[career.jobZone]?.reasonLead ?? null) : null;
+  const fits = (f: ReasonFacts) => words(reasonWordings(f, 0)[0]).length <= MAX_REASON_WORDS;
+  const full: ReasonFacts = { title: career.title, clause: careerClause(career.description), preparation, shared };
+  if (!full.clause || fits(full)) return full;
+  // The first cut, then each shorter clean cut.
+  const clauses = [full.clause];
+  for (let max = MAX_CLAUSE_WORDS - 1; max >= 3; max--) {
     const shorter = careerClause(career.description, max);
     if (!shorter) break;
-    facts = { ...facts, clause: shorter };
+    if (shorter !== clauses.at(-1)) clauses.push(shorter);
   }
-  return facts;
+  for (const areas of [shared.slice(0, 1), []]) {
+    for (const clause of clauses) {
+      const facts = { ...full, clause, shared: areas };
+      if (fits(facts)) return facts;
+    }
+  }
+  return { ...full, clause: null };
 }
 
 const EXPLORE = "Explore a few that catch your eye — you're not choosing forever, just finding a direction for now.";

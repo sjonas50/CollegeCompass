@@ -15,6 +15,7 @@ import {
   interestCode,
   matchFreeAssessment,
   removeImportedAssessment,
+  strengthsFromUndoableImport,
   undoableImport,
 } from "./import";
 import { INTEREST_ITEMS, PERSONALITY_ITEMS, type Riasec } from "./instruments";
@@ -395,6 +396,49 @@ describe("importing the strengths add-on with the quiz", () => {
     const res = await importSavedAssessment(db, student, student, saved, { via: "dashboard", strengths: savedStrengths, now });
     expect(res).toMatchObject({ ok: true, strengthsAttemptId: null });
     expect((await latestResult(db, student, "personality"))?.attemptId).toBe(start.attempt.id);
+  });
+
+  it("never replaces a personality activity the student started in their account", async () => {
+    const student = await makeStudent("ana@example.com");
+    const start = await startOrResumeAttempt(db, student, "personality", now);
+    if (!start.ok) throw new Error();
+    const started = Object.fromEntries(PERSONALITY_ITEMS.slice(0, 7).map((i) => [i.id, 2]));
+    await saveResponses(db, student, start.attempt.id, started);
+
+    const res = await importSavedAssessment(db, student, student, saved, { via: "dashboard", strengths: savedStrengths, now });
+    // The quiz goes in; the strengths from this device don't, and the answers given here are kept.
+    expect(res).toMatchObject({ ok: true, strengthsAttemptId: null });
+    expect(await latestResult(db, student, "interests")).not.toBeNull();
+    expect(await latestResult(db, student, "personality")).toBeNull();
+    expect((await instrumentStatuses(db, student)).personality).toEqual({ state: "in_progress", answered: 7, total: 20 });
+    const kept = await db.select().from(schema.assessmentResponses).where(eq(schema.assessmentResponses.attemptId, start.attempt.id));
+    expect(Object.fromEntries(kept.map((r) => [r.itemId, r.value]))).toEqual(started);
+    const audited = await db.select().from(schema.auditLog).where(eq(schema.auditLog.action, "assessment.imported"));
+    expect(audited.map((a) => a.metadata)).toEqual([{ instrument: "interests", via: "dashboard" }]);
+
+    // Taking the quiz back leaves the started activity too.
+    expect(await removeImportedAssessment(db, student, student, res.ok ? res.attemptId : "", { now })).toEqual({ ok: true });
+    expect((await instrumentStatuses(db, student)).personality).toMatchObject({ state: "in_progress", answered: 7 });
+  });
+
+  it("says when the student's strengths are the ones that came with a quiz they can take back", async () => {
+    const student = await makeStudent("ana@example.com");
+    expect(await strengthsFromUndoableImport(db, student, now)).toBe(false);
+    const res = await importSavedAssessment(db, student, student, saved, { via: "signup", strengths: savedStrengths, now });
+    if (!res.ok) throw new Error(res.error);
+    expect(await strengthsFromUndoableImport(db, student, now)).toBe(true);
+    // Not once the quiz can't be taken back.
+    expect(await strengthsFromUndoableImport(db, student, new Date(now.getTime() + IMPORT_UNDO_DAYS * 86_400_000))).toBe(false);
+
+    // Not for strengths the student gave themself, with a quiz imported alone.
+    const other = await makeStudent("ben@example.com");
+    const start = await startOrResumeAttempt(db, other, "personality", new Date(now.getTime() - 600_000));
+    if (!start.ok) throw new Error();
+    await saveResponses(db, other, start.attempt.id, Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, 3])));
+    await completeAttempt(db, other, start.attempt.id, now);
+    expect((await importSavedAssessment(db, other, other, saved, { via: "dashboard", strengths: savedStrengths, now })).ok).toBe(true);
+    expect(await undoableImport(db, other, now)).toMatchObject({ strengthsAttemptId: null });
+    expect(await strengthsFromUndoableImport(db, other, now)).toBe(false);
   });
 
   it("takes both back when the quiz wasn't the student's", async () => {

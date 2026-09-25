@@ -62,9 +62,10 @@ export default async function SavedPage({ searchParams }: PageProps<"/try/saved"
             <h2 className="font-medium">Not your answers?</h2>
             <p className="text-sm text-muted">
               If someone else took the quiz on this device, you can remove these results
-              {imported.strengthsAttemptId && " and strengths"}. Then you can take the quiz yourself right away.
+              {imported.strengthsAttemptId && " and strengths"}. Then you can take{" "}
+              {imported.strengthsAttemptId ? "both" : "the quiz"} yourself right away.
             </p>
-            <RemoveImportButton attemptId={imported.attemptId} />
+            <RemoveImportButton attemptId={imported.attemptId} strengths={Boolean(imported.strengthsAttemptId)} />
           </Card>
         )}
       </div>

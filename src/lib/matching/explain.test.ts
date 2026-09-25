@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
 import type { MatchExplanation } from "@/db/schema";
 import { registerStudent } from "@/lib/accounts";
+import { JOB_ZONE_INFO } from "../job-zones";
 import { INTEREST_ITEMS, PERSONALITY_ITEMS, type Riasec } from "../assessments/instruments";
 import { interestPattern } from "../assessments/interest-pattern";
 import { completeAttempt, saveResponses, startOrResumeAttempt } from "../assessments/service";
@@ -57,6 +58,75 @@ const counselor = {
   interests: profile({ S: 7, I: 4, A: 3 }),
 };
 const page = [chemist, teacher, electrician, counselor];
+// Real careers whose reasons ran past MAX_REASON_WORDS: long descriptions with no clean shorter cut.
+const longCareers: TemplateCareer[] = [
+  {
+    occupationCode: "49-3052.00",
+    title: "Motorcycle Mechanics",
+    jobZone: 3,
+    description: "Diagnose, adjust, repair, or overhaul motorcycles, scooters, mopeds, dirt bikes, or similar motorized vehicles.",
+    interests: { R: 7, I: 3.12, A: 1.23, S: 1.44, E: 1, C: 3.64 },
+  },
+  {
+    occupationCode: "51-9071.00",
+    title: "Jewelers and Precious Stone and Metal Workers",
+    jobZone: 3,
+    description: "Design, fabricate, adjust, repair, or appraise jewelry, gold, silver, other precious metals, or gems.",
+    interests: { R: 6.59, I: 2.6, A: 3.7, S: 1.03, E: 1.51, C: 3.35 },
+  },
+  {
+    occupationCode: "15-1254.00",
+    title: "Web Developers",
+    jobZone: 3,
+    description:
+      "Develop and implement websites, web applications, application databases, and interactive web interfaces. Evaluate code to ensure that it is properly structured, meets industry standards, and is compatible with browsers and devices.",
+    interests: { R: 2.98, I: 5.01, A: 3.13, S: 2.22, E: 2.96, C: 5.03 },
+  },
+  {
+    occupationCode: "33-2021.00",
+    title: "Fire Inspectors and Investigators",
+    jobZone: 3,
+    description:
+      "Inspect buildings to detect fire hazards and enforce local ordinances and state laws, or investigate and gather facts to determine cause of fires and explosions.",
+    interests: { R: 5.49, I: 4.33, A: 1.02, S: 2.59, E: 3.32, C: 5.18 },
+  },
+  {
+    occupationCode: "23-2011.00",
+    title: "Paralegals and Legal Assistants",
+    jobZone: 3,
+    description:
+      "Assist lawyers by investigating facts, preparing legal documents, or researching legal precedent. Conduct research to support a legal proceeding, to formulate a defense, or to initiate legal action.",
+    interests: { R: 1.74, I: 5.04, A: 2.24, S: 3.12, E: 3.92, C: 5.28 },
+  },
+  {
+    occupationCode: "49-3011.00",
+    title: "Aircraft Mechanics and Service Technicians",
+    jobZone: 3,
+    description: "Diagnose, adjust, repair, or overhaul aircraft engines and assemblies, such as hydraulic and pneumatic systems.",
+    interests: { R: 6.7, I: 3.81, A: 1, S: 1.31, E: 1.84, C: 4.7 },
+  },
+  {
+    occupationCode: "19-1041.00",
+    title: "Epidemiologists",
+    jobZone: 5,
+    description:
+      "Investigate and describe the determinants and distribution of disease, disability, or health outcomes. May develop the means for prevention and control.",
+    interests: { R: 2.82, I: 7, A: 2.19, S: 4.11, E: 2.37, C: 3.63 },
+  },
+  {
+    occupationCode: "35-1011.00",
+    title: "Chefs and Head Cooks",
+    jobZone: 3,
+    description:
+      "Direct and may participate in the preparation, seasoning, and cooking of salads, soups, fish, meats, vegetables, desserts, or other foods. May plan and price menu items, order supplies, and keep records and accounts.",
+    interests: { R: 4.84, I: 1.68, A: 2.72, S: 2.95, E: 5.13, C: 4.35 },
+  },
+];
+/** A student who liked the career's two strongest areas and disliked the rest. */
+const likesTopTwo = (career: TemplateCareer): Record<Riasec, number> => {
+  const [first, second] = (["R", "I", "A", "S", "E", "C"] as const).toSorted((a, b) => career.interests![b] - career.interests![a]);
+  return areas({ R: 10, I: 10, A: 10, S: 10, E: 10, C: 10, [first]: 40, [second]: 35 });
+};
 const reasons = (scores: Partial<Record<Riasec, number>>, careers: TemplateCareer[] = page) =>
   templateExplanation(areas(scores), careers).careers.map((c) => c.why);
 const wordCount = (s: string) => s.split(/\s+/).length;
@@ -65,17 +135,19 @@ describe("template explanation", () => {
   it("says what the work is, the preparation it needs, and the interests it shares with the student", () => {
     const e = templateExplanation(areas({ I: 40, R: 30, A: 20 }), [chemist, electrician, counselor]);
     expect(e.overview).toMatch(/^Your strongest interest areas are Investigative and Realistic, followed by Artistic\./);
+    // Chemists: one shared area instead of two keeps it short. Electricians: the whole clause, which
+    // has no shorter clean cut, and no area. (See "keeps each reason to one short sentence".)
     expect(e.careers.map((c) => c.why)).toEqual([
-      "With a bachelor's degree, you could conduct qualitative and quantitative chemical analyses or experiments, using your interest in figuring things out and hands-on work.",
-      "With career training or a two-year degree, you'd install, maintain, and repair electrical wiring, equipment, and fixtures, which fits your interest in hands-on work.",
-      "With a graduate degree, you could counsel and advise individuals and groups, using your interest in figuring things out.",
+      "Usually after a bachelor's degree, you could conduct qualitative and quantitative chemical analyses or experiments, using your interest in figuring things out.",
+      "Usually after career training or a two-year degree, you'd install, maintain, and repair electrical wiring, equipment, and fixtures.",
+      "Usually after a graduate degree, you could counsel and advise individuals and groups, using your interest in figuring things out.",
     ]);
   });
 
   it("names only areas the student leans toward, never one they disliked", () => {
     // Artistic reached "Not sure" (20 of 40); teaching is strongly social, which this student disliked.
     expect(reasons({ I: 40, R: 30, A: 20 }, [teacher])).toEqual([
-      "With a bachelor's degree, you could teach one or more subjects to students at the secondary school level, using your interest in creating things.",
+      "Usually after a bachelor's degree, you could teach one or more subjects, using your interest in creating things.",
     ]);
     // One "Dislike" among the social activities: Social scored 1 of 40.
     const [chemistWhy, teacherWhy, electricianWhy, counselorWhy] = reasons({ A: 40, S: 1 });
@@ -85,7 +157,7 @@ describe("template explanation", () => {
 
     // Areas the student liked count even when a tie keeps them out of the top interests.
     expect(reasons({ I: 40, A: 30, S: 30, E: 30 })[3]).toBe(
-      "With a graduate degree, you'd counsel and advise individuals and groups, which fits your interest in figuring things out and helping people.",
+      "Usually after a graduate degree, you'd counsel and advise individuals and groups, which fits your interest in figuring things out and helping people.",
     );
   });
 
@@ -120,10 +192,10 @@ describe("template explanation", () => {
       expect(e.overview).toMatch(/^You rated all six interest areas about the same, so no area stands out yet\./);
       expect(e.overview).not.toMatch(/strongest|Realistic|Investigative/);
       expect(e.careers.map((c) => c.why)).toEqual([
-        "With a bachelor's degree, you could conduct qualitative and quantitative chemical analyses or experiments.",
-        "With a bachelor's degree, you'd teach one or more subjects to students at the secondary school level.",
-        "With career training or a two-year degree, you could install, maintain, and repair electrical wiring, equipment, and fixtures.",
-        "With a graduate degree, you'd counsel and advise individuals and groups.",
+        "Usually after a bachelor's degree, you could conduct qualitative and quantitative chemical analyses or experiments.",
+        "Usually after a bachelor's degree, you'd teach one or more subjects to students at the secondary school level.",
+        "Usually after career training or a two-year degree, you could install, maintain, and repair electrical wiring, equipment, and fixtures.",
+        "Usually after a graduate degree, you'd counsel and advise individuals and groups.",
       ]);
       expect(e.careers.every((c) => !/interest/.test(c.why))).toBe(true);
     }
@@ -143,13 +215,13 @@ describe("template explanation", () => {
     const whys = reasons({ A: 40 }, alike);
     expect(new Set(whys).size).toBe(6);
     expect(whys.slice(0, 2)).toEqual([
-      "With a bachelor's degree, this career uses your interest in creating things.",
-      "With a bachelor's degree, this path fits your interest in creating things.",
+      "Usually after a bachelor's degree, this career uses your interest in creating things.",
+      "Usually after a bachelor's degree, this path fits your interest in creating things.",
     ]);
     // Neighbors start from different wordings. (Two areas would make these too long, so one is named.)
     expect(reasons({ A: 40, S: 30 }, [teacher, { ...teacher, occupationCode: "25-2022.00", title: "Middle School Teachers" }])).toEqual([
-      "With a bachelor's degree, you could teach one or more subjects to students at the secondary school level, using your interest in creating things.",
-      "With a bachelor's degree, you'd teach one or more subjects to students at the secondary school level, which fits your interest in creating things.",
+      "Usually after a bachelor's degree, you could teach one or more subjects, using your interest in creating things.",
+      "Usually after a bachelor's degree, you'd teach one or more subjects, which fits your interest in creating things.",
     ]);
   });
 
@@ -160,6 +232,58 @@ describe("template explanation", () => {
         expect(why.match(/[.!?](\s|$)/g), why).toHaveLength(1);
       }
     }
+    // Real long descriptions, for a student who shares the career's two strongest areas, in both
+    // wordings (a neighbor starts from the other one). `npm run check:reasons` checks every career.
+    for (const career of longCareers) {
+      const whys = templateExplanation(likesTopTwo(career), [career, { ...career, occupationCode: "neighbor" }]).careers.map((c) => c.why);
+      for (const why of whys) {
+        expect(wordCount(why), why).toBeLessThanOrEqual(MAX_REASON_WORDS);
+        expect(why.match(/[.!?](\s|$)/g), why).toHaveLength(1);
+      }
+    }
+  });
+
+  it("trims a long reason in order: one area, a shorter clause, no area, then no clause", () => {
+    const why = (career: TemplateCareer) => templateExplanation(likesTopTwo(career), [career]).careers[0].why;
+    const [motorcycles, jewelers, web, fire, paralegals, aircraft, epidemiologists, chefs] = longCareers;
+    // One area instead of two.
+    expect(why(chemist)).toBe(
+      "Usually after a bachelor's degree, you could conduct qualitative and quantitative chemical analyses or experiments, using your interest in figuring things out.",
+    );
+    // A shorter clause that still reads as a whole.
+    expect(why(teacher)).toBe("Usually after a bachelor's degree, you could teach one or more subjects, using your interest in helping people.");
+    // No clean shorter clause: what the work is, without an area.
+    expect([motorcycles, jewelers, web, fire, paralegals, aircraft, epidemiologists, chefs].map(why)).toEqual([
+      "Usually after career training or a two-year degree, you could diagnose, adjust, repair, or overhaul motorcycles, scooters, mopeds, dirt bikes, or similar motorized vehicles.",
+      "Usually after career training or a two-year degree, you could design, fabricate, adjust, repair, or appraise jewelry, gold, silver, other precious metals, or gems.",
+      "Usually after career training or a two-year degree, you could develop and implement websites, web applications, application databases, and interactive web interfaces.",
+      "Usually after career training or a two-year degree, you could inspect buildings to detect fire hazards and enforce local ordinances and state laws.",
+      "Usually after career training or a two-year degree, you could assist lawyers by investigating facts, preparing legal documents, or researching legal precedent.",
+      "Usually after career training or a two-year degree, you could diagnose, adjust, repair, or overhaul aircraft engines and assemblies.",
+      "Usually after a graduate degree, you could investigate and describe the determinants and distribution of disease, disability, or health outcomes.",
+      "Usually after career training or a two-year degree, you could direct and may participate in the preparation, seasoning, and cooking of salads.",
+    ]);
+    // No clean clause at all: why it fits, without what the work is.
+    const inspectors: TemplateCareer = {
+      occupationCode: "51-9061.00",
+      title: "Inspectors, Testers, Sorters, Samplers, and Weighers",
+      jobZone: 2,
+      description:
+        "Inspect, test, sort, sample, or weigh nonagricultural raw materials or processed, machined, fabricated, or assembled parts or products for defects, wear, and deviations from specifications.",
+      interests: profile({ R: 5, C: 5 }),
+    };
+    expect(why(inspectors)).toBe("Usually with some on-the-job training, this career uses your interest in hands-on work and keeping things organized.");
+  });
+
+  it("hedges the preparation a career needs, as its career page does", () => {
+    for (const [zone, info] of Object.entries(JOB_ZONE_INFO)) {
+      expect(info.detail).toMatch(/^Usually /);
+      expect(info.reasonLead).toMatch(/^Usually /);
+      const [why] = reasons({ A: 40 }, [{ ...teacher, jobZone: Number(zone) }]);
+      expect(why.startsWith(`${info.reasonLead}, `), why).toBe(true);
+    }
+    // Never a flat requirement: zone 5 includes careers, like chief executives, that don't need one.
+    expect(reasons({ A: 40 }, page).join(" ")).not.toMatch(/\bWith (a|an|some|little|career)\b/);
   });
 });
 
@@ -180,12 +304,130 @@ describe("what a career involves, from its O*NET description", () => {
     ["Create original artwork using any of a wide variety of media and techniques.", "create original artwork using any of a wide variety of media and techniques"],
     [
       "Teach courses pertaining to the culture and development of an area, an ethnic group, or any other group, such as Latin American studies.",
-      "teach courses in the culture and development",
+      "teach courses in the culture and development of an area",
     ],
     ["Under the direction of a dentist, perform limited clinical duties, such as equipment preparation and sterilization.", "perform limited clinical duties"],
     ["Lead U.S. Army units in combat. Plan missions.", "lead U.S. Army units in combat"],
+    // Real descriptions that used to be cut partway through a phrase or a list.
+    [
+      "Assess, plan, organize, and participate in rehabilitative programs that improve mobility, relieve pain, increase strength, and improve or correct disabling conditions resulting from disease or injury.",
+      "assess, plan, organize, and participate in rehabilitative programs",
+    ],
+    [
+      "Direct and may participate in the preparation, seasoning, and cooking of salads, soups, fish, meats, vegetables, desserts, or other foods. May plan and price menu items, order supplies, and keep records and accounts.",
+      "direct and may participate in the preparation, seasoning, and cooking of salads",
+    ],
+    [
+      "Investigate and describe the determinants and distribution of disease, disability, or health outcomes. May develop the means for prevention and control.",
+      "investigate and describe the determinants and distribution of disease, disability, or health outcomes",
+    ],
+    [
+      "Sell business goods or services, the selling of which requires a technical background equivalent to a baccalaureate degree in engineering.",
+      "sell business goods or services",
+    ],
+    [
+      "Perform duties related to the purchase, sale, or holding of securities. Duties include writing orders for stock purchases or sales.",
+      "perform duties related to the purchase, sale, or holding of securities",
+    ],
+    [
+      "Using sophisticated climbing and rigging techniques, cut away dead or excess branches from trees or shrubs to maintain right-of-way for roads, sidewalks, or utilities, or to improve appearance, health, and value of tree.",
+      "cut away dead or excess branches",
+    ],
+    ["In a gambling establishment, conduct financial transactions for patrons. Accept patron's credit application.", "conduct financial transactions for patrons"],
+    [
+      "Investigate atmospheric phenomena and interpret meteorological data, gathered by surface and air stations, satellites, and radar to prepare reports and forecasts for public and other uses.",
+      "investigate atmospheric phenomena and interpret meteorological data",
+    ],
+    [
+      "Inspect equipment or goods in connection with the safe transport of cargo or people. Includes rail transportation inspectors.",
+      "inspect equipment or goods in connection with the safe transport of cargo or people",
+    ],
+    [
+      "Post information enabling patrons to wager on various races and sporting events. Assist in the operation of games such as keno and bingo.",
+      "post information enabling patrons to wager on various races and sporting events",
+    ],
+    [
+      "Interview persons by telephone, mail, in person, or by other means for the purpose of completing forms, applications, or questionnaires.",
+      "interview persons by telephone, mail, in person, or by other means",
+    ],
+    [
+      "Inspect, test, sort, sample, or weigh nonagricultural raw materials or processed, machined, fabricated, or assembled parts or products for defects, wear, and deviations from specifications.",
+      null,
+    ],
+    [
+      "Install, inspect, test, maintain, or repair electric gate crossings, signals, signal equipment, track switches, section lines, or intercommunications systems within a railroad system.",
+      "install, inspect, test, maintain, or repair electric gate crossings",
+    ],
+    [
+      "Feed materials into or remove materials from machines or equipment that is automatic or tended by other workers.",
+      "feed materials into or remove materials from machines or equipment",
+    ],
+    [
+      "Plan, direct, or coordinate the work activities and resources necessary for manufacturing products in accordance with cost, quality, and quantity specifications.",
+      "plan, direct, or coordinate the work activities and resources",
+    ],
+    [
+      "Purchase machinery, equipment, tools, parts, supplies, or services necessary for the operation of an establishment. Purchase raw or semifinished materials for manufacturing.",
+      "purchase machinery, equipment, tools, parts, supplies, or services",
+    ],
+    [
+      "Perform technical activities at power plants or individual installations necessary for the generation of power from geothermal energy sources.",
+      "perform technical activities at power plants or individual installations",
+    ],
+    // And others found checking every career (npm run check:reasons).
+    [
+      "Plan, direct, or coordinate, usually through subordinate supervisory personnel, activities concerned with the construction and maintenance of structures, facilities, and systems.",
+      null,
+    ],
+    [
+      "Plan, direct, or coordinate the academic, administrative, or auxiliary activities of kindergarten, elementary, or secondary schools.",
+      null,
+    ],
+    ["Record drugs delivered to the pharmacy, store incoming merchandise, and inform the supervisor of stock needs.", "record drugs delivered to the pharmacy"],
+    ["Set up or repair rigging for construction projects, manufacturing plants, logging yards, ships and shipyards.", "set up or repair rigging"],
+    [
+      "Set up, operate, or tend grinding and related tools that remove excess material or burrs from surfaces, sharpen edges or corners.",
+      "set up, operate, or tend grinding and related tools",
+    ],
+    [
+      "Provide individuals, families, and groups with the psychosocial support needed to cope with chronic, acute, or terminal illnesses.",
+      "provide individuals, families, and groups with the psychosocial support",
+    ],
+    ["Transport patients to areas such as operating rooms or x-ray rooms using wheelchairs, stretchers, or moveable beds.", "transport patients"],
+    ["Perform any or all of the following functions in the manufacture of electronic semiconductors.", null],
+    ["Create, modify, and test the code and scripts that allow computer applications to run.", "create, modify, and test the code and scripts that allow computer applications to run"],
+    [
+      "Apply engineering theory and principles to problems of industrial layout or manufacturing production, usually under the direction of engineering staff.",
+      "apply engineering theory and principles",
+    ],
+    ["Directly supervise and coordinate activities of correctional officers and jailers.", "directly supervise and coordinate activities of correctional officers and jailers"],
   ])("%s", (description, clause) => {
     expect(careerClause(description)).toBe(clause);
+  });
+
+  it.each([
+    // Shorter cuts, for reasons that are too long: never partway through a phrase or a list.
+    ["Assess, plan, organize, and participate in rehabilitative programs that improve mobility, relieve pain.", 7, null],
+    ["Direct and may participate in the preparation, seasoning, and cooking of salads, soups, fish, meats.", 13, null],
+    ["Investigate and describe the determinants and distribution of disease, disability, or health outcomes.", 12, null],
+    ["Perform duties related to the purchase, sale, or holding of securities.", 10, null],
+    ["Inspect equipment or goods in connection with the safe transport of cargo or people.", 13, "inspect equipment or goods"],
+    ["Post information enabling patrons to wager on various races and sporting events.", 11, null],
+    ["Interview persons by telephone, mail, in person, or by other means for the purpose of completing forms.", 10, null],
+    ["Feed materials into or remove materials from machines or equipment that is automatic or tended by other workers.", 9, null],
+    ["Investigate atmospheric phenomena and interpret meteorological data, gathered by surface and air stations.", 6, null],
+    ["Appraise, edit, and direct safekeeping of permanent records and historically valuable documents.", 10, null],
+    ["Teach one or more subjects to students at the secondary school level.", 10, "teach one or more subjects"],
+  ])("%s (at most %i words)", (description, max, clause) => {
+    expect(careerClause(description, max)).toBe(clause);
+  });
+
+  it("always starts with what the worker does", () => {
+    expect(careerClause("Using hand tools cut and shape wood into furniture.")).toBeNull();
+    expect(careerClause("In the field, collect and label soil samples.")).toBe("collect and label soil samples");
+    expect(careerClause("Manually plant, cultivate, and harvest vegetables, fruits, nuts, and field crops.")).toBe(
+      "manually plant, cultivate, and harvest vegetables, fruits, nuts, and field crops",
+    );
   });
 
   it("cuts a long one before a linking word, never mid-list or after 'any'", () => {
@@ -220,9 +462,7 @@ describe("template overview", () => {
     // One "Dislike" among the social activities: Social scored 1 of 40, so it isn't second.
     const e = templateExplanation(areas({ A: 40, S: 1 }), [teacher]);
     expect(e.overview).toMatch(/^Artistic stands out\. You leaned toward disliking the other five areas\./);
-    expect(e.careers[0].why).toBe(
-      "With a bachelor's degree, you could teach one or more subjects to students at the secondary school level, using your interest in creating things.",
-    );
+    expect(e.careers[0].why).toBe("Usually after a bachelor's degree, you could teach one or more subjects, using your interest in creating things.");
     expect(templateExplanation(areas({ A: 40, S: 30 }), [teacher]).overview).toMatch(
       /^Artistic and Social stand out\. You leaned toward disliking the other four areas\./,
     );

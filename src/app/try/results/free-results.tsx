@@ -114,14 +114,17 @@ export function Results({ answers, viewer, trialDays }: { answers: Responses; vi
           ))}
       </div>
 
-      <StrengthsCard saved={strengths} />
+      <StrengthsCard saved={strengths} viewer={viewer} />
 
       <SaveResultsCard viewer={viewer} onTakeAgain={takeAgain} strengths={isComplete(strengths)} trialDays={trialDays} />
 
       <p className="text-sm text-muted">
-        Your answers, including any strengths answers, are saved only in this browser. To find careers, we used just your
-        six interest scores, and we didn&apos;t keep them. We count how many people finish the quiz, but not who.
-        &ldquo;Take it again&rdquo; erases your answers from this browser.
+        {/* A signed-in student answers the strengths statements in their account, where they're saved. */}
+        {viewer === "student" || viewer === "student_with_results"
+          ? "Your quiz answers, and any strengths answers from before you signed in, are saved only in this browser."
+          : "Your answers, including any strengths answers, are saved only in this browser."}{" "}
+        To find careers, we used just your six interest scores, and we didn&apos;t keep them. We count how many people finish
+        the quiz, but not who. &ldquo;Take it again&rdquo; erases your answers from this browser.
       </p>
     </div>
   );

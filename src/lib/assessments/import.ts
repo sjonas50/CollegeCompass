@@ -181,7 +181,8 @@ export type ImportResult =
  * Inserts a completed attempt from answers checked by validateSaved, with its result scored here.
  * Started and finished at the same moment: that's how an import is recognized later (see
  * isImported), and how the strengths imported with a quiz are found again (see
- * removeImportedAssessment). An unfinished in-account attempt is replaced.
+ * removeImportedAssessment). An unfinished in-account attempt is replaced (only ever an interests
+ * one: strengths aren't imported over a started personality activity).
  */
 async function insertImportedAttempt(tx: Db, userId: string, instrument: FreeInstrument, answers: Responses, now: Date) {
   await tx
@@ -198,15 +199,20 @@ async function insertImportedAttempt(tx: Db, userId: string, instrument: FreeIns
   return attempt.id;
 }
 
-async function hasFinished(tx: Db, userId: string, instrument: FreeInstrument): Promise<boolean> {
-  const [done] = await tx
+/** Whether the student has an attempt at this activity: a finished one, or (`started`) any at all. */
+async function hasAttempt(tx: Db, userId: string, instrument: FreeInstrument, { started = false } = {}): Promise<boolean> {
+  const [found] = await tx
     .select({ id: assessmentAttempts.id })
     .from(assessmentAttempts)
     .where(
-      and(eq(assessmentAttempts.userId, userId), eq(assessmentAttempts.instrument, instrument), isNotNull(assessmentAttempts.completedAt)),
+      and(
+        eq(assessmentAttempts.userId, userId),
+        eq(assessmentAttempts.instrument, instrument),
+        started ? undefined : isNotNull(assessmentAttempts.completedAt),
+      ),
     )
     .limit(1);
-  return Boolean(done);
+  return Boolean(found);
 }
 
 /**
@@ -218,8 +224,9 @@ async function hasFinished(tx: Db, userId: string, instrument: FreeInstrument): 
  *   imported twice. An unfinished in-account attempt is replaced by the saved answers.
  * - `strengths`: the strengths add-on's saved answers, when the visitor took it. Checked just as
  *   strictly and imported with the quiz, before matching. Answers that don't check out are left out
- *   without stopping the quiz's import, as are strengths when the account already has a finished
- *   personality result.
+ *   without stopping the quiz's import, as are strengths when the account already has the
+ *   personality activity, finished or started: answers the student gave in their account are never
+ *   replaced by the add-on's (see SavedResultsImport, which says so).
  */
 export async function importSavedAssessment(
   db: Db,
@@ -243,11 +250,11 @@ export async function importSavedAssessment(
       .where(and(eq(users.id, studentUserId), eq(users.role, "student")))
       .for("update");
     if (!student) return { ok: false, error: "not_allowed" };
-    if (await hasFinished(tx, studentUserId, "interests")) return { ok: false, error: "already_done" };
+    if (await hasAttempt(tx, studentUserId, "interests")) return { ok: false, error: "already_done" };
 
     const attemptId = await insertImportedAttempt(tx, studentUserId, "interests", parsed.answers, now);
     const strengthsAttemptId =
-      strengthsParsed?.ok && !(await hasFinished(tx, studentUserId, "personality"))
+      strengthsParsed?.ok && !(await hasAttempt(tx, studentUserId, "personality", { started: true }))
         ? await insertImportedAttempt(tx, studentUserId, "personality", strengthsParsed.answers, now)
         : null;
     // Also forgets the counselor's saved context, which described the student before these results.
@@ -314,6 +321,28 @@ async function strengthsImportedAt(db: Db, studentUserId: string, importedAt: Da
     )
     .limit(1);
   return row?.id ?? null;
+}
+
+/**
+ * Whether the student's strengths are the ones brought in with a free quiz that can still be taken
+ * back (see undoableImport): then /discover/personality points to the undo on /discover/interests.
+ */
+export async function strengthsFromUndoableImport(db: Db, studentUserId: string, now = new Date()): Promise<boolean> {
+  const imported = await undoableImport(db, studentUserId, now);
+  if (!imported?.strengthsAttemptId) return false;
+  const [latest] = await db
+    .select({ id: assessmentAttempts.id })
+    .from(assessmentAttempts)
+    .where(
+      and(
+        eq(assessmentAttempts.userId, studentUserId),
+        eq(assessmentAttempts.instrument, "personality"),
+        isNotNull(assessmentAttempts.completedAt),
+      ),
+    )
+    .orderBy(desc(assessmentAttempts.completedAt))
+    .limit(1);
+  return latest?.id === imported.strengthsAttemptId;
 }
 
 /** The student's interest results, when they came from the free quiz and can still be taken back. */

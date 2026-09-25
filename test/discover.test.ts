@@ -107,7 +107,7 @@ describe("discover flow", () => {
     expect(explanation?.overview).toContain("Investigative");
     // The template's reason: the career's preparation, what the work is, and the interests it shares.
     expect(explanation?.careers.find((c) => c.code === "19-2031.00")?.why).toMatch(
-      /^With a bachelor's degree, you could .+, using your interest in figuring things out and hands-on work\.$/,
+      /^Usually after a bachelor's degree, you could .+, using your interest in figuring things out and hands-on work\.$/,
     );
     expect((await latestMatchRun(db, userId))?.explanation).toBeNull();
   });

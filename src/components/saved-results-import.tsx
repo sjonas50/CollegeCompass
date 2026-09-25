@@ -5,6 +5,7 @@ import { useId, useState, useTransition } from "react";
 import { importSavedResultsAction } from "@/app/actions/try";
 import { forgetSavedAssessment, useSavedAssessment, useSavedStrengths } from "@/app/try/saved-store";
 import { Button, Card, FormMessage } from "@/components/ui";
+import type { InstrumentStatus } from "@/lib/assessments/service";
 import {
   SAVED_ASSESSMENT_FIELD,
   SAVED_STRENGTHS_FIELD,
@@ -22,24 +23,52 @@ import {
  * holds a finished quiz. The dashboard shows it only while the student hasn't finished the
  * interests activity; the server refuses a second import.
  *
- * `startedInterests`: the student has an unfinished interests activity, which these answers replace.
+ * - `startedInterests`: the student has an unfinished interests activity, which these answers replace.
+ * - `personality`: the student's own personality (strengths) activity. Once they've started or
+ *   finished it, the strengths from this browser aren't added (the server never replaces answers
+ *   given in the account), and the card says so.
  */
-export function SavedResultsImport({ startedInterests = false }: { startedInterests?: boolean }) {
+export function SavedResultsImport({
+  startedInterests = false,
+  personality = "not_started",
+}: {
+  startedInterests?: boolean;
+  personality?: InstrumentStatus["state"];
+}) {
   const saved = useSavedAssessment();
   const strengths = useSavedStrengths();
   if (!isFinished(saved)) return null;
-  return <ImportCard saved={saved} strengths={isComplete(strengths) ? strengths : null} startedInterests={startedInterests} />;
+  return (
+    <ImportCard
+      saved={saved}
+      strengths={isComplete(strengths) ? strengths : null}
+      startedInterests={startedInterests}
+      personality={personality}
+    />
+  );
 }
 
-function ImportCard({
+/** Why the strengths from this browser stay out of the account, when they do. */
+const STRENGTHS_KEPT_OUT: Partial<Record<InstrumentStatus["state"], string>> = {
+  in_progress:
+    "The strengths answers on this device won't be added, because you've started the strengths activity in your account. You can finish it there.",
+  done: "The strengths answers on this device won't be added, because your account already has your strengths.",
+};
+
+/** The card itself, for a finished quiz (exported for tests: the browser's copy is read only in the browser). */
+export function ImportCard({
   saved,
-  strengths,
+  strengths: browserStrengths,
   startedInterests,
+  personality = "not_started",
 }: {
   saved: SavedAssessment;
   strengths: SavedStrengths | null;
   startedInterests: boolean;
+  personality?: InstrumentStatus["state"];
 }) {
+  const keptOut = browserStrengths ? STRENGTHS_KEPT_OUT[personality] : undefined;
+  const strengths = keptOut ? null : browserStrengths;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
@@ -67,6 +96,7 @@ function ImportCard({
       {startedInterests && (
         <p className="text-sm text-muted">These answers will take the place of the interests activity you started here.</p>
       )}
+      {keptOut && <p className="text-sm text-muted">{keptOut}</p>}
       <FormMessage message={error} />
       <div className="flex flex-wrap gap-2">
         <Button onClick={add} disabled={pending}>
