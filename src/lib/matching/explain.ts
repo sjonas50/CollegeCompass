@@ -4,7 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import * as z from "zod";
 import type { Db } from "@/db";
 import { type MatchExplanation, matchRuns, occupations, users } from "@/db/schema";
-import { BIG_FIVE, type BigFive, RIASEC, RIASEC_INFO, type Riasec, WORK_VALUE_INFO } from "../assessments/instruments";
+import { type BigFive, RIASEC, RIASEC_INFO, type Riasec, WORK_VALUE_INFO } from "../assessments/instruments";
 import { displayTrait } from "../assessments/descriptions";
 import {
   type AreaLevel,
@@ -29,7 +29,7 @@ import { readStructuredOutput } from "../ai/structured";
 import { assertWithinBudget, recordMessageUsage } from "../ai/usage";
 import { currentGrade } from "../auth/age";
 import { latestMatchRun, loadOccupationProfiles } from "./service";
-import { pathwayFor } from "./match";
+import { pathwayFor, strengthsThatCount } from "./match";
 import { JOB_ZONE_INFO } from "../job-zones";
 
 const Explanation = z.object({
@@ -47,6 +47,7 @@ Rules:
 - Frame careers as possibilities to explore "for now", not predictions. Interests change, and that's good.
 - Treat college-degree and career-training paths as equally worthwhile.
 - Connect each career to specific interests (and values or strengths, if given). Be specific, not generic.
+- Mention a personal strength only if it is listed under strengths, and never describe the student's calm, stress, mood or feelings.
 - Never show the interest code letters (like "IAS") or the words "Realistic/Investigative/…" as labels; describe interests in plain words.
 - Vary how each reason starts and what it highlights; don't repeat the same phrasing across careers.
 - Keep the overview under 70 words and each career's reason under 35 words. No emojis, no lists inside strings.`;
@@ -110,6 +111,8 @@ const NOT_LAST = new Set([
   "participate", "connection", "enabling", "assist", "dealing", "relating", "resulting",
   "specializing", "concerning", "consisting", "working", "applying", "vicinity", "conformity", "accordance",
   "movement", "responsibility", "exposure", "areas", "use", "ensure", "verify",
+  // Helping verbs: "…where technical or scientific knowledge is" (required).
+  "is", "are", "was", "were", "be", "been", "will", "would", "should",
 ]);
 /** …nor on the word right after these ("…claims to determine", "…and may participate", "…enabling patrons"). */
 const NOT_NEXT_TO_LAST = new Set(["to", "may", "enabling"]);
@@ -149,8 +152,10 @@ function readsWhole(clause: string[]): boolean {
   const [last, beforeLast] = [bare(clause.at(-1)), bare(clause.at(-2))];
   if (clause.length < 2 || NOT_LAST.has(last) || NOT_NEXT_TO_LAST.has(beforeLast) || participleAtEnd(clause)) return false;
   if (NOT_LAST_JOINED.has(last) && ["and", "or"].includes(beforeLast)) return false;
-  // "…duties too varied and diverse" (to be classified…).
+  // "…duties too varied and diverse" (to be classified…), "…activities in such fields" (as…).
   if (clause.some((w) => bare(w) === "too")) return false;
+  const such = clause.findLastIndex((w) => bare(w) === "such");
+  if (such >= 0 && !clause.slice(such + 1).some((w) => bare(w) === "as")) return false;
   // Only the verbs, with nothing to act on: "plan, direct, or coordinate", "pack or package".
   const joined = clause.findIndex((w) => w === "and" || w === "or");
   if ((clause[0].endsWith(",") || joined === 1) && joined >= clause.length - 2) return false;
@@ -196,6 +201,22 @@ function cutAt(all: string[], n: number): string[] | null {
  * where what's left reads as a whole (see cutAt).
  */
 function cutPoint(all: string[], max: number, { listComma }: { listComma: boolean }): number {
+  for (const [from, test] of cutRules(all, { listComma })) {
+    for (let n = from; n <= Math.min(max, all.length - 1); n++) if (test(n)) return n;
+  }
+  return 0;
+}
+
+/** Every place cutPoint could cut a description, first to last, whatever its length. */
+function cutPoints(all: string[], { listComma }: { listComma: boolean }): number[] {
+  const rules = cutRules(all, { listComma });
+  const points: number[] = [];
+  for (let n = 1; n < all.length; n++) if (rules.some(([from, test]) => n >= from && test(n))) points.push(n);
+  return points;
+}
+
+/** cutPoint's rules in order, each as the fewest words it keeps and a test for a cut before word n. */
+function cutRules(all: string[], { listComma }: { listComma: boolean }): [number, (n: number) => boolean][] {
   const whole = (n: number) => cutAt(all, n) !== null;
   // "…the preparation, seasoning, and cooking of foods": "the" before "of", with no linking word
   // between, or a word like "safekeeping of records" right before it.
@@ -217,17 +238,13 @@ function cutPoint(all: string[], max: number, { listComma }: { listComma: boolea
     return (all[k]?.endsWith(",") ? k + 1 : k) - n;
   };
   const comma = (n: number) => all[n - 1].endsWith(",") && whole(n);
-  const find = (from: number, test: (n: number) => boolean) => {
-    for (let n = from; n <= Math.min(max, all.length - 1); n++) if (test(n)) return n;
-    return 0;
-  };
-  return (
-    find(5, (n) => linking(n, false)) ||
-    find(4, (n) => comma(n) && !inList(n)) ||
-    (listComma ? find(4, (n) => comma(n) && (nextItem(n) !== 1 || /[^su]s,$/.test(all[n - 1]))) : 0) ||
-    find(5, (n) => linking(n, true)) ||
-    find(3, (n) => linking(n, true))
-  );
+  return [
+    [5, (n) => linking(n, false)],
+    [4, (n) => comma(n) && !inList(n)],
+    ...(listComma ? [[4, (n: number) => comma(n) && (nextItem(n) !== 1 || /[^su]s,$/.test(all[n - 1]))] as [number, (n: number) => boolean]] : []),
+    [5, (n) => linking(n, true)],
+    [3, (n) => linking(n, true)],
+  ];
 }
 
 /**
@@ -240,6 +257,49 @@ function cutPoint(all: string[], max: number, { listComma }: { listComma: boolea
  * clean clause: one that starts with a verb and doesn't stop partway through a phrase or a list.
  */
 export function careerClause(description: string | null | undefined, maxWords = MAX_CLAUSE_WORDS): string | null {
+  let clause = clauseSource(description);
+  if (!clause) return null;
+  if (clause.length <= maxWords) {
+    // The whole first sentence ends where the sentence does ("…to run", "…as needed").
+    if (!endsWhole(clause)) return null;
+  } else {
+    // A comma in a list only for the first cut, never a shorter one ("play parts in stage, television…").
+    const cut = cutPoint(clause, maxWords, { listComma: maxWords === MAX_CLAUSE_WORDS });
+    if (!cut) return null;
+    clause = cutAt(clause, cut)!;
+  }
+  return clauseText(clause);
+}
+
+/** A whole first sentence can end on anything but a function word ("…to run", "…as needed"). */
+const endsWhole = (sentence: string[]) => !FUNCTION_WORDS.has(bare(sentence.at(-1)));
+
+/** The words of a clause as it follows "you could": the verb that starts it lowercased, but not an acronym ("GIS"). */
+function clauseText(clause: string[]): string {
+  const text = clause.join(" ");
+  return /^[A-Z][a-z]/.test(text) ? text[0].toLowerCase() + text.slice(1) : text;
+}
+
+/**
+ * The longer clauses a description gives than one of `than` words, shortest first: each clean cut
+ * past it (see cutPoint), then the whole first sentence. For a career whose usual clause says only
+ * what another career on the page says too: "plan, direct, or coordinate activities" can become
+ * "plan, direct, or coordinate activities to solicit and maintain funds".
+ */
+export function longerClauses(description: string | null | undefined, than: number): string[] {
+  const sentence = clauseSource(description);
+  if (!sentence) return [];
+  const cuts = cutPoints(sentence, { listComma: true }).map((n) => cutAt(sentence, n)!);
+  if (endsWhole(sentence)) cuts.push(sentence);
+  return [...new Set(cuts.filter((c) => c.length > than).map(clauseText))].sort((a, b) => words(a).length - words(b).length);
+}
+
+/**
+ * The words clauses are cut from: the description's first sentence without asides, openings like
+ * "Using…," or lists of examples. Null when there's no description to use, or it doesn't start
+ * with what the worker does.
+ */
+function clauseSource(description: string | null | undefined): string[] | null {
   if (!description?.trim()) return null;
   // The first sentence: up to a period before a capital letter, but not the one in "U.S. Army".
   let text = description.trim().split(/(?<!\b[A-Z])\.\s+(?=[A-Z])/)[0].replace(/\.$/, "");
@@ -260,20 +320,8 @@ export function careerClause(description: string | null | undefined, maxWords = 
     .trim();
   // "…perform any or all of the following functions" points to a list that isn't shown.
   if (/\bthe following\b/i.test(text)) return null;
-  let clause = words(text);
-  if (clause.length < 2 || !startsWithVerb(clause)) return null;
-  if (clause.length <= maxWords) {
-    // The whole first sentence ends where the sentence does ("…to run", "…as needed").
-    if (FUNCTION_WORDS.has(bare(clause.at(-1)))) return null;
-  } else {
-    // A comma in a list only for the first cut, never a shorter one ("play parts in stage, television…").
-    const cut = cutPoint(clause, maxWords, { listComma: maxWords === MAX_CLAUSE_WORDS });
-    if (!cut) return null;
-    clause = cutAt(clause, cut)!;
-  }
-  text = clause.join(" ");
-  // Lowercase the verb that starts it, but not an acronym ("GIS").
-  return /^[A-Z][a-z]/.test(text) ? text[0].toLowerCase() + text.slice(1) : text;
+  const sentence = words(text);
+  return sentence.length >= 2 && startsWithVerb(sentence) ? sentence : null;
 }
 
 /** A career's strongest interest areas: its top area, and any other of its top three at 4 or more (of 1–7). */
@@ -320,33 +368,67 @@ function reasonWordings({ title, clause, preparation, shared }: ReasonFacts, var
 }
 
 /**
- * A career's facts for its reason, trimmed until the reason is short enough to read at a glance
- * (MAX_REASON_WORDS). In order: one interest area instead of two; a shorter clause for what the
- * career involves; no interest area; and last, no clause ("…this career uses your interest in…").
+ * The clauses a career's reason can take from its description. `usual`: the first cut (see
+ * careerClause), then each shorter clean cut. `longer`: the longer ones (see longerClauses), for a
+ * page where another career's reason already says what the usual ones say.
  */
-function reasonFacts(
-  career: { title: string; description?: string | null; jobZone?: number | null },
-  shared: Riasec[],
-): ReasonFacts {
-  const preparation = career.jobZone ? (JOB_ZONE_INFO[career.jobZone]?.reasonLead ?? null) : null;
-  const fits = (f: ReasonFacts) => words(reasonWordings(f, 0)[0]).length <= MAX_REASON_WORDS;
-  const full: ReasonFacts = { title: career.title, clause: careerClause(career.description), preparation, shared };
-  if (!full.clause || fits(full)) return full;
-  // The first cut, then each shorter clean cut.
-  const clauses = [full.clause];
+export function reasonClauses(description: string | null | undefined): { usual: string[]; longer: string[] } {
+  const first = careerClause(description);
+  if (!first) return { usual: [], longer: [] };
+  const usual = [first];
   for (let max = MAX_CLAUSE_WORDS - 1; max >= 3; max--) {
-    const shorter = careerClause(career.description, max);
+    const shorter = careerClause(description, max);
     if (!shorter) break;
-    if (shorter !== clauses.at(-1)) clauses.push(shorter);
+    if (shorter !== usual.at(-1)) usual.push(shorter);
   }
-  for (const areas of [shared.slice(0, 1), []]) {
-    for (const clause of clauses) {
-      const facts = { ...full, clause, shared: areas };
-      if (fits(facts)) return facts;
-    }
-  }
-  return { ...full, clause: null };
+  const longer = longerClauses(description, words(usual.at(-1)!).length).filter((c) => !usual.includes(c));
+  return { usual, longer };
 }
+
+/**
+ * The facts a career's reason can use, each short enough to read at a glance (MAX_REASON_WORDS),
+ * best first. The first is its usual reason: all its facts, trimmed in order to one interest area
+ * instead of two; a shorter clause for what the career involves; no interest area. Then, for a page
+ * where another career already says what those clauses say, a longer clause with the words that
+ * set this career apart, even if only its shorter wording ("you'd…") is short enough. Last, no
+ * clause ("…this career uses your interest in…").
+ */
+function reasonOptions(career: { title: string; description?: string | null; jobZone?: number | null }, shared: Riasec[]): ReasonFacts[] {
+  const preparation = career.jobZone ? (JOB_ZONE_INFO[career.jobZone]?.reasonLead ?? null) : null;
+  // Both wordings, or at least one.
+  const fits = (f: ReasonFacts) => reasonWordings(f, 0).slice(0, 2).every(short);
+  const oneFits = (f: ReasonFacts) => reasonWordings(f, 0).slice(0, 2).some(short);
+  const { usual, longer } = reasonClauses(career.description);
+  const none: ReasonFacts = { title: career.title, clause: null, preparation, shared };
+  const options: ReasonFacts[] = [];
+  const add = (clauses: string[], areaChoices: Riasec[][], test: (f: ReasonFacts) => boolean) => {
+    for (const areas of areaChoices) {
+      for (const clause of clauses) {
+        const facts = { ...none, clause, shared: areas };
+        if (test(facts)) options.push(facts);
+      }
+    }
+  };
+  add(usual.slice(0, 1), [shared], fits);
+  add(usual, [shared.slice(0, 1), []], fits);
+  add(longer, [shared, shared.slice(0, 1), []], oneFits);
+  options.push(none);
+  return options;
+}
+
+/** A reason short enough to read at a glance. */
+const short = (reason: string) => words(reason).length <= MAX_REASON_WORDS;
+
+/** A clause's words, and the words of the description it was cut from, to compare with another career's. */
+type SaidClause = { clause: string[]; source: string[] };
+const comparable = (text: string) => words(text).map(bare);
+const startsWith = (text: string[], start: string[]) => start.length <= text.length && start.every((w, i) => text[i] === w);
+/**
+ * Whether two careers' clauses say the same thing: neither goes past the words both descriptions
+ * start with ("plan, direct, or coordinate activities" for both "…activities to solicit and maintain
+ * funds" and "…activities of a spa facility").
+ */
+const sameClause = (a: SaidClause, b: SaidClause) => startsWith(a.source, b.clause) && startsWith(b.source, a.clause);
 
 const EXPLORE = "Explore a few that catch your eye — you're not choosing forever, just finding a direction for now.";
 
@@ -380,20 +462,32 @@ export type TemplateCareer = {
  * needs (its job zone), what the work is (from its O*NET description), and the interest areas the
  * student leans toward that are strong for it (see sharedAreas). An area the student leaned toward
  * disliking is never named, and when no area stands out none is: the reason only says what the
- * career involves. No two careers get the same reason.
+ * career involves. No two careers get the same reason, or say the same thing about what the work
+ * is: when a career's clause says only what an earlier one's does ("plan, direct, or coordinate
+ * activities"), it takes a longer one that sets it apart, or none (see reasonOptions).
  */
 export function templateExplanation(areas: Record<Riasec, number>, careers: TemplateCareer[]): MatchExplanation {
   const pattern = interestPattern(areas);
   const used = new Set<string>();
+  const said: SaidClause[] = [];
   return {
     source: "template",
     overview: templateOverview(pattern),
     careers: careers.map((c, i) => {
       const shared = c.interests ? sharedAreas(pattern, areas, c.interests) : [];
-      const wordings = reasonWordings(reasonFacts(c, shared), i);
-      const why = wordings.find((w) => !used.has(w)) ?? wordings[wordings.length - 1];
-      used.add(why);
-      return { code: c.occupationCode, why };
+      const source = (clauseSource(c.description) ?? []).map(bare);
+      for (const facts of reasonOptions(c, shared)) {
+        const clause = facts.clause && { clause: comparable(facts.clause), source };
+        if (clause && said.some((s) => sameClause(s, clause))) continue;
+        const wordings = reasonWordings(facts, i).filter((w) => !clause || short(w));
+        // The last option has no clause: when both its wordings are taken, the one naming the career.
+        const why = wordings.find((w) => !used.has(w)) ?? (clause ? null : wordings[wordings.length - 1]);
+        if (!why) continue;
+        used.add(why);
+        if (clause) said.push(clause);
+        return { code: c.occupationCode, why };
+      }
+      throw new Error("unreachable: the last reason option always gives a reason");
     }),
   };
 }
@@ -430,15 +524,16 @@ export function interestFacts(pattern: LeadPattern, areas: Record<Riasec, number
 }
 
 /**
- * The personality traits the model may be told about, as strengths. Never emotional stability
+ * What the model is told about the student's personality: only the strengths that count (see
+ * strengthsThatCount), highest first, in the wording they see. A trait at or below the middle of the
+ * scale isn't sent, so a direct, objective student is never called warm. Never emotional stability
  * (the Mini-IPIP's neuroticism, shown to students as "Staying calm"): how a young person handles
  * stress says nothing about which careers fit them, and it's data the model doesn't need.
  */
-export const EXPLAIN_TRAITS: readonly BigFive[] = BIG_FIVE.filter((t) => t !== "neuroticism");
-
-/** What the model is told about the student's personality: the strengths wording they see. */
 export function strengthFacts(traits: Record<BigFive, number>): string[] {
-  return EXPLAIN_TRAITS.map((t) => displayTrait(t, traits[t])).map((t) => `${t.name}: ${t.text}`);
+  return strengthsThatCount(traits)
+    .map((t) => displayTrait(t, traits[t]))
+    .map((t) => `${t.name}: ${t.text}`);
 }
 
 /** O*NET descriptions for these careers, for their reasons. */
@@ -512,10 +607,11 @@ export async function explainLatestMatches(db: Db, userId: string, opts: Options
     const client = opts.client ?? getAnthropic();
     const model = modelFor("explain");
 
+    const strengths = personality ? strengthFacts(personality.scores.traits) : [];
     const facts = {
       grade: ctx.grade,
       ...interestFacts(pattern, interests.scores.areas),
-      strengths: personality ? strengthFacts(personality.scores.traits) : undefined,
+      strengths: strengths.length > 0 ? strengths : undefined,
       topValues: values?.scores.ranking.slice(0, 3).map((v) => WORK_VALUE_INFO[v].description),
       careers: careers.map((c) => ({
         code: c.occupationCode,

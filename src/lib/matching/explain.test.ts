@@ -15,6 +15,7 @@ import {
   careerClause,
   explainLatestMatches,
   interestFacts,
+  longerClauses,
   storedExplanation,
   strengthFacts,
   templateExplanation,
@@ -218,11 +219,87 @@ describe("template explanation", () => {
       "Usually after a bachelor's degree, this career uses your interest in creating things.",
       "Usually after a bachelor's degree, this path fits your interest in creating things.",
     ]);
-    // Neighbors start from different wordings. (Two areas would make these too long, so one is named.)
-    expect(reasons({ A: 40, S: 30 }, [teacher, { ...teacher, occupationCode: "25-2022.00", title: "Middle School Teachers" }])).toEqual([
+    // Neighbors start from different wordings. (Two areas would make the first too long, so one is named.)
+    expect(reasons({ A: 40, S: 30 }, [teacher, counselor])).toEqual([
       "Usually after a bachelor's degree, you could teach one or more subjects, using your interest in creating things.",
-      "Usually after a bachelor's degree, you'd teach one or more subjects, which fits your interest in creating things.",
+      "Usually after a graduate degree, you'd counsel and advise individuals and groups, which fits your interest in helping people.",
     ]);
+  });
+
+  it("never says two careers on a page do the same work, with only the wording changed", () => {
+    // Real O*NET descriptions that all start "Plan, direct, or coordinate activities".
+    const managers: TemplateCareer[] = [
+      {
+        occupationCode: "11-2033.00",
+        title: "Fundraising Managers",
+        jobZone: 4,
+        description: "Plan, direct, or coordinate activities to solicit and maintain funds for special projects or nonprofit organizations.",
+        interests: { R: 1, I: 2.41, A: 2.61, S: 3.76, E: 7, C: 4.82 },
+      },
+      {
+        occupationCode: "11-2032.00",
+        title: "Public Relations Managers",
+        jobZone: 4,
+        description:
+          "Plan, direct, or coordinate activities designed to create or maintain a favorable public image or raise issue awareness for their organization or client.",
+        interests: { R: 1, I: 2.34, A: 3.67, S: 4.18, E: 7, C: 4.39 },
+      },
+      {
+        occupationCode: "11-9179.02",
+        title: "Spa Managers",
+        jobZone: 3,
+        description: "Plan, direct, or coordinate activities of a spa facility. Coordinate programs, schedule and direct staff, and oversee financial activities.",
+        interests: { R: 2.5, I: 1.31, A: 1.84, S: 4.19, E: 7, C: 4.91 },
+      },
+    ];
+    // The page from the bug report: "Strongly like" every enterprising activity, "Dislike" every
+    // social one. Each would say "plan, direct, or coordinate activities" on its own.
+    for (const manager of managers) {
+      expect(reasons({ E: 40, S: 10 }, [manager])[0]).toMatch(/ plan, direct, or coordinate activities, (using|which fits) your interest in leading others\.$/);
+    }
+    // Together, the first keeps it, and the others say what sets them apart. The public relations
+    // one fits only in the shorter wording ("you'd…"), which is exactly 24 words.
+    const whys = reasons({ E: 40, S: 10 }, managers);
+    expect(whys).toEqual([
+      "Usually after a bachelor's degree, you could plan, direct, or coordinate activities, using your interest in leading others.",
+      "Usually after a bachelor's degree, you'd plan, direct, or coordinate activities designed to create or maintain a favorable public image or raise issue awareness.",
+      "Usually after career training or a two-year degree, you could plan, direct, or coordinate activities of a spa facility.",
+    ]);
+    for (const why of whys) expect(wordCount(why), why).toBeLessThanOrEqual(MAX_REASON_WORDS);
+    // In another order the fundraising one takes the shortest cut that sets it apart, keeping the interest.
+    expect(reasons({ E: 40, S: 10 }, [managers[2], managers[0]])).toEqual([
+      "Usually after career training or a two-year degree, you could plan, direct, or coordinate activities, using your interest in leading others.",
+      "Usually after a bachelor's degree, you'd plan, direct, or coordinate activities to solicit and maintain funds, which fits your interest in leading others.",
+    ]);
+  });
+
+  it("says why a career fits instead, when its description says nothing another one's doesn't", () => {
+    // O*NET describes both aides the same way once "Under close supervision of…," is left out.
+    const aides: TemplateCareer[] = [
+      {
+        occupationCode: "31-2022.00",
+        title: "Physical Therapist Aides",
+        jobZone: 2,
+        description:
+          "Under close supervision of a physical therapist or physical therapy assistant, perform only delegated, selected, or routine tasks in specific situations. These duties include preparing the patient and the treatment area.",
+        interests: { R: 4.74, I: 2.58, A: 1.07, S: 5.95, E: 2.06, C: 3.92 },
+      },
+      {
+        occupationCode: "31-2012.00",
+        title: "Occupational Therapy Aides",
+        jobZone: 3,
+        description:
+          "Under close supervision of an occupational therapist or occupational therapy assistant, perform only delegated, selected, or routine tasks in specific situations. These duties include preparing patient and treatment room.",
+        interests: { R: 3.91, I: 2.55, A: 1.69, S: 6, E: 1.82, C: 3.72 },
+      },
+    ];
+    expect(reasons({ S: 40, R: 30 }, aides)).toEqual([
+      "Usually with some on-the-job training, you could perform only delegated, selected, or routine tasks in specific situations, using your interest in helping people.",
+      "Usually after career training or a two-year degree, this path fits your interest in helping people.",
+    ]);
+    // The same career twice (as `npm run check:reasons` checks it) never repeats its clause either.
+    const twice = reasons({ S: 40, A: 30 }, [teacher, { ...teacher, occupationCode: "neighbor" }]);
+    expect(twice[1]).not.toMatch(/teach/);
   });
 
   it("keeps each reason to one short sentence", () => {
@@ -442,6 +519,25 @@ describe("what a career involves, from its O*NET description", () => {
     expect(careerClause("")).toBeNull();
     expect(careerClause(null)).toBeNull();
     expect(careerClause("Operate.")).toBeNull();
+    expect(longerClauses(null, 0)).toEqual([]);
+  });
+
+  it("gives longer clean cuts, shortest first, to set a career apart from another", () => {
+    const fundraising = "Plan, direct, or coordinate activities to solicit and maintain funds for special projects or nonprofit organizations.";
+    expect(careerClause(fundraising)).toBe("plan, direct, or coordinate activities");
+    expect(longerClauses(fundraising, 5)).toEqual([
+      "plan, direct, or coordinate activities to solicit and maintain funds",
+      "plan, direct, or coordinate activities to solicit and maintain funds for special projects or nonprofit organizations",
+    ]);
+    // Never "…activities in such fields" without what the fields are.
+    const scientists =
+      "Plan, direct, or coordinate activities in such fields as life sciences, physical sciences, mathematics, statistics, and research and development in these fields.";
+    expect(longerClauses(scientists, 5)[0]).toBe("plan, direct, or coordinate activities in such fields as life sciences");
+    // Never "…where technical or scientific knowledge is" without "required".
+    const sales =
+      "Sell goods for wholesalers or manufacturers where technical or scientific knowledge is required in such areas as biology, engineering, chemistry, and electronics, normally obtained from at least 2 years of postsecondary education.";
+    expect(longerClauses(sales, 6).length).toBeGreaterThan(0);
+    for (const clause of longerClauses(sales, 0)) expect(clause).not.toMatch(/\b(is|required)$/);
   });
 });
 
@@ -554,14 +650,22 @@ describe("what the model is told about interests", () => {
 });
 
 describe("what the model is told about strengths", () => {
-  it("gives the strengths wording students see, leaving out emotional stability", () => {
-    const facts = strengthFacts({ extraversion: 80, agreeableness: 50, conscientiousness: 20, neuroticism: 90, intellect: 70 });
+  it("gives only the strengths that count, highest first, in the wording students see", () => {
+    const facts = strengthFacts({ extraversion: 60, agreeableness: 50, conscientiousness: 20, neuroticism: 10, intellect: 70 });
     expect(facts).toEqual([
-      "Social energy: You get energy from being around people and feel comfortable speaking up.",
-      "Warmth: You care about others and can also stand your ground when it matters.",
-      "Organization: You're flexible and spontaneous. Simple habits, like a planner, can help you reach big goals.",
       "Curiosity: You love ideas, imagination, and big questions.",
+      "Social energy: You enjoy people and also value time on your own, and you can adapt to both.",
     ]);
+    // Warmth at the middle and organization below it aren't strengths that count, and staying calm
+    // (here, very calm) is never sent.
+    expect(facts.join(" ")).not.toMatch(/Warmth|Organization|Staying calm|steady/);
+  });
+
+  it("never gives a low trait as a strength", () => {
+    // A direct, objective student who feels things deeply, with high curiosity and organization.
+    const facts = strengthFacts({ extraversion: 6, agreeableness: 20, conscientiousness: 81, neuroticism: 75, intellect: 100 });
+    expect(facts).toEqual(["Curiosity: You love ideas, imagination, and big questions.", "Organization: You like to plan ahead and get things done."]);
+    expect(strengthFacts({ extraversion: 50, agreeableness: 50, conscientiousness: 50, neuroticism: 0, intellect: 50 })).toEqual([]);
   });
 });
 
@@ -785,8 +889,38 @@ describe("explaining matches when areas are tied or none stands out", () => {
     await explainLatestMatches(db, userId, { now, client });
     const content = requests[0].messages[0].content;
     const facts = JSON.parse(content.replace(/^[^\n]*\n/, ""));
-    expect(facts.strengths.map((s: string) => s.split(":")[0])).toEqual(["Social energy", "Warmth", "Organization", "Curiosity"]);
+    // Every trait lands at the middle of the scale, so no strength counts and none is sent.
+    expect(facts).not.toHaveProperty("strengths");
     expect(content).not.toMatch(/Staying calm|stress|feel things deeply|bounce back/i);
+  });
+
+  it("tells the model only the strengths that count, and never calls a direct student warm", async () => {
+    await takeInterests({ I: 5, A: 4, S: 4 });
+    // Low warmth (P2, P12 "Very inaccurate"; P7, P17 "Very accurate"), feels things deeply (mood
+    // swings and getting upset "Very accurate"), high curiosity and organization, quiet.
+    const answers: Record<string, number> = {
+      P1: 1, P6: 5, P11: 1, P16: 5,
+      P2: 1, P7: 5, P12: 1, P17: 5,
+      P3: 5, P8: 1, P13: 5, P18: 1,
+      P4: 5, P9: 1, P14: 5, P19: 1,
+      P5: 5, P10: 1, P15: 1, P20: 1,
+    };
+    const start = await startOrResumeAttempt(db, userId, "personality", now);
+    if (!start.ok) throw new Error();
+    await saveResponses(db, userId, start.attempt.id, answers);
+    await completeAttempt(db, userId, start.attempt.id, now);
+    await computeMatches(db, userId);
+
+    const { client, requests } = recordingClient({ overview: "You like science.", careers: [] });
+    await explainLatestMatches(db, userId, { now, client });
+    const request = requests[0] as unknown as { system: string; messages: { content: string }[] };
+    const facts = JSON.parse(request.messages[0].content.replace(/^[^\n]*\n/, ""));
+    expect(facts.strengths).toEqual(["Organization: You like to plan ahead and get things done.", "Curiosity: You love ideas, imagination, and big questions."]);
+    expect(request.messages[0].content).not.toMatch(/Warmth|direct and objective|Social energy|Staying calm|feel things deeply/);
+    // And the model is told not to add any.
+    expect(request.system).toContain(
+      "Mention a personal strength only if it is listed under strengths, and never describe the student's calm, stress, mood or feelings.",
+    );
   });
 
   it("still gives the model a clear code", async () => {

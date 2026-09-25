@@ -1,6 +1,8 @@
 // How one send's stream events change the conversation on screen. Pure, so it can be tested
 // without a browser.
 
+import type { PageNames } from "@/lib/counselor/page-names";
+
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
@@ -16,7 +18,22 @@ export type ServerEvent =
   | { type: "replace"; text: string }
   | { type: "support"; text: string }
   | { type: "notice"; text: string }
-  | { type: "done"; messageId: string | null };
+  | { type: "done"; messageId: string | null; names?: unknown };
+
+// Only names for the pages the chat names after their college or career (see chatLinks).
+const NAMED_PAGE = /^\/(?:colleges\/\d+|careers\/\d{2}-\d{4}\.\d{2})$/;
+
+/**
+ * The page names the chat knows, with those the server sent when a reply finished (the real names
+ * of the colleges and careers it links to). Anything else in them is ignored.
+ */
+export function addPageNames(known: PageNames, event: ServerEvent): PageNames {
+  if (event.type !== "done" || typeof event.names !== "object" || event.names === null) return known;
+  const added = Object.entries(event.names).filter(
+    (entry): entry is [string, string] => NAMED_PAGE.test(entry[0]) && typeof entry[1] === "string" && entry[1].trim() !== "",
+  );
+  return added.length ? { ...known, ...Object.fromEntries(added) } : known;
+}
 
 /** What has happened so far in one send. */
 export type Turn = {

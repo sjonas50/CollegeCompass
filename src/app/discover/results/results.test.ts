@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import type { ReactNode } from "react";
+import { type ReactNode, createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
@@ -11,7 +11,8 @@ import type { SessionUser } from "@/lib/auth/sessions";
 import { WORK_STYLES } from "@/lib/reference/work-styles";
 import { EXPLANATION_FACTS_VERSION } from "@/lib/matching/explain";
 import { computeMatches, latestMatchRun, loadOccupationProfiles } from "@/lib/matching/service";
-import { loadExplanation } from "./load-explanation";
+import { CareerReasons, ExplanationContext, ExplanationOverview } from "./explanation";
+import { type ExplanationResult, loadExplanation, requestExplanation } from "./load-explanation";
 import ResultsPage from "./page";
 
 // The signed-in results page, server-rendered with the student and database mocked.
@@ -311,5 +312,54 @@ describe("loading the explanation", () => {
     await expect(loadExplanation("run-3", broken)).rejects.toThrow("network");
     const explain = vi.fn(async () => found);
     expect(await loadExplanation("run-3", explain)).toEqual(found);
+  });
+
+  it("turns a failed request into a result the page can show, never a rejection", async () => {
+    // The server action's POST failing, as when the connection drops ("Failed to fetch").
+    const offline = vi.fn(async (): Promise<MatchExplanation | null> => {
+      throw new TypeError("Failed to fetch");
+    });
+    expect(await requestExplanation("run-4", offline)).toEqual({ ok: false });
+    // Nothing to show is a failure too, not a summary that never arrives.
+    expect(await requestExplanation("run-5", async () => null)).toEqual({ ok: false });
+    // Trying again asks again.
+    const explain = vi.fn(async () => found);
+    expect(await requestExplanation("run-4", explain)).toEqual({ ok: true, explanation: found });
+    expect(explain).toHaveBeenCalledTimes(1);
+  });
+
+  describe("on the page", () => {
+    const careers = [{ code: "19-2031.00", title: "Chemists", href: "/careers/19-2031.00", label: "Great fit" }];
+    const show = (result: ExplanationResult | null) =>
+      text(
+        renderToStaticMarkup(
+          createElement(
+            ExplanationContext,
+            { value: { result, retry: () => {} } },
+            createElement(ExplanationOverview),
+            createElement(CareerReasons, { careers }),
+          ),
+        ),
+      );
+
+    it("says it's writing a summary only while the request is on its way", () => {
+      expect(show(null)).toContain("Writing a summary of your results");
+      const ready = show({ ok: true, explanation: { ...found, careers: [{ code: "19-2031.00", why: "Chemists run experiments." }] } });
+      expect(ready).toContain("Overview.");
+      expect(ready).toContain("Chemists run experiments.");
+      expect(ready).not.toContain("Writing a summary");
+    });
+
+    it("says the summary couldn't be written, with a way to try again, when the request fails", () => {
+      const html = renderToStaticMarkup(
+        createElement(ExplanationContext, { value: { result: { ok: false }, retry: () => {} } }, createElement(ExplanationOverview)),
+      );
+      expect(text(html)).toContain("We couldn't write a summary of your results just now.");
+      expect(text(html)).not.toContain("Writing a summary");
+      expect(html).toMatch(/<p role="alert"[^>]*>We couldn/);
+      expect(html).toMatch(/<button[^>]*>Try again<\/button>/);
+      // The careers are still listed, without reasons.
+      expect(show({ ok: false })).toContain("Chemists");
+    });
   });
 });

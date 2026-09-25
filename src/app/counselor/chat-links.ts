@@ -1,15 +1,17 @@
 import { linkify, toSafeHref } from "@/lib/aid-guide/linkify";
 import type { AidGuideSectionId } from "@/lib/aid-guide/schema";
 import { US_STATES } from "@/lib/colleges/states";
+import type { PageNames } from "@/lib/counselor/page-names";
 
 // Turns https addresses, a few trusted sites written without https:// and paths to our own pages
 // in a counselor reply into link segments. Pure and HTML-free: the chat renders each segment as
 // text or an <a>. Links to our pages show the page's name instead of the path, so they read well
-// and make sense to screen readers. A college or career page takes the name the counselor wrote
-// with it, so two in a row don't both read "college page": "Boston College (/colleges/164924)",
-// "[Boston College](/colleges/164924)", "Boston College — /colleges/164924", "Boston College:
-// /colleges/164924", or with a place between, "Boston College, Chestnut Hill MA — /colleges/164924"
-// (the name is linked, the place stays as written and the path isn't shown).
+// and make sense to screen readers. A college or career page takes its real name, looked up from
+// our data (see pageNames), wherever the counselor put the path. Without one it takes the name the
+// counselor wrote with it, so two in a row don't both read "college page": "Boston College
+// (/colleges/164924)", "[Boston College](/colleges/164924)", "Boston College — /colleges/164924",
+// "Boston College: /colleges/164924", or with a place between, "Boston College, Chestnut Hill MA —
+// /colleges/164924" (the name is linked, the place stays as written and the path isn't shown).
 
 export type ChatSegment =
   | {
@@ -21,8 +23,8 @@ export type ChatSegment =
   | {
       type: "link";
       /**
-       * What the student sees: the page's name for our pages (for a college or career, the name the
-       * counselor gave it), the address as written for other websites.
+       * What the student sees: the page's name for our pages (for a college or career, its real
+       * name, or else the name the counselor gave it), the address as written for other websites.
        */
       text: string;
       href: string;
@@ -255,14 +257,43 @@ function bareSiteHref(written: string): string | null {
 
 type Placed = { start: number; end: number; segment: ChatSegment };
 
+// Words a written name and a real one may differ by: "The Ohio State University", "Ohio State University-Main Campus".
+const SMALL_WORDS = new Set("of at the and in for on de la del du des y".split(" "));
+const nameWords = (name: string) =>
+  name
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((w) => w && !SMALL_WORDS.has(w))
+    .map((w) => w.replace(/(?<=..)s$/, ""));
+/**
+ * Whether a name the counselor wrote is the real one or part of it: "Ohio State" or "Ohio State
+ * University" for "Ohio State University-Main Campus", "Nurses" for "Registered Nurses". Not
+ * "UCLA", or "Tuition at Ohio State".
+ */
+function partOfName(written: string, real: string): boolean {
+  const realWords = new Set(nameWords(real));
+  const words = nameWords(written);
+  return words.length > 0 && words.every((w) => realWords.has(w));
+}
+
 /**
  * A college or career page written after its name: "Name (/path)", "Name — /path" or "Name: /path",
  * and for a college also with its place between ("Cornell University, Ithaca NY — /colleges/190415").
  * After a dash or colon, a college's name has to say it's a school (namesSchool).
- * The name becomes the link. A place stays as written, and the path and what joins it aren't shown.
+ * The name becomes the link, showing the page's real name when there is one (and only when the name
+ * written is part of it, so no words the counselor wrote are lost). A place stays as written, and the
+ * path and what joins it aren't shown.
  * Looks back no further than `from`: the start of the line, or the end of the link before.
  */
-function namedPage(text: string, from: number, start: number, end: number, href: string, kind: "college" | "career"): Placed[] | null {
+function namedPage(
+  text: string,
+  from: number,
+  start: number,
+  end: number,
+  href: string,
+  kind: "college" | "career",
+  realName: string | undefined,
+): Placed[] | null {
   let joinStart: number;
   let linkEnd: number;
   const inParentheses = text[start - 1] === "(" && text[end] === ")";
@@ -281,9 +312,10 @@ function namedPage(text: string, from: number, start: number, end: number, href:
   const named = nameBefore(text, from, place ? headStart + place.index : joinStart, kind);
   if (!named) return null;
   if (kind === "college" && (ONLY_A_STATE.test(named.name) || (!inParentheses && !namesSchool(named.name)))) return null;
+  if (realName !== undefined && !partOfName(named.name, realName)) return null;
   const nameEnd = place ? named.start + named.name.length : linkEnd;
   const source = text.slice(named.start, nameEnd);
-  const link: ChatSegment = { type: "link", text: named.name, href, source, external: false };
+  const link: ChatSegment = { type: "link", text: realName ?? named.name, href, source, external: false };
   if (!place) return [{ start: named.start, end: nameEnd, segment: link }];
   const placeEnd = headStart + head.trimEnd().length;
   const hidden: ChatSegment = { type: "text", text: "", source: text.slice(placeEnd, linkEnd) };
@@ -308,7 +340,12 @@ function trustedLink(href: string): boolean {
   return /\.(gov|edu)$/.test(host) || TRUSTED_SITES.some((site) => host === site || host.endsWith(`.${site}`));
 }
 
-export function chatLinks(text: string): ChatSegment[] {
+/**
+ * `names`: the real names of college and career pages by path (see pageNames). A page in it is
+ * named that, wherever the counselor put its path; one that isn't takes the name written with it,
+ * and then just "college page" or "career page".
+ */
+export function chatLinks(text: string, names: PageNames = {}): ChatSegment[] {
   const links: Placed[] = [];
   let offset = 0;
   for (const segment of linkify(text)) {
@@ -343,16 +380,20 @@ export function chatLinks(text: string): ChatSegment[] {
       end: to,
       segment: { type: "link", text: shown, href: page.href, source: text.slice(from, to), external: false, ...lang },
     });
+    const named = page.placeholder === "college" || page.placeholder === "career" ? page.placeholder : null;
+    const realName = named && Object.hasOwn(names, page.href) ? names[page.href] : undefined;
     // The widest choice that's free: markdown around the path, or the name written with it, else the path.
     const choices: Placed[][] = [];
     const markdown = markdownLink(text, start, end);
-    if (markdown) choices.push([linked(markdown.start, markdown.end, page.placeholder && namesPage(markdown.label) ? markdown.label : page.text)]);
-    if (page.placeholder === "college" || page.placeholder === "career") {
-      const from = Math.max(text.lastIndexOf("\n", start) + 1, ...links.filter((l) => l.end <= start).map((l) => l.end));
-      const named = namedPage(text, from, start, end, page.href, page.placeholder);
-      if (named) choices.push(named);
+    if (markdown) {
+      choices.push([linked(markdown.start, markdown.end, realName ?? (page.placeholder && namesPage(markdown.label) ? markdown.label : page.text))]);
     }
-    choices.push([linked(start, end, page.text)]);
+    if (named) {
+      const from = Math.max(text.lastIndexOf("\n", start) + 1, ...links.filter((l) => l.end <= start).map((l) => l.end));
+      const withName = namedPage(text, from, start, end, page.href, named, realName);
+      if (withName) choices.push(withName);
+    }
+    choices.push([linked(start, end, realName ?? page.text)]);
     const choice = choices.find((placed) => placed.every((p) => !overlaps(p.start, p.end)));
     if (choice) links.push(...choice);
   }
