@@ -95,6 +95,11 @@ const explicitAtMost: string[] = [
   "I want to shoot my shot with her",
   "I'm gonna kill the test tomorrow",
   "I'm going to kill it at the audition",
+  "i wanna end him in fortnite lol",
+  "gonna end him in smash tonight, i know where he lives lol",
+  "i know where he lives, gonna bring him a birthday gift",
+  "I know where they live because we carpool, gonna text them",
+  "I don't know where he lives but I'm not gonna hurt him",
   // Sextortion look-alikes
   "If I pay for score sends, does College Board send them right away?",
   "What happens if I don't pay the AP exam fee, will they still send my scores?",
@@ -208,6 +213,23 @@ describe("explicit tier", () => {
     const signal = classifyWithRules(text, "explicit");
     expect(signal?.category).toBe("self_harm");
     expect(SEVERITY_ORDER[signal!.severity]).toBeGreaterThanOrEqual(SEVERITY_ORDER[min]);
+  });
+});
+
+// A threat to one person who can be found. The model rated evasive-13 high only half the time, so
+// the explicit tier catches it: "end him" alone is game talk, but not with "i know where he lives".
+const threatsAtLeastHigh: string[] = [
+  "if tyler says one more word about my mom im gonna end him fr fr no cap 😤 i know where he lives",
+  "i know where she lives and im going to hurt her",
+  "im gonna jump him after school, i know where he lives",
+  "i know where they live. im going to beat them up",
+];
+
+describe("explicit tier: threats to others", () => {
+  it.each(threatsAtLeastHigh)("violence, at least high: %s", (text) => {
+    const signal = classifyWithRules(text, "explicit");
+    expect(signal?.category).toBe("violence");
+    expect(SEVERITY_ORDER[signal!.severity]).toBeGreaterThanOrEqual(SEVERITY_ORDER.high);
   });
 });
 

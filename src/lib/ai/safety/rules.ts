@@ -26,6 +26,13 @@ const TIME = String.raw`(tonight|tonite|2nite|today|2day|right now|rn|this weeke
 // "why not" / "or not" aren't negations of what follows.
 const NOT = String.raw`(?<!(?<!\b(why|or|whether)\s+)\b(not|never|don'?t|dont|won'?t|wont|haven'?t|havent|didn'?t|didnt|wouldn'?t|wouldnt|isn'?t|ain'?t|aint)\s+((actually|really|ever|even|seriously)\s+)?((going to|gonna|finna|about to|planning to|trying to)\s+)?)`;
 const INTENT = String.raw`(going to|gonna|finna|about to|i'?ll|i will|will|plan(ning)? to|ready to|decided to)`;
+
+/** Saying you'll hurt one person: "gonna end him", "i'll jump her", "going to beat them up". */
+const THREAT_TO_PERSON = String.raw`(gonna|going to|finna|about to|i'?ll|i will|want to|wanna|plan(ning)? to)\s+(end|kill|murder|merk|shoot|stab|hurt|jump|beat)\s+(him|her|them)(\s+up)?`;
+/** "I know where he lives": the person can be found. */
+const KNOWS_WHERE_THEY_LIVE = String.raw`\b(i|i'?m|im)\s+(know|knows|found out)\s+where\s+(he|she|they)\s+(live|lives|stay|stays)\b`;
+/** Game and sports talk, where "end him" or "beat them" means winning. */
+const GAME_TALK = /\b(in|at|on)\s+(fortnite|minecraft|smash|2k|madden|fifa|valorant|roblox|cod|call of duty|chess|apex|overwatch|league|the game|a game|this game|the match|practice|the court|the field)\b/;
 const WANT = String.raw`(want|wanna|wana|wanta|wish|wished|wanted)`;
 const MYSELF = String.raw`my ?self`;
 // "Take my life" is also "take my life back / seriously / in a new direction".
@@ -120,6 +127,16 @@ const RULES: Rule[] = [
     pattern: rx(String.raw`${NOT}\b(going to|gonna|want to|wanna|plan(ning)? to)\s+(kill|shoot|stab|hurt)\s+(him|her|them|someone|somebody|people|everyone|everybody|(my|the|that|this|those)\s+([a-z]+\s+)?(teacher|dad|mom|brother|sister|stepdad|stepmom|coach|boss|bully|bullies|principal|class|kids?|guy|girl|boyfriend|girlfriend|ex|friend|classmates?|family|neighbor|people))\b(?!\s+(a|an)\s+(text|dm|message|snap|email|call|look)\b)`),
   },
   { tier: "explicit", category: "violence", severity: "imminent", pattern: /\b(bring|bringing)\s+a\s+(gun|knife|weapon)\s+to\s+school\b|\bschool shooting\b.*\b(i|i'm|im)\b/ },
+  {
+    // A threat to a specific person plus knowing where they live. "End him" alone is everyday
+    // game talk, so this needs both parts; "in fortnite" and the like still rule it out.
+    tier: "explicit",
+    category: "violence",
+    severity: "high",
+    pattern: rx(String.raw`${NOT}\b${THREAT_TO_PERSON}\b[^]{0,160}${KNOWS_WHERE_THEY_LIVE}|${KNOWS_WHERE_THEY_LIVE}[^]{0,160}${NOT}\b${THREAT_TO_PERSON}\b`),
+    unless: GAME_TALK,
+  },
+
 
   // --- Outage only: broader self-harm patterns ---------------------------------------------------
   { tier: "outage", category: "self_harm", severity: "imminent", pattern: rx(String.raw`${NOT}\b${INTENT}\s+(hurt|cut) ${MYSELF}\b`), unless: ACCIDENT },
