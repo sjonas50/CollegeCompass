@@ -64,8 +64,9 @@ function Results({ query, result }: { query: string; result: CareerSearchResult 
         <>
           {pages && range && (
             <p className="text-sm text-muted">
-              Best matches first. Showing {formatCount(range.from)}–{formatCount(range.to)}. Add another word to narrow
-              the list, like &ldquo;middle school teacher&rdquo; instead of &ldquo;teacher&rdquo;.
+              Titles that match your words most closely come first.{" "}
+              Showing {formatCount(range.from)}–{formatCount(range.to)}. Add another word to narrow the list, like
+              &ldquo;middle school teacher&rdquo; instead of &ldquo;teacher&rdquo;.
             </p>
           )}
           <ul className="mt-3 divide-y divide-border rounded-xl border border-border bg-surface">

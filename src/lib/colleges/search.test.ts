@@ -220,10 +220,74 @@ describe("searchColleges by name", () => {
     expect(await names({ q: "bayamon" })).toEqual(["Universidad Central de Bayamon"]);
   });
 
-  it("matches the start of words, not letters inside them", async () => {
+  it("matches the start of words, and inside words only for 4 or more letters, ranked after word starts", async () => {
+    await insertColleges(db, [
+      { unitId: 30, name: "Virginia Polytechnic Institute and State University", city: "Blacksburg", enrollment: 30_923 },
+      { unitId: 31, name: "West Virginia University Institute of Technology", city: "Beckley", enrollment: 981 },
+      { unitId: 32, name: "Northwestern University", city: "Evanston", enrollment: 9_201 },
+    ]);
     // Before: "mit" found Smith and Summit.
     expect(await names({ q: "mit" })).toEqual(["Massachusetts Institute of Technology", "Mitchell College"]);
-    expect(await names({ q: "tech" })).toEqual(["Massachusetts Institute of Technology"]);
+    // "Virginia Tech" is Virginia Polytechnic, after the name where "tech" starts a word.
+    expect(await names({ q: "Virginia Tech" })).toEqual([
+      "West Virginia University Institute of Technology",
+      "Virginia Polytechnic Institute and State University",
+    ]);
+    expect(await names({ q: "tech" })).toEqual([
+      "Massachusetts Institute of Technology",
+      "West Virginia University Institute of Technology",
+      "Virginia Polytechnic Institute and State University",
+    ]);
+    expect(await names({ q: "north western" })).toEqual(["Northwestern University"]);
+  });
+
+  it("puts University of … and College of … with the names that start with the words, larger colleges first", async () => {
+    await insertColleges(db, [
+      { unitId: 30, name: "University of Kentucky", city: "Lexington", enrollment: 24_763 },
+      { unitId: 31, name: "Kentucky Horseshoeing School", city: "Richmond", enrollment: 31 },
+      { unitId: 32, name: "Kentucky Welding Institute", city: "Flemingsburg", enrollment: 143 },
+      { unitId: 33, name: "Eastern Kentucky University", city: "Richmond", enrollment: 12_318 },
+      { unitId: 34, name: "University of Notre Dame", city: "Notre Dame", enrollment: 8_818 },
+      { unitId: 35, name: "Notre Dame of Maryland University", city: "Baltimore", enrollment: 709 },
+      { unitId: 36, name: "Saint Mary's College", city: "Notre Dame", enrollment: 1_458 },
+      { unitId: 37, name: "The University of Alabama", city: "Tuscaloosa", enrollment: 33_227 },
+      { unitId: 38, name: "Alabama School of Nail Technology & Cosmetology", city: "Jackson", enrollment: 97 },
+      { unitId: 39, name: "College of Charleston", city: "Charleston", enrollment: 10_500 },
+      { unitId: 40, name: "Charleston School of Beauty Culture", city: "Charleston", enrollment: 60 },
+    ]);
+    // Before: University of Kentucky after the welding and horseshoeing schools.
+    expect(await names({ q: "Kentucky" })).toEqual([
+      "University of Kentucky",
+      "Kentucky Welding Institute",
+      "Kentucky Horseshoeing School",
+      "Eastern Kentucky University",
+    ]);
+    expect(await names({ q: "notre dame" })).toEqual(["University of Notre Dame", "Notre Dame of Maryland University", "Saint Mary's College"]);
+    expect(await names({ q: "alabama" })).toEqual(["The University of Alabama", "Alabama School of Nail Technology & Cosmetology"]);
+    expect(await names({ q: "charleston" })).toEqual(["College of Charleston", "Charleston School of Beauty Culture"]);
+  });
+
+  it("takes Saint, Mount and Fort (St, Mt, Ft) as whole words, never as initials", async () => {
+    await insertColleges(db, [
+      { unitId: 30, name: "Saint Louis University", city: "Saint Louis", enrollment: 7_267 },
+      { unitId: 31, name: "Washington University in St Louis", city: "St. Louis", enrollment: 7_857 },
+      { unitId: 32, name: "Louisiana State University and Agricultural & Mechanical College", city: "Baton Rouge", enrollment: 30_594 },
+      { unitId: 33, name: "University of St Thomas", city: "Saint Paul", enrollment: 6_245 },
+      { unitId: 34, name: "Thomas Edison State University", city: "Trenton", enrollment: 6_707 },
+      { unitId: 35, name: "Monty Tech", city: "Fitchburg", enrollment: 48 },
+      { unitId: 36, name: "Middle Tennessee State University", city: "Murfreesboro", enrollment: 16_301 },
+      { unitId: 37, name: "Fort Lewis College", city: "Durango", enrollment: 3_079 },
+      { unitId: 38, name: "Forsyth Technical Community College", city: "Winston-Salem", enrollment: 7_113 },
+    ]);
+    // Before: Louisiana State ("st" as in State, "louis" as in Louisiana) above Washington University.
+    expect(await names({ q: "Saint Louis" })).toEqual(["Saint Louis University", "Washington University in St Louis"]);
+    // Before: Thomas Edison State University.
+    expect(await names({ q: "St Thomas" })).toEqual(["University of St Thomas"]);
+    // Before: Monty Tech first ("mt" as initials) and Middle Tennessee State University.
+    expect(await names({ q: "Mount" })).toEqual(["Mount Holyoke College"]);
+    expect(await names({ q: "Mt" })).toEqual(["Mount Holyoke College"]);
+    // Before: Forsyth Technical Community College ("ft" as initials).
+    expect(await names({ q: "Fort" })).toEqual(["Fort Lewis College"]);
   });
 
   it("puts names starting with the words first, larger colleges first", async () => {

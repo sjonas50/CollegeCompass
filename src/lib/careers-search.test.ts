@@ -2,54 +2,118 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, createTestDb } from "@/db";
 import { occupations } from "@/db/schema";
 import { searchCareers } from "./careers";
-import { CAREER_PAGE_SIZE, CAREER_SYNONYMS, findCareers } from "./careers-search";
+import { CAREER_GROUPS, CAREER_PAGE_SIZE, CAREER_SYNONYMS, findCareers } from "./careers-search";
 
 let db: Db;
 
-// Real O*NET 30.x titles, including ones the old substring search matched by mistake.
-const TITLES = [
-  "Actors",
-  "Chiropractors",
-  "Farm Labor Contractors",
-  "Heavy and Tractor-Trailer Truck Drivers",
-  "Airline Pilots, Copilots, and Flight Engineers",
-  "Proofreaders and Copy Markers",
-  "Police and Sheriff's Patrol Officers",
-  "Transit and Railroad Police",
-  "Dispatchers, Except Police, Fire, and Ambulance",
-  "Registered Nurses",
-  "Nurse Practitioners",
-  "Licensed Practical and Licensed Vocational Nurses",
-  "Farmworkers and Laborers, Crop, Nursery, and Greenhouse",
-  "Physicians, Pathologists",
-  "Family Medicine Physicians",
-  "Pediatric Surgeons",
-  "Orthopedic Surgeons, Except Pediatric",
-  "Veterinarians",
-  "Veterinary Technologists and Technicians",
-  "Software Developers",
-  "Computer Programmers",
-  "Lawyers",
-  "Dentists, General",
-  "Secretaries and Administrative Assistants, Except Legal, Medical, and Executive",
-  "Civil Engineers",
-  "Engineering Teachers, Postsecondary",
-  "Secondary School Teachers, Except Special and Career/Technical Education",
-  "Middle School Teachers, Except Special and Career/Technical Education",
-  "Special Education Teachers, Secondary School",
-  "Chemistry Teachers, Postsecondary",
-  "Art Directors",
-  "Craft Artists",
-  "Art, Drama, and Music Teachers, Postsecondary",
-  "Cartographers and Photogrammetrists",
-  "Surgeons, All Other",
+// Real O*NET 30.x codes and titles, including ones the old substring search matched by mistake.
+const CAREERS: [code: string, title: string][] = [
+  ["27-2011.00", "Actors"],
+  ["29-1011.00", "Chiropractors"],
+  ["13-1074.00", "Farm Labor Contractors"],
+  ["53-3032.00", "Heavy and Tractor-Trailer Truck Drivers"],
+  ["53-2011.00", "Airline Pilots, Copilots, and Flight Engineers"],
+  ["43-9081.00", "Proofreaders and Copy Markers"],
+  ["33-3051.00", "Police and Sheriff's Patrol Officers"],
+  ["33-3052.00", "Transit and Railroad Police"],
+  ["43-5032.00", "Dispatchers, Except Police, Fire, and Ambulance"],
+  ["29-1141.00", "Registered Nurses"],
+  ["29-1171.00", "Nurse Practitioners"],
+  ["29-2061.00", "Licensed Practical and Licensed Vocational Nurses"],
+  ["45-2092.00", "Farmworkers and Laborers, Crop, Nursery, and Greenhouse"],
+  ["29-1222.00", "Physicians, Pathologists"],
+  ["29-1215.00", "Family Medicine Physicians"],
+  ["29-1221.00", "Pediatricians, General"],
+  ["29-1223.00", "Psychiatrists"],
+  ["29-1243.00", "Pediatric Surgeons"],
+  ["29-1242.00", "Orthopedic Surgeons, Except Pediatric"],
+  ["29-1071.00", "Physician Assistants"],
+  ["29-1291.00", "Acupuncturists"],
+  ["29-1299.01", "Naturopathic Physicians"],
+  ["29-1131.00", "Veterinarians"],
+  ["29-2056.00", "Veterinary Technologists and Technicians"],
+  ["15-1252.00", "Software Developers"],
+  ["15-1251.00", "Computer Programmers"],
+  ["15-1254.00", "Web Developers"],
+  ["15-1232.00", "Computer User Support Specialists"],
+  ["15-1212.00", "Information Security Analysts"],
+  ["11-3021.00", "Computer and Information Systems Managers"],
+  ["51-9161.00", "Computer Numerically Controlled Tool Operators"],
+  ["23-1011.00", "Lawyers"],
+  ["29-1021.00", "Dentists, General"],
+  ["43-6014.00", "Secretaries and Administrative Assistants, Except Legal, Medical, and Executive"],
+  ["17-2051.00", "Civil Engineers"],
+  ["25-1032.00", "Engineering Teachers, Postsecondary"],
+  ["25-2031.00", "Secondary School Teachers, Except Special and Career/Technical Education"],
+  ["25-2022.00", "Middle School Teachers, Except Special and Career/Technical Education"],
+  ["25-2058.00", "Special Education Teachers, Secondary School"],
+  ["25-1052.00", "Chemistry Teachers, Postsecondary"],
+  ["27-1011.00", "Art Directors"],
+  ["27-1012.00", "Craft Artists"],
+  ["25-1121.00", "Art, Drama, and Music Teachers, Postsecondary"],
+  ["17-1021.00", "Cartographers and Photogrammetrists"],
+  ["29-1249.00", "Surgeons, All Other"],
 ];
+
+/** Every O*NET 30.x title with "Teachers" in it, except the "All Other" ones. */
+const TEACHERS: [code: string, title: string][] = [
+  ["25-1041.00", "Agricultural Sciences Teachers, Postsecondary"],
+  ["25-1061.00", "Anthropology and Archeology Teachers, Postsecondary"],
+  ["25-1031.00", "Architecture Teachers, Postsecondary"],
+  ["25-1062.00", "Area, Ethnic, and Cultural Studies Teachers, Postsecondary"],
+  ["25-1121.00", "Art, Drama, and Music Teachers, Postsecondary"],
+  ["25-1051.00", "Atmospheric, Earth, Marine, and Space Sciences Teachers, Postsecondary"],
+  ["25-1042.00", "Biological Science Teachers, Postsecondary"],
+  ["25-1011.00", "Business Teachers, Postsecondary"],
+  ["25-2023.00", "Career/Technical Education Teachers, Middle School"],
+  ["25-1194.00", "Career/Technical Education Teachers, Postsecondary"],
+  ["25-2032.00", "Career/Technical Education Teachers, Secondary School"],
+  ["25-1052.00", "Chemistry Teachers, Postsecondary"],
+  ["25-1122.00", "Communications Teachers, Postsecondary"],
+  ["25-1021.00", "Computer Science Teachers, Postsecondary"],
+  ["25-1111.00", "Criminal Justice and Law Enforcement Teachers, Postsecondary"],
+  ["25-1063.00", "Economics Teachers, Postsecondary"],
+  ["25-1081.00", "Education Teachers, Postsecondary"],
+  ["25-2021.00", "Elementary School Teachers, Except Special Education"],
+  ["25-1032.00", "Engineering Teachers, Postsecondary"],
+  ["25-1123.00", "English Language and Literature Teachers, Postsecondary"],
+  ["25-1053.00", "Environmental Science Teachers, Postsecondary"],
+  ["25-1192.00", "Family and Consumer Sciences Teachers, Postsecondary"],
+  ["25-1124.00", "Foreign Language and Literature Teachers, Postsecondary"],
+  ["25-1043.00", "Forestry and Conservation Science Teachers, Postsecondary"],
+  ["25-1064.00", "Geography Teachers, Postsecondary"],
+  ["25-1071.00", "Health Specialties Teachers, Postsecondary"],
+  ["25-1125.00", "History Teachers, Postsecondary"],
+  ["25-2012.00", "Kindergarten Teachers, Except Special Education"],
+  ["25-1112.00", "Law Teachers, Postsecondary"],
+  ["25-1082.00", "Library Science Teachers, Postsecondary"],
+  ["25-1022.00", "Mathematical Science Teachers, Postsecondary"],
+  ["25-2022.00", "Middle School Teachers, Except Special and Career/Technical Education"],
+  ["25-1072.00", "Nursing Instructors and Teachers, Postsecondary"],
+  ["25-1126.00", "Philosophy and Religion Teachers, Postsecondary"],
+  ["25-1054.00", "Physics Teachers, Postsecondary"],
+  ["25-1065.00", "Political Science Teachers, Postsecondary"],
+  ["25-2011.00", "Preschool Teachers, Except Special Education"],
+  ["25-1066.00", "Psychology Teachers, Postsecondary"],
+  ["25-1193.00", "Recreation and Fitness Studies Teachers, Postsecondary"],
+  ["25-2031.00", "Secondary School Teachers, Except Special and Career/Technical Education"],
+  ["25-3021.00", "Self-Enrichment Teachers"],
+  ["25-1113.00", "Social Work Teachers, Postsecondary"],
+  ["25-1067.00", "Sociology Teachers, Postsecondary"],
+  ["25-2056.00", "Special Education Teachers, Elementary School"],
+  ["25-2055.00", "Special Education Teachers, Kindergarten"],
+  ["25-2057.00", "Special Education Teachers, Middle School"],
+  ["25-2051.00", "Special Education Teachers, Preschool"],
+  ["25-2058.00", "Special Education Teachers, Secondary School"],
+  ["25-3031.00", "Substitute Teachers, Short-Term"],
+];
+
+const insertCareers = (to: Db, careers: [code: string, title: string][]) =>
+  to.insert(occupations).values(careers.map(([code, title]) => ({ code, title, description: "What the work is.", jobZone: 3 })));
 
 beforeEach(async () => {
   db = await createTestDb();
-  await db.insert(occupations).values(
-    TITLES.map((title, i) => ({ code: `99-${String(1000 + i)}.00`, title, description: "What the work is.", jobZone: 3 })),
-  );
+  await insertCareers(db, CAREERS);
 });
 
 const titles = async (query: string) => (await findCareers(db, query, { pageSize: 50 })).results.map((r) => r.title);
@@ -80,12 +144,32 @@ describe("findCareers matching", () => {
 
   it("ignores words after 'Except', which name what the career isn't", async () => {
     expect(await titles("police")).not.toContain("Dispatchers, Except Police, Fire, and Ambulance");
-    expect(await titles("pediatric")).toEqual(["Pediatric Surgeons"]);
+    expect(await titles("pediatric")).toEqual(["Pediatric Surgeons", "Pediatricians, General"]);
   });
 
   it("understands everyday words", async () => {
-    expect(await titles("doctor")).toEqual(["Physicians, Pathologists", "Family Medicine Physicians", "Orthopedic Surgeons, Except Pediatric", "Pediatric Surgeons"]);
+    // Physicians and surgeons by code (29-121x to 29-124x), whatever the title: not Physician
+    // Assistants, Acupuncturists or Naturopathic Physicians.
+    expect(await titles("doctor")).toEqual([
+      "Family Medicine Physicians",
+      "Orthopedic Surgeons, Except Pediatric",
+      "Pediatric Surgeons",
+      "Pediatricians, General",
+      "Physicians, Pathologists",
+      "Psychiatrists",
+    ]);
     expect(await titles("doctors")).toEqual(await titles("doctor"));
+    expect(await titles("family doctor")).toEqual(["Family Medicine Physicians"]);
+    // Computer occupations (15-12xx) and their managers, not Computer Numerically Controlled Tool Operators.
+    expect(await titles("IT")).toEqual([
+      "Computer and Information Systems Managers",
+      "Computer Programmers",
+      "Computer User Support Specialists",
+      "Information Security Analysts",
+      "Software Developers",
+      "Web Developers",
+    ]);
+    for (const words of ["software engineer", "software engineers"]) expect(await titles(words)).toEqual(["Software Developers"]);
     expect(await titles("vet")).toEqual(["Veterinarians", "Veterinary Technologists and Technicians"]);
     expect(await titles("vet tech")).toEqual(["Veterinary Technologists and Technicians"]);
     for (const word of ["coder", "coding", "programmer"]) expect(await titles(word)).toEqual(["Software Developers", "Computer Programmers"]);
@@ -98,12 +182,23 @@ describe("findCareers matching", () => {
     expect(await titles("engineering")).toContain("Civil Engineers");
   });
 
-  it("keeps the everyday-word list small, lowercase and singular", () => {
-    expect(Object.keys(CAREER_SYNONYMS).length).toBeLessThanOrEqual(20);
+  it("finds a synonym's two words only next to each other", async () => {
+    // A made-up title with "school" and "secondary" apart.
+    await insertCareers(db, [["99-0001.00", "School Psychologists, Secondary Prevention"]]);
+    expect(await titles("high school")).toEqual(["Secondary School Teachers, Except Special and Career/Technical Education", "Special Education Teachers, Secondary School"]);
+  });
+
+  it("keeps the everyday-word lists small, lowercase and singular", () => {
+    expect(Object.keys(CAREER_SYNONYMS).length + Object.keys(CAREER_GROUPS).length).toBeLessThanOrEqual(20);
     for (const [key, terms] of Object.entries(CAREER_SYNONYMS)) {
       expect(key, key).toMatch(/^[a-z]+( [a-z]+)?$/);
       expect(terms.length, key).toBeGreaterThan(0);
       for (const term of terms) expect(term, key).toMatch(/^[a-z]+( [a-z]+)?$/);
+    }
+    for (const [key, codes] of Object.entries(CAREER_GROUPS)) {
+      expect(key, key).toMatch(/^[a-z]+$/);
+      expect(CAREER_SYNONYMS, key).not.toHaveProperty(key);
+      for (const code of codes) expect(code, key).toMatch(/^\d{2}-\d{1,4}$/);
     }
   });
 
@@ -125,9 +220,36 @@ describe("findCareers ranking", () => {
     ]);
     // "Dentists, General" is Dentists with a qualifier.
     expect(await titles("dentist")).toEqual(["Dentists, General"]);
-    // "Art, Drama, and Music Teachers" is a list, not the career "Art".
-    expect((await titles("teacher"))[0]).toBe("Art, Drama, and Music Teachers, Postsecondary");
     expect(await titles("middle school teacher")).toEqual(["Middle School Teachers, Except Special and Career/Technical Education"]);
+  });
+
+  it("puts college teaching jobs after the others in a tier", async () => {
+    expect(await titles("teacher")).toEqual([
+      "Middle School Teachers, Except Special and Career/Technical Education",
+      "Secondary School Teachers, Except Special and Career/Technical Education",
+      "Special Education Teachers, Secondary School",
+      "Art, Drama, and Music Teachers, Postsecondary",
+      "Chemistry Teachers, Postsecondary",
+      "Engineering Teachers, Postsecondary",
+    ]);
+
+    // With every real O*NET teacher title (30.x), school teachers are on the first page.
+    const all = await createTestDb();
+    await insertCareers(all, TEACHERS);
+    const first = await findCareers(all, "teacher");
+    expect(first.total).toBe(TEACHERS.length);
+    const firstPage = first.results.map((r) => r.title);
+    for (const title of [
+      "Elementary School Teachers, Except Special Education",
+      "Middle School Teachers, Except Special and Career/Technical Education",
+      "Secondary School Teachers, Except Special and Career/Technical Education",
+    ]) {
+      expect(firstPage).toContain(title);
+    }
+    // The 14 school and other teachers, then the college ones.
+    const school = TEACHERS.filter(([, title]) => !title.endsWith(", Postsecondary"));
+    expect(school).toHaveLength(14);
+    expect(firstPage.slice(0, school.length).sort()).toEqual(school.map(([, title]) => title).sort());
   });
 
   it("lists the best matches when asked for a few (the counselor's search tool)", async () => {

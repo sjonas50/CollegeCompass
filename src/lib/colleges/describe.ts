@@ -56,13 +56,14 @@ export function outOfStateCost(
 
 /**
  * The tuition lines for a college's page. One "Tuition and fees" line when in-state and
- * out-of-state tuition are the same, as at most private colleges; otherwise one line for each.
+ * out-of-state tuition are the same, as at most private colleges, or when neither is reported;
+ * otherwise one line for each.
  */
 export function tuitionLines(
   tuitionInState: number | null,
   tuitionOutOfState: number | null,
 ): { term: string; amount: number | null }[] {
-  if (tuitionInState !== null && tuitionInState === tuitionOutOfState) return [{ term: "Tuition and fees", amount: tuitionInState }];
+  if (tuitionInState === tuitionOutOfState) return [{ term: "Tuition and fees", amount: tuitionInState }];
   return [
     { term: "Tuition and fees, in-state", amount: tuitionInState },
     { term: "Tuition and fees, out-of-state", amount: tuitionOutOfState },

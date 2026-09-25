@@ -44,8 +44,11 @@ describe("/careers search", () => {
     const words = text(html);
     // The old search stopped at 30 without saying so.
     expect(words).toContain("31 careers match “teacher”");
-    expect(words).toContain(`Showing 1–${CAREER_PAGE_SIZE}.`);
+    expect(words).toContain(`Titles that match your words most closely come first. Showing 1–${CAREER_PAGE_SIZE}.`);
+    expect(words).not.toContain("Best matches first");
     expect(words).toContain("Add another word to narrow the list");
+    // Middle school teachers before the college teaching jobs, though all match "teacher" as closely.
+    expect(words).toMatch(/Middle School Teachers, Except Special and Career\/Technical Education Considerable preparation Subject 01 Teachers, Postsecondary/);
     expect(html).toContain('href="/careers?q=teacher&amp;page=2#results"');
     expect(html.match(/href="\/careers\/25-/g)).toHaveLength(CAREER_PAGE_SIZE);
 

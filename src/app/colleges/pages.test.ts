@@ -346,6 +346,12 @@ describe("/colleges/[unitId] detail page", () => {
     const flat = text(await collegePage("4"));
     expect(flat).toContain("Tuition and fees $7,000 a year");
     expect(flat).not.toContain("Public colleges charge less tuition");
+
+    // A private college (a real one: Kentucky Horseshoeing School) that reports no tuition.
+    await insertColleges(state.db!, [{ unitId: 5, name: "Kentucky Horseshoeing School", control: 3, tuitionInState: null, tuitionOutOfState: null }]);
+    const unreported = text(await collegePage("5"));
+    expect(unreported).toContain("Tuition and fees Not reported");
+    expect(unreported).not.toMatch(/Tuition and fees, (in|out-of)-state/);
     // A public college that charges more out of state keeps both lines and the note.
     expect(text(await collegePage("110635"))).toContain("Public colleges charge less tuition to students who live in their state.");
   });

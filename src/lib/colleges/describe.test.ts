@@ -58,13 +58,17 @@ describe("tuitionLines", () => {
     expect(tuitionLines(61_676, 61_676)).toEqual([{ term: "Tuition and fees", amount: 61_676 }]);
   });
 
+  it("shows one line when neither is reported", () => {
+    expect(tuitionLines(null, null)).toEqual([{ term: "Tuition and fees", amount: null }]);
+  });
+
   it("shows both when they differ or one is missing", () => {
     expect(tuitionLines(17_736, 60_946)).toEqual([
       { term: "Tuition and fees, in-state", amount: 17_736 },
       { term: "Tuition and fees, out-of-state", amount: 60_946 },
     ]);
-    expect(tuitionLines(null, null).map((l) => l.term)).toEqual(["Tuition and fees, in-state", "Tuition and fees, out-of-state"]);
     expect(tuitionLines(9_000, null)).toHaveLength(2);
+    expect(tuitionLines(null, 9_000)).toHaveLength(2);
   });
 });
 
