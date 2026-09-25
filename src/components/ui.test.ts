@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { emptySavedAssessment } from "@/lib/assessments/anonymous";
 import { INTEREST_ITEMS } from "@/lib/assessments/instruments";
 import { SavedQuizChoice } from "./saved-results-import";
-import { BirthdayFields, Button, GradeSelect } from "./ui";
+import { BirthdayFields, Button, FormMessage, GradeSelect } from "./ui";
 
 // Server-rendered checks for the shared form pieces, and the color tokens behind them.
 
@@ -95,6 +95,14 @@ describe("birthday fields", () => {
     const [grade] = controls(renderToStaticMarkup(createElement(GradeSelect, { errors: ["Choose your grade."] })));
     expect(grade).toMatchObject({ "aria-invalid": "true", "aria-describedby": "grade-error" });
     expect(controls(renderToStaticMarkup(createElement(GradeSelect, {})))[0]).not.toHaveProperty("aria-describedby");
+  });
+});
+
+describe("form message", () => {
+  it("is read out when it appears, and can take focus after a failed submit", () => {
+    const html = renderToStaticMarkup(createElement(FormMessage, { message: "Too many attempts. Please try again later." }));
+    expect(html).toMatch(/^<p role="alert" tabindex="-1"[^>]*>Too many attempts\. Please try again later\.<\/p>$/);
+    expect(renderToStaticMarkup(createElement(FormMessage, {}))).toBe("");
   });
 });
 

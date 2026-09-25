@@ -56,6 +56,7 @@ export function ChildAccountForm({ consentToken }: { consentToken?: string }) {
             <input
               type="checkbox"
               name="consent"
+              defaultChecked={values.consent === "on"}
               aria-invalid={state?.errors?.consent?.length ? true : undefined}
               aria-describedby={state?.errors?.consent?.length ? "consent-error" : undefined}
               className="mt-0.5 size-5 shrink-0"

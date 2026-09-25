@@ -244,6 +244,15 @@ describe("chat links to colleges and careers", () => {
       "Southcentral Kentucky Community and Technical College",
       "Missouri University of Science and Technology",
       "Savannah College of Art and Design",
+      "SUNY College of Environmental Science and Forestry",
+      "Johnson and Wales University",
+      "Davis and Elkins College",
+      "Emory and Henry College",
+      "Bryant and Stratton College",
+      "Southern University and A&M College",
+      // As the Scorecard writes it.
+      "Southern University and A & M College",
+      "Fond du Lac Tribal and Community College",
     ];
     for (const name of names) expect(links(`${name} (/colleges/1)`), name).toEqual([["/colleges/1", name, false]]);
     // Career titles often have "and" in them.
@@ -269,6 +278,36 @@ describe("chat links to colleges and careers", () => {
     for (const text of ["Two options: /colleges/1", "Link: /colleges/1", "More — /colleges/1", "Houston, Texas — /colleges/1", "In NY: /colleges/1"]) {
       expect(links(text), text).toEqual([["/colleges/1", "college page", false]]);
     }
+    // Labels before a dash or colon, the way a college list is sorted: they don't name a school.
+    const labels = [
+      "- Reach: /colleges/1",
+      "Match — /colleges/1",
+      "Safety - /colleges/1",
+      "Cost: /colleges/1",
+      "One in the Midwest: /colleges/1",
+      "Great for Nursing — /colleges/1",
+    ];
+    for (const text of labels) {
+      expect(links(text), text).toEqual([["/colleges/1", "college page", false]]);
+      expect(written(text), text).toBe(text);
+    }
+  });
+
+  it("after a dash or colon, takes a college's name only when it names a school", () => {
+    const named = [
+      ["Ohio State: /colleges/204796", "Ohio State"],
+      ["Georgia Tech — /colleges/139755", "Georgia Tech"],
+      ["- Juilliard School: /colleges/192110", "Juilliard School"],
+      ["Hobart and William Smith Colleges - /colleges/191630", "Hobart and William Smith Colleges"],
+      ["MIT: /colleges/166683", "MIT"],
+      ["UCLA — /colleges/110662", "UCLA"],
+      ["Reach: MIT — /colleges/166683", "MIT"],
+    ];
+    for (const [text, name] of named) expect(links(text), text).toEqual([[text.slice(text.indexOf("/")), name, false]]);
+    // In parentheses the name is plainly the college's.
+    expect(links("Reach: Harvard (/colleges/166027)")).toEqual([["/colleges/166027", "Harvard", false]]);
+    // A career title needs no head word.
+    expect(links("Registered Nurses: /careers/29-1141.00")).toEqual([["/careers/29-1141.00", "Registered Nurses", false]]);
   });
 });
 

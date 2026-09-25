@@ -61,4 +61,24 @@ describe("student signup focus after a failed submit", () => {
     expect(control(html, "parentEmail")).toMatchObject({ "aria-invalid": "true" });
     expect(form.focusedFor).toEqual([{ step: "child" }, request]);
   });
+
+  it("the parent's email step, when only a message comes back", () => {
+    const request = { message: "We couldn't send the email. Please try again." };
+    form.states.set(actions.requestParentConsentAction, request);
+    const html = render({ startWithParentStep: true });
+    expect(control(html, "parentEmail")).not.toHaveProperty("aria-invalid");
+    // With no invalid field, focus goes to the message, which has to be focusable.
+    expect(html).toMatch(/<p role="alert" tabindex="-1"[^>]*>We couldn&#x27;t send the email\. Please try again\.<\/p>/);
+    expect(form.focusedFor).toEqual([{ step: "child" }, request]);
+  });
+
+  it("the account step, when only a message comes back", () => {
+    const age = { step: "teen", birthDate: "2011-03-04" };
+    const account = { message: "Too many attempts. Please try again later." };
+    form.states.set(actions.checkAgeAction, age);
+    form.states.set(actions.registerStudentAction, account);
+    const html = render({ startWithParentStep: false });
+    expect(html).toMatch(/<p role="alert" tabindex="-1"[^>]*>Too many attempts\. Please try again later\.<\/p>/);
+    expect(form.focusedFor).toEqual([age, account]);
+  });
 });

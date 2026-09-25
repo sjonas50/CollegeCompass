@@ -118,7 +118,7 @@ function ParentHandoff() {
           </p>
           <SavedQuizNote />
           {message && (
-            <p role="alert" className="text-sm text-danger">
+            <p role="alert" tabIndex={-1} className="text-sm text-danger">
               {message}
             </p>
           )}

@@ -143,7 +143,7 @@ function namesPage(label: string): boolean {
 // A name: capitalized words, maybe joined by small words, as in "Texas A&M", "St. Olaf College",
 // "U.S. Naval Academy" or "University of Texas at Austin". It ends the text it's matched against.
 const NAME_WORD = String.raw`(?:\p{Lu}[\p{L}\p{N}'’&–-]*|\p{Lu}\p{Ll}{0,2}\.|(?:\p{Lu}\.){2,})`;
-const NAME_JOIN = String.raw`(?:of|at|the|de|la|del|and|in|for|on|y|&|[-–])`;
+const NAME_JOIN = String.raw`(?:of|at|the|de|la|del|du|des|and|in|for|on|y|&|[-–])`;
 const NAME_AT_END = new RegExp(String.raw`(?<=^|[\s(])${NAME_WORD}(?:\s+(?:${NAME_JOIN}\s+)*${NAME_WORD})*(?=\s*$)`, "u");
 const JOIN_WORD = new RegExp(String.raw`^${NAME_JOIN}$`, "u");
 // Capitalized words that start a sentence rather than a name ("Look at Texas A&M"), or that say
@@ -160,18 +160,32 @@ const notName = (word: string) => NOT_NAMES.has(word.split(/['’]/)[0].toLowerC
 const SCHOOL_WORDS = new Set(
   `Academy Acupuncture Adult Aeronautics Agricultural Agriculture Allied Architecture Art Arts Barber Barbering Beauty Business
   Career Careers Center College Community Continuing Cosmetology Culinary Culture Dental Design Dramatic Education Engineering
-  Esthetics Graduate Hairstyling Health Healthcare Hospitality Institute Integrative Justice Law Management Massage Mechanical
+  Esthetics Forestry Graduate Hairstyling Health Healthcare Hospitality Institute Integrative Justice Law Management Massage Mechanical
   Medical Medicine Mines Mining Ministry Music Musical Nails Nursing Oriental Performing Pharmacy Religion Salon School Science
   Sciences Seminary Spa State Studies Technical Technology Theological Theology Trade Tribal University Wellness`.split(/\s+/),
 );
-const AND_NAMES = new Set(["Washington and Lee", "Washington and Jefferson", "William and Mary", "Franklin and Marshall", "Lewis and Clark", "Hobart and William"]);
+const AND_NAMES = new Set([
+  "Washington and Lee",
+  "Washington and Jefferson",
+  "William and Mary",
+  "Franklin and Marshall",
+  "Lewis and Clark",
+  "Hobart and William",
+  "Johnson and Wales",
+  "Davis and Elkins",
+  "Emory and Henry",
+  "Bryant and Stratton",
+  "University and A&M",
+]);
+// The word after "and", with "A & M" read as "A&M" ("Southern University and A & M College").
+const WORD_AFTER_AND = /^(?:\p{Lu}\s*&\s*\p{Lu}(?!\S)|\S+)/u;
 
 /** Where the last school in a run of names joined by "and" starts. */
 function lastSchool(name: string): number {
   let start = 0;
   for (const and of name.matchAll(/\s+and\s+/g)) {
     const before = /\S+$/.exec(name.slice(0, and.index))?.[0] ?? "";
-    const after = /^\S+/.exec(name.slice(and.index + and[0].length))?.[0] ?? "";
+    const after = WORD_AFTER_AND.exec(name.slice(and.index + and[0].length))?.[0].replace(/\s+/g, "") ?? "";
     const oneName = (SCHOOL_WORDS.has(before) && SCHOOL_WORDS.has(after)) || AND_NAMES.has(`${before} and ${after}`);
     if (!oneName) start = and.index + and[0].length;
   }
@@ -195,6 +209,11 @@ function nameBefore(text: string, from: number, at: number, kind: "college" | "c
 
 // What joins a name to its path besides "(...)": a dash or a colon ("Boston College — /colleges/164924").
 const JOIN_BEFORE_PATH = /(?:\s*[—–]\s*|\s+-\s+|:\s+)$/u;
+// Before a dash or colon, a label is as likely as a name ("- Reach: /colleges/1", "Cost: /colleges/1"),
+// so there a college's name has to say it's a school: a head word ("Boston College", "Ohio State",
+// "Georgia Tech") or an initialism ("MIT", "UCLA").
+const SCHOOL_HEADS = new Set("University College Colleges Institute Academy School State Tech Polytechnic Conservatory Seminary Community".split(" "));
+const namesSchool = (name: string) => /^\p{Lu}{2,6}$/u.test(name) || name.split(/[^\p{L}]+/u).some((word) => SCHOOL_HEADS.has(word));
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const STATE = [...US_STATES.flatMap((s) => [s.code, s.name]), "D.C."].sort((a, b) => b.length - a.length).map(escape).join("|");
 // A place after a college's name, as the tools give it (", Ithaca NY", ", Chestnut Hill, MA") or
@@ -239,13 +258,15 @@ type Placed = { start: number; end: number; segment: ChatSegment };
 /**
  * A college or career page written after its name: "Name (/path)", "Name — /path" or "Name: /path",
  * and for a college also with its place between ("Cornell University, Ithaca NY — /colleges/190415").
+ * After a dash or colon, a college's name has to say it's a school (namesSchool).
  * The name becomes the link. A place stays as written, and the path and what joins it aren't shown.
  * Looks back no further than `from`: the start of the line, or the end of the link before.
  */
 function namedPage(text: string, from: number, start: number, end: number, href: string, kind: "college" | "career"): Placed[] | null {
   let joinStart: number;
   let linkEnd: number;
-  if (text[start - 1] === "(" && text[end] === ")") {
+  const inParentheses = text[start - 1] === "(" && text[end] === ")";
+  if (inParentheses) {
     joinStart = start - 1;
     linkEnd = end + 1;
   } else {
@@ -258,7 +279,8 @@ function namedPage(text: string, from: number, start: number, end: number, href:
   const head = text.slice(headStart, joinStart);
   const place = kind === "college" ? PLACE_AT_END.exec(head) : null;
   const named = nameBefore(text, from, place ? headStart + place.index : joinStart, kind);
-  if (!named || (kind === "college" && ONLY_A_STATE.test(named.name))) return null;
+  if (!named) return null;
+  if (kind === "college" && (ONLY_A_STATE.test(named.name) || (!inParentheses && !namesSchool(named.name)))) return null;
   const nameEnd = place ? named.start + named.name.length : linkEnd;
   const source = text.slice(named.start, nameEnd);
   const link: ChatSegment = { type: "link", text: named.name, href, source, external: false };
