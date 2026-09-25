@@ -262,7 +262,16 @@ export type Condition = { id: string; label: string; kind: (typeof CONDITION_KIN
  * Utah math competency; the THECB score for Texas automatic admission). Quoted, never converted
  * between tests, never evaluated: offered as the "test-score route" option.
  */
-export type TestRoute = { id: string; text: string; cite: CitationId[] };
+export type TestRoute = {
+  id: string;
+  text: string;
+  cite: CitationId[];
+  /**
+   * When the score must be in, if the source sets a date ("received by December 10" of 12th grade).
+   * Shown on the "by when" strip. Optional: most routes have no date.
+   */
+  by?: { grade: SchoolGrade; month: number; day: number };
+};
 
 // Variants and rule sets -------------------------------------------------------
 

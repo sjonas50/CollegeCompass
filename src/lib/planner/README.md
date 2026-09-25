@@ -20,6 +20,7 @@ proof-of-concept decisions override the design where they differ; see the end of
 | `cohort.ts` | `deriveCohort` (grade-9 entry year, class year, grade-7 entry year), `cohortValue` |
 | `copy.ts` | Fixed wording: draft notice, the IEP/504/English-learner note, Texas Algebra II wording, status labels |
 | `fixtures.ts` | Tiny made-up content and a `PlannerInput` for tests (not real quotes; never copy into content) |
+| `engine/` | The engine: `plan(input)` (see `engine/README.md`) |
 
 ## Conventions
 
@@ -74,6 +75,9 @@ and `citations` (verbatim quotes of 300 characters or fewer).
   opt-out). Leaves must `cite`; any leaf can override its rule set's strength (quoted).
 - **Selectors**: fields AND together, a requirement's list of selectors ORs. Assumed types never
   match `types` or `capabilities`.
+- **Test routes**: `testRoutes` are quoted, never evaluated, and offered as the test-score option.
+  An optional `by: { grade, month, day }` puts a dated route on the "by when" strip ("received by
+  December 10 of 12th grade").
 - **Not course requirements**: `conditions` show as "We don't track this"; `unverified` shows once
   as "Ask your counselor"; `checks` run after allocation (math in 3 years, DLA on schedule by the
   end of 11th, Utah senior math, no Texas endorsement before the end of 10th, the DLA needs an
