@@ -97,20 +97,46 @@ describe("sign-in limits", () => {
     expect(await beginSignIn(db, "ana@example.com", "ip", new Date(t0.getTime() + LOGIN_LIMITS.windowMs + 1000))).toBe(true);
   });
 
-  it("gives back only the attempt of a correct password", async () => {
+  it("gives back the attempt of a correct password, per account and per network", async () => {
     const t0 = new Date("2026-09-24T12:00:00Z");
-    for (let i = 0; i < 3 * LOGIN_LIMITS.account; i++) {
+    for (let i = 0; i < LOGIN_LIMITS.ip + 5; i++) {
       expect(await beginSignIn(db, "ana@example.com", "ip", t0)).toBe(true);
-      await signInSucceeded(db, "ana@example.com");
+      await signInSucceeded(db, "ana@example.com", "ip");
     }
   });
 
-  it("keeps the per-network limit, correct passwords included", async () => {
+  it("never lets correct sign-ins use up the network, as when a class signs in behind one school IP", async () => {
     await teen();
-    for (let i = 0; i < LOGIN_LIMITS.ip; i++) await beginSignIn(db, `someone${i}@example.com`, state.ip);
+    // Many correct sign-ins from this network, as the form does them.
+    for (let i = 0; i < LOGIN_LIMITS.ip + 5; i++) {
+      expect(await beginSignIn(db, `student${i % 30}@example.com`, state.ip)).toBe(true);
+      await signInSucceeded(db, `student${i % 30}@example.com`, state.ip);
+    }
+    expect(await signIn("ana@example.com")).toEqual({ redirect: "/dashboard" });
+  });
+
+  it("keeps the per-network limit for wrong passwords", async () => {
+    await teen();
+    for (let i = 0; i < LOGIN_LIMITS.ip; i++) expect(await beginSignIn(db, `someone${i}@example.com`, state.ip)).toBe(true);
     expect(await signIn("ana@example.com")).toEqual(TOO_MANY);
     state.ip = "hashed-198.51.100.7";
+    // Refused by the network, the attempts above checked no password, so Ana's account isn't used up.
     expect(await signIn("ana@example.com")).toEqual({ redirect: "/dashboard" });
+  });
+
+  it("doesn't let a locked account's retries use up the network", async () => {
+    await teen();
+    await teen("bo@example.com");
+    for (let i = 0; i < LOGIN_LIMITS.account; i++) expect(await signIn("ana@example.com", "wrong password")).toEqual(NO_MATCH);
+    for (let i = 0; i < LOGIN_LIMITS.ip; i++) expect(await beginSignIn(db, "ana@example.com", state.ip)).toBe(false);
+    expect(await signIn("bo@example.com")).toEqual({ redirect: "/dashboard" });
+  });
+
+  it("doesn't count an attempt the network refused against the account", async () => {
+    const t0 = new Date("2026-09-24T12:00:00Z");
+    for (let i = 0; i < LOGIN_LIMITS.ip; i++) await beginSignIn(db, `someone${i}@example.com`, "busy", t0);
+    for (let i = 0; i < 2 * LOGIN_LIMITS.account; i++) expect(await beginSignIn(db, "ana@example.com", "busy", t0)).toBe(false);
+    expect(await beginSignIn(db, "ana@example.com", "quiet", t0)).toBe(true);
   });
 });
 

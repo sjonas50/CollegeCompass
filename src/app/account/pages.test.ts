@@ -282,10 +282,26 @@ describe("/account/billing", () => {
   });
 
   it("lists what a plan unlocks during a trial or after it ends", async () => {
-    await signIn("parent", { trial: "running" });
-    expect(text(await billingPage())).toContain("A plan unlocks");
-    await signIn("parent");
-    expect(text(await billingPage())).toContain("A plan unlocks");
+    withStripe();
+    for (const trial of ["running", "ended"] as const) {
+      await signIn("parent", { trial });
+      const t = text(await billingPage());
+      expect(t).toContain("Choose a plan");
+      expect(t).toContain("A plan unlocks");
+    }
+  });
+
+  it("without paid plans, talks about full access, not a plan", async () => {
+    for (const trial of ["running", "ended"] as const) {
+      await signIn("parent", { trial });
+      const html = await billingPage();
+      const t = text(html);
+      expect(html).toContain('<h2 id="plan-heading" class="text-lg font-medium">Full access</h2>');
+      expect(t).toContain("Full access unlocks");
+      expect(t).toContain(`Paid plans aren't available yet. Your family can ${trial === "running" ? "keep" : "get"} full access with free access, below.`);
+      expect(t).not.toContain("Choose a plan");
+      expect(t).not.toContain("A plan unlocks");
+    }
   });
 
   it("explains errors from checkout", async () => {
@@ -308,6 +324,7 @@ describe("returning from Checkout", () => {
     status: "complete",
     customer: "cus_1",
     client_reference_id: householdId,
+    created: Math.floor(Date.now() / 1000) - 60,
     ...extra,
   });
 
@@ -350,14 +367,39 @@ describe("returning from Checkout", () => {
     quiet.mockRestore();
   });
 
+  it("doesn't thank a parent again for an old checkout, say from the browser's history", async () => {
+    const { householdId } = await signIn("parent");
+    await db.insert(schema.billingAccounts).values({ householdId, stripeCustomerId: "cus_1" });
+    // Paid three days ago, and the plan was canceled since.
+    const old = session(householdId, { created: Math.floor(Date.now() / 1000) - 3 * 86_400 });
+    withStripe([subscriptionObject({ id: "sub_1", customer: "cus_1", status: "canceled" })], old);
+    let t = text(await successPage({ session_id: "cs_test_1" }));
+    expect(t).not.toContain("Thank you");
+    expect(t).not.toContain("We're confirming your payment");
+    expect(t).toContain("Plan and billing shows your family's plan and access.");
+
+    // Still a day later than the checkout link could have been used.
+    withStripe([], session(householdId, { created: Math.floor(Date.now() / 1000) - 86_400 - 60 }));
+    t = text(await successPage({ session_id: "cs_test_1" }));
+    expect(t).not.toContain("Thank you");
+  });
+
   it("sends a parent to Plan and billing when paid plans are off", async () => {
     await signIn("parent");
     expect(await redirectOf(() => successPage({ session_id: "cs_test_1" }))).toBe("/account/billing");
+    expect(await redirectOf(() => render(CheckoutCanceledPage()))).toBe("/account/billing");
+    // A Stripe key but no prices: no plan to come back to either.
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_fake");
+    resetEnvCache();
+    state.stripe = fakeStripe(() => undefined).stripe;
+    expect(await redirectOf(() => render(CheckoutCanceledPage()))).toBe("/account/billing");
   });
 
   it("reassures a parent who canceled", async () => {
     await signIn("parent");
+    withStripe();
     const t = text(await render(CheckoutCanceledPage()));
     expect(t).toContain("No problem. You weren't charged.");
+    expect(t).toContain("You can choose a plan any time from Plan and billing.");
   });
 });

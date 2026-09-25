@@ -29,7 +29,7 @@ import { hashToken } from "@/lib/auth/tokens";
 import { createConsentRequest, cancelConsentRequest } from "@/lib/consent/requests";
 import { isUncertainSend, sendEmail } from "@/lib/email";
 import { type FormState, birthDateFromForm, fieldErrors, safeNext } from "@/lib/forms";
-import { consumeRateLimit } from "@/lib/rate-limit";
+import { consumeRateLimit, refundRateLimit } from "@/lib/rate-limit";
 import { clientIpKey } from "@/lib/request";
 
 const MINUTE = 60_000;
@@ -113,13 +113,16 @@ export async function requestParentConsentAction(
   // When a limit stops the email, the child is told so: they'd otherwise wait for a username that
   // never comes. The words say nothing about whether the address has an account. The network is
   // checked first, so requests refused there don't use up the address's emails for the day.
-  if (!(await consumeRateLimit(db, `consent:ip:${await clientIpKey()}`, 10, 60 * MINUTE))) {
+  const ipLimit = `consent:ip:${await clientIpKey()}`;
+  const addressLimit = `consent:email:${hashToken(parentEmail)}`;
+  if (!(await consumeRateLimit(db, ipLimit, 10, 60 * MINUTE))) {
     return { message: "A lot of parent emails were just sent from here, so we can't send yours right now. Please try again in an hour." };
   }
-  if (!(await consumeRateLimit(db, `consent:email:${hashToken(parentEmail)}`, 3, 24 * 60 * MINUTE))) {
+  if (!(await consumeRateLimit(db, addressLimit, 3, 24 * 60 * MINUTE))) {
+    // The day starts with the address's first email, so "tomorrow" could still be too soon.
     return {
       message:
-        "We've already sent a few emails to that address today. Ask your parent to check their inbox and spam folder, or try again tomorrow.",
+        "We've already sent a few emails to that address today. Ask your parent to check their inbox and spam folder, or try again in 24 hours.",
     };
   }
   const { token, expiresAt } = await createConsentRequest(db, parentEmail);
@@ -151,6 +154,10 @@ export async function requestParentConsentAction(
     }
     console.error("[consent] email failed", error instanceof Error ? error.name : "unknown");
     await cancelConsentRequest(db, token);
+    // Nothing went out, so this try doesn't count: otherwise an email outage would use up the
+    // address's emails, and the child would later be told emails were sent when none were.
+    await refundRateLimit(db, addressLimit);
+    await refundRateLimit(db, ipLimit);
     return { message: "We couldn't send the email right now. Please try again in a few minutes." };
   }
   return { sent: true };
@@ -186,13 +193,14 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
 
   const db = await getDb();
   const { identifier } = parsed.data;
-  if (!(await beginSignIn(db, identifier, await clientIpKey()))) {
+  const ipKey = await clientIpKey();
+  if (!(await beginSignIn(db, identifier, ipKey))) {
     return { message: "Too many sign-in attempts. Please wait 15 minutes and try again." };
   }
 
   const result = await authenticate(db, parsed.data);
   if (!result) return { message: "That email/username and password don't match." };
-  await signInSucceeded(db, identifier);
+  await signInSucceeded(db, identifier, ipKey);
 
   const { token, expiresAt } = await createSession(db, result.userId);
   await setSessionCookie(token, expiresAt);

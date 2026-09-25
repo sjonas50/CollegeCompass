@@ -100,7 +100,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/account/
       {(subscribed || available || !coveredWithoutPlan) && (
         <section aria-labelledby="plan-heading" className="space-y-4">
           <h2 id="plan-heading" className="text-lg font-medium">
-            {subscribed ? "Your plan" : "Choose a plan"}
+            {subscribed ? "Your plan" : available ? "Choose a plan" : "Full access"}
           </h2>
           {subscribed ? (
             !manages ? (
@@ -124,10 +124,13 @@ export default async function BillingPage({ searchParams }: PageProps<"/account/
             </>
           ) : (
             <Card>
-              <p>Paid plans aren&apos;t available yet. Your family can keep full access with free access, below.</p>
+              <p>
+                Paid plans aren&apos;t available yet. Your family can {access.full ? "keep" : "get"} full access with free access,
+                below.
+              </p>
             </Card>
           )}
-          {!subscribed && !coveredWithoutPlan && <FullAccessFeatures heading="A plan unlocks" />}
+          {!subscribed && !coveredWithoutPlan && <FullAccessFeatures heading={available ? "A plan unlocks" : "Full access unlocks"} />}
         </section>
       )}
 

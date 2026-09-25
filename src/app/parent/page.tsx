@@ -10,8 +10,9 @@ import { Button, ButtonLink, Card, Notice, PageHeading } from "@/components/ui";
 import { aidGuideHref } from "@/lib/aid-guide/navigation";
 import { requireUser } from "@/lib/auth/dal";
 import { parentDashboard } from "@/lib/parent-dashboard";
-import { describeAccess } from "@/lib/access/describe";
+import { billingCardNote, describeAccess } from "@/lib/access/describe";
 import { accessFor } from "@/lib/access/guard";
+import { getStripe, paidPlansAvailable } from "@/lib/billing/stripe";
 import { ChildProgressSummary } from "./child-progress";
 
 export const metadata: Metadata = { title: "Parent" };
@@ -39,7 +40,7 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
   const parent = await requireUser(["parent"]);
   const [children, access] = await Promise.all([parentDashboard(await getDb(), parent.id), accessFor(parent)]);
   const plan = describeAccess(access, "parent");
-  const { added, deleted, saved, stale, linked, imported } = await searchParams;
+  const { added, deleted, "not-deleted": notDeleted, saved, stale, linked, imported } = await searchParams;
 
   return (
     <>
@@ -48,6 +49,8 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
         {added && <Notice>Account created. Share the username and password with your child.{imported && " Their saved quiz results were added too."}</Notice>}
         {linked && <Notice>You&apos;re linked. You can follow your teen&apos;s progress here now.</Notice>}
         {deleted && <Notice>The account and all of its data were deleted.</Notice>}
+        {/* A second click on Delete, or an account that isn't theirs: say only that nothing happened. */}
+        {notDeleted && <Notice>Nothing was deleted. That account may already be gone.</Notice>}
         {saved && <Notice>Settings saved.</Notice>}
         {stale && <Notice>The school year changed since that page loaded, so we didn&apos;t save the grade. Please pick it again.</Notice>}
         {children.length > 0 && (
@@ -125,7 +128,7 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
         <Card>
           <h2 className="font-medium">Plan and billing</h2>
           <p className="mt-1 text-sm">{plan.headline}</p>
-          <p className="mt-1 text-sm text-muted">See or change your family&apos;s plan. If cost is a problem, you can ask for free access there.</p>
+          <p className="mt-1 text-sm text-muted">{billingCardNote(access, Boolean(getStripe()) && paidPlansAvailable())}</p>
           <div className="mt-3">
             <ButtonLink href="/account/billing" variant="secondary">Plan and billing</ButtonLink>
           </div>
@@ -136,7 +139,7 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
         <form action={logoutAction}>
           <Button type="submit" variant="secondary">Sign out</Button>
         </form>
-        <Link href="/parent/delete" className="self-center text-sm text-danger underline">
+        <Link href="/parent/delete" className="inline-flex min-h-11 items-center text-sm text-danger underline">
           Delete my parent account
         </Link>
       </div>

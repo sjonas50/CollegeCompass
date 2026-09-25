@@ -4,7 +4,7 @@ import { ButtonLink, Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
 import { BILLING_PATH } from "@/lib/access/describe";
 import { getUserAccess } from "@/lib/access/service";
-import { syncCheckoutSession } from "@/lib/billing/checkout";
+import { finishedRecently, syncCheckoutSession } from "@/lib/billing/checkout";
 import { errorName, getStripe } from "@/lib/billing/stripe";
 import { requireUser } from "@/lib/auth/dal";
 
@@ -13,7 +13,8 @@ export const metadata: Metadata = { title: "Your plan" };
 /**
  * Where Stripe Checkout sends a parent after paying. Reads the session from Stripe so the family's
  * access updates right away instead of waiting for the webhook. Thanks the parent only for a
- * checkout their household finished; any other link gets words that promise nothing.
+ * checkout their household just finished; any other link, including an old one from the browser's
+ * history, gets words that promise nothing.
  */
 export default async function CheckoutSuccessPage({ searchParams }: PageProps<"/account/billing/success">) {
   const parent = await requireUser(["parent"]);
@@ -26,7 +27,7 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps<"/
   if (typeof sessionId === "string") {
     try {
       const res = await syncCheckoutSession(db, stripe, parent.id, sessionId);
-      finished = res.ok && res.completed;
+      finished = res.ok && finishedRecently(res);
     } catch (error) {
       // The webhook will catch up; the page still says only what we know.
       console.error("[billing] couldn't confirm a checkout session", errorName(error));

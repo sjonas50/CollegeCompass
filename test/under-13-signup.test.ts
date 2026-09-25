@@ -69,7 +69,7 @@ describe("asking a parent by email", () => {
     for (let i = 0; i < 3; i++) expect(await ask("rosa@example.com")).toEqual({ sent: true });
     expect(await ask("Rosa@Example.com")).toEqual({
       message:
-        "We've already sent a few emails to that address today. Ask your parent to check their inbox and spam folder, or try again tomorrow.",
+        "We've already sent a few emails to that address today. Ask your parent to check their inbox and spam folder, or try again in 24 hours.",
     });
     expect(state.emails).toHaveLength(3);
     expect(await db.select().from(schema.consentRequests)).toHaveLength(3);

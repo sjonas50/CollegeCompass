@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cancelParentInviteAction } from "@/app/actions/invites";
 import InvitePage from "@/app/invite/[token]/page";
-import { inviteNotice } from "@/app/invite/invite-parent-form";
+import { inviteAction, inviteNotice } from "@/app/invite/invite-parent-form";
 import { InviteParentCard } from "@/components/invite-parent";
 import { type Db, createTestDb, schema } from "@/db";
 import { resetEnvCache } from "@/env";
@@ -704,6 +704,23 @@ describe("the invite card", () => {
     expect(html).not.toContain('name="inviteId"');
     expect(html).not.toContain('name="parentEmail"');
     expect(text(html)).toContain("Cancel one to send another");
+    // After a cancel takes its row away, focus goes to the list's heading (or the status line).
+    expect(html).toMatch(/<h3 id="invites-waiting" tabindex="-1"[^>]*>Invitations sent<\/h3>/);
+    expect(html).toMatch(/<div tabindex="-1"[^>]*><div aria-live="polite"><\/div><\/div>/);
+  });
+
+  it("sends a cancel form to cancelParentInviteAction and the email form to sendParentInviteAction", async () => {
+    const studentId = await teen();
+    const { inviteId, token } = await invite(studentId, new Date());
+    await signIn(studentId);
+    const cancel = new FormData();
+    cancel.set("inviteId", inviteId);
+    expect(await inviteAction(undefined, cancel)).toEqual({ cancelled: true });
+    expect(await findInvite(db, token)).toEqual({ status: "not_found" });
+
+    const send = new FormData();
+    send.set("parentEmail", "not an email");
+    expect(await inviteAction({ cancelled: true }, send)).toMatchObject({ errors: { parentEmail: [expect.any(String)] } });
   });
 
   it("confirms a cancellation in place of the sent notice, and never twice", async () => {

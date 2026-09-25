@@ -78,6 +78,23 @@ describe("parent consent email (under-13 signup)", () => {
     expect(await db.select().from(schema.consentRequests)).toHaveLength(0);
   });
 
+  it("doesn't count an email that definitely didn't go out against the address or the network", async () => {
+    failingWith(refused);
+    // More failures than the address (3 a day) or the network (10 an hour) would allow.
+    for (let i = 0; i < 12; i++) {
+      expect(await ask()).toEqual({ message: "We couldn't send the email right now. Please try again in a few minutes." });
+    }
+    state.send = async (email) => void emailed.push(email);
+    expect(await ask()).toEqual({ sent: true });
+    expect(await db.select().from(schema.consentRequests)).toHaveLength(1);
+  });
+
+  it("still counts an email that may be delayed", async () => {
+    failingWith(uncertain);
+    for (let i = 0; i < 3; i++) expect(await ask()).toEqual({ sent: true, delayed: true });
+    expect(await ask()).toMatchObject({ message: expect.stringContaining("We've already sent a few emails to that address today.") });
+  });
+
   it("says sent when the email went out", async () => {
     state.send = async (email) => void emailed.push(email);
     expect(await ask()).toEqual({ sent: true });

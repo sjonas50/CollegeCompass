@@ -4,7 +4,7 @@ import { type Db, createTestDb, schema } from "@/db";
 import { resetEnvCache } from "@/env";
 import { getUserAccess } from "@/lib/access/service";
 import { registerParent, registerStudent } from "@/lib/accounts";
-import { ensureCustomer, openBillingPortal, startCheckout, syncCheckoutSession } from "./checkout";
+import { ensureCustomer, finishedRecently, openBillingPortal, startCheckout, syncCheckoutSession } from "./checkout";
 import { type FakeStripeRequest, type FakeStripeResponse, fakeStripe, listObject, subscriptionObject } from "./fake-stripe";
 import { clearPriceCache, getPlanPrices, planForPrice, priceLabel } from "./plans";
 import { type SubscriptionLike, billingFieldsFrom, pickSubscription, syncCustomer, toSubscriptionStatus } from "./subscriptions";
@@ -302,9 +302,23 @@ describe("returning from Checkout", () => {
     expect((await getUserAccess(db, parentId, new Date(Date.now() + 60 * 86_400_000))).sources).toEqual(["subscription"]);
   });
 
-  it("says whether the parent finished checkout", async () => {
-    const { stripe } = withSession({ mode: "subscription", status: "open", customer: "cus_new", client_reference_id: householdId }, []);
-    expect(await syncCheckoutSession(db, stripe, parentId, "cs_test_1")).toMatchObject({ ok: true, completed: false });
+  it("says whether the parent finished checkout, and when it started", async () => {
+    const { stripe } = withSession({ mode: "subscription", status: "open", customer: "cus_new", client_reference_id: householdId, created: 1_790_000_000 }, []);
+    expect(await syncCheckoutSession(db, stripe, parentId, "cs_test_1")).toMatchObject({
+      ok: true,
+      completed: false,
+      created: new Date(1_790_000_000_000),
+    });
+  });
+
+  it("counts a finished checkout as just finished only within the day its link lasts", () => {
+    const created = new Date("2026-09-24T12:00:00Z");
+    const at = (hours: number) => new Date(created.getTime() + hours * 3_600_000);
+    expect(finishedRecently({ completed: true, created }, at(1))).toBe(true);
+    expect(finishedRecently({ completed: true, created }, at(24))).toBe(true);
+    expect(finishedRecently({ completed: true, created }, at(25))).toBe(false);
+    expect(finishedRecently({ completed: false, created }, at(1))).toBe(false);
+    expect(finishedRecently({ completed: true, created: new Date(Number.NaN) }, at(1))).toBe(false);
   });
 
   it("ignores another household's session and malformed ids", async () => {

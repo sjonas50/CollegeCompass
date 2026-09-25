@@ -8,9 +8,11 @@ import { useFormAction } from "@/components/use-form-action";
 export type PendingInviteView = { id: string; sentOn: string; worksUntil: string };
 
 /** Sending and cancelling share one state (see InviteFormState): a cancel form posts an inviteId. */
-function inviteAction(prev: InviteFormState, formData: FormData) {
+export function inviteAction(prev: InviteFormState, formData: FormData) {
   return formData.has("inviteId") ? cancelParentInviteAction(prev, formData) : sendParentInviteAction(prev, formData);
 }
+
+const focusRing = "rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 /** The notice for what the student just did, if it worked. */
 export function inviteNotice(state: InviteFormState): string | null {
@@ -29,18 +31,37 @@ export function inviteNotice(state: InviteFormState): string | null {
  * InviteParentCard.
  */
 export function InviteParentForm({ pending, canSend, max }: { pending: PendingInviteView[]; canSend: boolean; max: number }) {
-  const [state, action, isPending, values] = useFormAction<InviteFormState>(inviteAction, undefined);
+  const cancelling = useRef(false);
+  const [state, action, isPending, values] = useFormAction<InviteFormState>((prev, formData) => {
+    cancelling.current = formData.has("inviteId");
+    return inviteAction(prev, formData);
+  }, undefined);
   const notice = inviteNotice(state);
   const failed = state && !("sent" in state) && !("cancelled" in state) ? state : undefined;
+  const statusRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // A cancel takes its row, and the button that had focus, off the list (like a removed course on
+  // the plan page). Focus goes to the list's heading, or to the status line once no invitations are
+  // left; the status line says what happened.
+  useEffect(() => {
+    if (!cancelling.current) return;
+    cancelling.current = false;
+    (headingRef.current ?? statusRef.current)?.focus();
+  }, [state]);
 
   return (
     <div className="mt-3 space-y-4">
-      <div aria-live="polite">{notice && <Notice>{notice}</Notice>}</div>
-      <FormMessage message={failed?.message} />
+      <div ref={statusRef} tabIndex={-1} className={`space-y-4 ${focusRing}`}>
+        <div aria-live="polite">{notice && <Notice>{notice}</Notice>}</div>
+        <FormMessage message={failed?.message} />
+      </div>
 
       {pending.length > 0 && (
         <div>
-          <h3 id="invites-waiting" className="text-sm font-medium">Invitations sent</h3>
+          <h3 ref={headingRef} id="invites-waiting" tabIndex={-1} className={`text-sm font-medium ${focusRing}`}>
+            Invitations sent
+          </h3>
           <ul aria-labelledby="invites-waiting" className="mt-2 space-y-2">
             {pending.map((invite) => (
               <PendingInvite key={invite.id} invite={invite} action={action} busy={isPending} />
@@ -79,6 +100,8 @@ function PendingInvite({ invite, action, busy }: { invite: PendingInviteView; ac
   const cancelRef = useRef<HTMLButtonElement>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
   const kept = useRef(false);
+  // Read with either button, so focus on "Keep it" says what it keeps.
+  const questionId = `cancel-invite-${invite.id}`;
 
   // Focus the safe choice, so an accidental Enter keeps the invitation; "Keep it" goes back to Cancel.
   useEffect(() => {
@@ -108,12 +131,12 @@ function PendingInvite({ invite, action, busy }: { invite: PendingInviteView; ac
       {confirming && (
         <form action={action} className="mt-2 rounded-lg bg-danger-soft p-3 text-sm">
           <input type="hidden" name="inviteId" value={invite.id} />
-          <p>Cancel this invitation? The link in the email will stop working.</p>
+          <p id={questionId}>Cancel this invitation? The link in the email will stop working.</p>
           <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-            <Button type="submit" variant="danger" disabled={busy}>
+            <Button type="submit" variant="danger" disabled={busy} aria-describedby={questionId}>
               Yes, cancel it
             </Button>
-            <Button ref={keepRef} type="button" variant="secondary" onClick={keep} disabled={busy}>
+            <Button ref={keepRef} type="button" variant="secondary" onClick={keep} disabled={busy} aria-describedby={questionId}>
               Keep it
             </Button>
           </div>
