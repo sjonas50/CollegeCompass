@@ -113,6 +113,14 @@ export function strongAreasText(areas: Record<Riasec, number>): string | null {
   return strong.length ? areaNames(strong, { lower: true }) : null;
 }
 
+/**
+ * An area in plain words, without its label: "working with people" for Social. The counselor
+ * describes interests this way (see COUNSELOR_SYSTEM).
+ */
+export function interestPhrase(area: Riasec): string {
+  return RIASEC_INFO[area].description.split(":")[0].toLowerCase();
+}
+
 /** "Realistic", "Realistic and Investigative", "Realistic, Investigative and Artistic". */
 export function areaNames(areas: Riasec[], { lower = false } = {}): string {
   const names = areas.map((a) => (lower ? RIASEC_INFO[a].name.toLowerCase() : RIASEC_INFO[a].name));

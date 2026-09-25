@@ -3,7 +3,7 @@ import { type Db, createTestDb, schema } from "@/db";
 import { registerStudent } from "@/lib/accounts";
 import { listSections } from "@/lib/aid-guide";
 import { insertColleges, insertMajorSearchData, insertPrograms } from "@/lib/colleges/test-fixtures";
-import { collegeTools } from "@/lib/counselor/college-tools";
+import { NO_NET_PRICE_NOTE, collegeTools } from "@/lib/counselor/college-tools";
 import { counselorExtraTools } from "@/lib/counselor/extra-tools";
 
 const now = new Date("2026-10-05T12:00:00Z");
@@ -68,6 +68,24 @@ describe("counselor college tools", () => {
     expect(out).toMatchObject({ costOfAttendance: 28_000, costOfAttendanceOutOfStateEstimate: 43_000 });
     expect(out.notes[0]).toMatch(/for students who live in the college's state/);
     expect(out.notes.join(" ")).toMatch(/Students who didn't borrow aren't counted/);
+  });
+
+  it("says when the College Scorecard reports no net price, so tuition isn't given in its place", async () => {
+    // Like Hillsdale College, which reports tuition but no net price or cost of attendance.
+    await insertColleges(db, [
+      { unitId: 1005, name: "Hillcrest College", state: "MI", control: 2, avgNetPrice: null, netPriceByIncome: null, costOfAttendance: null, tuitionInState: 33_189 },
+    ]);
+    const search = await run("search_colleges", { name: "Hillcrest" });
+    expect(search.results[0]).toMatchObject({ name: "Hillcrest College", netPriceAverage: null, netPriceByIncome: null });
+    expect(search.notes).toContain(NO_NET_PRICE_NOTE);
+    const detail = await run("get_college", { unitId: 1005 });
+    expect(detail).toMatchObject({ netPriceAverage: null, tuitionInState: 33_189 });
+    expect(detail.notes).toContain(NO_NET_PRICE_NOTE);
+    expect(NO_NET_PRICE_NOTE).toMatch(/never give tuition or cost of attendance in its place/);
+
+    // Colleges with a net price don't get the note.
+    expect((await run("search_colleges", { state: "IL" })).notes).not.toContain(NO_NET_PRICE_NOTE);
+    expect((await run("get_college", { unitId: 1001 })).notes).not.toContain(NO_NET_PRICE_NOTE);
   });
 
   it("reads the aid guide by section, with the page to link", async () => {

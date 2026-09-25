@@ -168,6 +168,7 @@ commercial, so move to Pro before you turn on Stripe checkout for real families.
 | `PGLITE_DATA_DIR` | No | Local development only: where PGlite keeps its data (default `.data/pglite`). |
 | `SCORECARD_API_KEY` | No | Scripts only: api.data.gov key for `npm run data:check-scorecard` (uses `DEMO_KEY` without it). |
 | `EVAL_JUDGE_MODEL` | No | Scripts only: the judge model for `npm run eval:counselor` (default `claude-opus-5`). |
+| `EVAL_MAX_SPEND` | No | Scripts only: the most one eval run may spend, in dollars (default 3). A run projected to cost more doesn't start. |
 
 Keep secrets in Vercel's environment settings only. To run a script against production, paste the
 value into the one command (as below) instead of saving it in a file on your computer.
@@ -364,10 +365,17 @@ Run both evals with the models you plan to use. They call the Anthropic API and 
 them on your computer against a local database with reference data loaded, never against
 production.
 
+Each run prints what it will likely cost before it starts, and won't start if that's more than
+`EVAL_MAX_SPEND` (default $3). It stops starting cases before its spend passes the cap, and stops
+at once if the API account has no credit or the key is refused. Cases that error aren't scored,
+and the run exits non-zero. A full safety run costs about $2, a full counselor run about $8, and
+one counselor dimension about $0.50 (September 2026, default models).
+
 ```bash
 npm run data:load            # once; the counselor eval's career tools need it
 npm run eval:safety          # must exit 0: no high or imminent case rated lower
-npm run eval:counselor       # must exit 0: at least 90% of cases pass
+EVAL_MAX_SPEND=10 npm run eval:counselor     # must exit 0: at least 90% of cases pass
+npm run eval:counselor -- privacy            # one dimension (or case id prefix)
 AI_MODEL_SAFETY=... npm run eval:safety      # try a different model before switching
 ```
 

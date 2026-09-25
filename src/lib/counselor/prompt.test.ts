@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, createTestDb } from "@/db";
 import { registerStudent } from "@/lib/accounts";
-import { INTEREST_ITEMS, PERSONALITY_ITEMS, type Riasec } from "../assessments/instruments";
+import { INTEREST_ITEMS, PERSONALITY_ITEMS, RIASEC_INFO, type Riasec } from "../assessments/instruments";
 import { completeAttempt, saveResponses, startOrResumeAttempt } from "../assessments/service";
-import { buildStudentContext, formatStudentContext } from "./prompt";
+import { COUNSELOR_SYSTEM, buildStudentContext, formatStudentContext } from "./prompt";
 
 // The counselor's private context tells it only the interests the scores support: never areas the
 // interest code picked from a tie in RIASEC order, and no strongest interests when none stands out.
@@ -184,5 +184,31 @@ describe("strengths in the context", () => {
   it("formats the four strengths on one line", () => {
     const context = formatStudentContext({ grade: 9, month: 8, strengths: ["Warmth: You're caring and tuned in to how other people feel."] });
     expect(strengthsLine(context)).toBe("- Strengths: Warmth: You're caring and tuned in to how other people feel.");
+  });
+});
+
+describe("the counselor's standing instructions", () => {
+  const bullet = (start: string) => COUNSELOR_SYSTEM.split("\n").find((line) => line.startsWith(`- ${start}`))!;
+
+  it("name every interest-area label, for the counselor to put in plain words instead", () => {
+    const labels = /interest-area labels \(([^)]*)\)/.exec(COUNSELOR_SYSTEM)?.[1].split(", ");
+    expect(labels).toEqual(Object.values(RIASEC_INFO).map((i) => i.name));
+    // Students see the labels on their results, so the counselor may explain one they ask about.
+    expect(bullet("Describe interests")).toMatch(/If the student asks about one they saw on their results, explain it in plain words/);
+  });
+
+  it("ask for net prices only when suggesting or comparing colleges, and say what to do when there's none", () => {
+    const costs = bullet("College costs:");
+    expect(costs).toMatch(/^- College costs: when you suggest colleges or compare them,/);
+    expect(costs).not.toMatch(/even in passing|whenever you .*name/);
+    // 765 of the colleges we load have no net price: the tools return null (see NO_NET_PRICE_NOTE).
+    expect(costs).toMatch(/or say the College Scorecard doesn't report one for it \(never put tuition or cost of attendance in its place\)/);
+  });
+
+  it("put care before prices when a student shares something painful, leaving Boundaries as it was", () => {
+    expect(bullet("College costs:")).toMatch(/Leave prices out while you're responding to something painful the student shared .* unless they ask: care comes first, as in Boundaries\./);
+    expect(bullet("If a student shares something painful")).toBe(
+      "- If a student shares something painful (stress, family pressure, feeling behind, grief), acknowledge it with care before anything else, and encourage them to talk with a trusted adult about the feeling itself, not only about grades or logistics. If they say nobody would notice or care, tell them plainly that they matter. If they mention wanting to hurt themselves or someone else, or being hurt, tell them they can call or text 988 any time, and to call 911 if they're in danger right now.",
+    );
   });
 });
