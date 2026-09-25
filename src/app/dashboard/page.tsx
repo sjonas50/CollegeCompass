@@ -45,6 +45,19 @@ function statusText(s: InstrumentStatus) {
   return "Done";
 }
 
+/** The line above the activities: interests first, since matches need them, then what's left. */
+function discoverText(statuses: Record<InstrumentId, InstrumentStatus>) {
+  const next = ORDER.find((i) => statuses[i].state !== "done");
+  if (!next) return "All done. You can retake them as you grow.";
+  if (next === "interests") {
+    return statuses.interests.state === "in_progress"
+      ? "Three short activities. Keep going with interests — finishing it gives you career matches."
+      : "Three short activities. Start with interests — it unlocks your career matches.";
+  }
+  const left = ORDER.filter((i) => statuses[i].state !== "done").map((i) => INSTRUMENTS[i].title.toLowerCase());
+  return `Interests are done, so your career matches are ready. Next up: ${left.join(", then ")}.`;
+}
+
 export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   const user = await requireUser(["student"]);
   const { settings } = await searchParams;
@@ -155,9 +168,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       <section>
         <h2 className="text-lg font-medium">Discover your direction</h2>
         {statuses.interests.state !== "done" && <SavedResultsImport startedInterests={statuses.interests.state === "in_progress"} />}
-        <p className="mb-3 text-sm text-muted">
-          {next ? "Three short activities. Start with interests — it unlocks your career matches." : "All done. You can retake them as you grow."}
-        </p>
+        <p className="mb-3 text-sm text-muted">{discoverText(statuses)}</p>
         <ol className="space-y-3">
           {ORDER.map((id, i) => {
             const s = statuses[id];

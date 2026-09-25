@@ -6,6 +6,7 @@ import type { Db } from "@/db";
 import { type MatchExplanation, matchRuns, users } from "@/db/schema";
 import { BIG_FIVE, RIASEC_INFO, type Riasec, WORK_VALUE_INFO } from "../assessments/instruments";
 import { displayTrait } from "../assessments/descriptions";
+import { type InterestPattern, areaNames, interestPattern, strongAreas, tiedAreasText } from "../assessments/interest-pattern";
 import { latestResult } from "../assessments/service";
 import { getAnthropic } from "../ai/client";
 import { modelFor, supportsEffort } from "../ai/models";
@@ -64,19 +65,44 @@ function topAreas(interests: Record<Riasec, number>) {
   return (Object.keys(interests) as Riasec[]).sort((a, b) => interests[b] - interests[a]).slice(0, 2);
 }
 
-/** A specific, non-AI reason for every match, from the interest areas the career and student share. */
+const EXPLORE = "Explore a few that catch your eye — you're not choosing forever, just finding a direction for now.";
+
+/** The template's first sentences: only what the scores support, so a tie is never called a lead. */
+function templateOverview(pattern: InterestPattern): string {
+  if (pattern.kind === "flat") {
+    return "You rated all six interest areas about the same, so no area stands out yet. That's okay. The careers below are a starting point, so explore widely — you're not choosing forever, just finding a direction for now.";
+  }
+  if (pattern.kind === "tied") return `${tiedAreasText(pattern)} The careers below share that mix. ${EXPLORE}`;
+  const top = pattern.code.split("") as Riasec[];
+  const lead = pattern.ties.length
+    ? `Your strongest interest areas are ${areaNames(top)}. ${areaNames(pattern.ties[0])} are tied.`
+    : `Your strongest interest areas are ${areaNames(top.slice(0, 2))}, followed by ${areaNames(top.slice(2))}.`;
+  return `${lead} The careers below share that mix. ${EXPLORE}`;
+}
+
+/**
+ * A specific, non-AI reason for every match, from the interest areas the career and student share.
+ * With a flat profile no area is the student's more than another, so reasons only say what the
+ * career involves.
+ */
 export function templateExplanation(
-  code: string,
+  areas: Record<Riasec, number>,
   careers: { occupationCode: string; interests?: Record<Riasec, number> }[],
 ): MatchExplanation {
-  const studentTop = code.split("") as Riasec[];
-  const names = studentTop.map((l) => RIASEC_INFO[l].name);
+  const pattern = interestPattern(areas);
+  const studentTop = strongAreas(pattern);
   return {
     source: "template",
-    overview: `Your strongest interest areas are ${names.slice(0, 2).join(" and ")}, followed by ${names[2]}. The careers below share that mix. Explore a few that catch your eye — you're not choosing forever, just finding a direction for now.`,
+    overview: templateOverview(pattern),
     careers: careers.map((c) => {
-      if (!c.interests) return { code: c.occupationCode, why: `Shares your ${names[0].toLowerCase()} interests.` };
+      if (!c.interests) {
+        const why = studentTop.length
+          ? `Shares your ${RIASEC_INFO[studentTop[0]].name.toLowerCase()} interests.`
+          : "Worth a look while you explore.";
+        return { code: c.occupationCode, why };
+      }
       const [a1, a2] = topAreas(c.interests);
+      if (pattern.kind === "flat") return { code: c.occupationCode, why: `Combines ${AREA_PHRASE[a1]} and ${AREA_PHRASE[a2]}.` };
       const shared = [a1, a2].filter((a) => studentTop.includes(a)).map((a) => RIASEC_INFO[a].name.toLowerCase());
       const why = shared.length
         ? `Combines ${AREA_PHRASE[a1]} and ${AREA_PHRASE[a2]}, which lines up with your ${shared.join(" and ")} interests.`
@@ -88,7 +114,9 @@ export function templateExplanation(
 
 /**
  * Returns the explanation for the student's latest matches, writing it with the model the first
- * time. Falls back to a template (not stored) if AI is unavailable, over budget, or declines.
+ * time. Falls back to a template (not stored) if AI is unavailable, over budget, or declines. A flat
+ * profile always gets the template: the model is given the interest code as the student's top
+ * areas, which a flat profile doesn't have.
  */
 export async function explainLatestMatches(db: Db, userId: string, opts: Options = {}): Promise<MatchExplanation | null> {
   const run = await latestMatchRun(db, userId);
@@ -100,9 +128,10 @@ export async function explainLatestMatches(db: Db, userId: string, opts: Options
   const careers = run.matches;
   const profiles = new Map((await loadOccupationProfiles(db)).map((p) => [p.code, p.interests]));
   const fallback = templateExplanation(
-    interests.scores.code,
+    interests.scores.areas,
     run.matches.map((m) => ({ occupationCode: m.occupationCode, interests: profiles.get(m.occupationCode) })),
   );
+  if (interestPattern(interests.scores.areas).kind === "flat") return fallback;
 
   try {
     await assertWithinBudget(db, userId, opts.now);

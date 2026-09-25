@@ -1,42 +1,50 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { type ReactNode, createContext, useContext, useEffect, useState } from "react";
 import { explainMatchesAction } from "@/app/actions/discover";
 import type { MatchExplanation } from "@/db/schema";
+import { loadExplanation } from "./load-explanation";
 
-/** Shows the stored explanation, or asks the server to write one on first view. */
-export function useExplanation(initial: MatchExplanation | null) {
+const Explanation = createContext<MatchExplanation | null>(null);
+
+/**
+ * Shows the stored explanation, or asks the server to write one on first view. The whole page shares
+ * one request: the overview and each career list read the explanation from here.
+ */
+export function ExplanationProvider({
+  runId,
+  initial,
+  children,
+}: {
+  runId: string;
+  initial: MatchExplanation | null;
+  children: ReactNode;
+}) {
   const [explanation, setExplanation] = useState(initial);
   useEffect(() => {
     if (initial) return;
     let cancelled = false;
-    explainMatchesAction().then((e) => {
+    loadExplanation(runId, explainMatchesAction).then((e) => {
       if (!cancelled) setExplanation(e);
     });
     return () => {
       cancelled = true;
     };
-  }, [initial]);
-  return explanation;
+  }, [runId, initial]);
+  return <Explanation value={explanation}>{children}</Explanation>;
 }
 
-export function ExplanationOverview({ initial }: { initial: MatchExplanation | null }) {
-  const explanation = useExplanation(initial);
+export function ExplanationOverview() {
+  const explanation = useContext(Explanation);
   if (!explanation) {
     return <p className="animate-pulse text-muted">Writing a summary of your results…</p>;
   }
   return <p className="text-lg leading-relaxed">{explanation.overview}</p>;
 }
 
-export function CareerReasons({
-  initial,
-  careers,
-}: {
-  initial: MatchExplanation | null;
-  careers: { code: string; title: string; href: string; label: string }[];
-}) {
-  const explanation = useExplanation(initial);
+export function CareerReasons({ careers }: { careers: { code: string; title: string; href: string; label: string }[] }) {
+  const explanation = useContext(Explanation);
   const why = new Map(explanation?.careers.map((c) => [c.code, c.why]));
   return (
     <ul className="grid gap-3 sm:grid-cols-2">

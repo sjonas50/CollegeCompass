@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps<"/careers/[code]">)
 
 export default async function CareerPage({ params, searchParams }: PageProps<"/careers/[code]">) {
   const { code } = await params;
-  const { starred, limit } = await searchParams;
+  const { starred, limit, from } = await searchParams;
   const db = await getDb();
   const career = await getCareer(db, code);
   if (!career) notFound();
@@ -28,6 +28,8 @@ export default async function CareerPage({ params, searchParams }: PageProps<"/c
   const stars = user?.role === "student" ? await listNorthStars(db, user.id) : [];
   const isStar = stars.some((s) => s.occupationCode === code);
   const zone = career.jobZone ? JOB_ZONE_INFO[career.jobZone] : null;
+  // Opened from the free quiz's results (?from=quiz), or a student's own results page.
+  const results = from === "quiz" ? "/try/results" : user?.role === "student" ? "/discover/results" : null;
 
   return (
     <div className="space-y-6">
@@ -94,9 +96,14 @@ export default async function CareerPage({ params, searchParams }: PageProps<"/c
         )}
       </Card>
 
-      <p className="text-sm">
-        <Link href={user?.role === "student" ? "/discover/results" : "/careers"} className="underline">
-          {user?.role === "student" ? "Back to my results" : "Search more careers"}
+      <p className="flex flex-wrap gap-x-6 text-sm">
+        {results && (
+          <Link href={results} className="inline-flex min-h-11 items-center underline">
+            Back to my results
+          </Link>
+        )}
+        <Link href="/careers" className="inline-flex min-h-11 items-center underline">
+          Search more careers
         </Link>
       </p>
       <OnetDataAttribution />

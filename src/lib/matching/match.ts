@@ -1,4 +1,5 @@
 import { RIASEC, type Riasec, WORK_VALUES, type WorkValue } from "../assessments/instruments";
+import { isFlatProfile } from "../assessments/interest-pattern";
 
 /**
  * Career matching. Deterministic and explainable:
@@ -14,7 +15,6 @@ import { RIASEC, type Riasec, WORK_VALUES, type WorkValue } from "../assessments
  */
 
 export const VALUES_WEIGHT = 0.15;
-const FLAT_PROFILE_SD = 2; // out of 0–40 per area
 
 export type OccupationProfile = {
   code: string;
@@ -42,11 +42,6 @@ function mean(xs: number[]) {
   return xs.reduce((a, b) => a + b, 0) / xs.length;
 }
 
-function sd(xs: number[]) {
-  const m = mean(xs);
-  return Math.sqrt(mean(xs.map((x) => (x - m) ** 2)));
-}
-
 export function pearson(xs: number[], ys: number[]): number {
   const mx = mean(xs);
   const my = mean(ys);
@@ -62,7 +57,7 @@ export function pearson(xs: number[], ys: number[]): number {
 }
 
 function interestFit(student: number[], occupation: number[]): number {
-  if (sd(student) < FLAT_PROFILE_SD) {
+  if (isFlatProfile(student)) {
     // Put the student on O*NET's 1–7 scale and use closeness instead of shape.
     const scaled = student.map((s) => 1 + (s / 40) * 6);
     const dist = Math.sqrt(scaled.reduce((sum, s, i) => sum + (s - occupation[i]) ** 2, 0));
@@ -152,7 +147,12 @@ export function rankForStudent(
   ];
 }
 
-export function fitLabel(score: number): "Great fit" | "Good fit" | "Worth exploring" {
+/**
+ * A flat profile (see isFlatProfile) has no shape for a career to fit: its scores say only how close
+ * a career's interest levels are to the student's, so no career is called a great or good fit.
+ */
+export function fitLabel(score: number, { flat = false } = {}): "Great fit" | "Good fit" | "Worth exploring" {
+  if (flat) return "Worth exploring";
   if (score >= 85) return "Great fit";
   if (score >= 70) return "Good fit";
   return "Worth exploring";

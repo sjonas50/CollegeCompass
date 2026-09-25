@@ -1,13 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
+import {
+  type Item,
+  type Option,
+  QuestionList,
+  UnansweredHint,
+  questionRange,
+  showQuestion,
+  usePageTurns,
+} from "@/app/discover/question-list";
 import { Button, ButtonLink, Card } from "@/components/ui";
 import { answeredCount, isFinished, savedWhen } from "@/lib/assessments/anonymous";
 import { forgetSavedAssessment, recordAnswer, useSavedAssessment } from "./saved-store";
-
-type Item = { id: string; text: string };
-type Option = { value: number; label: string };
 
 const PAGE_SIZE = 6;
 
@@ -21,8 +27,10 @@ export function FreeQuiz({ items, options }: { items: Item[]; options: Option[] 
   const loaded = saved !== undefined;
   const answers = saved?.answers ?? {};
   const pages = Math.ceil(items.length / PAGE_SIZE);
+  const hintId = useId();
 
   const [page, setPage] = useState(0);
+  const { list, turned, announcement } = usePageTurns(questionRange(page, PAGE_SIZE, items.length));
   // Once the browser's copy is read: pick up where the visitor left off, and remember whether
   // they had already finished (then they choose between their results and starting over).
   const [resumed, setResumed] = useState<{ finished: boolean } | null>(null);
@@ -37,7 +45,7 @@ export function FreeQuiz({ items, options }: { items: Item[]; options: Option[] 
     forgetSavedAssessment();
     setResumed({ finished: false });
     setPage(0);
-    window.scrollTo({ top: 0 });
+    turned();
   }
 
   if (resumed?.finished && isFinished(saved)) {
@@ -60,7 +68,7 @@ export function FreeQuiz({ items, options }: { items: Item[]; options: Option[] 
   }
 
   const pageItems = items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  const pageComplete = pageItems.every((i) => answers[i.id] !== undefined);
+  const unanswered = pageItems.filter((i) => answers[i.id] === undefined).length;
   const answered = answeredCount(saved);
   const isLast = page === pages - 1;
 
@@ -72,7 +80,12 @@ export function FreeQuiz({ items, options }: { items: Item[]; options: Option[] 
     // Normally the next page; after starting over in another tab, the first page with gaps.
     const firstUnanswered = items.findIndex((i) => answers[i.id] === undefined);
     setPage(isLast ? Math.floor(Math.max(firstUnanswered, 0) / PAGE_SIZE) : page + 1);
-    window.scrollTo({ top: 0 });
+    turned();
+  }
+
+  function back() {
+    setPage(page - 1);
+    turned();
   }
 
   return (
@@ -87,52 +100,31 @@ export function FreeQuiz({ items, options }: { items: Item[]; options: Option[] 
         <div className="mt-2 h-2 rounded-full bg-border" aria-hidden>
           <div className="h-2 rounded-full bg-accent transition-all" style={{ width: `${(answered / items.length) * 100}%` }} />
         </div>
+        <p className="sr-only" aria-live="polite">
+          {announcement}
+        </p>
       </div>
 
-      <ol className="space-y-4">
-        {pageItems.map((item) => (
-          <li key={item.id} className="rounded-xl border border-border bg-surface p-4">
-            <fieldset>
-              <legend className="font-medium">{item.text}</legend>
-              <div className="mt-3 grid gap-2 sm:grid-cols-5">
-                {options.map((opt) => {
-                  const selected = answers[item.id] === opt.value;
-                  return (
-                    <label
-                      key={opt.value}
-                      className={`flex min-h-11 cursor-pointer items-center justify-center rounded-lg border px-2 text-center text-sm focus-within:outline-2 focus-within:outline-accent ${
-                        selected ? "border-accent bg-accent text-accent-foreground" : "border-border hover:bg-background"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={item.id}
-                        value={opt.value}
-                        checked={selected}
-                        onChange={() => recordAnswer(item.id, opt.value)}
-                        className="sr-only"
-                      />
-                      {opt.label}
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-          </li>
-        ))}
-      </ol>
+      <QuestionList listRef={list} items={pageItems} options={options} answers={answers} onAnswer={recordAnswer} />
 
       <div className="mt-6 space-y-3">
         <div className="flex flex-wrap gap-2">
           {page > 0 && (
-            <Button variant="secondary" onClick={() => setPage(page - 1)}>
+            <Button variant="secondary" onClick={back}>
               Back
             </Button>
           )}
-          <Button onClick={next} disabled={!loaded || !pageComplete}>
+          <Button onClick={next} disabled={!loaded || unanswered > 0} aria-describedby={loaded && unanswered > 0 ? hintId : undefined}>
             {isLast ? "See my results" : "Next"}
           </Button>
         </div>
+        {loaded && (
+          <UnansweredHint
+            id={hintId}
+            count={unanswered}
+            onShow={() => showQuestion(list.current, pageItems.findIndex((i) => answers[i.id] === undefined))}
+          />
+        )}
         <p className="text-sm text-muted">
           Your answers are saved only in this browser as you go, so you can stop and come back.
           {answered > 0 && (

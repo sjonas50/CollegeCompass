@@ -28,14 +28,17 @@ const INTRO = {
   interests: {
     lead: "Would you like doing each of these activities? Don't worry about how much school or training it would take, or how much money you'd make. Just go with your gut.",
     why: "Your answers show which of six interest areas fit you best, and we match those to real careers.",
+    change: "Your interests can change as you grow",
   },
   personality: {
     lead: "How well does each statement describe you right now? There are no right or wrong answers.",
     why: "This shows your strengths and how you like to work. It helps explain why certain careers might fit.",
+    change: "How you see yourself can change as you grow",
   },
   values: {
     lead: "What matters most to you in a future job?",
     why: "Your top values fine-tune your career matches.",
+    change: "What matters to you can change as you grow",
   },
 } as const;
 
@@ -98,7 +101,7 @@ export default async function InstrumentPage({ params }: PageProps<"/discover/[i
         {status.state === "done" && (
           <p className="text-sm text-muted">
             You finished this on {formatDate(status.completedAt)}.
-            {!canStart && <> Interests and personality change as you grow — you can retake it after {formatDate(status.retakeAfter)}.</>}
+            {!canStart && <> {INTRO[instrument].change} — you can retake it after {formatDate(status.retakeAfter)}.</>}
           </p>
         )}
         <div className="flex flex-wrap gap-2">

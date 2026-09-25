@@ -1,4 +1,5 @@
-import { INSTRUMENTS, INTEREST_ITEMS, RIASEC, RIASEC_INFO, type Riasec, isValidResponse } from "./instruments";
+import { INSTRUMENTS, INTEREST_ITEMS, RIASEC, type Riasec, isValidResponse } from "./instruments";
+import { strongAreasText } from "./interest-pattern";
 import { type Responses, missingItems, scoreInterests } from "./scoring";
 
 /**
@@ -184,18 +185,12 @@ export function savedWhen(savedAt: number | undefined, now = new Date()): string
   return `on ${then.toLocaleDateString("en-US", { month: "long", day: "numeric", ...(!sameYear && { year: "numeric" }) })}`;
 }
 
-/** An interest code in words: "ASE" is "artistic, social and enterprising". */
-export function interestAreasText(code: string): string {
-  const names = code
-    .split("")
-    .filter((l): l is Riasec => l in RIASEC_INFO)
-    .map((l) => RIASEC_INFO[l].name.toLowerCase());
-  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names.join("");
-}
-
-/** The top three interest areas of a finished quiz, in words. */
-export function topInterestsText(answers: Responses): string {
-  return interestAreasText(scoreInterests(answers).code);
+/**
+ * The top interest areas of a finished quiz, in words: the top three, or more when areas are tied
+ * for a place (see interestPattern). Null when no area stands out.
+ */
+export function topInterestsText(answers: Responses): string | null {
+  return strongAreasText(scoreInterests(answers).areas);
 }
 
 /**
@@ -205,7 +200,10 @@ export function topInterestsText(answers: Responses): string {
  */
 export function describeSavedQuiz(saved: SavedAssessment, now = new Date()): string {
   const when = savedWhen(saved.savedAt, now);
-  return `Someone finished the free interest quiz on this device${when ? ` ${when}` : ""}. Their top interests were ${topInterestsText(saved.answers)}.`;
+  const top = topInterestsText(saved.answers);
+  return `Someone finished the free interest quiz on this device${when ? ` ${when}` : ""}. ${
+    top ? `Their top interests were ${top}.` : "They rated all six interest areas about the same."
+  }`;
 }
 
 /** The most an area can score: ten items rated 0–4. */

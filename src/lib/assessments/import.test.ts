@@ -103,6 +103,18 @@ describe("matchFreeAssessment", () => {
     expect(res.careers.map((c) => c.code)).toEqual(run?.matches.map((m) => m.occupationCode));
   });
 
+  it("doesn't invent top interests or great fits when every answer is the same", async () => {
+    for (const value of [0, 20, 40]) {
+      const same = { R: value, I: value, A: value, S: value, E: value, C: value };
+      const res = await matchFreeAssessment(db, same, { rateKey, now });
+      if (!res.ok) throw new Error(res.error);
+      expect(res.careers.length).toBeGreaterThan(0);
+      expect(res.careers.every((c) => c.fit === "Worth exploring")).toBe(true);
+      expect(res.overview).toContain("no area stands out");
+      expect(res.overview).not.toMatch(/strongest|Realistic/);
+    }
+  });
+
   it("refuses anything but six whole-number area scores, without counting it", async () => {
     for (const bad of [null, { ...scientistAreas, R: 41 }, { ...scientistAreas, answers }, { R: 1 }, "RIASEC"]) {
       expect(await matchFreeAssessment(db, bad, { rateKey, now })).toEqual({ ok: false, error: "invalid" });

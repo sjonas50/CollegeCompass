@@ -1,17 +1,24 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { OnetDataAttribution, OnetToolsAttribution } from "@/components/attribution";
 import { ButtonLink, Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
 import { displayTrait } from "@/lib/assessments/descriptions";
-import { BIG_FIVE, RIASEC, RIASEC_INFO, type Riasec, WORK_VALUE_INFO } from "@/lib/assessments/instruments";
-import { latestResult } from "@/lib/assessments/service";
+import { BIG_FIVE, WORK_VALUE_INFO } from "@/lib/assessments/instruments";
+import { interestPattern } from "@/lib/assessments/interest-pattern";
+import { latestResult, nextRetakeDate } from "@/lib/assessments/service";
 import { requireUser } from "@/lib/auth/dal";
 import { PATHWAY_INFO, type Pathway, fitLabel, pathwayFor } from "@/lib/matching/match";
 import { latestMatchRun } from "@/lib/matching/service";
-import { CareerReasons, ExplanationOverview } from "./explanation";
+import { CareerReasons, ExplanationOverview, ExplanationProvider } from "./explanation";
+import { InterestAreasCard } from "./interest-areas";
 
 export const metadata: Metadata = { title: "Your results" };
+
+function formatDate(d: Date) {
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
 
 export default async function ResultsPage() {
   const student = await requireUser(["student"]);
@@ -24,50 +31,53 @@ export default async function ResultsPage() {
   ]);
   if (!interests || !run) redirect("/discover/interests");
 
-  const top = interests.scores.code.split("") as Riasec[];
+  const flat = interestPattern(interests.scores.areas).kind === "flat";
+  const retakeAfter = nextRetakeDate(interests.completedAt);
   const careersFor = (pathway: Pathway) =>
     run.matches
       .filter((m) => pathwayFor(m.jobZone) === pathway)
-      .map((m) => ({ code: m.occupationCode, title: m.title, href: `/careers/${m.occupationCode}`, label: fitLabel(m.score) }));
+      .map((m) => ({ code: m.occupationCode, title: m.title, href: `/careers/${m.occupationCode}`, label: fitLabel(m.score, { flat }) }));
 
   return (
     <div className="space-y-8">
       <PageHeading title="Your direction, for now" />
-      <ExplanationOverview initial={run.explanation} />
+      {/* Keyed by run, so new matches start from their own stored explanation. */}
+      <ExplanationProvider key={run.id} runId={run.id} initial={run.explanation}>
+        <ExplanationOverview />
 
-      <Card>
-        <h2 className="font-medium">Your interest areas</h2>
-        <p className="mt-1 text-sm text-muted">
-          Your code is <strong className="text-foreground">{interests.scores.code}</strong>:{" "}
-          {top.map((l) => RIASEC_INFO[l].name).join(", ")}.
-        </p>
-        <ul className="mt-4 space-y-3">
-          {RIASEC.map((area) => (
-            <li key={area}>
-              <div className="flex justify-between text-sm">
-                <span className={top.includes(area) ? "font-medium" : ""}>
-                  {RIASEC_INFO[area].name} <span className="text-muted">· {RIASEC_INFO[area].short}</span>
-                </span>
-              </div>
-              <div className="mt-1 h-2 rounded-full bg-border" aria-hidden>
-                <div
-                  className={`h-2 rounded-full ${top.includes(area) ? "bg-accent" : "bg-muted"}`}
-                  style={{ width: `${Math.max(4, (interests.scores.areas[area] / 40) * 100)}%` }}
-                />
-              </div>
-              {top.includes(area) && <p className="mt-1 text-sm text-muted">{RIASEC_INFO[area].description}</p>}
-            </li>
-          ))}
-        </ul>
-      </Card>
+        <InterestAreasCard
+          areas={interests.scores.areas}
+          whenFlat={
+            <>
+              <p>
+                Explore careers from different areas to see what clicks.{" "}
+                {retakeAfter <= new Date() ? (
+                  <>
+                    You can also{" "}
+                    <Link href="/discover/interests" className="underline underline-offset-2">
+                      take the interests activity again
+                    </Link>{" "}
+                    and go with your gut on each one.
+                  </>
+                ) : (
+                  <>You can take the interests activity again after {formatDate(retakeAfter)}.</>
+                )}
+              </p>
+              <ButtonLink href="/careers" variant="secondary">
+                Browse all careers
+              </ButtonLink>
+            </>
+          }
+        />
 
-      {(["degree", "training"] as const).map((pathway) => (
-        <section key={pathway}>
-          <h2 className="text-lg font-medium">{PATHWAY_INFO[pathway].title}</h2>
-          <p className="mb-3 text-sm text-muted">{PATHWAY_INFO[pathway].description}</p>
-          <CareerReasons initial={run.explanation} careers={careersFor(pathway)} />
-        </section>
-      ))}
+        {(["degree", "training"] as const).map((pathway) => (
+          <section key={pathway}>
+            <h2 className="text-lg font-medium">{PATHWAY_INFO[pathway].title}</h2>
+            <p className="mb-3 text-sm text-muted">{PATHWAY_INFO[pathway].description}</p>
+            <CareerReasons careers={careersFor(pathway)} />
+          </section>
+        ))}
+      </ExplanationProvider>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>

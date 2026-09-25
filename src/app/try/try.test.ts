@@ -227,7 +227,8 @@ describe("free quiz pages", () => {
     expect(state.user).toBe(student);
     const page = text(await render(SavedPage(savedPageProps())));
     expect(page).toContain("Your quiz results are saved to your account.");
-    expect(page).toContain("Your top interests are artistic, social and");
+    // The other four areas all scored 0, so none of them is named as a third top interest.
+    expect(page).toContain("Your top interests are artistic and social.");
   });
 
   it("lets a student take back someone else's quiz and take it themselves", async () => {
@@ -351,7 +352,7 @@ describe("keeping the free results", () => {
     const finished = { ...emptySavedAssessment(), answers, savedAt: yesterday.getTime() };
     const unticked = renderToStaticMarkup(createElement(SavedQuizChoice, { saved: finished }));
     expect(text(unticked)).toContain(
-      "Someone finished the free interest quiz on this device yesterday. Their top interests were artistic, social and",
+      "Someone finished the free interest quiz on this device yesterday. Their top interests were artistic and social.",
     );
     expect(text(unticked)).toContain("Only add them if you took the quiz.");
     expect(unticked).not.toContain(SAVED_ASSESSMENT_FIELD);
