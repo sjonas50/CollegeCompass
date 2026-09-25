@@ -1,0 +1,325 @@
+{
+  "schemaVersion": 1,
+  "id": "major-prep.rigor",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "MP-CDC-SLEEP": {
+      "title": "About Sleep",
+      "url": "https://www.cdc.gov/sleep/about/index.html",
+      "publisher": "Centers for Disease Control and Prevention",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-NACAC": {
+      "title": "2019 State of College Admission",
+      "url": "https://www.nacacnet.org/wp-content/uploads/2022/10/soca2019_all.pdf",
+      "publisher": "National Association for College Admission Counseling",
+      "kind": "research",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-STAN": {
+      "title": "Preparing for College",
+      "url": "https://admission.stanford.edu/apply/selection/prepare.html",
+      "publisher": "Stanford University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-HS-NURSING-SCIENCE": {
+      "title": "Texas CTE Statewide Program of Study (hs-nursing-science-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/hs-nursing-science-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TTT1": {
+      "title": "Turning the Tide: Inspiring Concern for Others and the Common Good through College Admissions (2016)",
+      "url": "https://mcc.gse.harvard.edu/s/report_turningthetide.pdf",
+      "publisher": "Making Caring Common, Harvard Graduate School of Education",
+      "kind": "research",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-USBE-CTE": {
+      "title": "Utah CTE Career Pathway Chart, 2025-2026",
+      "url": "https://schools.utah.gov/cte/_cte/pathways/AllCareerPathways2025.pdf",
+      "publisher": "Utah State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-UTK-ENG": {
+      "title": "Tickle College of Engineering: Undergraduate Admission Requirements",
+      "url": "https://tickle.utk.edu/admissions-aid/admissions-requirements/undergraduate/",
+      "publisher": "University of Tennessee, Knoxville",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-UTK-NUR": {
+      "title": "College of Nursing: Undergraduate Admissions",
+      "url": "https://nursing.utk.edu/admissions-and-aid/undergrad-admissions/",
+      "publisher": "University of Tennessee, Knoxville",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-UU-ENG": {
+      "title": "Price College of Engineering: Admissions",
+      "url": "https://www.price.utah.edu/future/admissions",
+      "publisher": "University of Utah",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-YALE": {
+      "title": "Advice on Selecting High School Courses",
+      "url": "https://admissions.yale.edu/advice-selecting-high-school-courses",
+      "publisher": "Yale University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S8": {
+      "title": "First-Year Student Admission Requirements",
+      "url": "https://admissions.utk.edu/undergraduate-application/first-year-student/",
+      "publisher": "University of Tennessee, Knoxville",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S36": {
+      "title": "High School Prerequisites",
+      "url": "https://admissions.utexas.edu/apply/application-materials/high-school-prerequisites/",
+      "publisher": "The University of Texas at Austin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S40": {
+      "title": "College Readiness",
+      "url": "https://admissions.tamu.edu/resources/future-students/college-readiness.html",
+      "publisher": "Texas A&M University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S31": {
+      "title": "Admissions FAQ",
+      "url": "https://www.uvu.edu/admissions/faq/",
+      "publisher": "Utah Valley University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "mp-cdc-teen-sleep",
+      "source": "MP-CDC-SLEEP",
+      "pinpoint": "How much sleep do I need?",
+      "quote": "Teen 13–17 years 8–10 hours"
+    },
+    {
+      "id": "mp-nacac-selective",
+      "source": "MP-NACAC",
+      "quote": "Institutions that were more selective placed more emphasis on grades in college prep courses and strength of curriculum."
+    },
+    {
+      "id": "mp-stanford-five-courses",
+      "source": "MP-STAN",
+      "quote": "take approximately five academic courses each semester, including during your final year."
+    },
+    {
+      "id": "mp-stanford-not-every-ap",
+      "source": "MP-STAN",
+      "quote": "The students who thrive at Stanford are those who are genuinely excited about learning, not necessarily those who take every single AP, IB, Honors, or Accelerated class just because it has that designation."
+    },
+    {
+      "id": "mp-tea-pos-nursing-stem",
+      "source": "MP-TEA-POS-HS-NURSING-SCIENCE",
+      "quote": "Successful completion of the Nursing Science program of study will fulfill requirements of STEM endorsement if the math and science requirements are met or the Public Services endorsement."
+    },
+    {
+      "id": "mp-ttt-smaller-numbers",
+      "source": "MP-TTT1",
+      "pinpoint": "Recommendation #2",
+      "quote": "While some students can benefit from and handle large numbers of AP/IB courses, many students benefit from taking smaller numbers of advanced courses."
+    },
+    {
+      "id": "mp-ttt-sustained",
+      "source": "MP-TTT1",
+      "pinpoint": "Recommendation #2",
+      "quote": "Admissions offices should convey to students that simply taking large numbers of AP or IB courses per year is often not as valuable as sustained achievement in a limited number of areas."
+    },
+    {
+      "id": "mp-uofu-engineering-placement",
+      "source": "MP-UU-ENG",
+      "quote": "Students may place into Calculus I in a variety of ways, such as obtaining the appropriate AP scores, ACT/SAT scores, IB credit"
+    },
+    {
+      "id": "mp-usbe-completer",
+      "source": "MP-USBE-CTE",
+      "quote": "To be a completer you must pass a concentrator course and enough courses to equal 3.0 credits in this Pathway."
+    },
+    {
+      "id": "mp-utk-engineering-spi",
+      "source": "MP-UTK-ENG",
+      "pinpoint": "Success Prediction Indicator",
+      "quote": "For consideration in the Tickle College of Engineering, your minimum SPI predictor should be at least 60 and a math ACT of 25 or a math SAT of 590."
+    },
+    {
+      "id": "mp-utk-nursing-competitive",
+      "source": "MP-UTK-NUR",
+      "quote": "Freshman direct admission to the nursing major is a highly competitive application process"
+    },
+    {
+      "id": "mp-yale-balanced",
+      "source": "MP-YALE",
+      "quote": "we look for students who have taken a balanced set of the rigorous classes available to them."
+    },
+    {
+      "id": "mp-yale-most-challenging",
+      "source": "MP-YALE",
+      "quote": "Overall, is my four-year high school program among the most challenging programs available at my school?"
+    },
+    {
+      "id": "tn-utk-core-list",
+      "source": "TN-S8",
+      "pinpoint": "Core Academic Subjects",
+      "quote": "4 English 4 Math (algebra, geometry, trigonometry, calculus, statistics, or other advanced math) 3 Science (biology, chemistry, physics, or other science) 1 American history 1 European history, world history, or world geography 2 Single foreign language (or ASL) 1 Visual or performing arts"
+    },
+    {
+      "id": "tx-tamu-recommended",
+      "source": "TX-S40",
+      "quote": "Texas A&M University’s recommended coursework includes: 4 years of English 4 years of Mathematics - Three of the courses should be Algebra I, II and Geometry 4 years of Science - Two courses should come from Biology I, Chemistry I or Physics I 2 years of the same foreign language"
+    },
+    {
+      "id": "tx-ut-calc-course",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "Official high school transcript showing credit for a Calculus I (or higher) course with a grade of B or higher Classical Learning Test (CLT) Math score of 26 or above"
+    },
+    {
+      "id": "tx-ut-calc-majors",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "Freshman applicants must demonstrate calculus readiness to apply to the following majors: All majors in the Cockrell School of Engineering All majors in the Jackson School of Geosciences"
+    },
+    {
+      "id": "tx-ut-calc-majors-2",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "Environmental Science (Geographical Sciences) major in the College of Liberal Arts Environmental Science (Biological Sciences) major in the College of Natural Sciences Computer Science, Linguistics and Computer Science,"
+    },
+    {
+      "id": "tx-ut-calc-tests",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "SAT Math score of 620 or above ACT Math score of 26 or above Advanced Placement (AP) Calculus AB or BC test score of 3 or higher International Baccalaureate (IB) HL Mathematics score of 4 or higher"
+    },
+    {
+      "id": "tx-ut-prereq-demanding",
+      "source": "TX-S36",
+      "quote": "Students are encouraged to take demanding coursework, going beyond the level required."
+    },
+    {
+      "id": "ut-uvu-open",
+      "source": "UT-S31",
+      "quote": "Utah Valley University is an open-admissions institution. UVU does not require a minimum GPA or ACT/SAT score for admissions, nor are there any course requirements."
+    }
+  ],
+  "tiers": [
+    {
+      "id": "open",
+      "label": "Open admission",
+      "detection": "The college admits nearly everyone who applies, or it doesn't report an admission rate.",
+      "expects": "A high school diploma. Placement scores decide whether you start in college-level math and English.",
+      "target": "Finish your state's graduation requirements, reach the placement scores, and for career programs, finish a career and technical pathway and a credential. College-credit classes are options, not expectations.",
+      "collegeLevelFromGrade": null,
+      "rigorFirstSubjects": 0,
+      "cite": ["ut-uvu-open", "mp-uofu-engineering-placement"]
+    },
+    {
+      "id": "admits_most",
+      "label": "Admits most applicants",
+      "detection": "An admission rate of 50% or more.",
+      "expects": "The state flagship's recommended classes, like Texas A&M's 4 English, 4 math, 4 science and 2 of one language, or UT Knoxville's 16 core courses.",
+      "target": "A full college-prep core, with honors or college-level work in one or two of your major's rigor-first subjects by 11th or 12th grade. Strong grades matter more than the number of advanced classes.",
+      "collegeLevelFromGrade": 11,
+      "rigorFirstSubjects": 2,
+      "cite": ["tx-tamu-recommended", "tn-utk-core-list", "mp-ttt-smaller-numbers"]
+    },
+    {
+      "id": "admits_fewer_than_half",
+      "label": "Admits fewer than half",
+      "detection": "An admission rate from 25% up to 50%.",
+      "expects": "Rigor counts for more, and some majors are competitive. UT Austin encourages demanding classes beyond the level required.",
+      "target": "Four years each of English, math and science, with college-level classes in your rigor-first subjects from 10th or 11th grade, keeping 12th grade as strong as 11th.",
+      "collegeLevelFromGrade": 10,
+      "rigorFirstSubjects": 3,
+      "cite": ["mp-nacac-selective", "tx-ut-prereq-demanding"]
+    },
+    {
+      "id": "very_selective",
+      "label": "Very selective",
+      "detection": "An admission rate under 25%.",
+      "expects": "A balanced set of the most challenging classes available at your school, across the core subjects, including calculus for STEM. They don't expect every AP class.",
+      "target": "As above, with calculus for STEM and economics, and three or more years of one language. Never take every AP class just because it's there.",
+      "collegeLevelFromGrade": 10,
+      "rigorFirstSubjects": 3,
+      "cite": ["mp-yale-most-challenging", "mp-yale-balanced", "mp-stanford-not-every-ap"]
+    }
+  ],
+  "raises": [
+    {
+      "id": "ut-austin-calculus-readiness",
+      "colleges": [228778],
+      "families": ["engineering", "computer_data_science", "natural_resources"],
+      "text": "UT Austin requires calculus readiness for engineering, computer science and environmental science majors.",
+      "cite": ["tx-ut-calc-majors", "tx-ut-calc-majors-2"]
+    },
+    {
+      "id": "utk-engineering-spi",
+      "colleges": [221759],
+      "families": ["engineering"],
+      "text": "UT Knoxville engineering looks for a Success Prediction Indicator of at least 60 and an ACT math 25 or SAT math 590.",
+      "cite": ["mp-utk-engineering-spi"]
+    },
+    {
+      "id": "utk-nursing-direct",
+      "colleges": [221759],
+      "families": ["nursing"],
+      "text": "UT Knoxville's freshman direct admission to nursing is highly competitive.",
+      "cite": ["mp-utk-nursing-competitive"]
+    }
+  ],
+  "guardrails": [
+    {
+      "id": "no-ap-count",
+      "text": "Plans are never scored or ranked by how many AP, IB or college-credit classes they have.",
+      "cite": ["mp-ttt-sustained", "mp-stanford-not-every-ap"]
+    },
+    {
+      "id": "rigor-first",
+      "text": "Suggest honors or college-level classes first in the few subjects that matter most for the student's goals.",
+      "cite": ["mp-ttt-sustained", "mp-ttt-smaller-numbers"]
+    },
+    {
+      "id": "load",
+      "text": "No more than 3 college-level classes a year unless the student sets a different limit, and a gentle warning at 4 or more, with the reminder that teens need 8 to 10 hours of sleep.",
+      "cite": ["mp-cdc-teen-sleep", "mp-ttt-smaller-numbers"]
+    },
+    {
+      "id": "mastery-first",
+      "text": "Suggest doubling up or skipping ahead in math only after a B or better and only if the student opts in. A test score or placement exam can also show readiness.",
+      "cite": ["tx-ut-calc-course", "tx-ut-calc-tests", "mp-uofu-engineering-placement"]
+    },
+    {
+      "id": "senior-year",
+      "text": "Keep about five academic classes in 12th grade, but don't add new ones just for rigor.",
+      "cite": ["mp-stanford-five-courses"]
+    },
+    {
+      "id": "relative-to-school",
+      "text": "Rigor is judged against what the student's school offers. A class the school doesn't offer never counts against the student.",
+      "cite": ["mp-yale-balanced", "mp-yale-most-challenging"]
+    },
+    {
+      "id": "cte-counts",
+      "text": "Career and technical classes count as preparation, not a detour. In Texas, a program of study can meet an endorsement.",
+      "cite": ["mp-tea-pos-nursing-stem", "mp-usbe-completer"]
+    }
+  ]
+}

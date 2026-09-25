@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "id": "ut.aid",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "UT-S36": {
+      "title": "Opportunity Scholarship",
+      "url": "https://ushe.edu/state-scholarships-aid/opportunity-scholarship/",
+      "publisher": "Utah System of Higher Education",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S40": {
+      "title": "First Credential Scholarship",
+      "url": "https://ushe.edu/first-credential-scholarship/",
+      "publisher": "Utah System of Higher Education",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S43": {
+      "title": "Utah Concurrent Enrollment Handbook 2025",
+      "url": "https://ushe.edu/wp-content/uploads/pdf/k-12/ce/2025/CE_Handbook_2025.pdf",
+      "publisher": "Utah System of Higher Education",
+      "kind": "guidance",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "ut-ce-60-credits",
+      "source": "UT-S43",
+      "pinpoint": "FAQ 18",
+      "quote": "If a student exceeds 60 credit hours on a college transcript, he/she may be viewed as a student of higher standing and not qualify for an entry scholarship to college."
+    },
+    {
+      "id": "ut-first-credential-2026",
+      "source": "UT-S40",
+      "pinpoint": "Eligibility Requirements",
+      "quote": "5 general education concurrent enrollment courses (each in a different GE category), OR At least 6 courses, or 300 hours, in a CTE program at a Utah technical college, OR 300 hours towards the completion of an approved youth apprenticeship"
+    },
+    {
+      "id": "ut-first-credential-2027",
+      "source": "UT-S40",
+      "pinpoint": "Class of 2027",
+      "quote": "Eligibility and scholarship requirements for the class of 2027 will be available in the coming months."
+    },
+    {
+      "id": "ut-opportunity-ce-science",
+      "source": "UT-S36",
+      "pinpoint": "Science (Core Code: 08)",
+      "quote": "Science courses that satisfy the Opportunity Scholarship requirements may not grant the foundational science credit required for high school graduation, which typically requires students to complete the lecture and lab credits."
+    },
+    {
+      "id": "ut-opportunity-core-codes",
+      "source": "UT-S36",
+      "pinpoint": "What classes are acceptable?",
+      "quote": "Eligible courses are Concurrent Enrollment (CE), Advanced Placement (AP), or International Baccalaureate (IB) level courses that align to a USBE core code starting with “06” (Language Arts), “07” (Mathematics), and “08” (Science)."
+    },
+    {
+      "id": "ut-opportunity-courses",
+      "source": "UT-S36",
+      "pinpoint": "What are the Opportunity Scholarship requirements?",
+      "quote": "Complete 1 Advanced Placement (AP), International Baccalaureate (IB), or Concurrent Enrollment (CE) course in each of the core areas of high school graduation: Math Science Language Arts"
+    },
+    {
+      "id": "ut-opportunity-fafsa",
+      "source": "UT-S36",
+      "pinpoint": "What are the Opportunity Scholarship requirements?",
+      "quote": "Complete the Free Application for Federal Student Aid (FAFSA) for the applicable year"
+    },
+    {
+      "id": "ut-opportunity-gpa",
+      "source": "UT-S36",
+      "pinpoint": "What are the Opportunity Scholarship requirements?",
+      "quote": "Earn a 3.3 cumulative high school GPA"
+    },
+    {
+      "id": "ut-opportunity-grades",
+      "source": "UT-S36",
+      "pinpoint": "What are the Opportunity Scholarship requirements?",
+      "quote": "Three advanced courses must be completed in grades 9-12 and must be completed before high school graduation. Please note: scholarship course requirements may not align with graduation requirements."
+    }
+  ],
+  "state": "UT",
+  "kind": "aid",
+  "ruleSets": [
+    {
+      "id": "ut.opportunity",
+      "state": "UT",
+      "kind": "state_aid",
+      "title": "Utah Opportunity Scholarship: the class part",
+      "issuer": { "kind": "aid_agency", "name": "the Utah Opportunity Scholarship" },
+      "plainSummary": "The Opportunity Scholarship asks for a 3.3 GPA, a FAFSA, and one AP, IB or concurrent enrollment class in each of math, science and language arts, taken in grades 9-12. These are the rules published for the classes of 2026 and 2027; for later classes they're projected and may change.",
+      "strength": "required",
+      "strengthCite": "ut-opportunity-grades",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "projectedBeyond": 2027,
+      "appliesWhen": { "paths": ["degree", "undecided"] },
+      "variants": [
+        {
+          "id": "ut.opportunity.2026",
+          "cohort": { "from": 2026 },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "opp.math",
+              "label": "One AP, IB or concurrent enrollment math class",
+              "kind": "count",
+              "n": 1,
+              "select": [{ "subjects": ["math"], "levels": ["ap", "ib", "dual_enrollment"], "grades": [9, 10, 11, 12] }],
+              "cite": ["ut-opportunity-courses", "ut-opportunity-grades", "ut-opportunity-core-codes"],
+              "area": "math"
+            },
+            {
+              "id": "opp.science",
+              "label": "One AP, IB or concurrent enrollment science class",
+              "kind": "count",
+              "n": 1,
+              "select": [{ "subjects": ["science"], "levels": ["ap", "ib", "dual_enrollment"], "grades": [9, 10, 11, 12] }],
+              "cite": ["ut-opportunity-courses", "ut-opportunity-grades", "ut-opportunity-core-codes"],
+              "area": "science"
+            },
+            {
+              "id": "opp.language-arts",
+              "label": "One AP, IB or concurrent enrollment language arts class",
+              "kind": "count",
+              "n": 1,
+              "select": [{ "subjects": ["english"], "levels": ["ap", "ib", "dual_enrollment"], "grades": [9, 10, 11, 12] }],
+              "cite": ["ut-opportunity-courses", "ut-opportunity-grades", "ut-opportunity-core-codes"],
+              "area": "english"
+            }
+          ],
+          "conditions": [
+            {
+              "id": "opp.gpa",
+              "label": "A 3.3 cumulative high school GPA",
+              "kind": "gpa",
+              "cite": ["ut-opportunity-gpa"]
+            },
+            {
+              "id": "opp.fafsa",
+              "label": "Complete the FAFSA for your graduation year",
+              "kind": "form",
+              "cite": ["ut-opportunity-fafsa"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "opp.align",
+              "text": "The scholarship's class rules don't always line up with graduation rules. Plan both with your counselor.",
+              "cite": ["ut-opportunity-grades"]
+            },
+            {
+              "id": "opp.ce-science",
+              "text": "A concurrent enrollment science class without its lab can count for the scholarship but may not earn the foundation science credit you need to graduate.",
+              "cite": ["ut-opportunity-ce-science"]
+            },
+            {
+              "id": "opp.ce-60",
+              "text": "More than 60 college credits by graduation can make you ineligible for some scholarships for new college students.",
+              "cite": ["ut-ce-60-credits"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "opp.gpa-weighting",
+              "text": "Whether the 3.3 GPA is weighted or unweighted isn't stated. Ask your counselor."
+            },
+            {
+              "id": "opp.later-classes",
+              "text": "Rules and award amounts for the class of 2028 and later haven't been published yet."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "infoCards": [
+    {
+      "id": "ut.card.first-credential",
+      "title": "First Credential Scholarship",
+      "text": "For the class of 2026, this scholarship needed a FAFSA plus five general education concurrent enrollment classes in different categories, or technical college or youth apprenticeship hours. Rules for the class of 2027 and later aren't published yet. Ask your counselor.",
+      "confidence": "unverified",
+      "cite": ["ut-first-credential-2026", "ut-first-credential-2027"]
+    }
+  ]
+}

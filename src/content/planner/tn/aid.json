@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "id": "tn.aid",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "TN-S30": {
+      "title": "Tennessee HOPE Scholarship",
+      "url": "https://www.collegefortn.org/tennessee-hope-scholarship/",
+      "publisher": "Tennessee Student Assistance Corporation (CollegeforTN)",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S32": {
+      "title": "General Assembly Merit Scholarship",
+      "url": "https://www.collegefortn.org/general-assembly-merit-scholarship/",
+      "publisher": "Tennessee Student Assistance Corporation (CollegeforTN)",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S34": {
+      "title": "Ned McWherter Scholars Program",
+      "url": "https://www.collegefortn.org/ned-mcwherter-scholars-program/",
+      "publisher": "Tennessee Student Assistance Corporation (CollegeforTN)",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S35": {
+      "title": "Tennessee Promise Scholarship",
+      "url": "https://www.collegefortn.org/tennessee-promise-scholarship/",
+      "publisher": "Tennessee Student Assistance Corporation (CollegeforTN)",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S38": {
+      "title": "Middle College Scholarship",
+      "url": "https://www.collegefortn.org/middle-college/",
+      "publisher": "Tennessee Student Assistance Corporation (CollegeforTN)",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "tn-gams",
+      "source": "TN-S32",
+      "quote": "must have a minimum 3.75 GPA* AND 29 ACT or a minimum 1330 SAT, exclusive of the essay and optional subject area battery tests."
+    },
+    {
+      "id": "tn-hope-gpa",
+      "source": "TN-S30",
+      "quote": "Overall minimum 3.0 grade point average based on a 4.0 scale, calculated with additional internal percentage points awarded for advanced placement, honors or other similar courses according to the Uniform Grading Policy adopted by the State Board of Education"
+    },
+    {
+      "id": "tn-hope-superscore",
+      "source": "TN-S30",
+      "quote": "The ACT Residual test and the ACT Superscore are not accepted."
+    },
+    {
+      "id": "tn-hope-test",
+      "source": "TN-S30",
+      "quote": "21 ACT or a minimum of 1060 SAT, exclusive of the essay and optional subject area battery tests"
+    },
+    {
+      "id": "tn-mcwherter-gpa",
+      "source": "TN-S34",
+      "quote": "have at least a 3.75 unweighted cumulative high school grade point average on a 4.0 scale, and"
+    },
+    {
+      "id": "tn-mcwherter-test",
+      "source": "TN-S34",
+      "quote": "have a minimum composite score of 32 on the ACT or 1430 on the SAT."
+    },
+    {
+      "id": "tn-middle-college-gpa",
+      "source": "TN-S38",
+      "quote": "Obtain a minimum 3.0 high school GPA at the end of the high school Sophomore year"
+    },
+    {
+      "id": "tn-promise-deadlines",
+      "source": "TN-S35",
+      "quote": "Complete the Tennessee Promise application by November 2 and complete the FAFSA by April 1 of the high school senior year"
+    },
+    {
+      "id": "tn-promise-service",
+      "source": "TN-S35",
+      "quote": "Complete and submit at least 16 hours of community service for each year in the program"
+    }
+  ],
+  "state": "TN",
+  "kind": "aid",
+  "ruleSets": [],
+  "infoCards": [
+    {
+      "id": "tn.card.hope",
+      "title": "HOPE Scholarship",
+      "text": "HOPE uses test scores or your GPA, not specific classes: an ACT of 21 or SAT of 1060, or an overall 3.0 GPA figured with the state's Uniform Grading Policy (which adds points for honors, AP and similar classes). ACT superscores aren't accepted.",
+      "confidence": "verified",
+      "cite": ["tn-hope-test", "tn-hope-gpa", "tn-hope-superscore"]
+    },
+    {
+      "id": "tn.card.gams",
+      "title": "General Assembly Merit Scholarship",
+      "text": "This award adds to HOPE for students with a 3.75 GPA and an ACT of 29 or SAT of 1330. We found no class requirement on the program's page; ask your counselor to be sure.",
+      "confidence": "unverified",
+      "cite": ["tn-gams"]
+    },
+    {
+      "id": "tn.card.mcwherter",
+      "title": "Ned McWherter Scholars Program",
+      "text": "A competitive award for students with at least a 3.75 unweighted GPA and an ACT of 32 or SAT of 1430.",
+      "confidence": "verified",
+      "cite": ["tn-mcwherter-gpa", "tn-mcwherter-test"]
+    },
+    {
+      "id": "tn.card.middle-college",
+      "title": "Middle College Scholarship",
+      "text": "For students with at least a 3.0 GPA at the end of 10th grade who attend a middle college full time from 11th grade.",
+      "confidence": "verified",
+      "cite": ["tn-middle-college-gpa"]
+    },
+    {
+      "id": "tn.card.promise",
+      "title": "Tennessee Promise",
+      "text": "Tennessee Promise has no GPA, test or class requirement to start. Apply by November 2 of 12th grade, file the FAFSA by April 1, and do community service each year.",
+      "confidence": "verified",
+      "cite": ["tn-promise-deadlines", "tn-promise-service"]
+    }
+  ]
+}

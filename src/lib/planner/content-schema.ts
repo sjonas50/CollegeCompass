@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { COURSE_SUBJECTS, LETTER_GRADES } from "@/lib/courses/catalog";
 import { PLANNER_STATES, SCHOOL_GRADES } from "./common";
-import type { CipRoutingFile, FactsFile, GenericCatalogFile, MajorFamiliesFile } from "./content-types";
+import type { CipRoutingFile, FactsFile, GenericCatalogFile, MajorFamiliesFile, RigorFile } from "./content-types";
 import { GAP_OPTION_KINDS } from "./content-types";
 import {
   CAPABILITIES,
@@ -11,11 +11,13 @@ import {
   CTE_CLUSTERS,
   LANGUAGES,
 } from "./course-types";
+import { RIGOR_TIERS } from "./engine-io";
 import { CIP_PREFIX, FAMILY_IDS, MATH_TARGETS } from "./families";
 import {
   CONDITION_KINDS,
   COHORT_KEYS,
   CONFIDENCES,
+  INFO_CARD_TESTS,
   ISSUER_KINDS,
   OPTION_PREFS,
   PATH_KINDS,
@@ -250,12 +252,28 @@ const RuleSetSchema = z.strictObject({
   testRoutes: z.array(z.strictObject({ id: Id, text: plain(TEXT_MAX), cite: CiteList })).optional(),
 });
 
-export const RuleFileSchema = z.strictObject({
-  ...header,
-  state: State,
-  kind: z.enum(RULE_FILE_KINDS),
-  ruleSets: z.array(RuleSetSchema).min(1),
+const InfoCardSchema = z.strictObject({
+  id: Id,
+  title: plain(LABEL_MAX),
+  text: plain(TEXT_MAX),
+  unitId: UnitId.optional(),
+  tests: z.enum(INFO_CARD_TESTS).optional(),
+  confidence: z.enum(CONFIDENCES),
+  cite: CiteList,
 });
+
+export const RuleFileSchema = z
+  .strictObject({
+    ...header,
+    state: State,
+    kind: z.enum(RULE_FILE_KINDS),
+    ruleSets: z.array(RuleSetSchema),
+    infoCards: z.array(InfoCardSchema).min(1).optional(),
+  })
+  .refine((file) => file.ruleSets.length > 0 || (file.infoCards?.length ?? 0) > 0, {
+    path: ["ruleSets"],
+    message: "A rule file needs at least one rule set or information card.",
+  });
 
 // Other content files ---------------------------------------------------------------
 
@@ -293,6 +311,7 @@ export const FactsFileSchema = z.strictObject({
     }),
   ),
   middleSchoolMath: z.array(z.strictObject({ text: plain(TEXT_MAX), cite: CiteList })),
+  terms: z.array(z.strictObject({ id: Id, term: plain(LABEL_MAX), meaning: plain(TEXT_MAX), cite: CiteList })).optional(),
 });
 
 const MathTargetList = z.array(z.enum(MATH_TARGETS)).min(1).max(2);
@@ -343,6 +362,32 @@ export const CipRoutingFileSchema = z.strictObject({
     .min(1),
 });
 
+export const RigorFileSchema = z.strictObject({
+  ...header,
+  tiers: z.array(
+    z.strictObject({
+      id: z.enum(RIGOR_TIERS),
+      label: plain(LABEL_MAX),
+      detection: plain(TEXT_MAX),
+      expects: plain(TEXT_MAX),
+      target: plain(TEXT_MAX),
+      collegeLevelFromGrade: Grade.nullable(),
+      rigorFirstSubjects: z.number().int().min(0).max(3),
+      cite: CiteList,
+    }),
+  ),
+  raises: z.array(
+    z.strictObject({
+      id: Id,
+      colleges: z.array(UnitId).min(1),
+      families: z.array(FamilyIdSchema).min(1),
+      text: plain(TEXT_MAX),
+      cite: CiteList,
+    }),
+  ),
+  guardrails: z.array(z.strictObject({ id: Id, text: plain(TEXT_MAX), cite: CiteList })).min(1),
+});
+
 // Parsing -------------------------------------------------------------------------
 
 export type ParseResult<T> = { ok: true; value: T } | { ok: false; issues: string[] };
@@ -367,3 +412,4 @@ export const parseGenericCatalogFile = parser<GenericCatalogFile>(GenericCatalog
 export const parseFactsFile = parser<FactsFile>(FactsFileSchema);
 export const parseMajorFamiliesFile = parser<MajorFamiliesFile>(MajorFamiliesFileSchema);
 export const parseCipRoutingFile = parser<CipRoutingFile>(CipRoutingFileSchema);
+export const parseRigorFile = parser<RigorFile>(RigorFileSchema);

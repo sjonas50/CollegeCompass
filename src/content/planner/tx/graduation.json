@@ -1,0 +1,1051 @@
+{
+  "schemaVersion": 1,
+  "id": "tx.graduation",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "TX-S1": {
+      "title": "19 TAC Chapter 74, Subchapter B, Graduation Requirements (August 2026 update)",
+      "url": "https://tea.texas.gov/laws-and-rules/sboe-rules-tac/sboe-tac-currently-effect/ch074b.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S13": {
+      "title": "Texas Education Code, Chapter 28",
+      "url": "https://statutes.capitol.texas.gov/Docs/ED/htm/ED.28.htm",
+      "publisher": "Texas Legislature",
+      "kind": "statute",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S17": {
+      "title": "Texas Education Code, Chapter 39",
+      "url": "https://statutes.capitol.texas.gov/Docs/ED/htm/ED.39.htm",
+      "publisher": "Texas Legislature",
+      "kind": "statute",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S2": {
+      "title": "19 TAC Chapter 74, Subchapter A, Required Curriculum (§74.3)",
+      "url": "https://tea.texas.gov/laws-and-rules/sboe-rules-tac/sboe-tac-currently-effect/ch074a.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S6": {
+      "title": "Updates to High School Social Studies and Personal Financial Literacy Graduation Requirements (letter, 2026-09-17)",
+      "url": "https://tea.texas.gov/taa-letters/updates-high-school-social-studies-personal-financial-literacy-graduation-requirements",
+      "publisher": "Texas Education Agency",
+      "kind": "guidance",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "tx-74-11-a2",
+      "source": "TX-S1",
+      "pinpoint": "§74.11(a)(2)",
+      "quote": "testing requirements for graduation as specified in Chapter 101 of this title (relating to Assessment); and"
+    },
+    {
+      "id": "tx-74-11-a3",
+      "source": "TX-S1",
+      "pinpoint": "§74.11(a)(3)",
+      "quote": "demonstrated proficiency, in Grade 8 or higher, as determined by the district in which the student is enrolled, in delivering clear verbal messages;"
+    },
+    {
+      "id": "tx-74-11-b",
+      "source": "TX-S1",
+      "pinpoint": "§74.11(b)",
+      "quote": "each student in Grade 12 must complete and submit a free application for federal student aid (FAFSA) or a Texas application for state financial aid (TASFA) before graduating from high school."
+    },
+    {
+      "id": "tx-74-11-b1",
+      "source": "TX-S1",
+      "pinpoint": "§74.11(b)(1)",
+      "quote": "A student may graduate under the Foundation High School Program without completing a financial aid application if:"
+    },
+    {
+      "id": "tx-74-11-c",
+      "source": "TX-S1",
+      "pinpoint": "§74.11(c)",
+      "quote": "Beginning with students enrolled during the 2026-2027 school year, before graduating high school, a student must elect whether or not to allow the Texas Higher Education Coordinating Board (THECB) to share the student's data and education records,"
+    },
+    {
+      "id": "tx-74-11-f",
+      "source": "TX-S1",
+      "pinpoint": "§74.11(f)",
+      "quote": "A student may graduate under the Foundation High School Program without earning an endorsement if, after the student's sophomore year:"
+    },
+    {
+      "id": "tx-74-11-f2",
+      "source": "TX-S1",
+      "pinpoint": "§74.11(f)(2)",
+      "quote": "the student's parent or person standing in parental relation to the student files with a school counselor written permission, on a form adopted by TEA, allowing the student to graduate under the Foundation High School Program without earning an endorsement."
+    },
+    {
+      "id": "tx-74-11-j",
+      "source": "TX-S1",
+      "pinpoint": "§74.11(j)",
+      "quote": "Courses offered for dual credit … that provide advanced academic instruction beyond, or in greater depth than, the essential knowledge and skills for the equivalent high school course required for graduation may satisfy graduation requirements"
+    },
+    {
+      "id": "tx-74-11-n",
+      "source": "TX-S1",
+      "pinpoint": "§74.11(n)",
+      "quote": "A district shall allow a student who successfully completes AP Computer Science A or IB Computer Science Higher Level to satisfy both one advanced mathematics requirement and one languages other than English requirement for graduation."
+    },
+    {
+      "id": "tx-74-12-a",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(a)",
+      "quote": "A student must earn at least 22 credits to complete the Foundation High School Program."
+    },
+    {
+      "id": "tx-74-12-b1",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(1)",
+      "quote": "English language arts--four credits. Two of the credits must consist of English I and II."
+    },
+    {
+      "id": "tx-74-12-b1-esol",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(1)",
+      "quote": "may satisfy the English I and/or English II graduation requirements by successfully completing English I for Speakers of Other Languages and/or English II for Speakers of Other Languages, respectively."
+    },
+    {
+      "id": "tx-74-12-b1-fourth",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(1)",
+      "quote": "A fourth credit may be selected from one full credit or a combination of two half credits from two different courses, subject to prerequisite requirements, from the following courses:"
+    },
+    {
+      "id": "tx-74-12-b1-fourth-list",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(1)(A)-(G)",
+      "quote": "(A) English IV; (B) Independent Study in English; (C) Literary Genres; (D) Creative Writing; (E) Research and Technical Writing; (F) Humanities; (G) Public Speaking III;"
+    },
+    {
+      "id": "tx-74-12-b1-fourth-list-2",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(1)(I)-(P)",
+      "quote": "(I) Oral Interpretation III; (J) Debate III; (K) Independent Study in Speech; (L) Independent Study in Journalism; (M) Advanced Broadcast Journalism III; (N) Advanced Journalism: Newspaper III; (O) Advanced Journalism: Yearbook III;"
+    },
+    {
+      "id": "tx-74-12-b1-third",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(1)",
+      "quote": "A third credit must consist of English III, a comparable Advanced Placement (AP) English language arts course that does not count toward another credit required for graduation, or a comparable International Baccalaureate (IB) English language arts course"
+    },
+    {
+      "id": "tx-74-12-b2",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(2)",
+      "quote": "Mathematics--three credits. Two of the credits must consist of Algebra I and Geometry."
+    },
+    {
+      "id": "tx-74-12-b2a",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(2)(A)",
+      "quote": "(i) Mathematical Models with Applications; (ii) Mathematical Applications in Agriculture, Food, and Natural Resources; (iii) Digital Electronics; (iv) Financial Mathematics;"
+    },
+    {
+      "id": "tx-74-12-b2a-2",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(2)(A)",
+      "quote": "(v) Applied Mathematics for Technical Professionals; (vi) Accounting II; (vii) Manufacturing Engineering Technology II; and (viii) Robotics II."
+    },
+    {
+      "id": "tx-74-12-b2b",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(2)(B)",
+      "quote": "(i) Algebra II; (ii) Precalculus; (iii) Advanced Quantitative Reasoning; (iv) Independent Study in Mathematics; (v) Discrete Mathematics for Problem Solving; (vi) Algebraic Reasoning; (vii) Statistics;"
+    },
+    {
+      "id": "tx-74-12-b2b-2",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(2)(B)",
+      "quote": "(viii) a comparable AP mathematics course that does not count toward another credit required for graduation; (ix) AP Computer Science A; (x) IB Computer Science Higher Level; (xi) Engineering Mathematics; (xii) Statistics and Business Decision Making; (xiii) Mathematics for Medical Professionals;"
+    },
+    {
+      "id": "tx-74-12-b3",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(3)",
+      "quote": "Science--three credits. One credit must consist of Biology or a comparable AP or IB biology course."
+    },
+    {
+      "id": "tx-74-12-b3a",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(3)(A)",
+      "quote": "(A) One credit must be selected from the following laboratory-based courses: (i) Integrated Physics and Chemistry; (ii) Chemistry; (iii) Physics; (iv) Physics for Engineering; and (v) a comparable AP or IB chemistry or physics course that does not count toward another credit required for graduation."
+    },
+    {
+      "id": "tx-74-12-b3b",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(3)(B)",
+      "quote": "(i) Chemistry; (ii) Physics; (iii) Aquatic Science; (iv) Astronomy; (v) Earth Systems Science; (vi) Environmental Systems; (vii) Specialized Topics in Science; (viii) a comparable AP science course that does not count toward another credit required for graduation;"
+    },
+    {
+      "id": "tx-74-12-b3b-2",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(3)(B)",
+      "quote": "(ix) Advanced Animal Science; (x) Advanced Plant and Soil Science; (xi) Anatomy and Physiology; (xii) Medical Microbiology; (xiii) Pathophysiology; (xiv) Food Science; (xv) Forensic Science; (xvi) Biotechnology I; (xvii) Biotechnology II;"
+    },
+    {
+      "id": "tx-74-12-b3b-3",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(3)(B)",
+      "quote": "(xviii) Physics for Engineering; (xix) Scientific Research and Design;"
+    },
+    {
+      "id": "tx-74-12-b3c",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(3)(C)",
+      "quote": "Credit may not be earned for both physics and Physics for Engineering to satisfy science credit requirements."
+    },
+    {
+      "id": "tx-74-12-b4",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(4)",
+      "quote": "Social studies--three credits. (A) One credit must consist of §113.41 of this title (relating to United States History Studies Since 1877 (One Credit), Adopted 2022)"
+    },
+    {
+      "id": "tx-74-12-b4a",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(4)(A)-(B)",
+      "quote": "(B) One-half credit must consist of United States Government."
+    },
+    {
+      "id": "tx-74-12-b4c",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(4)(C)",
+      "quote": "(C) Beginning with students who enter Grade 9 in the 2026-2027 school year or later: (i) one-half credit must be selected from the following: (I) §113.49 of this title (relating to Personal Financial Literacy (One-Half Credit), Adopted 2016)"
+    },
+    {
+      "id": "tx-74-12-b4c-ii",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(4)(C)(ii)",
+      "quote": "(ii) one credit must be selected from the following: (I) World History Studies; (II) World Geography Studies; or (III) Foundations of Economics."
+    },
+    {
+      "id": "tx-74-12-b4d",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(4)(D)",
+      "quote": "(D) For students who entered Grade 9 prior to the 2026-2027 school year: (i) one-half credit must be selected from the following: (I) Economics with Emphasis on the Free Enterprise System and Its Benefits; or (II) Personal Financial Literacy/Economics; and"
+    },
+    {
+      "id": "tx-74-12-b4d-ii",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(4)(D)(ii)",
+      "quote": "(ii) one credit must be selected from the following: (I) World History Studies; or (II) World Geography Studies."
+    },
+    {
+      "id": "tx-74-12-b4e",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(4)(E)",
+      "quote": "A comparable AP or IB social studies course selected from Chapter 113 of this title (relating to Texas Essential Knowledge and Skills for Social Studies) or an advanced level course offered as dual credit"
+    },
+    {
+      "id": "tx-74-12-b5",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(5)(A)",
+      "quote": "(i) any two levels in the same language, including comparable AP or IB language courses that do not count toward another credit required for graduation; or"
+    },
+    {
+      "id": "tx-74-12-b5-cs",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(5)(A)(ii)",
+      "quote": "(ii) two credits in computer programming languages, including computer coding, to be selected from Computer Science I, II, and III, AP Computer Science Principles, AP Computer Science A, IB Computer Science Standard Level, and IB Computer Science Higher Level."
+    },
+    {
+      "id": "tx-74-12-b6",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(6)(A)",
+      "quote": "(i) Lifetime Fitness and Wellness Pursuits; (ii) Lifetime Recreation and Outdoor Pursuits; and (iii) Skill-Based Lifetime Activities."
+    },
+    {
+      "id": "tx-74-12-b6c",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(6)(C)",
+      "quote": "In accordance with local district policy, credit for any of the courses listed in subparagraph (A) of this paragraph may be earned through participation in the following activities: (i) Athletics; (ii) Junior Reserve Officer Training Corps (JROTC); and"
+    },
+    {
+      "id": "tx-74-12-b7",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(7)(A)",
+      "quote": "(i) Art, Level I, II, III, or IV; (ii) Dance, Level I, II, III, or IV; (iii) Music, Level I, II, III, or IV; (iv) Music Studies; (v) Theatre, Level I, II, III, or IV;"
+    },
+    {
+      "id": "tx-74-12-b7-2",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(7)(A)",
+      "quote": "(viii) IB Film Standard or Higher Level; (ix) Floral Design; (x) Digital Art and Animation; and"
+    },
+    { "id": "tx-74-12-c", "source": "TX-S1", "pinpoint": "§74.12(c)", "quote": "Elective courses--five credits." },
+    {
+      "id": "tx-74-13-a",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(a)",
+      "quote": "A student shall specify in writing an endorsement the student intends to earn upon entering Grade 9."
+    },
+    {
+      "id": "tx-74-13-b",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(b)",
+      "quote": "A district shall permit a student to enroll in courses under more than one endorsement before the student's junior year and to choose, at any time, to earn an endorsement other than the endorsement the student previously indicated."
+    },
+    {
+      "id": "tx-74-3-b5",
+      "source": "TX-S2",
+      "pinpoint": "§74.3(b)(5)",
+      "quote": "A school district must teach a course that is specifically required for high school graduation at least once in any two consecutive school years."
+    },
+    {
+      "id": "tx-tea-2026-econ",
+      "source": "TX-S6",
+      "quote": "students may satisfy the one-credit economics option by completing one credit or a combination of credits from existing, advanced state-approved economics courses such as Advanced Placement (AP) Microeconomics and AP Macroeconomics or a dual credit economics course."
+    },
+    {
+      "id": "tx-tea-2026-econ-2033",
+      "source": "TX-S6",
+      "quote": "Foundations in Economics, that will be available for implementation in classrooms beginning with the 2033–2034 school year."
+    },
+    {
+      "id": "tx-tec-28-025-c2",
+      "source": "TX-S13",
+      "pinpoint": "§28.025(c)(2)",
+      "quote": "the student successfully completes an individualized education program developed under Section 29.005."
+    },
+    {
+      "id": "tx-tec-28-0258-a",
+      "source": "TX-S13",
+      "pinpoint": "§28.0258(a)",
+      "quote": "This section applies only to an 11th or 12th grade student who has failed to comply with the end-of-course assessment instrument performance requirements under Section 39.025 for not more than two courses."
+    },
+    {
+      "id": "tx-tec-39-023-c",
+      "source": "TX-S17",
+      "pinpoint": "§39.023(c)",
+      "quote": "The agency shall also adopt or develop end-of-course assessment instruments for secondary-level courses in Algebra I, biology, English I, and United States history"
+    },
+    {
+      "id": "tx-tec-39-025-a",
+      "source": "TX-S17",
+      "pinpoint": "§39.025(a)",
+      "quote": "A student is required to achieve a scale score that indicates satisfactory performance, as determined by the commissioner under Section 39.0241(a), on each end-of-course assessment instrument administered to the student."
+    }
+  ],
+  "state": "TX",
+  "kind": "graduation",
+  "ruleSets": [
+    {
+      "id": "tx.fhsp.grad",
+      "state": "TX",
+      "kind": "state_graduation",
+      "title": "Texas Foundation High School Program",
+      "issuer": { "kind": "state", "name": "Texas" },
+      "plainSummary": "Texas students graduate under the Foundation High School Program: at least 22 credits in set subjects, end-of-course exams and a few forms. Most students also earn an endorsement (26 credits). Students who started 9th grade in 2026-27 or later take personal financial literacy as part of social studies.",
+      "strength": "required",
+      "strengthCite": "tx-74-12-a",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": {  },
+      "variants": [
+        {
+          "id": "tx.fhsp.grad.pre2026",
+          "cohort": { "to": 2025 },
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "ela",
+              "label": "English language arts",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "ela.1",
+                  "label": "English I",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.9", "ela.esol"] }],
+                  "cite": ["tx-74-12-b1", "tx-74-12-b1-esol"]
+                },
+                {
+                  "id": "ela.2",
+                  "label": "English II",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.10", "ela.esol"] }],
+                  "cite": ["tx-74-12-b1", "tx-74-12-b1-esol"]
+                },
+                {
+                  "id": "ela.3",
+                  "label": "English III (or AP or IB English)",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.11"] }, { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] }],
+                  "cite": ["tx-74-12-b1-third"]
+                },
+                {
+                  "id": "ela.4",
+                  "label": "A 4th English credit",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    {
+                      "types": ["ela.12", "ela.creative_writing", "ela.research", "ela.humanities", "ela.debate", "ela.journalism", "ela.speech", "ela.professional_comm", "ela.college_prep"]
+                    },
+                    { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] },
+                    { "subjects": ["english"], "levels": ["dual_enrollment"], "exclude": ["ela.ms", "ela.9", "ela.10"] }
+                  ],
+                  "cite": ["tx-74-12-b1-fourth", "tx-74-12-b1-fourth-list", "tx-74-12-b1-fourth-list-2"],
+                  "note": "English IV, or a listed advanced English class such as creative writing, debate, journalism or AP English."
+                }
+              ],
+              "area": "english"
+            },
+            {
+              "id": "math",
+              "label": "Math",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "math.alg1",
+                  "label": "Algebra I",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg1"] }],
+                  "cite": ["tx-74-12-b2"]
+                },
+                {
+                  "id": "math.geom",
+                  "label": "Geometry",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.geom"] }],
+                  "cite": ["tx-74-12-b2"]
+                },
+                {
+                  "id": "math.third",
+                  "label": "A 3rd math credit",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    {
+                      "types": ["math.applied.models", "math.applied.technical", "cte.digital_electronics", "math.applied.finance", "cte.accounting", "cte.robotics"]
+                    },
+                    {
+                      "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                    },
+                    { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                    { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                    { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+                  ],
+                  "cite": ["tx-74-12-b2a", "tx-74-12-b2a-2", "tx-74-12-b2b", "tx-74-12-b2b-2"],
+                  "note": "Algebra II, precalculus, statistics or another listed class, or an applied class such as Mathematical Models with Applications. Applied classes count here but not as the 4th math for an endorsement or the Distinguished Level of Achievement."
+                }
+              ],
+              "area": "math"
+            },
+            {
+              "id": "sci",
+              "label": "Science",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "sci.bio",
+                  "label": "Biology",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.bio"] }],
+                  "cite": ["tx-74-12-b3"]
+                },
+                {
+                  "id": "sci.physical",
+                  "label": "IPC, chemistry or physics",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "types": ["sci.ipc", "sci.chem", "sci.phys", "sci.phys_eng"] },
+                    { "types": ["sci.chem2", "sci.phys2"], "levels": ["ap", "ib"] }
+                  ],
+                  "cite": ["tx-74-12-b3a"]
+                },
+                {
+                  "id": "sci.third",
+                  "label": "A 3rd lab science",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    {
+                      "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                    },
+                    { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                    { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+                  ],
+                  "cite": ["tx-74-12-b3b", "tx-74-12-b3b-2", "tx-74-12-b3b-3"]
+                }
+              ],
+              "area": "science"
+            },
+            {
+              "id": "ss",
+              "label": "Social studies",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "ss.us_hist",
+                  "label": "U.S. history",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ss.us_hist"] }],
+                  "cite": ["tx-74-12-b4", "tx-74-12-b4e"]
+                },
+                {
+                  "id": "ss.us_gov",
+                  "label": "U.S. government",
+                  "kind": "credits",
+                  "units": 2,
+                  "select": [{ "types": ["ss.us_gov"] }],
+                  "cite": ["tx-74-12-b4a", "tx-74-12-b4e"]
+                },
+                {
+                  "id": "ss.econ",
+                  "label": "Economics (or personal financial literacy and economics)",
+                  "kind": "credits",
+                  "units": 2,
+                  "select": [{ "types": ["ss.econ", "ss.pfl_econ"] }],
+                  "cite": ["tx-74-12-b4d", "tx-74-12-b4e"]
+                },
+                {
+                  "id": "ss.world",
+                  "label": "World history or world geography",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ss.world_hist", "ss.world_geo"] }],
+                  "cite": ["tx-74-12-b4d-ii", "tx-74-12-b4e"]
+                }
+              ],
+              "area": "social_studies"
+            },
+            {
+              "id": "lote",
+              "label": "Languages other than English",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "lote.same",
+                  "label": "Two levels of the same language",
+                  "kind": "same_language",
+                  "levels": 2,
+                  "cite": ["tx-74-12-b5"]
+                },
+                {
+                  "id": "lote.cs",
+                  "label": "Two computer programming credits",
+                  "kind": "credits",
+                  "units": 8,
+                  "select": [
+                    { "types": ["cs.prog1", "cs.prog2", "cs.advanced"] },
+                    { "types": ["cs.principles"], "levels": ["ap"] }
+                  ],
+                  "cite": ["tx-74-12-b5-cs"]
+                },
+                {
+                  "id": "lote.apcsa",
+                  "label": "AP Computer Science A (also a math credit) plus one more programming credit",
+                  "kind": "all",
+                  "of": [
+                    {
+                      "id": "lote.apcsa.shared",
+                      "label": "AP Computer Science A or IB Computer Science HL",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["cs.prog2"], "levels": ["ap", "ib"] }],
+                      "cite": ["tx-74-11-n"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "lote.apcsa.more",
+                      "label": "One more computer programming credit",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["cs.prog1", "cs.advanced"] }, { "types": ["cs.principles"], "levels": ["ap"] }],
+                      "cite": ["tx-74-12-b5-cs"]
+                    }
+                  ]
+                }
+              ],
+              "area": "world_language"
+            },
+            {
+              "id": "pe",
+              "label": "Physical education",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["pe.general", "pe.fitness", "pe.skills", "pe.lifetime", "pe.athletics", "pe.other", "other.jrotc"]
+                }
+              ],
+              "cite": ["tx-74-12-b6", "tx-74-12-b6c"],
+              "area": "health_pe",
+              "note": "By district policy, athletics, JROTC, marching band, drill team or cheerleading can earn this credit."
+            },
+            {
+              "id": "arts",
+              "label": "Fine arts",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }, { "types": ["cte.floral_design"] }],
+              "cite": ["tx-74-12-b7", "tx-74-12-b7-2"],
+              "area": "arts"
+            },
+            {
+              "id": "electives",
+              "label": "Electives",
+              "kind": "remaining_electives",
+              "units": 20,
+              "cite": ["tx-74-12-c"],
+              "area": "electives"
+            },
+            {
+              "id": "total",
+              "label": "Total credits",
+              "kind": "total_credits",
+              "units": 88,
+              "source": "state",
+              "cite": ["tx-74-12-a"]
+            }
+          ],
+          "checks": [
+            {
+              "id": "tx.fhsp.no-endorsement",
+              "kind": "no_endorsement_after",
+              "grade": 10,
+              "needs": "parent_written_permission",
+              "cite": ["tx-74-11-f", "tx-74-11-f2"]
+            }
+          ],
+          "conditions": [
+            {
+              "id": "eoc",
+              "label": "Pass the state end-of-course exams in Algebra I, Biology, English I and U.S. History",
+              "kind": "exam",
+              "cite": ["tx-74-11-a2", "tx-tec-39-023-c", "tx-tec-39-025-a"]
+            },
+            {
+              "id": "fafsa",
+              "label": "Submit a FAFSA or TASFA in 12th grade (or an opt-out form)",
+              "kind": "form",
+              "cite": ["tx-74-11-b", "tx-74-11-b1"]
+            },
+            {
+              "id": "direct-admission",
+              "label": "Choose whether the state may share your records for direct college admission",
+              "kind": "form",
+              "cite": ["tx-74-11-c"]
+            },
+            {
+              "id": "speech",
+              "label": "Show speaking and listening skills, in 8th grade or later",
+              "kind": "other",
+              "cite": ["tx-74-11-a3"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "tx.fhsp.phys-pfe",
+              "text": "Physics and Physics for Engineering can't both count toward your science credits.",
+              "cite": ["tx-74-12-b3c"]
+            },
+            {
+              "id": "tx.fhsp.apcsa",
+              "text": "AP Computer Science A (or IB Computer Science HL) counts as both a math credit and a language credit. Ask your counselor how your school records it.",
+              "cite": ["tx-74-11-n"]
+            },
+            {
+              "id": "tx.fhsp.dual",
+              "text": "Dual credit classes that go beyond the matching high school class can meet graduation and endorsement requirements.",
+              "cite": ["tx-74-11-j"]
+            },
+            {
+              "id": "tx.fhsp.every-other-year",
+              "text": "A class required for graduation only has to be taught once every two school years, so check when your school offers each one.",
+              "cite": ["tx-74-3-b5"]
+            },
+            {
+              "id": "tx.fhsp.eoc-committee",
+              "text": "An 11th or 12th grader who hasn't passed up to two end-of-course exams may still graduate through an individual graduation committee. Students in special education can also graduate by completing their IEP.",
+              "cite": ["tx-tec-28-0258-a", "tx-tec-28-025-c2"]
+            },
+            {
+              "id": "tx.fhsp.endorsement",
+              "text": "You name the endorsement you plan to earn when you start 9th grade, and you can switch at any time.",
+              "cite": ["tx-74-13-a", "tx-74-13-b"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "tx.fhsp.eoc-schedule",
+              "text": "A 2025 law changed which end-of-course exams are required; when that fully takes effect wasn't confirmed. Ask your counselor which exams you need."
+            },
+            {
+              "id": "tx.fhsp.district-total",
+              "text": "Some districts require more than 22 credits. Ask your counselor for your district's total."
+            }
+          ]
+        },
+        {
+          "id": "tx.fhsp.grad.2026",
+          "cohort": { "from": 2026 },
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "ela",
+              "label": "English language arts",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "ela.1",
+                  "label": "English I",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.9", "ela.esol"] }],
+                  "cite": ["tx-74-12-b1", "tx-74-12-b1-esol"]
+                },
+                {
+                  "id": "ela.2",
+                  "label": "English II",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.10", "ela.esol"] }],
+                  "cite": ["tx-74-12-b1", "tx-74-12-b1-esol"]
+                },
+                {
+                  "id": "ela.3",
+                  "label": "English III (or AP or IB English)",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.11"] }, { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] }],
+                  "cite": ["tx-74-12-b1-third"]
+                },
+                {
+                  "id": "ela.4",
+                  "label": "A 4th English credit",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    {
+                      "types": ["ela.12", "ela.creative_writing", "ela.research", "ela.humanities", "ela.debate", "ela.journalism", "ela.speech", "ela.professional_comm", "ela.college_prep"]
+                    },
+                    { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] },
+                    { "subjects": ["english"], "levels": ["dual_enrollment"], "exclude": ["ela.ms", "ela.9", "ela.10"] }
+                  ],
+                  "cite": ["tx-74-12-b1-fourth", "tx-74-12-b1-fourth-list", "tx-74-12-b1-fourth-list-2"],
+                  "note": "English IV, or a listed advanced English class such as creative writing, debate, journalism or AP English."
+                }
+              ],
+              "area": "english"
+            },
+            {
+              "id": "math",
+              "label": "Math",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "math.alg1",
+                  "label": "Algebra I",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg1"] }],
+                  "cite": ["tx-74-12-b2"]
+                },
+                {
+                  "id": "math.geom",
+                  "label": "Geometry",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.geom"] }],
+                  "cite": ["tx-74-12-b2"]
+                },
+                {
+                  "id": "math.third",
+                  "label": "A 3rd math credit",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    {
+                      "types": ["math.applied.models", "math.applied.technical", "cte.digital_electronics", "math.applied.finance", "cte.accounting", "cte.robotics"]
+                    },
+                    {
+                      "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
+                    },
+                    { "subjects": ["math"], "levels": ["ap", "ib"], "exclude": ["math.ms", "math.alg1", "math.geom"] },
+                    { "types": ["cs.prog2"], "levels": ["ap", "ib"] },
+                    { "capabilities": ["advanced_math_after_alg2"], "levels": ["dual_enrollment"] }
+                  ],
+                  "cite": ["tx-74-12-b2a", "tx-74-12-b2a-2", "tx-74-12-b2b", "tx-74-12-b2b-2"],
+                  "note": "Algebra II, precalculus, statistics or another listed class, or an applied class such as Mathematical Models with Applications. Applied classes count here but not as the 4th math for an endorsement or the Distinguished Level of Achievement."
+                }
+              ],
+              "area": "math"
+            },
+            {
+              "id": "sci",
+              "label": "Science",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "sci.bio",
+                  "label": "Biology",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.bio"] }],
+                  "cite": ["tx-74-12-b3"]
+                },
+                {
+                  "id": "sci.physical",
+                  "label": "IPC, chemistry or physics",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "types": ["sci.ipc", "sci.chem", "sci.phys", "sci.phys_eng"] },
+                    { "types": ["sci.chem2", "sci.phys2"], "levels": ["ap", "ib"] }
+                  ],
+                  "cite": ["tx-74-12-b3a"]
+                },
+                {
+                  "id": "sci.third",
+                  "label": "A 3rd lab science",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    {
+                      "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                    },
+                    { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
+                    { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
+                  ],
+                  "cite": ["tx-74-12-b3b", "tx-74-12-b3b-2", "tx-74-12-b3b-3"]
+                }
+              ],
+              "area": "science"
+            },
+            {
+              "id": "ss",
+              "label": "Social studies",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "ss.us_hist",
+                  "label": "U.S. history",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ss.us_hist"] }],
+                  "cite": ["tx-74-12-b4", "tx-74-12-b4e"]
+                },
+                {
+                  "id": "ss.us_gov",
+                  "label": "U.S. government",
+                  "kind": "credits",
+                  "units": 2,
+                  "select": [{ "types": ["ss.us_gov"] }],
+                  "cite": ["tx-74-12-b4a", "tx-74-12-b4e"]
+                },
+                {
+                  "id": "ss.pfl",
+                  "label": "Personal financial literacy",
+                  "kind": "credits",
+                  "units": 2,
+                  "select": [{ "types": ["ss.pfl", "ss.pfl_econ"] }],
+                  "cite": ["tx-74-12-b4c"]
+                },
+                {
+                  "id": "ss.world_or_econ",
+                  "label": "World history, world geography or economics",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "types": ["ss.world_hist", "ss.world_geo"] },
+                    { "types": ["ss.econ"], "levels": ["ap", "dual_enrollment"] }
+                  ],
+                  "cite": ["tx-74-12-b4c-ii", "tx-tea-2026-econ", "tx-tea-2026-econ-2033", "tx-74-12-b4e"],
+                  "note": "The new Foundations in Economics class won't be in classrooms until 2033-34. Until then, AP Microeconomics and AP Macroeconomics, or dual credit economics, can meet the economics choice."
+                }
+              ],
+              "area": "social_studies"
+            },
+            {
+              "id": "lote",
+              "label": "Languages other than English",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "lote.same",
+                  "label": "Two levels of the same language",
+                  "kind": "same_language",
+                  "levels": 2,
+                  "cite": ["tx-74-12-b5"]
+                },
+                {
+                  "id": "lote.cs",
+                  "label": "Two computer programming credits",
+                  "kind": "credits",
+                  "units": 8,
+                  "select": [
+                    { "types": ["cs.prog1", "cs.prog2", "cs.advanced"] },
+                    { "types": ["cs.principles"], "levels": ["ap"] }
+                  ],
+                  "cite": ["tx-74-12-b5-cs"]
+                },
+                {
+                  "id": "lote.apcsa",
+                  "label": "AP Computer Science A (also a math credit) plus one more programming credit",
+                  "kind": "all",
+                  "of": [
+                    {
+                      "id": "lote.apcsa.shared",
+                      "label": "AP Computer Science A or IB Computer Science HL",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["cs.prog2"], "levels": ["ap", "ib"] }],
+                      "cite": ["tx-74-11-n"],
+                      "shareable": true
+                    },
+                    {
+                      "id": "lote.apcsa.more",
+                      "label": "One more computer programming credit",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["cs.prog1", "cs.advanced"] }, { "types": ["cs.principles"], "levels": ["ap"] }],
+                      "cite": ["tx-74-12-b5-cs"]
+                    }
+                  ]
+                }
+              ],
+              "area": "world_language"
+            },
+            {
+              "id": "pe",
+              "label": "Physical education",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["pe.general", "pe.fitness", "pe.skills", "pe.lifetime", "pe.athletics", "pe.other", "other.jrotc"]
+                }
+              ],
+              "cite": ["tx-74-12-b6", "tx-74-12-b6c"],
+              "area": "health_pe",
+              "note": "By district policy, athletics, JROTC, marching band, drill team or cheerleading can earn this credit."
+            },
+            {
+              "id": "arts",
+              "label": "Fine arts",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }, { "types": ["cte.floral_design"] }],
+              "cite": ["tx-74-12-b7", "tx-74-12-b7-2"],
+              "area": "arts"
+            },
+            {
+              "id": "electives",
+              "label": "Electives",
+              "kind": "remaining_electives",
+              "units": 20,
+              "cite": ["tx-74-12-c"],
+              "area": "electives"
+            },
+            {
+              "id": "total",
+              "label": "Total credits",
+              "kind": "total_credits",
+              "units": 88,
+              "source": "state",
+              "cite": ["tx-74-12-a"]
+            }
+          ],
+          "checks": [
+            {
+              "id": "tx.fhsp.no-endorsement",
+              "kind": "no_endorsement_after",
+              "grade": 10,
+              "needs": "parent_written_permission",
+              "cite": ["tx-74-11-f", "tx-74-11-f2"]
+            }
+          ],
+          "conditions": [
+            {
+              "id": "eoc",
+              "label": "Pass the state end-of-course exams in Algebra I, Biology, English I and U.S. History",
+              "kind": "exam",
+              "cite": ["tx-74-11-a2", "tx-tec-39-023-c", "tx-tec-39-025-a"]
+            },
+            {
+              "id": "fafsa",
+              "label": "Submit a FAFSA or TASFA in 12th grade (or an opt-out form)",
+              "kind": "form",
+              "cite": ["tx-74-11-b", "tx-74-11-b1"]
+            },
+            {
+              "id": "direct-admission",
+              "label": "Choose whether the state may share your records for direct college admission",
+              "kind": "form",
+              "cite": ["tx-74-11-c"]
+            },
+            {
+              "id": "speech",
+              "label": "Show speaking and listening skills, in 8th grade or later",
+              "kind": "other",
+              "cite": ["tx-74-11-a3"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "tx.fhsp.phys-pfe",
+              "text": "Physics and Physics for Engineering can't both count toward your science credits.",
+              "cite": ["tx-74-12-b3c"]
+            },
+            {
+              "id": "tx.fhsp.apcsa",
+              "text": "AP Computer Science A (or IB Computer Science HL) counts as both a math credit and a language credit. Ask your counselor how your school records it.",
+              "cite": ["tx-74-11-n"]
+            },
+            {
+              "id": "tx.fhsp.dual",
+              "text": "Dual credit classes that go beyond the matching high school class can meet graduation and endorsement requirements.",
+              "cite": ["tx-74-11-j"]
+            },
+            {
+              "id": "tx.fhsp.every-other-year",
+              "text": "A class required for graduation only has to be taught once every two school years, so check when your school offers each one.",
+              "cite": ["tx-74-3-b5"]
+            },
+            {
+              "id": "tx.fhsp.eoc-committee",
+              "text": "An 11th or 12th grader who hasn't passed up to two end-of-course exams may still graduate through an individual graduation committee. Students in special education can also graduate by completing their IEP.",
+              "cite": ["tx-tec-28-0258-a", "tx-tec-28-025-c2"]
+            },
+            {
+              "id": "tx.fhsp.endorsement",
+              "text": "You name the endorsement you plan to earn when you start 9th grade, and you can switch at any time.",
+              "cite": ["tx-74-13-a", "tx-74-13-b"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "tx.fhsp.eoc-schedule",
+              "text": "A 2025 law changed which end-of-course exams are required; when that fully takes effect wasn't confirmed. Ask your counselor which exams you need."
+            },
+            {
+              "id": "tx.fhsp.district-total",
+              "text": "Some districts require more than 22 credits. Ask your counselor for your district's total."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

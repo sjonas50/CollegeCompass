@@ -7,7 +7,7 @@
 // Ids are permanent (student_plan_prefs.targets stores them). `number` is the row number in the
 // research table, kept for traceability. What each family recommends (math target, sciences,
 // "rigor first" subjects, CTE pathways, published gates, cautions) is reviewed content in
-// src/content/major-prep/families.json (schema: content-schema.ts), not code.
+// src/content/planner/major-prep/families.json (schema: content-schema.ts), not code.
 // ---------------------------------------------------------------------------
 
 export const MAJOR_FAMILIES = [
@@ -129,7 +129,7 @@ export const MATH_TARGET_DEFS: Record<MathTarget, MathTargetDef> = {
 // CIP routing (research-majorprep.md §2, "CIP routing rules"): an ordered list; the first rule
 // with a matching prefix wins; a code no rule matches gets no family (the general college-prep
 // checklist, with no family claim). The rules themselves are reviewed content in
-// src/content/major-prep/cip-routing.json (schema: content-schema.ts).
+// src/content/planner/major-prep/cip-routing.json (schema: content-schema.ts).
 // ---------------------------------------------------------------------------
 
 /**

@@ -1,7 +1,7 @@
 import type { CourseStatus, CourseSubject, CourseTerm } from "@/db/schema";
 import type { LetterGrade } from "@/lib/courses/catalog";
 import type { IsoDate, PlannerState, SchoolGrade, SchoolYear } from "./common";
-import type { FactsFile, GapOptionKind, GenericCatalogFile, MajorFamiliesFile } from "./content-types";
+import type { FactsFile, GapOptionKind, GenericCatalogFile, MajorFamiliesFile, RigorFile } from "./content-types";
 import type { CourseTypeSource } from "./course-type-guess";
 import type { CourseTypeId, CourseTypeLevel, CteCluster, LanguageCode } from "./course-types";
 import type { FamilyId } from "./families";
@@ -96,6 +96,8 @@ export type PlannerContent = {
   genericCatalog: GenericCatalogFile;
   facts: FactsFile;
   families: MajorFamiliesFile | null;
+  /** Rigor tiers and guardrails (major-prep/rigor.json); optional so older fixtures still type-check. */
+  rigor?: RigorFile | null;
 };
 
 // Student -----------------------------------------------------------------------

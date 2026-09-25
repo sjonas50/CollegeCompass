@@ -4,12 +4,13 @@ import {
   parseFactsFile,
   parseGenericCatalogFile,
   parseMajorFamiliesFile,
+  parseRigorFile,
   parseRuleFile,
   type ParseResult,
 } from "./content-schema";
-import type { CipRoutingFile, FactsFile, GenericCatalogFile, MajorFamiliesFile } from "./content-types";
+import type { CipRoutingFile, FactsFile, GenericCatalogFile, MajorFamiliesFile, RigorFile } from "./content-types";
 import { getCourseType } from "./course-types";
-import type { PlannerContent } from "./engine-io";
+import { type PlannerContent, RIGOR_TIERS } from "./engine-io";
 import { FAMILY_IDS } from "./families";
 import { contentFingerprint } from "./review";
 import { type ContentHeader, type Req, RULE_FILE_HOLDS, type RuleFile, type RuleSet, type Variant } from "./rules";
@@ -24,11 +25,15 @@ import { type ContentHeader, type Req, RULE_FILE_HOLDS, type RuleFile, type Rule
 // valid and don't overlap; state graduation covers the classes of 2027-2034 (or labels them
 // projected); at most 256 alternatives per variant; `choose` asks for no more than it lists;
 // counselor-reviewed files match their fingerprint; generic catalog levels exist for the type;
-// the families file has all 32 families; CIP routing has no rule hidden by an earlier one.
+// the families file has all 32 families; CIP routing has no rule hidden by an earlier one;
+// information cards sit only in admissions and aid files with unique ids; family gates name rule
+// sets that exist; the rigor file has one entry per tier, in order.
 //
-// Left for `npm run check:rules` (needs the network or the database): source links still load
-// and quotes still appear; every UNITID exists in `colleges`; every CIP prefix exists in `majors`;
-// rendered strength labels match; golden plans.
+// `npm run check:rules` (scripts/check-rules.ts, content-check.ts) adds what needs files, the
+// network or the database: quotes against saved source copies (and live pages with --live),
+// every statement cited with an https source, strength words backed by their quotes, UNITIDs in
+// `colleges`, CIP prefixes in `majors`, staleness warnings and a diff summary. Golden plans belong
+// to the engine.
 // ---------------------------------------------------------------------------
 
 /** The most alternatives one variant may expand into (design §5.4). */
@@ -52,6 +57,7 @@ export type RawContent = {
   facts: LabeledRaw[];
   families?: LabeledRaw;
   cipRouting?: LabeledRaw;
+  rigor?: LabeledRaw;
 };
 
 export type ValidatedContent = {
@@ -60,6 +66,7 @@ export type ValidatedContent = {
   facts: FactsFile[];
   families: MajorFamiliesFile | null;
   cipRouting: CipRoutingFile | null;
+  rigor: RigorFile | null;
 };
 
 export type ValidationResult =
@@ -237,8 +244,15 @@ function checkRuleFiles(files: { file: RuleFile; label: string }[], issues: stri
   const ruleSetIds = new Set(ruleSets.map((r) => r.id));
   const variantById = new Map(variants.map((v) => [v.id, v]));
 
+  const cards = files.flatMap(({ file }) => file.infoCards ?? []);
+  for (const d of duplicates(cards.map((c) => c.id))) issues.push(`information card id "${d}" is used twice.`);
+
   for (const { file, label } of files) {
-    checkHeader(file, label, file.ruleSets.flatMap(citedIds), issues, warnings);
+    const cardCites = (file.infoCards ?? []).flatMap((c) => c.cite);
+    checkHeader(file, label, [...file.ruleSets.flatMap(citedIds), ...cardCites], issues, warnings);
+    if (file.infoCards && file.kind !== "admissions" && file.kind !== "aid") {
+      issues.push(`${label}: information cards belong in admissions or aid files, not a ${file.kind} file.`);
+    }
     for (const rs of file.ruleSets) {
       checkRuleSet(rs, file, label, issues);
       for (const v of rs.variants) {
@@ -283,6 +297,26 @@ function checkFamilies(file: MajorFamiliesFile, label: string, issues: string[],
   for (const id of FAMILY_IDS) if (!ids.includes(id)) issues.push(`${label}: family "${id}" is missing (all 32 are required).`);
 }
 
+function checkRigor(file: RigorFile, label: string, issues: string[], warnings: string[]) {
+  const cited = [...file.tiers, ...file.raises, ...file.guardrails].flatMap((x) => x.cite);
+  checkHeader(file, label, cited, issues, warnings);
+  const tiers = file.tiers.map((t) => t.id);
+  if (tiers.join(",") !== RIGOR_TIERS.join(",")) {
+    issues.push(`${label}: tiers must be exactly ${RIGOR_TIERS.join(", ")}, in that order (found ${tiers.join(", ")}).`);
+  }
+  for (const d of duplicates([...file.raises.map((r) => r.id), ...file.guardrails.map((g) => g.id)])) {
+    issues.push(`${label}: id "${d}" is used twice.`);
+  }
+}
+
+function checkFamilyGates(families: MajorFamiliesFile, label: string, ruleSetIds: Set<string>, issues: string[]) {
+  for (const f of families.families) {
+    for (const g of f.gates) {
+      if (g.ruleSetId && !ruleSetIds.has(g.ruleSetId)) issues.push(`${label} ${f.id} ${g.id}: names unknown rule set "${g.ruleSetId}".`);
+    }
+  }
+}
+
 function checkCipRouting(file: CipRoutingFile, label: string, issues: string[], warnings: string[]) {
   checkHeader(file, label, [], issues, warnings);
   const earlier: string[] = [];
@@ -316,17 +350,26 @@ export function validateContent(raw: RawContent): ValidationResult {
   const routing = raw.cipRouting
     ? collect([{ label: raw.cipRouting.label, result: parseCipRoutingFile(raw.cipRouting.raw, raw.cipRouting.label) }], issues)
     : [];
+  const rigor = raw.rigor ? collect([{ label: raw.rigor.label, result: parseRigorFile(raw.rigor.raw, raw.rigor.label) }], issues) : [];
 
-  const headers = [...rules, ...catalogs, ...facts, ...families, ...routing].map(({ file }) => file.id);
+  const headers = [...rules, ...catalogs, ...facts, ...families, ...routing, ...rigor].map(({ file }) => file.id);
   for (const d of duplicates(headers)) issues.push(`content file id "${d}" is used twice.`);
   for (const d of duplicates(catalogs.map(({ file }) => file.state))) issues.push(`two generic catalogs for ${d}.`);
   for (const d of duplicates(facts.map(({ file }) => file.state))) issues.push(`two facts files for ${d}.`);
 
   checkRuleFiles(rules, issues, warnings);
   for (const { file, label } of catalogs) checkGenericCatalog(file, label, issues, warnings);
-  for (const { file, label } of facts) checkHeader(file, label, [...file.options, ...file.middleSchoolMath].flatMap((o) => o.cite), issues, warnings);
+  for (const { file, label } of facts) {
+    checkHeader(file, label, [...file.options, ...file.middleSchoolMath, ...(file.terms ?? [])].flatMap((o) => o.cite), issues, warnings);
+    for (const d of duplicates((file.terms ?? []).map((t) => t.id))) issues.push(`${label}: term id "${d}" is used twice.`);
+  }
   for (const { file, label } of families) checkFamilies(file, label, issues, warnings);
   for (const { file, label } of routing) checkCipRouting(file, label, issues, warnings);
+  for (const { file, label } of rigor) checkRigor(file, label, issues, warnings);
+  if (rules.length) {
+    const ruleSetIds = new Set(rules.flatMap(({ file }) => file.ruleSets.map((r) => r.id)));
+    for (const { file, label } of families) checkFamilyGates(file, label, ruleSetIds, issues);
+  }
 
   if (issues.length) return { ok: false, issues, warnings };
   return {
@@ -338,6 +381,7 @@ export function validateContent(raw: RawContent): ValidationResult {
       facts: facts.map(({ file }) => file),
       families: families[0]?.file ?? null,
       cipRouting: routing[0]?.file ?? null,
+      rigor: rigor[0]?.file ?? null,
     },
   };
 }
@@ -354,5 +398,5 @@ export function contentForState(content: ValidatedContent, state: PlannerState):
   const genericCatalog = content.genericCatalogs.find((f) => f.state === state);
   const facts = content.facts.find((f) => f.state === state);
   if (!genericCatalog || !facts) return null;
-  return { rules: content.rules.filter((f) => f.state === state), genericCatalog, facts, families: content.families };
+  return { rules: content.rules.filter((f) => f.state === state), genericCatalog, facts, families: content.families, rigor: content.rigor };
 }

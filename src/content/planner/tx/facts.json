@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "tx.facts",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "TX-S1": {
+      "title": "19 TAC Chapter 74, Subchapter B, Graduation Requirements (August 2026 update)",
+      "url": "https://tea.texas.gov/laws-and-rules/sboe-rules-tac/sboe-tac-currently-effect/ch074b.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S13": {
+      "title": "Texas Education Code, Chapter 28",
+      "url": "https://statutes.capitol.texas.gov/Docs/ED/htm/ED.28.htm",
+      "publisher": "Texas Legislature",
+      "kind": "statute",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S3": {
+      "title": "19 TAC Chapter 74, Subchapter C, Other Provisions (§§74.24, 74.26)",
+      "url": "https://tea.texas.gov/laws-and-rules/sboe-rules-tac/sboe-tac-currently-effect/ch074c.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S31": {
+      "title": "Financial Aid for Swift Transfer (FAST)",
+      "url": "https://www.highered.texas.gov/student-financial-aid-programs/fast/",
+      "publisher": "Texas Higher Education Coordinating Board",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "tx-74-11-j",
+      "source": "TX-S1",
+      "pinpoint": "§74.11(j)",
+      "quote": "Courses offered for dual credit … that provide advanced academic instruction beyond, or in greater depth than, the essential knowledge and skills for the equivalent high school course required for graduation may satisfy graduation requirements"
+    },
+    {
+      "id": "tx-74-24-a1",
+      "source": "TX-S3",
+      "pinpoint": "§74.24(a)(1)",
+      "quote": "A school district must provide at least one window to test between January 1 and March 31, one window to test between April 1 and June 30, one window to test between July 1 and September 30, and one window to test between October 1 and December 31 annually"
+    },
+    {
+      "id": "tx-74-24-a3",
+      "source": "TX-S3",
+      "pinpoint": "§74.24(a)(3)",
+      "quote": "A school district shall not charge for an examination for acceleration for each primary school grade level or for credit for secondary school academic subjects."
+    },
+    {
+      "id": "tx-74-26-b",
+      "source": "TX-S3",
+      "pinpoint": "§74.26(b)",
+      "quote": "Districts may offer courses designated for Grades 9-12 (refer to §74.11 of this title (relating to High School Graduation Requirements)) in earlier grade levels."
+    },
+    {
+      "id": "tx-tec-28-009-a",
+      "source": "TX-S13",
+      "pinpoint": "§28.009(a)",
+      "quote": "Each school district shall implement a program under which students may earn the equivalent of at least 12 semester credit hours of college credit in high school."
+    },
+    {
+      "id": "tx-tec-28-025-b6",
+      "source": "TX-S13",
+      "pinpoint": "§28.025(b-6)",
+      "quote": "A school district may allow a student to enroll concurrently in Algebra I and geometry."
+    },
+    {
+      "id": "tx-tec-28-029-a",
+      "source": "TX-S13",
+      "pinpoint": "§28.029(a)",
+      "quote": "each school district and open-enrollment charter school shall develop an advanced mathematics program for middle school students that is designed to enable those students to enroll in Algebra I in eighth grade."
+    },
+    {
+      "id": "tx-tec-28-029-b",
+      "source": "TX-S13",
+      "pinpoint": "§28.029(b)",
+      "quote": "a school district or open-enrollment charter school shall automatically enroll in an advanced mathematics course each sixth grade student who performed in the top 40 percent on:"
+    },
+    {
+      "id": "tx-tec-28-029-b-measures",
+      "source": "TX-S13",
+      "pinpoint": "§28.029(b)(1)-(2)",
+      "quote": "(1) the fifth grade mathematics assessment instrument administered under Section 39.023(a); or (2) a local measure that includes the student's fifth grade class ranking or a demonstrated proficiency in the student's fifth grade mathematics coursework."
+    },
+    {
+      "id": "tx-tec-28-029-c",
+      "source": "TX-S13",
+      "pinpoint": "§28.029(c)",
+      "quote": "The parent or guardian of a student described by Subsection (b) may opt the student out of automatic enrollment under that subsection."
+    },
+    {
+      "id": "tx-thecb-fast",
+      "source": "TX-S31",
+      "quote": "Students are eligible to enroll at no cost to the student in a dual credit course under the FAST program if they are:"
+    }
+  ],
+  "state": "TX",
+  "options": [
+    {
+      "kind": "double_up",
+      "types": ["math.alg1", "math.geom"],
+      "note": "Your district may let you take Algebra I and Geometry in the same year.",
+      "cite": ["tx-tec-28-025-b6"]
+    },
+    {
+      "kind": "college_credit",
+      "programName": "Dual credit",
+      "note": "Every Texas district must offer a way to earn at least 12 college credit hours in high school. Dual credit may cost money; at colleges in the state's FAST program it's free for some students.",
+      "cite": ["tx-tec-28-009-a", "tx-thecb-fast", "tx-74-11-j"]
+    },
+    {
+      "kind": "credit_by_exam",
+      "programName": "Credit by examination",
+      "note": "Your district offers free credit-by-exam tests for academic subjects at least four times a year.",
+      "cite": ["tx-74-24-a3", "tx-74-24-a1"]
+    }
+  ],
+  "middleSchoolMath": [
+    {
+      "text": "Texas districts run an advanced math program so students can take Algebra I in 8th grade. Sixth graders who performed in the top 40 percent on the 5th grade math test or a local measure are enrolled automatically, and parents may opt out.",
+      "cite": ["tx-tec-28-029-a", "tx-tec-28-029-b", "tx-tec-28-029-b-measures", "tx-tec-28-029-c"]
+    },
+    {
+      "text": "High school classes taken in middle school, like Algebra I in 8th grade, can earn high school credit.",
+      "cite": ["tx-74-26-b"]
+    }
+  ],
+  "terms": [
+    {
+      "id": "tx.term.dual-credit",
+      "term": "Dual credit",
+      "meaning": "Texas's name for college classes you take in high school for both high school and college credit.",
+      "cite": ["tx-74-11-j", "tx-tec-28-009-a"]
+    }
+  ]
+}

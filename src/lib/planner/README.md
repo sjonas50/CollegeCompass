@@ -20,6 +20,12 @@ proof-of-concept decisions override the design where they differ; see the end of
 | `cohort.ts` | `deriveCohort` (grade-9 entry year, class year, grade-7 entry year), `cohortValue` |
 | `copy.ts` | Fixed wording: draft notice, the IEP/504/English-learner note, Texas Algebra II wording, status labels |
 | `fixtures.ts` | Tiny made-up content and a `PlannerInput` for tests (not real quotes; never copy into content) |
+| `content.ts` | Loads and validates the real content in `src/content/planner/` at import; `plannerContentFor(state)`, review notices, staleness, college lookups, CIP routing |
+| `content-files.ts` | The list of content files (the loader and `check:rules` share it) |
+| `content-check.ts` | The checks behind `npm run check:rules`: citation coverage, strength words, saved-copy quotes, staleness warnings, the diff summary |
+| `quotes.ts` | Comparing a quote with its source text (spacing, punctuation and case ignored; "…" for left-out words) |
+| `routing.ts` | North-star careers to family targets through the CIP rules (pure) |
+| `north-stars.ts` | `northStarFamilyTargets(db, userId)`: the student's north stars, routed |
 
 ## Conventions
 
@@ -54,9 +60,9 @@ reachable, and the coverage list for UT, TN, TX and the 32 families).
 
 ## Rule language (`rules.ts`)
 
-Content lives in `src/content/course-rules/{ut,tn,tx}/{graduation,options,admissions,aid}.json`
+Content lives in `src/content/planner/{ut,tn,tx}/{graduation,options,admissions,aid}.json`
 (one `RuleFile` each), plus `generic-catalog.json` and `facts.json` per state, and
-`src/content/major-prep/{families,cip-routing}.json`. Every file has `id`, `updated`,
+`src/content/planner/major-prep/{families,cip-routing,rigor}.json` (see the README there). Every file has `id`, `updated`,
 `verifiedForSchoolYear`, `review` (`draft` or `counselor-reviewed` with the fingerprint), `sources`
 and `citations` (verbatim quotes of 300 characters or fewer).
 
@@ -82,10 +88,22 @@ and `citations` (verbatim quotes of 300 characters or fewer).
   Projected, never Done. Past `verifiedForSchoolYear` (July 31 after it) or `recheckBy`, lines read
   "being re-checked" and can't show Done. Dates never fail CI.
 
+- **Information cards** (`RuleFile.infoCards`, admissions and aid files only): colleges with no
+  course pattern to check, test policies, and scholarships decided by GPA and tests (Tennessee
+  HOPE). Never evaluated; `confidence` other than "verified" reads as "Ask your counselor". A rule
+  file may hold only cards.
+- **State terms** (`FactsFile.terms`): what the state calls college credit, and words that mean
+  something else there (Utah's "dual enrollment"). They agree with `STATE_LEVEL_LABELS`.
+- **Rigor** (`RigorFile`, major-prep/rigor.json): one entry per `RIGOR_TIERS` tier (label, how it's
+  detected, what those colleges expect, the planner's target, the earliest grade for college-level
+  suggestions, how many rigor-first subjects), tier raises for program gates, and the guardrails.
+
 The validator (`validate.ts`) parses every file and checks references, duplicate ids, cohort
 overlaps and coverage for the classes of 2027-2034, the 256-alternative cap, review fingerprints,
-the 32 families, and hidden CIP routing rules. Left for a `check:rules` script: source links and
-quotes still live, UNITIDs in `colleges`, CIP prefixes in `majors`.
+the 32 families, hidden CIP routing rules, card placement, rigor tier order and family gates that
+name rule sets. `npm run check:rules` adds citation coverage, strength words, quotes against saved
+source copies (and live pages with `--live`), UNITIDs and CIP prefixes against the database,
+staleness warnings and a diff summary.
 
 ## Engine contract (`engine-io.ts`)
 
@@ -122,11 +140,10 @@ names for the student's own screens only; AI-facing summaries use `typeId`, `gen
 - `graduationPageTitle` names the free "What <state> requires to graduate" pages.
 - There's no Spanish in this phase, and no change to the counselor prompts.
 
-## Open points for the content builder
+## Decisions made by the content build
 
-- The research routes CIP 51.1105 (pre-nursing) to pre-health (rule 5, "51.11") while listing it
-  under nursing. Decide, and order the rules to match.
-- Utah "Modern Mathematics" (an applied math option) has no specific type yet; it maps to
-  `math.other` until someone confirms what it covers.
+- CIP 51.1105 (pre-nursing) routes to nursing, in a rule placed before pre-health's 51.11.
+- Utah "Modern Mathematics" isn't mapped to `math.other` (that would let any unknown math class
+  count); the Secondary Math III opt-out requirement names it in a note instead.
 - Where AP classes map (first-year type or the `*2` second-year type) follows the prerequisite the
   school prints; see each type's `note`.

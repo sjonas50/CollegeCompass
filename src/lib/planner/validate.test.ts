@@ -6,6 +6,7 @@ import {
   fixtureGenericCatalog,
   fixtureGraduationFile,
   fixtureOptionsFile,
+  fixtureRigorFile,
 } from "./fixtures";
 import { contentFingerprint } from "./review";
 import type { CreditsReq, Req, RuleFile } from "./rules";
@@ -21,7 +22,7 @@ import {
 
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
-function raw(overrides: Partial<{ graduation: unknown; options: unknown; catalog: unknown; facts: unknown; families: unknown; routing: unknown }> = {}): RawContent {
+function raw(overrides: Partial<{ graduation: unknown; options: unknown; catalog: unknown; facts: unknown; families: unknown; routing: unknown; rigor: unknown }> = {}): RawContent {
   return {
     rules: [
       { label: "tx/graduation.json", raw: overrides.graduation ?? fixtureGraduationFile() },
@@ -31,6 +32,7 @@ function raw(overrides: Partial<{ graduation: unknown; options: unknown; catalog
     facts: [{ label: "tx/facts.json", raw: overrides.facts ?? fixtureFacts() }],
     families: { label: "major-prep/families.json", raw: overrides.families ?? fixtureFamiliesFile() },
     cipRouting: { label: "major-prep/cip-routing.json", raw: overrides.routing ?? fixtureCipRouting() },
+    rigor: { label: "major-prep/rigor.json", raw: overrides.rigor ?? fixtureRigorFile() },
   };
 }
 
@@ -187,5 +189,42 @@ describe("loadContent and contentForState", () => {
     expect(tx?.rules.map((f) => f.id)).toEqual(["fixture.tx.graduation", "fixture.tx.options"]);
     expect(tx?.genericCatalog.state).toBe("TX");
     expect(contentForState(content, "UT")).toBeNull();
+  });
+});
+
+describe("information cards, terms, rigor and family gates", () => {
+  const card = { id: "fx.card", title: "Fixture College", text: "Open admission.", confidence: "verified" as const, cite: ["fx-grad"] };
+
+  it("keeps information cards in admissions and aid files, with unique ids", () => {
+    const grad = { ...copy(fixtureGraduationFile()), infoCards: [card] };
+    expect(issues(raw({ graduation: grad }))).toMatch(/information cards belong in admissions or aid files, not a graduation file/);
+    const options = { ...copy(fixtureOptionsFile()), kind: "admissions" as const, ruleSets: [], infoCards: [card], citations: [{ id: "fx-grad", source: "FX-1", quote: "Fixture: a student must earn these credits to graduate." }] };
+    const aid = { ...copy(fixtureGraduationFile()), id: "fixture.tx.aid", kind: "aid" as const, ruleSets: [], infoCards: [card] };
+    const found = issues({ ...raw({ options }), rules: [...raw({ options }).rules, { label: "tx/aid.json", raw: aid }] });
+    expect(found).toMatch(/information card id "fx\.card" is used twice/);
+  });
+
+  it("counts state-term citations as used and rejects duplicate terms", () => {
+    const facts = copy(fixtureFacts());
+    facts.citations.push({ id: "fx-term", source: "FX-1", quote: "Fixture term." });
+    const term = { id: "fx.term", term: "Dual credit", meaning: "College classes in high school.", cite: ["fx-term"] };
+    expect(validateContent(raw({ facts: { ...facts, terms: [term] } }))).toMatchObject({ ok: true, warnings: [] });
+    expect(issues(raw({ facts: { ...facts, terms: [term, term] } }))).toMatch(/term id "fx\.term" is used twice/);
+  });
+
+  it("needs the four rigor tiers in order", () => {
+    const rigor = copy(fixtureRigorFile());
+    rigor.tiers.reverse();
+    expect(issues(raw({ rigor }))).toMatch(/tiers must be exactly open, admits_most, admits_fewer_than_half, very_selective/);
+  });
+
+  it("checks that family gates name rule sets that exist", () => {
+    const families = copy(fixtureFamiliesFile());
+    families.families[0].gates.push({ id: "fx-gate", text: "Fixture gate.", evidence: "A", ruleSetId: "fx.nope", cite: ["fx-prep"] });
+    expect(issues(raw({ families }))).toMatch(/engineering fx-gate: names unknown rule set "fx\.nope"/);
+  });
+
+  it("passes rigor to the engine with the state's files", () => {
+    expect(contentForState(loadContent(raw()), "TX")?.rigor?.tiers).toHaveLength(4);
   });
 });

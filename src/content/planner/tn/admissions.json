@@ -1,0 +1,988 @@
+{
+  "schemaVersion": 1,
+  "id": "tn.admissions",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "TN-S13": {
+      "title": "Freshman Requirements",
+      "url": "https://www.utc.edu/enrollment-management-and-student-affairs/admissions/freshman-requirements",
+      "publisher": "University of Tennessee at Chattanooga",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S15": {
+      "title": "First-Year Admission",
+      "url": "https://www.utm.edu/admissions-and-aid/first-year.php",
+      "publisher": "University of Tennessee at Martin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S16": {
+      "title": "Admissions",
+      "url": "https://utsouthern.edu/admissions/",
+      "publisher": "University of Tennessee Southern",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S17": {
+      "title": "Undergraduate Admissions",
+      "url": "https://www.mtsu.edu/how-to-apply/undergraduate/",
+      "publisher": "Middle Tennessee State University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S19": {
+      "title": "Freshman Admission Requirements",
+      "url": "https://www.etsu.edu/admissions/apply/freshman/requirements.php",
+      "publisher": "East Tennessee State University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S22": {
+      "title": "Freshman Admissions",
+      "url": "https://www.tntech.edu/admissions/freshmen/index.php",
+      "publisher": "Tennessee Technological University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S24": {
+      "title": "Admission Requirements",
+      "url": "https://www.memphis.edu/admissions/basics/requirements.php",
+      "publisher": "University of Memphis",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S27": {
+      "title": "Admission Requirements",
+      "url": "https://www.apsu.edu/admissions/admission-requirements.php",
+      "publisher": "Austin Peay State University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S28": {
+      "title": "Freshman Admissions",
+      "url": "https://www.tnstate.edu/admissions/freshmen.aspx",
+      "publisher": "Tennessee State University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S8": {
+      "title": "First-Year Student Admission Requirements",
+      "url": "https://admissions.utk.edu/undergraduate-application/first-year-student/",
+      "publisher": "University of Tennessee, Knoxville",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "tn-apsu-deficiencies",
+      "source": "TN-S27",
+      "pinpoint": "Exception",
+      "quote": "No more than two high school unit deficiencies"
+    },
+    {
+      "id": "tn-apsu-prep",
+      "source": "TN-S27",
+      "pinpoint": "Regular Admission (Unconditional)",
+      "quote": "Satisfactory completion of all college prep courses including U.S. History"
+    },
+    {
+      "id": "tn-apsu-prep-required",
+      "source": "TN-S27",
+      "pinpoint": "Regular Admission (Opportunity)",
+      "quote": "Satisfactory completion of all college prep courses including U.S. History required by TBR"
+    },
+    { "id": "tn-etsu-gpa", "source": "TN-S19", "quote": "Minimum grade point average of 2.3 on a 4.0 scale" },
+    { "id": "tn-etsu-tests", "source": "TN-S19", "quote": "Test scores are not required for admission." },
+    {
+      "id": "tn-memphis-minimum",
+      "source": "TN-S24",
+      "pinpoint": "High School Curriculum Requirements",
+      "quote": "The following list of high school units represents the minimum high school academic requirements:"
+    },
+    {
+      "id": "tn-memphis-tests",
+      "source": "TN-S24",
+      "pinpoint": "Standardized Exam Requirements",
+      "quote": "All students must provide a standardized exam result (typically the ACT and/or SAT) in support of their application for admission."
+    },
+    {
+      "id": "tn-memphis-units-1",
+      "source": "TN-S24",
+      "pinpoint": "High School Curriculum Requirements",
+      "quote": "English (4 units) Visual and/or Performing Arts (1 unit) Mathematics (3 units: Algebra I, Geometry, and Algebra II at least)"
+    },
+    {
+      "id": "tn-memphis-units-2",
+      "source": "TN-S24",
+      "pinpoint": "High School Curriculum Requirements",
+      "quote": "Natural and Physical Science (2 units: at least one unit of Biology, Chemistry or Physics) Social Studies (2 units: 1 unit must be US History) Foreign Language (2 units: of the same language)"
+    },
+    {
+      "id": "tn-mtsu-guaranteed",
+      "source": "TN-S17",
+      "quote": "For guaranteed admission, applicants must have completed the recommended college preparatory courses and must present one of the following:"
+    },
+    {
+      "id": "tn-mtsu-suggested",
+      "source": "TN-S17",
+      "quote": "The student’s diploma/ transcript must reflect a distribution of college preparatory courses, similar to the core elements of the Tennessee High School Diploma. A sample of suggested courses and units are displayed below:"
+    },
+    {
+      "id": "tn-mtsu-tests",
+      "source": "TN-S17",
+      "quote": "All students are required to submit an ACT/SAT score to be considered for admissions"
+    },
+    {
+      "id": "tn-mtsu-units",
+      "source": "TN-S17",
+      "quote": "Suggested Academic Units: Subject units English 4 Algebra (Algebra I & Algebra II) 2 Geometry or higher 1 Additional unit of math 1 Natural Science 3 United States History 1 European; World History; or World Geography 1 Single Foreign Language 2 Visual & Performing Arts 1"
+    },
+    {
+      "id": "tn-tsu-requirements",
+      "source": "TN-S28",
+      "quote": "applicants must have a minimum weighted GPA of 2.5 and an ACT score of at least 19 or an SAT score of 990. TSU is not test-optional and we do not accept super scores."
+    },
+    { "id": "tn-ttu-gpa", "source": "TN-S22", "quote": "3.0 high school GPA" },
+    {
+      "id": "tn-ttu-tests",
+      "source": "TN-S22",
+      "quote": "If submitted, test scores such as the ACT and SAT will be considered."
+    },
+    {
+      "id": "tn-utc-must-meet",
+      "source": "TN-S13",
+      "quote": "First-time freshmen must meet unit requirements with completed high school courses."
+    },
+    {
+      "id": "tn-utc-tests",
+      "source": "TN-S13",
+      "quote": "All applicants are required to submit ACT/SAT scores, regardless of class rank or GPA."
+    },
+    {
+      "id": "tn-utc-units-1",
+      "source": "TN-S13",
+      "quote": "4 units of English 4 units of math (algebra I and II, geometry and 1 additional unit) 3 units of lab science 1 unit of European history, world history, or world geography"
+    },
+    {
+      "id": "tn-utc-units-2",
+      "source": "TN-S13",
+      "quote": "2 units of the same foreign language (Sign Language courses included) 1 unit of visual or performing art 1 unit of American history"
+    },
+    {
+      "id": "tn-utk-core-list",
+      "source": "TN-S8",
+      "pinpoint": "Core Academic Subjects",
+      "quote": "4 English 4 Math (algebra, geometry, trigonometry, calculus, statistics, or other advanced math) 3 Science (biology, chemistry, physics, or other science) 1 American history 1 European history, world history, or world geography 2 Single foreign language (or ASL) 1 Visual or performing arts"
+    },
+    {
+      "id": "tn-utk-core-strongly-encouraged",
+      "source": "TN-S8",
+      "pinpoint": "How does UT calculate my UT Core GPA?",
+      "quote": "Completion of all sixteen core courses is not required for admission but strongly encouraged."
+    },
+    {
+      "id": "tn-utk-core-weights",
+      "source": "TN-S8",
+      "pinpoint": "How does UT calculate my UT Core GPA?",
+      "quote": "your GPA will be weighted by UT to reflect honors courses (0.5 quality points added), Advanced Placement (AP), Cambridge AS and A Level, International Baccalaureate (IB), and dual enrollment courses (1.0 quality points added)."
+    },
+    {
+      "id": "tn-utk-guarantee",
+      "source": "TN-S8",
+      "quote": "Score a 24+ ACT composite (SAT 1160+) with both a 19+ Math ACT subscore (510+ SAT Math) AND 19+ English ACT subscore (500+ SAT (ER + W)) AND"
+    },
+    {
+      "id": "tn-utk-guarantee-update",
+      "source": "TN-S8",
+      "pinpoint": "Guaranteed Admission FAQs",
+      "quote": "We are aware of the policy updates passed by the UT Board of Trustees on Tuesday, June 25. Our team is working on updates and will provide information and guidance soon."
+    },
+    {
+      "id": "tn-utk-holistic",
+      "source": "TN-S8",
+      "pinpoint": "What is holistic review?",
+      "quote": "Rigor of your high school curriculum Difficulty of senior-level coursework"
+    },
+    {
+      "id": "tn-utk-tests",
+      "source": "TN-S8",
+      "quote": "Yes, all applicants are required to provide standardized test scores on their application per UT’s test score policy."
+    },
+    {
+      "id": "tn-utm-must-meet",
+      "source": "TN-S15",
+      "quote": "First-year students must meet unit requirements with completed high school courses."
+    },
+    {
+      "id": "tn-utm-tests",
+      "source": "TN-S15",
+      "quote": "All ACT and SAT scores are super-scored when multiple tests are submitted. All applicants are required to submit ACT/SAT scores, regardless of class rank or GPA."
+    },
+    {
+      "id": "tn-utm-units-1",
+      "source": "TN-S15",
+      "quote": "English: 4 units Algebra: 2 units Advanced Math: 2 unit of geometry, trigonometry, calculus or advanced mathematics U.S. History: 1 unit Social Studies: 1 unit of world history, European history, or world geography (may be fulfilled by completing 2 one-half unit courses)"
+    },
+    {
+      "id": "tn-utm-units-2",
+      "source": "TN-S15",
+      "quote": "Science: 3 units, including biology, chemistry or physics, and a third lab course Foreign Language: 2 units in the same language Visual/Performing Arts: 1 unit of theater arts, visual arts, music theory, music history, vocal music, instrumental music or art history"
+    },
+    {
+      "id": "tn-uts-criteria",
+      "source": "TN-S16",
+      "quote": "Criteria 1 – A student must have a composite score of 17 or above on the American College Test (ACT) or a 920 SAT (ERW+M) and a cumulative high school grade point average of 3.0 or above on a 4.0 scale."
+    }
+  ],
+  "state": "TN",
+  "kind": "admissions",
+  "ruleSets": [
+    {
+      "id": "utk.core16",
+      "state": "TN",
+      "kind": "college_admission",
+      "title": "UT Knoxville's 16 core courses",
+      "issuer": { "kind": "college", "name": "UT Knoxville" },
+      "plainSummary": "UT Knoxville strongly encourages 16 core courses: 4 English, 4 math, 3 science, 1 American history, 1 European or world history or world geography, 2 of one foreign language (or ASL) and 1 visual or performing art. They aren't required for admission. We use them when you haven't picked a Tennessee college.",
+      "strength": "strongly_encouraged",
+      "strengthCite": "tn-utk-core-strongly-encouraged",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "appliesWhen": { "colleges": [221759], "stateDefault": true },
+      "variants": [
+        {
+          "id": "utk.core16.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "english",
+              "label": "4 English",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+              "cite": ["tn-utk-core-list"],
+              "area": "english"
+            },
+            {
+              "id": "math",
+              "label": "4 math (algebra, geometry, trigonometry, calculus, statistics or other advanced math)",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["math"], "exclude": ["math.ms"] }],
+              "cite": ["tn-utk-core-list"],
+              "area": "math"
+            },
+            {
+              "id": "science",
+              "label": "3 science (biology, chemistry, physics or other science)",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["science"], "exclude": ["sci.ms"] }],
+              "cite": ["tn-utk-core-list"],
+              "area": "science"
+            },
+            {
+              "id": "us-history",
+              "label": "1 American history",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["ss.us_hist"] }],
+              "cite": ["tn-utk-core-list"],
+              "area": "social_studies"
+            },
+            {
+              "id": "world",
+              "label": "1 European history, world history or world geography",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["ss.world_hist", "ss.world_geo"] }],
+              "cite": ["tn-utk-core-list"],
+              "area": "social_studies"
+            },
+            {
+              "id": "language",
+              "label": "2 of one foreign language (or ASL)",
+              "kind": "same_language",
+              "levels": 2,
+              "cite": ["tn-utk-core-list"],
+              "area": "world_language"
+            },
+            {
+              "id": "arts",
+              "label": "1 visual or performing art",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+              "cite": ["tn-utk-core-list"],
+              "area": "arts"
+            }
+          ],
+          "conditions": [
+            {
+              "id": "tests",
+              "label": "Send ACT or SAT scores (required)",
+              "kind": "test_score",
+              "cite": ["tn-utk-tests"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "core-gpa",
+              "text": "UT Knoxville figures a core GPA from these courses, adding 0.5 for honors and 1.0 for AP, IB, Cambridge and dual enrollment.",
+              "cite": ["tn-utk-core-weights"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "utc.units",
+      "state": "TN",
+      "kind": "college_admission",
+      "title": "UT Chattanooga required high school units",
+      "issuer": { "kind": "college", "name": "UT Chattanooga" },
+      "plainSummary": "UT Chattanooga requires 16 units: 4 English, 4 math (Algebra I and II, Geometry and 1 more), 3 lab science, 1 European or world history or world geography, 2 of the same foreign language (sign language counts), 1 visual or performing art and 1 American history.",
+      "strength": "required",
+      "strengthCite": "tn-utc-must-meet",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "appliesWhen": { "colleges": [221740] },
+      "variants": [
+        {
+          "id": "utc.units.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "english",
+              "label": "4 units of English",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+              "cite": ["tn-utc-units-1", "tn-utc-units-2"],
+              "area": "english"
+            },
+            {
+              "id": "math",
+              "label": "4 units of math",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "math.alg1",
+                  "label": "Algebra I",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg1", "math.int1"] }],
+                  "cite": ["tn-utc-units-1", "tn-utc-units-2"]
+                },
+                {
+                  "id": "math.alg2",
+                  "label": "Algebra II",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg2", "math.int3"] }],
+                  "cite": ["tn-utc-units-1", "tn-utc-units-2"]
+                },
+                {
+                  "id": "math.geom",
+                  "label": "Geometry",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.geom", "math.int2"] }],
+                  "cite": ["tn-utc-units-1", "tn-utc-units-2"]
+                },
+                {
+                  "id": "math.four",
+                  "label": "4 math units in all",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [{ "subjects": ["math"], "exclude": ["math.ms"] }],
+                  "cite": ["tn-utc-units-1", "tn-utc-units-2"]
+                }
+              ],
+              "area": "math"
+            },
+            {
+              "id": "science",
+              "label": "3 units of lab science",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "capabilities": ["lab_science"] }],
+              "cite": ["tn-utc-units-1", "tn-utc-units-2"],
+              "area": "science"
+            },
+            {
+              "id": "world",
+              "label": "1 unit of European history, world history or world geography",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["ss.world_hist", "ss.world_geo"] }],
+              "cite": ["tn-utc-units-1", "tn-utc-units-2"],
+              "area": "social_studies"
+            },
+            {
+              "id": "language",
+              "label": "2 units of the same foreign language",
+              "kind": "same_language",
+              "levels": 2,
+              "cite": ["tn-utc-units-1", "tn-utc-units-2"],
+              "area": "world_language"
+            },
+            {
+              "id": "arts",
+              "label": "1 unit of visual or performing art",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+              "cite": ["tn-utc-units-1", "tn-utc-units-2"],
+              "area": "arts"
+            },
+            {
+              "id": "us-history",
+              "label": "1 unit of American history",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["ss.us_hist"] }],
+              "cite": ["tn-utc-units-1", "tn-utc-units-2"],
+              "area": "social_studies"
+            }
+          ],
+          "conditions": [
+            {
+              "id": "tests",
+              "label": "Send ACT or SAT scores (required)",
+              "kind": "test_score",
+              "cite": ["tn-utc-tests"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "utm.units",
+      "state": "TN",
+      "kind": "college_admission",
+      "title": "UT Martin required high school units",
+      "issuer": { "kind": "college", "name": "UT Martin" },
+      "plainSummary": "UT Martin requires 4 English, 2 algebra, 2 advanced math, 1 U.S. history, 1 world or European history or world geography, 3 science (including biology, chemistry or physics, and a third lab course), 2 of the same foreign language, and 1 named visual or performing art.",
+      "strength": "required",
+      "strengthCite": "tn-utm-must-meet",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "appliesWhen": { "colleges": [221768] },
+      "variants": [
+        {
+          "id": "utm.units.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "english",
+              "label": "English: 4 units",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+              "cite": ["tn-utm-units-1"],
+              "area": "english"
+            },
+            {
+              "id": "algebra",
+              "label": "Algebra: 2 units",
+              "kind": "credits",
+              "units": 8,
+              "select": [{ "types": ["math.alg1", "math.alg2", "math.int1", "math.int3"] }],
+              "cite": ["tn-utm-units-1"],
+              "area": "math"
+            },
+            {
+              "id": "advanced-math",
+              "label": "Advanced math: 2 units (geometry, trigonometry, calculus or advanced math)",
+              "kind": "credits",
+              "units": 8,
+              "select": [{ "types": ["math.geom", "math.int2"] }, { "capabilities": ["advanced_math_after_alg2"] }],
+              "cite": ["tn-utm-units-1"],
+              "area": "math"
+            },
+            {
+              "id": "us-history",
+              "label": "U.S. History: 1 unit",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["ss.us_hist"] }],
+              "cite": ["tn-utm-units-1"],
+              "area": "social_studies"
+            },
+            {
+              "id": "world",
+              "label": "World history, European history or world geography: 1 unit",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["ss.world_hist", "ss.world_geo"] }],
+              "cite": ["tn-utm-units-1"],
+              "area": "social_studies"
+            },
+            {
+              "id": "science",
+              "label": "Science: 3 units",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "science.core",
+                  "label": "Biology, chemistry or physics",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.bio", "sci.chem", "sci.phys"] }],
+                  "cite": ["tn-utm-units-2"]
+                },
+                {
+                  "id": "science.lab",
+                  "label": "3 units including a third lab course",
+                  "kind": "credits",
+                  "units": 12,
+                  "select": [{ "capabilities": ["lab_science"] }],
+                  "cite": ["tn-utm-units-2"]
+                }
+              ],
+              "area": "science"
+            },
+            {
+              "id": "language",
+              "label": "Foreign language: 2 units in the same language",
+              "kind": "same_language",
+              "levels": 2,
+              "cite": ["tn-utm-units-2"],
+              "area": "world_language"
+            },
+            {
+              "id": "arts",
+              "label": "Visual/performing arts: 1 unit (theater, visual arts, music theory or history, vocal or instrumental music, art history)",
+              "kind": "credits",
+              "units": 4,
+              "select": [
+                {
+                  "types": ["arts.theatre", "arts.visual", "arts.music_theory", "arts.music", "arts.ensemble", "arts.art_history"]
+                }
+              ],
+              "cite": ["tn-utm-units-2"],
+              "area": "arts"
+            }
+          ],
+          "conditions": [
+            {
+              "id": "tests",
+              "label": "Send ACT or SAT scores (required)",
+              "kind": "test_score",
+              "cite": ["tn-utm-tests"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mtsu.suggested",
+      "state": "TN",
+      "kind": "college_admission",
+      "title": "MTSU suggested college-prep units",
+      "issuer": { "kind": "college", "name": "MTSU" },
+      "plainSummary": "MTSU lists suggested units: 4 English, 2 algebra, 1 geometry or higher, 1 more math, 3 natural science, 1 U.S. history, 1 European or world history or world geography, 2 of one foreign language and 1 visual or performing art. Its page also says guaranteed admission needs the recommended college-prep courses, so ask your counselor how strict this is.",
+      "strength": "recommended",
+      "strengthCite": "tn-mtsu-suggested",
+      "confidence": "conflicting",
+      "cohortKey": "class_year",
+      "appliesWhen": { "colleges": [220978] },
+      "variants": [
+        {
+          "id": "mtsu.suggested.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "english",
+              "label": "English: 4",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+              "cite": ["tn-mtsu-units"],
+              "area": "english"
+            },
+            {
+              "id": "algebra",
+              "label": "Algebra I and Algebra II",
+              "kind": "credits",
+              "units": 8,
+              "select": [{ "types": ["math.alg1", "math.alg2", "math.int1", "math.int3"] }],
+              "cite": ["tn-mtsu-units"],
+              "area": "math"
+            },
+            {
+              "id": "geometry",
+              "label": "Geometry or higher",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["math.geom", "math.int2"] }, { "capabilities": ["advanced_math_after_alg2"] }],
+              "cite": ["tn-mtsu-units"],
+              "area": "math"
+            },
+            {
+              "id": "math.more",
+              "label": "4 math units in all",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["math"], "exclude": ["math.ms"] }],
+              "cite": ["tn-mtsu-units"],
+              "area": "math"
+            },
+            {
+              "id": "science",
+              "label": "Natural science: 3",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["science"], "exclude": ["sci.ms"] }],
+              "cite": ["tn-mtsu-units"],
+              "area": "science"
+            },
+            {
+              "id": "us-history",
+              "label": "United States history: 1",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["ss.us_hist"] }],
+              "cite": ["tn-mtsu-units"],
+              "area": "social_studies"
+            },
+            {
+              "id": "world",
+              "label": "European history, world history or world geography: 1",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["ss.world_hist", "ss.world_geo"] }],
+              "cite": ["tn-mtsu-units"],
+              "area": "social_studies"
+            },
+            {
+              "id": "language",
+              "label": "Single foreign language: 2",
+              "kind": "same_language",
+              "levels": 2,
+              "cite": ["tn-mtsu-units"],
+              "area": "world_language"
+            },
+            {
+              "id": "arts",
+              "label": "Visual and performing arts: 1",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+              "cite": ["tn-mtsu-units"],
+              "area": "arts"
+            }
+          ],
+          "conditions": [
+            {
+              "id": "tests",
+              "label": "Send an ACT or SAT score (required)",
+              "kind": "test_score",
+              "cite": ["tn-mtsu-tests"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "guaranteed",
+              "text": "MTSU says applicants must have completed the recommended college-prep courses for guaranteed admission.",
+              "cite": ["tn-mtsu-guaranteed"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "memphis.units",
+      "state": "TN",
+      "kind": "college_admission",
+      "title": "University of Memphis high school units",
+      "issuer": { "kind": "college", "name": "the University of Memphis" },
+      "plainSummary": "The University of Memphis admissions page lists minimum units: 4 English, 1 visual or performing art, 3 math (at least Algebra I, Geometry and Algebra II), 2 science (one of biology, chemistry or physics), 2 social studies (one U.S. history) and 2 of the same foreign language. Its catalog words this more loosely, so ask your counselor.",
+      "strength": "required",
+      "strengthCite": "tn-memphis-minimum",
+      "confidence": "conflicting",
+      "cohortKey": "class_year",
+      "appliesWhen": { "colleges": [220862] },
+      "variants": [
+        {
+          "id": "memphis.units.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "english",
+              "label": "English (4 units)",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+              "cite": ["tn-memphis-units-1", "tn-memphis-units-2"],
+              "area": "english"
+            },
+            {
+              "id": "arts",
+              "label": "Visual and/or performing arts (1 unit)",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+              "cite": ["tn-memphis-units-1", "tn-memphis-units-2"],
+              "area": "arts"
+            },
+            {
+              "id": "math",
+              "label": "Mathematics (3 units)",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "math.alg1",
+                  "label": "Algebra I",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg1", "math.int1"] }],
+                  "cite": ["tn-memphis-units-1", "tn-memphis-units-2"]
+                },
+                {
+                  "id": "math.geom",
+                  "label": "Geometry",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.geom", "math.int2"] }],
+                  "cite": ["tn-memphis-units-1", "tn-memphis-units-2"]
+                },
+                {
+                  "id": "math.alg2",
+                  "label": "Algebra II",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg2", "math.int3"] }],
+                  "cite": ["tn-memphis-units-1", "tn-memphis-units-2"]
+                }
+              ],
+              "area": "math"
+            },
+            {
+              "id": "science",
+              "label": "Natural and physical science (2 units)",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "science.core",
+                  "label": "Biology, chemistry or physics",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.bio", "sci.chem", "sci.phys"] }],
+                  "cite": ["tn-memphis-units-1", "tn-memphis-units-2"]
+                },
+                {
+                  "id": "science.two",
+                  "label": "2 science units in all",
+                  "kind": "credits",
+                  "units": 8,
+                  "select": [{ "subjects": ["science"], "exclude": ["sci.ms"] }],
+                  "cite": ["tn-memphis-units-1", "tn-memphis-units-2"]
+                }
+              ],
+              "area": "science"
+            },
+            {
+              "id": "social",
+              "label": "Social studies (2 units)",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "social.us",
+                  "label": "U.S. history",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ss.us_hist"] }],
+                  "cite": ["tn-memphis-units-1", "tn-memphis-units-2"]
+                },
+                {
+                  "id": "social.two",
+                  "label": "2 social studies units in all",
+                  "kind": "credits",
+                  "units": 8,
+                  "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+                  "cite": ["tn-memphis-units-1", "tn-memphis-units-2"]
+                }
+              ],
+              "area": "social_studies"
+            },
+            {
+              "id": "language",
+              "label": "Foreign language (2 units of the same language)",
+              "kind": "same_language",
+              "levels": 2,
+              "cite": ["tn-memphis-units-1", "tn-memphis-units-2"],
+              "area": "world_language"
+            }
+          ],
+          "conditions": [
+            {
+              "id": "tests",
+              "label": "Send an ACT or SAT score (required)",
+              "kind": "test_score",
+              "cite": ["tn-memphis-tests"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "catalog-wording",
+              "text": "The university's 2026-27 catalog describes these units as strongly considered rather than required (except U.S. history). Ask your counselor which applies."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apsu.prep",
+      "state": "TN",
+      "kind": "college_admission",
+      "title": "Austin Peay college-prep courses",
+      "issuer": { "kind": "college", "name": "Austin Peay" },
+      "plainSummary": "Austin Peay requires all college-prep courses, including U.S. history, but its admissions page doesn't list the courses. Ask your counselor.",
+      "strength": "required",
+      "strengthCite": "tn-apsu-prep-required",
+      "confidence": "unverified",
+      "cohortKey": "class_year",
+      "appliesWhen": { "colleges": [219602] },
+      "variants": [
+        {
+          "id": "apsu.prep.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "us-history",
+              "label": "U.S. history",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["ss.us_hist"] }],
+              "cite": ["tn-apsu-prep"],
+              "area": "social_studies"
+            }
+          ],
+          "warnings": [
+            {
+              "id": "deficiencies",
+              "text": "Austin Peay may admit students missing up to two high school units, to be made up in the first 30 college hours.",
+              "cite": ["tn-apsu-deficiencies"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "prep-list",
+              "text": "Austin Peay's list of required college-prep courses isn't on its admissions page. Ask your counselor or the university which courses it means."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "infoCards": [
+    {
+      "id": "tn.card.utk",
+      "title": "UT Knoxville",
+      "unitId": 221759,
+      "tests": "required",
+      "text": "UT Knoxville uses holistic review, including the rigor of your classes and how hard your senior year is. ACT or SAT scores are required.",
+      "confidence": "verified",
+      "cite": ["tn-utk-holistic", "tn-utk-tests"]
+    },
+    {
+      "id": "tn.card.utk-guarantee",
+      "title": "UT Knoxville in-state guaranteed admission",
+      "unitId": 221759,
+      "text": "UT Knoxville lists a guarantee for Tennessee students who apply early: an ACT of 24 or higher with math and English subscores of 19 or higher (or SAT equivalents), plus a 4.0 UT core GPA or a top-10% class rank. UT says it's updating this after a board policy change, so ask your counselor for the current rules.",
+      "confidence": "unverified",
+      "cite": ["tn-utk-guarantee", "tn-utk-guarantee-update"]
+    },
+    {
+      "id": "tn.card.utc",
+      "title": "UT Chattanooga",
+      "unitId": 221740,
+      "tests": "required",
+      "text": "UT Chattanooga requires ACT or SAT scores from every applicant, whatever their class rank or GPA.",
+      "confidence": "verified",
+      "cite": ["tn-utc-tests"]
+    },
+    {
+      "id": "tn.card.utm",
+      "title": "UT Martin",
+      "unitId": 221768,
+      "tests": "required",
+      "text": "UT Martin requires ACT or SAT scores from every applicant and superscores when you send more than one.",
+      "confidence": "verified",
+      "cite": ["tn-utm-tests"]
+    },
+    {
+      "id": "tn.card.ut-southern",
+      "title": "UT Southern",
+      "unitId": 220701,
+      "tests": "required",
+      "text": "UT Southern admits students with, for example, an ACT of 17 or higher (or SAT 920) and a 3.0 GPA. We didn't find a list of required high school units. Ask your counselor.",
+      "confidence": "unverified",
+      "cite": ["tn-uts-criteria"]
+    },
+    {
+      "id": "tn.card.mtsu",
+      "title": "Middle Tennessee State University",
+      "unitId": 220978,
+      "tests": "required",
+      "text": "MTSU requires an ACT or SAT score to be considered for admission.",
+      "confidence": "verified",
+      "cite": ["tn-mtsu-tests"]
+    },
+    {
+      "id": "tn.card.etsu",
+      "title": "East Tennessee State University",
+      "unitId": 220075,
+      "tests": "not_required",
+      "text": "ETSU's freshman requirements list a 2.3 GPA and no required high school units. Test scores aren't required for admission, but scholarships may use them.",
+      "confidence": "verified",
+      "cite": ["tn-etsu-gpa", "tn-etsu-tests"]
+    },
+    {
+      "id": "tn.card.tennessee-tech",
+      "title": "Tennessee Tech University",
+      "unitId": 221847,
+      "text": "Tennessee Tech lists a 3.0 high school GPA and considers test scores if you send them. Its catalog also asks for a spread of college-prep courses without listing them. Ask your counselor.",
+      "confidence": "unverified",
+      "cite": ["tn-ttu-gpa", "tn-ttu-tests"]
+    },
+    {
+      "id": "tn.card.memphis",
+      "title": "University of Memphis",
+      "unitId": 220862,
+      "tests": "required",
+      "text": "The University of Memphis requires an ACT or SAT result, taken within the last 5 years.",
+      "confidence": "verified",
+      "cite": ["tn-memphis-tests"]
+    },
+    {
+      "id": "tn.card.tsu",
+      "title": "Tennessee State University",
+      "unitId": 221838,
+      "tests": "required",
+      "text": "Tennessee State asks for a 2.5 weighted GPA and an ACT of 19 or SAT of 990, and isn't test-optional. Its catalog lists required college-prep units we couldn't confirm word for word. Ask your counselor.",
+      "confidence": "unverified",
+      "cite": ["tn-tsu-requirements"]
+    },
+    {
+      "id": "tn.card.apsu",
+      "title": "Austin Peay State University",
+      "unitId": 219602,
+      "text": "Austin Peay requires completing all college-prep courses, including U.S. history, but doesn't list them on its admissions page. Ask your counselor which courses it means.",
+      "confidence": "unverified",
+      "cite": ["tn-apsu-prep"]
+    }
+  ]
+}

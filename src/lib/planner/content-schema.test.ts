@@ -9,12 +9,14 @@ import {
   parseFactsFile,
   parseGenericCatalogFile,
   parseMajorFamiliesFile,
+  parseRigorFile,
   parseRuleFile,
   ReqSchema,
+  RigorFileSchema,
   RuleFileSchema,
   SelectorSchema,
 } from "./content-schema";
-import type { CipRoutingFile, FactsFile, GenericCatalogFile, MajorFamiliesFile } from "./content-types";
+import type { CipRoutingFile, FactsFile, GenericCatalogFile, MajorFamiliesFile, RigorFile } from "./content-types";
 import {
   fixtureCipRouting,
   fixtureFacts,
@@ -22,6 +24,7 @@ import {
   fixtureGenericCatalog,
   fixtureGraduationFile,
   fixtureOptionsFile,
+  fixtureRigorFile,
 } from "./fixtures";
 import type { Req, RuleFile, Selector } from "./rules";
 
@@ -44,6 +47,7 @@ describe("schema types match the hand-written contracts", () => {
     expectTypeOf<z.infer<typeof FactsFileSchema>>().branded.toEqualTypeOf<FactsFile>();
     expectTypeOf<z.infer<typeof MajorFamiliesFileSchema>>().branded.toEqualTypeOf<MajorFamiliesFile>();
     expectTypeOf<z.infer<typeof CipRoutingFileSchema>>().branded.toEqualTypeOf<CipRoutingFile>();
+    expectTypeOf<z.infer<typeof RigorFileSchema>>().branded.toEqualTypeOf<RigorFile>();
   });
 });
 
@@ -56,6 +60,7 @@ describe("parsing the tiny examples", () => {
       [fixtureFacts(), parseFactsFile],
       [fixtureFamiliesFile(), parseMajorFamiliesFile],
       [fixtureCipRouting(), parseCipRoutingFile],
+      [fixtureRigorFile(), parseRigorFile],
     ] as const) {
       const result = (parse as (raw: unknown, label: string) => { ok: boolean; value?: unknown; issues?: string[] })(copy(file), "fixture");
       expect(result.issues ?? []).toEqual([]);
@@ -141,5 +146,39 @@ describe("rejecting bad content", () => {
     routing.rules[0].match = ["51.1"];
     const routed = parseCipRoutingFile(routing, "cip-routing.json");
     expect(routed.ok ? "" : routed.issues.join("\n")).toMatch(/A CIP prefix looks like/);
+  });
+});
+
+describe("information cards, state terms and rigor", () => {
+  const card = { id: "fx.card.open", title: "Fixture College", text: "Open admission.", unitId: 123456, tests: "optional", confidence: "verified", cite: ["fx-grad"] };
+
+  it("parses a rule file that holds only information cards, but not an empty one", () => {
+    const file = { ...copy(fixtureGraduationFile()), kind: "aid", ruleSets: [], infoCards: [card] };
+    expect(parseRuleFile(file, "tn/aid.json")).toMatchObject({ ok: true });
+    const empty = { ...copy(fixtureGraduationFile()), ruleSets: [] };
+    expect(issuesFor(empty).join("\n")).toMatch(/ruleSets: A rule file needs at least one rule set or information card/);
+  });
+
+  it("checks card fields", () => {
+    const file = { ...copy(fixtureGraduationFile()), infoCards: [{ ...card, tests: "sometimes", confidence: "maybe", cite: [] }] };
+    const issues = issuesFor(file).join("\n");
+    expect(issues).toMatch(/infoCards\.0\.tests/);
+    expect(issues).toMatch(/infoCards\.0\.confidence/);
+    expect(issues).toMatch(/infoCards\.0\.cite: Cite at least one source quote/);
+  });
+
+  it("parses state terms on a facts file", () => {
+    const facts = { ...copy(fixtureFacts()), terms: [{ id: "fx.term", term: "Dual credit", meaning: "College classes in high school.", cite: ["fx-summer"] }] };
+    expect(parseFactsFile(facts, "tx/facts.json")).toMatchObject({ ok: true });
+  });
+
+  it("limits rigor-first subjects and needs a guardrail", () => {
+    const rigor = copy(fixtureRigorFile());
+    rigor.tiers[1].rigorFirstSubjects = 4;
+    rigor.guardrails = [];
+    const result = parseRigorFile(rigor, "rigor.json");
+    const issues = result.ok ? "" : result.issues.join("\n");
+    expect(issues).toMatch(/tiers\.1\.rigorFirstSubjects/);
+    expect(issues).toMatch(/guardrails/);
   });
 });
