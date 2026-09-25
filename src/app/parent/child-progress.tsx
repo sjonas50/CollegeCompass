@@ -1,7 +1,8 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { formatDate } from "@/lib/applications/dates";
 import { deadlineName, dueText } from "@/lib/applications/display";
-import { type ChildProgress, PARENT_GPA_NOTE } from "@/lib/parent-dashboard";
+import { type CareerLink, type ChildProgress, type ChildResults, PARENT_GPA_NOTE } from "@/lib/parent-dashboard";
 import { type MilestoneStatus, gradeName, monthList, schoolYearIndex } from "@/lib/roadmap";
 
 function Block({ title, className = "", children }: { title: string; className?: string; children: ReactNode }) {
@@ -56,13 +57,96 @@ function JustStarted({ name }: { name: string }) {
   );
 }
 
-/** A linked child's progress for the parent page. Progress only: never their counselor chats. */
+const careerLink = "inline-flex min-h-11 items-center underline underline-offset-2";
+
+function CareerList({ careers, ordered = false }: { careers: CareerLink[]; ordered?: boolean }) {
+  const List = ordered ? "ol" : "ul";
+  return (
+    <List className={`${ordered ? "list-decimal" : "list-disc"} pl-5`}>
+      {careers.map((c) => (
+        <li key={c.code}>
+          <Link href={`/careers/${c.code}`} className={careerLink}>
+            {c.title}
+          </Link>
+        </li>
+      ))}
+    </List>
+  );
+}
+
+function Later({ activity }: { activity: string }) {
+  return <p className="text-muted">Shows here after the {activity} activity.</p>;
+}
+
+/**
+ * What the child's activities found, for now: interests (honest when no area stands out or areas
+ * tie), the strengths that count and their top career matches. The same results a linked parent's
+ * data download holds. Never "Staying calm" (see ChildResults).
+ */
+function ChildResultsSummary({ name, results: r }: { name: string; results: ChildResults }) {
+  const noLead = r.interests?.noLead ?? false;
+  return (
+    <div className="rounded-lg border border-border p-4 sm:col-span-2">
+      <h3 className="text-sm font-medium">Results, for now</h3>
+      <p className="mt-1 text-sm text-muted">
+        What {name}&apos;s activities show so far. Interests often change in the teen years, and {name} can retake the
+        activities as they grow.
+      </p>
+      <div className="mt-3 grid gap-4 text-sm sm:grid-cols-3">
+        <div className="space-y-2">
+          <h4 className="font-medium">Interests</h4>
+          {r.interests ? <p>{r.interests.text}</p> : <Later activity="Interests" />}
+        </div>
+        <div className="space-y-2">
+          <h4 className="font-medium">Strengths</h4>
+          {!r.strengths ? (
+            <Later activity="Personality" />
+          ) : r.strengths.length ? (
+            <>
+              <p className="text-muted">Strengths {name} sees in themselves:</p>
+              <ul className="space-y-1">
+                {r.strengths.map((s) => (
+                  <li key={s.trait}>
+                    <span className="font-medium">{s.name}:</span> {s.label}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="text-muted">
+              Done. No strength stood out above the middle of the scale this time. Ask {name} what they learned about
+              themselves.
+            </p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <h4 className="font-medium">{noLead ? "Careers to explore" : "Top career matches"}</h4>
+          {r.topMatches.length ? (
+            <>
+              {noLead && <p className="text-muted">No interest area stands out yet, so these are just a place to start.</p>}
+              <CareerList careers={r.topMatches} ordered={!noLead} />
+            </>
+          ) : (
+            <Later activity="Interests" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A linked child's progress and activity results for the parent page. Never their counselor
+ * chats, the counselor's notes or safety flags.
+ */
 export function ChildProgressSummary({ name, progress: p }: { name: string; progress: ChildProgress }) {
   if (p.justStarted) return <JustStarted name={name} />;
   const assessmentsDone = p.assessments.filter((a) => a.state === "done").length;
 
   return (
     <div className="mt-4 grid gap-5 sm:grid-cols-2">
+      {p.results && <ChildResultsSummary name={name} results={p.results} />}
+
       <Block title="Discover activities">
         <p>
           {assessmentsDone} of {p.assessments.length} done
@@ -77,17 +161,14 @@ export function ChildProgressSummary({ name, progress: p }: { name: string; prog
             </li>
           ))}
         </ul>
+        {!p.results && <p className="text-muted">Results show up here once {name} finishes an activity.</p>}
       </Block>
 
       <Block title="North stars">
         {p.northStars.length ? (
           <>
             <p className="text-muted">Careers {name} is aiming for, for now:</p>
-            <ul className="list-disc pl-5">
-              {p.northStars.map((title) => (
-                <li key={title}>{title}</li>
-              ))}
-            </ul>
+            <CareerList careers={p.northStars} />
           </>
         ) : (
           <p className="text-muted">Not picked yet. After the Interests activity, {name} can choose one or two careers to aim for.</p>

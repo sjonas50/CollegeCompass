@@ -99,7 +99,7 @@ export function inviteEmail(to: string, displayName: string, link: string): Emai
       "They invited you, as their parent or guardian, to link your account to theirs.",
       "",
       "As a linked parent or guardian, you can:",
-      "- see their progress: activities, goals, roadmap, classes and college list",
+      "- see their progress and results: interest areas, strengths, top career matches, goals, roadmap, classes and college list",
       "- change their grade and their weekly reminder emails",
       "- manage your family's plan and billing",
       "- download a copy of their data, or delete their account",

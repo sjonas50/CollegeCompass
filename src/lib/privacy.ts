@@ -123,13 +123,20 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
       .select({ id: matchRuns.id, explanation: matchRuns.explanation, createdAt: matchRuns.createdAt })
       .from(matchRuns)
       .where(eq(matchRuns.userId, studentId)),
+    // Careers carry their O*NET code as well as their title, as on the parent page's career links.
     db
-      .select({ runId: careerMatches.runId, rank: careerMatches.rank, title: careerMatches.title, score: careerMatches.score })
+      .select({
+        runId: careerMatches.runId,
+        rank: careerMatches.rank,
+        occupationCode: careerMatches.occupationCode,
+        title: careerMatches.title,
+        score: careerMatches.score,
+      })
       .from(careerMatches)
       .innerJoin(matchRuns, eq(matchRuns.id, careerMatches.runId))
       .where(eq(matchRuns.userId, studentId)),
     db
-      .select({ title: northStarGoals.title, createdAt: northStarGoals.createdAt })
+      .select({ occupationCode: northStarGoals.occupationCode, title: northStarGoals.title, createdAt: northStarGoals.createdAt })
       .from(northStarGoals)
       .where(eq(northStarGoals.userId, studentId)),
   ]);

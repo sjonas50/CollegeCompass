@@ -5,7 +5,7 @@ import { getDb } from "@/db";
 import { requireFullAccess } from "@/lib/access/guard";
 import { requireUser } from "@/lib/auth/dal";
 import { addMilestoneStep, markMilestone } from "@/lib/roadmap";
-import { type AddStepError, MAX_STEPS_PER_WEEK, addStep, completeStep, removeStep, reopenStep } from "@/lib/steps";
+import { type AddStepError, MAX_STEPS_PER_WEEK, addStep, completeStep, editStep, removeStep, reopenStep } from "@/lib/steps";
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
 
@@ -13,6 +13,9 @@ export type AddStepState =
   | { ok: true }
   | { ok: false; errors?: { text?: string[] }; message?: string }
   | undefined;
+
+/** The same shape as adding: a field error for the text, or a message for the whole form. */
+export type EditStepState = AddStepState;
 
 const TRY_AGAIN = "We couldn't save that. Please try again.";
 
@@ -74,7 +77,27 @@ export async function setStepDoneAction(stepId: string, done: boolean): Promise<
   return { ok: true };
 }
 
-/** Removes an unfinished weekly step (finished ones stay, since they count as progress). */
+/**
+ * The inline "Edit" form on a weekly step (use with useFormAction): fixes the text of one of the
+ * student's own steps, with the same rules as adding one.
+ */
+export async function editStepAction(_prev: EditStepState, formData: FormData): Promise<EditStepState> {
+  const student = await requireUser(["student"]);
+  await requireFullAccess(student);
+  const res = await editStep(await getDb(), student.id, formData.get("stepId"), formData.get("stepText"));
+  if (!res.ok) {
+    return res.error === "invalid_text"
+      ? { ok: false, errors: { text: [res.message ?? ADD_STEP_MESSAGES.invalid_text] } }
+      : { ok: false, message: "We couldn't find that step. Try refreshing the page." };
+  }
+  refresh();
+  return { ok: true };
+}
+
+/**
+ * Removes a weekly step, open or finished. The card asks first for a finished one, since it stops
+ * counting toward the steps finished so far.
+ */
 export async function removeStepAction(stepId: string): Promise<ActionResult> {
   const student = await requireUser(["student"]);
   await requireFullAccess(student);

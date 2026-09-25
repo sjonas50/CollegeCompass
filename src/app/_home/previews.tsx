@@ -476,7 +476,7 @@ export function ParentPreview() {
             <LockIcon className="mt-0.5 size-4 text-accent" />
             <span>
               <span className="font-medium">Chats with the AI counselor aren&apos;t shown on this page.</span>{" "}
-              <span className="text-muted">You see progress and plans.</span>
+              <span className="text-muted">You see progress, results and plans.</span>
             </span>
           </p>
           <dl className="mt-3 divide-y divide-border text-sm">

@@ -6,8 +6,10 @@ import { addMilestoneStep, getMilestoneProgress, markMilestone, roadmapSummary }
 import type { Milestone } from "@/lib/roadmap/types";
 import {
   MAX_STEPS_PER_WEEK,
+  STEP_TEXT_MAX,
   addStep,
   completeStep,
+  editStep,
   listWeek,
   removeStep,
   reopenStep,
@@ -165,25 +167,84 @@ describe("weekly steps", () => {
     expect(await addStep(db, ana, { text: "Room again" }, { now })).toMatchObject({ ok: true });
   });
 
-  it("keeps finished steps, so removing never takes progress away", async () => {
+  it("removes finished steps too, which takes them out of the finished count", async () => {
     for (const text of ["One", "Two", "Three"]) await addStep(db, ana, { text }, { now });
     const [first, second] = await listWeek(db, ana, "2026-09-21");
     await completeStep(db, ana, first.id, now);
     await completeStep(db, ana, second.id, now);
-    const before = await stepStats(db, ana);
-    expect(before).toEqual({ stepsCompleted: 2, weeksWithProgress: 1 });
-
-    expect(await removeStep(db, ana, first.id)).toBe(false);
-    expect(await removeStep(db, ana, second.id)).toBe(false);
-    expect(await stepStats(db, ana)).toEqual(before);
-    expect(await listWeek(db, ana, "2026-09-21")).toHaveLength(3);
-    // Still a full week: the finished steps hold their places.
+    expect(await stepStats(db, ana)).toEqual({ stepsCompleted: 2, weeksWithProgress: 1 });
+    // Finished steps hold their places in a full week until they're removed.
     expect(await addStep(db, ana, { text: "Four" }, { now })).toEqual({ ok: false, error: "week_full" });
 
-    // A step checked by mistake can be un-checked, and then removed.
-    expect(await reopenStep(db, ana, first.id)).toBe(true);
+    // Only the student's own, like every other change.
+    expect(await removeStep(db, ben, first.id)).toBe(false);
+    expect(await stepStats(db, ana)).toEqual({ stepsCompleted: 2, weeksWithProgress: 1 });
+
     expect(await removeStep(db, ana, first.id)).toBe(true);
     expect(await stepStats(db, ana)).toEqual({ stepsCompleted: 1, weeksWithProgress: 1 });
+    expect((await listWeek(db, ana, "2026-09-21")).map((s) => s.text)).toEqual(["Two", "Three"]);
+    expect(await addStep(db, ana, { text: "Four" }, { now })).toMatchObject({ ok: true });
+
+    // The last finished step of a week takes that week out of the count too.
+    expect(await removeStep(db, ana, second.id)).toBe(true);
+    expect(await stepStats(db, ana)).toEqual({ stepsCompleted: 0, weeksWithProgress: 0 });
+  });
+
+  it("edits a step's text, trimmed, and changes nothing else", async () => {
+    const linked = await addStep(db, ana, { text: "Sign up for the PSAT", milestoneId: "g10-sep" }, { now, library: LIBRARY });
+    const own = await addStep(db, ana, { text: "Emial my counselor" }, { now });
+    if (!linked.ok || !own.ok) throw new Error();
+    await completeStep(db, ana, linked.step.id, now);
+
+    const fixed = await editStep(db, ana, own.step.id, "  Email my counselor  ");
+    expect(fixed).toMatchObject({ ok: true, step: { id: own.step.id, text: "Email my counselor", status: "open" } });
+    // A finished step can be fixed too, and stays finished, in its week, linked to its milestone.
+    expect(await editStep(db, ana, linked.step.id, "Sign up for the October PSAT")).toMatchObject({ ok: true });
+    const week = await listWeek(db, ana, "2026-09-21");
+    expect(week).toEqual([
+      { ...linked.step, text: "Sign up for the October PSAT", status: "done", completedAt: now },
+      { ...own.step, text: "Email my counselor" },
+    ]);
+    expect(await stepStats(db, ana)).toEqual({ stepsCompleted: 1, weeksWithProgress: 1 });
+  });
+
+  it("checks edited text the same way as a new step", async () => {
+    const res = await addStep(db, ana, { text: "Visit the library" }, { now });
+    if (!res.ok) throw new Error(res.error);
+    const id = res.step.id;
+    for (const text of ["", "   ", "x".repeat(STEP_TEXT_MAX + 1), null, 42, undefined]) {
+      const added = await addStep(db, ben, { text }, { now });
+      const edited = await editStep(db, ana, id, text);
+      expect(edited).toEqual(added);
+      expect(edited).toMatchObject({ ok: false, error: "invalid_text" });
+    }
+    expect(await editStep(db, ana, id, "   ")).toEqual({
+      ok: false,
+      error: "invalid_text",
+      message: "Write a short step, like “Ask my counselor about summer programs.”",
+    });
+    expect(await editStep(db, ana, id, "x".repeat(STEP_TEXT_MAX + 1))).toEqual({
+      ok: false,
+      error: "invalid_text",
+      message: `Keep it to ${STEP_TEXT_MAX} characters or fewer.`,
+    });
+    expect(await editStep(db, ana, id, "x".repeat(STEP_TEXT_MAX))).toMatchObject({ ok: true });
+    expect(await db.select().from(schema.weeklySteps).where(eq(schema.weeklySteps.userId, ben))).toEqual([]);
+  });
+
+  it("edits only the student's own steps", async () => {
+    const res = await addStep(db, ana, { text: "Mine" }, { now });
+    if (!res.ok) throw new Error(res.error);
+    const id = res.step.id;
+
+    expect(await editStep(db, ben, id, "Ben's now")).toEqual({ ok: false, error: "not_found" });
+    expect(await editStep(db, ana, "not-a-uuid", "Hi")).toEqual({ ok: false, error: "not_found" });
+    expect(await editStep(db, ana, null, "Hi")).toEqual({ ok: false, error: "not_found" });
+    expect(await editStep(db, ana, "00000000-0000-4000-8000-000000000000", "Hi")).toEqual({ ok: false, error: "not_found" });
+    expect((await listWeek(db, ana, "2026-09-21")).map((s) => s.text)).toEqual(["Mine"]);
+
+    await removeStep(db, ana, id);
+    expect(await editStep(db, ana, id, "Gone")).toEqual({ ok: false, error: "not_found" });
   });
 
   it("holds the limit when several adds arrive at once", async () => {

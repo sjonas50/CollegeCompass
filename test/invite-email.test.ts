@@ -76,7 +76,7 @@ describe("the invitation email", () => {
 
   it("matches what a linked parent can do and what stays private", () => {
     const { text } = inviteEmail("rosa@example.com", "Ana", LINK);
-    expect(text).toContain("see their progress: activities, goals, roadmap, classes and college list");
+    expect(text).toContain("see their progress and results: interest areas, strengths, top career matches, goals, roadmap, classes and college list");
     expect(text).toContain("change their grade and their weekly reminder emails");
     expect(text).toContain("manage your family's plan and billing");
     expect(text).toContain("download a copy of their data, or delete their account");

@@ -128,13 +128,20 @@ export function codeTieText(pattern: InterestPattern): string | null {
 const COUNT_WORDS = ["zero", "one", "two", "three", "four", "five", "six"];
 
 /**
+ * Who the sentences are about: the student reading them (the default), or a student someone else
+ * reads about, as on the parent page ({ name: "Mia", their: "their" }).
+ */
+export type Subject = { name: string; their: string };
+const STUDENT: Subject = { name: "You", their: "your" };
+
+/**
  * For a tie over the last places: "Artistic and Social stand out. Enterprising and Conventional
  * are tied after them." (or "The other four areas are tied." when that's all of them), or
  * "Realistic, Investigative, Artistic and Social are tied for your top area."
  */
-export function tiedAreasText(pattern: Extract<InterestPattern, { kind: "tied" }>): string {
+export function tiedAreasText(pattern: Extract<InterestPattern, { kind: "tied" }>, who: Subject = STUDENT): string {
   const { standOut, tied } = pattern;
-  if (standOut.length === 0) return `${areaNames(tied)} are tied for your top area.`;
+  if (standOut.length === 0) return `${areaNames(tied)} are tied for ${who.their} top area.`;
   const one = standOut.length === 1;
   const rest =
     standOut.length + tied.length === RIASEC.length
@@ -147,8 +154,8 @@ export function tiedAreasText(pattern: Extract<InterestPattern, { kind: "tied" }
  * When only one or two areas reached "Not sure": "Artistic stands out. You leaned toward disliking
  * the other five areas."
  */
-export function fewAreasText(pattern: Extract<InterestPattern, { kind: "few" }>): string {
+export function fewAreasText(pattern: Extract<InterestPattern, { kind: "few" }>, who: Subject = STUDENT): string {
   const { standOut, rest } = pattern;
   const one = standOut.length === 1;
-  return `${areaNames(standOut)} ${one ? "stands" : "stand"} out. You leaned toward disliking the other ${COUNT_WORDS[rest.length]} areas.`;
+  return `${areaNames(standOut)} ${one ? "stands" : "stand"} out. ${who.name} leaned toward disliking the other ${COUNT_WORDS[rest.length]} areas.`;
 }

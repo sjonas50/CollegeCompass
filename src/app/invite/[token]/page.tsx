@@ -27,7 +27,10 @@ function WhatLinkingMeans({ name }: { name: string }) {
     <Card>
       <h2 className="font-medium">As a linked parent or guardian, you can</h2>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-        <li>See {name}&apos;s progress: activities, goals, roadmap, classes and college list</li>
+        <li>
+          See {name}&apos;s progress and results: interest areas, strengths, top career matches, goals, roadmap, classes
+          and college list
+        </li>
         <li>Change {name}&apos;s grade and weekly reminder emails</li>
         <li>Manage your family&apos;s plan and billing</li>
         <li>Download a copy of {name}&apos;s data, or delete {name}&apos;s account</li>

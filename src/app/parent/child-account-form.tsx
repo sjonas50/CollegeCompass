@@ -66,7 +66,7 @@ export function ChildAccountForm({ consentToken }: { consentToken?: string }) {
           <FieldError id="consent-error" errors={state?.errors?.consent} />
         </div>
         <p className="text-sm text-muted">
-          If your child is 13 or older, the account is theirs. You&apos;ll see their progress and plans, but their chats
+          If your child is 13 or older, the account is theirs. You&apos;ll see their progress, results and plans, but their chats
           with our AI counselor stay private to them, and your download of their data leaves those chats out.
         </p>
         {/* Unticked by default, so a parent's own quiz (or another child's) isn't added by mistake. */}

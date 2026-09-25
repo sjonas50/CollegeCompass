@@ -101,7 +101,7 @@ describe("privacy promises", () => {
     await signIn(teen.value.userId);
     const card = await render(InviteParentCard());
     for (const promise of [
-      "see your progress: activities, goals, roadmap, classes and college list",
+      "see your progress and results: interest areas, strengths, top career matches, goals, roadmap, classes and college list",
       "change your grade and your weekly reminder emails",
       "manage your family's plan and billing",
       "download a copy of your data, or delete your account",
@@ -116,7 +116,7 @@ describe("privacy promises", () => {
     page.user = null;
     const invite = await render(InvitePage({ params: Promise.resolve({ token }), searchParams: Promise.resolve({}) } as PageProps<"/invite/[token]">));
     for (const promise of [
-      "See Ana's progress: activities, goals, roadmap, classes and college list",
+      "See Ana's progress and results: interest areas, strengths, top career matches, goals, roadmap, classes and college list",
       "Change Ana's grade and weekly reminder emails",
       "Manage your family's plan and billing",
       "Download a copy of Ana's data, or delete Ana's account",

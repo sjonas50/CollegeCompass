@@ -29,7 +29,7 @@ export async function InviteParentCard() {
         them, they can:
       </p>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
-        <li>see your progress: activities, goals, roadmap, classes and college list</li>
+        <li>see your progress and results: interest areas, strengths, top career matches, goals, roadmap, classes and college list</li>
         <li>change your grade and your weekly reminder emails</li>
         <li>manage your family&apos;s plan and billing</li>
         <li>download a copy of your data, or delete your account</li>
