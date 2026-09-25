@@ -10,7 +10,7 @@ import type { SessionUser } from "@/lib/auth/sessions";
 import InstrumentPage from "./[instrument]/page";
 import { questionRange, showFirstQuestion, showQuestion, unansweredText } from "./question-list";
 import { PageButtons, Questionnaire } from "./questionnaire";
-import { ValuesSort, rankChange, rankedName } from "./values-sort";
+import { RANKING_CLEARED, ValuesButtons, ValuesSort, focusFirstValue, rankChange, rankedName } from "./values-sort";
 
 // The activities for keyboard and screen reader users: where focus goes when a page turns, what
 // is announced, why Next is off, and how the values ranking is read out.
@@ -154,6 +154,43 @@ describe("values ranking", () => {
     }
     expect(html).toMatch(/<p class="sr-only" aria-live="polite"><\/p>/);
     expect(text(html)).toContain("Tap one again to remove it, along with any you picked after it.");
+  });
+
+  it("says the ranking is cleared on Start over, and moves focus to the first value", () => {
+    expect(RANKING_CLEARED).toBe("Your ranking is cleared. Start with what matters most.");
+    const focused: string[] = [];
+    const list = {
+      querySelector: (selector: "button") => ({ focus: () => focused.push(selector) }),
+    };
+    focusFirstValue(list);
+    expect(focused).toEqual(["button"]);
+    expect(() => focusFirstValue(null)).not.toThrow();
+    expect(() => focusFirstValue({ querySelector: () => null })).not.toThrow();
+  });
+
+  it("keeps See my results focusable while the ranking saves, so focus is still there if saving fails", () => {
+    const buttons = (props: { ranked: number; pending: boolean }) =>
+      renderToStaticMarkup(createElement(ValuesButtons, { submit: () => {}, startOver: () => {}, total: 6, ...props }));
+    const button = (html: string, label: string) => new RegExp(`<button[^>]*>${label}</button>`).exec(html)?.[0] ?? "";
+
+    const saving = buttons({ ranked: 6, pending: true });
+    expect(button(saving, "Saving…")).toContain('aria-disabled="true"');
+    // A disabled button would drop keyboard focus to the start of the page.
+    expect(button(saving, "Saving…")).not.toContain('disabled=""');
+    expect(button(saving, "Saving…")).toContain("aria-disabled:opacity-60");
+    expect(button(saving, "Start over")).toContain('disabled=""');
+
+    const ready = buttons({ ranked: 6, pending: false });
+    expect(button(ready, "See my results")).not.toMatch(/disabled="/);
+    expect(button(ready, "Start over")).not.toMatch(/disabled="/);
+    // Until every value is ranked, See my results is off.
+    expect(button(buttons({ ranked: 3, pending: false }), "See my results")).toContain('disabled=""');
+    expect(buttons({ ranked: 0, pending: false })).not.toContain("Start over");
+    // The whole activity renders the same buttons.
+    const values = WORK_VALUES.map((v) => ({ id: v, ...WORK_VALUE_INFO[v] }));
+    expect(button(renderToStaticMarkup(createElement(ValuesSort, { attemptId: "a", values })), "See my results")).toBe(
+      button(buttons({ ranked: 0, pending: false }), "See my results"),
+    );
   });
 });
 

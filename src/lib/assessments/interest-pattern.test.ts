@@ -3,8 +3,10 @@ import { describeSavedQuiz, emptySavedAssessment, topInterestsText } from "./ano
 import { INTEREST_ITEMS, type Riasec } from "./instruments";
 import {
   NOT_SURE_AREA_SCORE,
+  areaLevel,
   areaNames,
   codeTieText,
+  fewAreasText,
   interestPattern,
   isFlatProfile,
   noAreaStandsOut,
@@ -12,6 +14,7 @@ import {
   strongAreas,
   strongAreasText,
   tiedAreasText,
+  tiedBelow,
 } from "./interest-pattern";
 import { scoreInterests } from "./scoring";
 
@@ -59,15 +62,49 @@ describe("interest patterns", () => {
     // Just below "Not sure" everywhere, with a clear shape: still no lead.
     expect(NOT_SURE_AREA_SCORE).toBe(20);
     expect(interestPattern(areas({ A: 19, S: 15, E: 10 }))).toEqual({ kind: "low" });
-    // One area at "Not sure" on average is enough to stand out.
-    expect(interestPattern(areas({ C: 20 }))).toEqual({ kind: "tied", standOut: ["C"], tied: ["R", "I", "A", "S", "E"] });
-    expect(interestPattern(areas({ A: 20, S: 15, E: 10 }))).toEqual({ kind: "code", code: "ASE", ties: [] });
+    // One area at "Not sure" on average is enough to stand out, on its own.
+    expect(interestPattern(areas({ C: 20 }))).toEqual({ kind: "few", standOut: ["C"], rest: ["R", "I", "A", "S", "E"] });
+    expect(interestPattern(areas({ A: 20, S: 15, E: 10 }))).toEqual({ kind: "few", standOut: ["A"], rest: ["R", "I", "S", "E", "C"] });
     // Every answer "Strongly dislike" is about the same, and says so.
     expect(interestPattern(areas({}))).toEqual({ kind: "flat" });
     expect(noLeadReason({ kind: "flat" })).toBe("rated all six interest areas about the same");
     expect(noAreaStandsOut({ kind: "flat" })).toBe(true);
     expect(noLeadReason(interestPattern(areas({ A: 40 })))).toBeNull();
     expect(noAreaStandsOut(interestPattern(areas({ A: 40 })))).toBe(false);
+  });
+
+  it("never ranks an area below 'Not sure' as an interest", () => {
+    // "Strongly like" on every artistic activity, one "Dislike" among the social ones, and "Strongly
+    // dislike" everywhere else: Social is 1 of 40, so it isn't second, and there's no code.
+    const one = interestPattern(areas({ A: 40, S: 1 }));
+    expect(one).toEqual({ kind: "few", standOut: ["A"], rest: ["R", "I", "S", "E", "C"] });
+    expect(strongAreas(one)).toEqual(["A"]);
+    expect(noAreaStandsOut(one)).toBe(false);
+    expect(noLeadReason(one)).toBeNull();
+    expect(strongAreasText(areas({ A: 40, S: 1 }))).toBe("artistic");
+    if (one.kind !== "few") throw new Error();
+    expect(fewAreasText(one)).toBe("Artistic stands out. You leaned toward disliking the other five areas.");
+    expect(interestPattern(areas({ A: 40, S: 2, E: 1 }))).toEqual(one);
+
+    // Two areas reached "Not sure": no third from below it, and no tie among the rest.
+    const two = interestPattern(areas({ A: 40, S: 30, E: 19, C: 5 }));
+    expect(two).toEqual({ kind: "few", standOut: ["A", "S"], rest: ["R", "I", "E", "C"] });
+    if (two.kind !== "few") throw new Error();
+    expect(fewAreasText(two)).toBe("Artistic and Social stand out. You leaned toward disliking the other four areas.");
+    // Even when those two are tied with each other.
+    expect(interestPattern(areas({ A: 30, S: 30 }))).toEqual({ kind: "few", standOut: ["A", "S"], rest: ["R", "I", "E", "C"] });
+
+    // Areas tied below "Not sure" never make a tie for the top three either.
+    expect(interestPattern(areas({ A: 40, S: 10, E: 10 }))).toEqual({ kind: "few", standOut: ["A"], rest: ["R", "I", "S", "E", "C"] });
+    expect(interestPattern(areas({ A: 40, S: 30, E: 20, C: 10, R: 10 }))).toEqual({ kind: "code", code: "ASE", ties: [] });
+  });
+
+  it("says how an area was rated on average", () => {
+    expect(areaLevel(21)).toBe("liked");
+    expect(areaLevel(40)).toBe("liked");
+    expect(areaLevel(NOT_SURE_AREA_SCORE)).toBe("not sure");
+    expect(areaLevel(19)).toBe("disliked");
+    expect(areaLevel(0)).toBe("disliked");
   });
 
   it("gives the code when the top three are clear", () => {
@@ -93,20 +130,29 @@ describe("interest patterns", () => {
     if (third.kind !== "tied") throw new Error();
     expect(tiedAreasText(third)).toBe("Artistic and Social stand out. Enterprising and Conventional are tied after them.");
 
-    // Everyone else scored the same (here 0): only the two that stand out are top interests.
-    const rest = interestPattern(areas({ A: 40, S: 30 }));
+    expect(tiedBelow(third)).toEqual(["E", "C"]);
+
+    // Everyone else scored the same (here "Not sure"): only the two that stand out are top interests.
+    const rest = interestPattern(areas({ A: 40, S: 30, R: 20, I: 20, E: 20, C: 20 }));
     expect(rest).toEqual({ kind: "tied", standOut: ["A", "S"], tied: ["R", "I", "E", "C"] });
     if (rest.kind !== "tied") throw new Error();
     expect(tiedAreasText(rest)).toBe("Artistic and Social stand out. The other four areas are tied.");
-    const one = interestPattern(areas({ A: 40 }));
+    const one = interestPattern(areas({ A: 40, R: 30, I: 30, S: 30, E: 30, C: 30 }));
     if (one.kind !== "tied") throw new Error();
     expect(tiedAreasText(one)).toBe("Artistic stands out. The other five areas are tied.");
+    // Below "Not sure", the rest are disliked rather than tied.
+    expect(interestPattern(areas({ A: 40, S: 30 }))).toMatchObject({ kind: "few", standOut: ["A", "S"] });
+    expect(interestPattern(areas({ A: 40 }))).toMatchObject({ kind: "few", standOut: ["A"] });
 
     const first = interestPattern(areas({ R: 30, I: 30, A: 30, S: 30, E: 10, C: 10 }));
     expect(first).toEqual({ kind: "tied", standOut: [], tied: ["R", "I", "A", "S"] });
     expect(strongAreas(first)).toEqual(["R", "I", "A", "S"]);
     if (first.kind !== "tied") throw new Error();
     expect(tiedAreasText(first)).toBe("Realistic, Investigative, Artistic and Social are tied for your top area.");
+    // A tie for first is the strong areas, not a tie below them.
+    expect(tiedBelow(first)).toEqual([]);
+    expect(tiedBelow(interestPattern(areas({ A: 40, S: 30, E: 20 })))).toEqual([]);
+    expect(tiedBelow(interestPattern(areas({ A: 40 })))).toEqual([]);
   });
 
   it("keeps the scoring's code whenever there is one", () => {
@@ -117,7 +163,9 @@ describe("interest patterns", () => {
       const scores = scoreInterests(allAnswers(() => next() + 1));
       const pattern = interestPattern(scores.areas);
       if (pattern.kind === "code") expect(pattern.code).toBe(scores.code);
-      else if (pattern.kind === "tied") expect(scores.code.startsWith(pattern.standOut.join(""))).toBe(true);
+      else if (pattern.kind === "tied" || pattern.kind === "few") expect(scores.code.startsWith(pattern.standOut.join(""))).toBe(true);
+      // Nothing below "Not sure" is ever a top interest.
+      for (const area of strongAreas(pattern)) expect(scores.areas[area]).toBeGreaterThanOrEqual(NOT_SURE_AREA_SCORE);
     }
   });
 
@@ -140,6 +188,11 @@ describe("interest patterns", () => {
     expect(topInterestsText(disliked)).toBeNull();
     expect(describeSavedQuiz({ ...emptySavedAssessment(), answers: disliked })).toBe(
       "Someone finished the free interest quiz on this device. They leaned toward disliking all six interest areas.",
+    );
+    // "Dislike" on the social activities doesn't make Social a top interest.
+    const artistic = allAnswers((area) => (area === "A" ? 5 : area === "S" ? 2 : 1));
+    expect(describeSavedQuiz({ ...emptySavedAssessment(), answers: artistic })).toBe(
+      "Someone finished the free interest quiz on this device. Their top interests were artistic.",
     );
   });
 });

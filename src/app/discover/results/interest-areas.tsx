@@ -1,12 +1,20 @@
 import type { ReactNode } from "react";
 import { Card } from "@/components/ui";
 import { RIASEC, RIASEC_INFO, type Riasec } from "@/lib/assessments/instruments";
-import { codeTieText, interestPattern, noAreaStandsOut, strongAreas, tiedAreasText } from "@/lib/assessments/interest-pattern";
+import {
+  codeTieText,
+  fewAreasText,
+  interestPattern,
+  noAreaStandsOut,
+  strongAreas,
+  tiedAreasText,
+} from "@/lib/assessments/interest-pattern";
 
 /**
  * The six interest area scores and what they say, on both results pages. Tied areas are shown as
- * tied rather than in the code's RIASEC order. When the scores are about the same, or no area was
- * liked, the card says no area stands out, followed by `whenNoLead` (what the student can do next).
+ * tied rather than in the code's RIASEC order, and areas below "Not sure" are never ranked as
+ * interests. When the scores are about the same, or no area reached "Not sure", the card says no
+ * area stands out, followed by `whenNoLead` (what the student can do next).
  */
 export function InterestAreasCard({ areas, whenNoLead }: { areas: Record<Riasec, number>; whenNoLead: ReactNode }) {
   const pattern = interestPattern(areas);
@@ -24,6 +32,8 @@ export function InterestAreasCard({ areas, whenNoLead }: { areas: Record<Riasec,
           </p>
           {whenNoLead}
         </div>
+      ) : pattern.kind === "few" ? (
+        <p className="mt-1 text-sm text-muted">{fewAreasText(pattern)}</p>
       ) : pattern.kind === "tied" ? (
         <p className="mt-1 text-sm text-muted">{tiedAreasText(pattern)}</p>
       ) : (

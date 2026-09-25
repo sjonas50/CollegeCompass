@@ -22,6 +22,14 @@ export function rankChange(before: string[], after: string[], names: Record<stri
   return `Removed ${names[removed[0]]}${others ? ` and the ${others === 1 ? "one" : others} after it` : ""}. ${toGo}`;
 }
 
+/** Said when Start over clears the ranking. */
+export const RANKING_CLEARED = "Your ranking is cleared. Start with what matters most.";
+
+/** The Start over button goes away with the ranking, so focus goes back to the first value. */
+export function focusFirstValue(list: { querySelector(selector: "button"): { focus(): void } | null } | null) {
+  list?.querySelector("button")?.focus();
+}
+
 /** Tap values in order of importance. Tapping a ranked value removes it (and everything after it). */
 export function ValuesSort({ attemptId, values }: { attemptId: string; values: Value[] }) {
   const [order, setOrder] = useState<string[]>([]);
@@ -41,9 +49,8 @@ export function ValuesSort({ attemptId, values }: { attemptId: string; values: V
 
   function startOver() {
     setOrder([]);
-    setAnnouncement("Your ranking is cleared. Start with what matters most.");
-    // The Start over button goes away with the ranking, so focus goes back to the first value.
-    list.current?.querySelector("button")?.focus();
+    setAnnouncement(RANKING_CLEARED);
+    focusFirstValue(list.current);
   }
 
   function submit() {
@@ -101,23 +108,45 @@ export function ValuesSort({ attemptId, values }: { attemptId: string; values: V
       </ul>
       <div className="mt-6 space-y-3">
         <FormMessage message={error} />
-        <div className="flex gap-2">
-          {/* Focusable while saving, like the questionnaire's Next (see PageButtons). */}
-          <Button
-            onClick={submit}
-            disabled={order.length !== values.length}
-            aria-disabled={pending || undefined}
-            className="aria-disabled:cursor-wait aria-disabled:opacity-60"
-          >
-            {pending ? "Saving…" : "See my results"}
-          </Button>
-          {order.length > 0 && (
-            <Button variant="secondary" onClick={startOver} disabled={pending}>
-              Start over
-            </Button>
-          )}
-        </div>
+        <ValuesButtons submit={submit} startOver={startOver} ranked={order.length} total={values.length} pending={pending} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * See my results and Start over. While saving, See my results stays focusable (aria-disabled, and
+ * `submit` ignores it), like the questionnaire's Next (see PageButtons), so focus is still there if
+ * saving fails.
+ */
+export function ValuesButtons({
+  submit,
+  startOver,
+  ranked,
+  total,
+  pending,
+}: {
+  submit: () => void;
+  startOver: () => void;
+  ranked: number;
+  total: number;
+  pending: boolean;
+}) {
+  return (
+    <div className="flex gap-2">
+      <Button
+        onClick={submit}
+        disabled={ranked !== total}
+        aria-disabled={pending || undefined}
+        className="aria-disabled:cursor-wait aria-disabled:opacity-60"
+      >
+        {pending ? "Saving…" : "See my results"}
+      </Button>
+      {ranked > 0 && (
+        <Button variant="secondary" onClick={startOver} disabled={pending}>
+          Start over
+        </Button>
+      )}
     </div>
   );
 }

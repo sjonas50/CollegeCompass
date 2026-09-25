@@ -61,6 +61,13 @@ describe("free results", () => {
     expect(t).toContain("take the quiz again and go with your gut on each activity");
   });
 
+  it("never ranks an area the visitor disliked as an interest", () => {
+    // "Dislike" on every social activity: Social scored 10 of 40, and the code is "ASR".
+    const t = text(renderToStaticMarkup(createElement(Results, { answers: answersWith({ A: 5, S: 2 }), viewer: "visitor" })));
+    expect(t).toContain("Artistic stands out. You leaned toward disliking the other five areas.");
+    expect(t).not.toMatch(/Your code is|No area stands out/);
+  });
+
   it("keeps the code for a clear profile", () => {
     const t = text(renderToStaticMarkup(createElement(Results, { answers: answersWith({ A: 5, S: 4, E: 3 }), viewer: "visitor" })));
     expect(t).toContain("Your code is ASE : Artistic, Social, Enterprising.");

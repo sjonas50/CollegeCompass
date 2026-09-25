@@ -8,6 +8,7 @@ import { registerStudent } from "@/lib/accounts";
 import { INTEREST_ITEMS, type Riasec } from "@/lib/assessments/instruments";
 import { completeAttempt, saveResponses, startOrResumeAttempt } from "@/lib/assessments/service";
 import type { SessionUser } from "@/lib/auth/sessions";
+import { EXPLANATION_FACTS_VERSION } from "@/lib/matching/explain";
 import { computeMatches, latestMatchRun, loadOccupationProfiles } from "@/lib/matching/service";
 import { loadExplanation } from "./load-explanation";
 import ResultsPage from "./page";
@@ -133,10 +134,50 @@ describe("/discover/results", () => {
   });
 
   it("names a tie instead of a code picked in RIASEC order", async () => {
+    await takeInterests({ A: 5, S: 4, E: 4, C: 4 });
+    const t = text(await render());
+    expect(t).toContain("Artistic stands out. Social, Enterprising and Conventional are tied after it.");
+    expect(t).not.toContain("Your code is");
+  });
+
+  it("never ranks an area the student disliked as an interest", async () => {
+    // "Dislike" on every social activity: Social scored 10 of 40, and the code is "ASR".
+    await takeInterests({ A: 5, S: 2 });
+    const t = text(await render());
+    expect(t).toContain("Artistic stands out. You leaned toward disliking the other five areas.");
+    expect(t).not.toMatch(/Your code is|Social stand/);
+    // Only Artistic is described as theirs.
+    expect(t).toContain("Making things that express ideas:");
+    expect(t).not.toContain("Working with people:");
+  });
+
+  it("names the two areas that reached 'Not sure' without ranking a third", async () => {
     await takeInterests({ A: 5, S: 4 });
     const t = text(await render());
-    expect(t).toContain("Artistic and Social stand out. The other four areas are tied.");
+    expect(t).toContain("Artistic and Social stand out. You leaned toward disliking the other four areas.");
     expect(t).not.toContain("Your code is");
+  });
+
+  it("doesn't show an explanation written from older facts for a tie, and asks for a new one", async () => {
+    await takeInterests({ A: 5, S: 4, E: 4, C: 4 });
+    const run = await latestMatchRun(state.db!, state.user!.id);
+    const stale: MatchExplanation = {
+      source: "ai",
+      overview: "Your strongest interests are creating things, hands-on work and figuring things out.",
+      careers: [{ code: "19-2031.00", why: "Chemists get to do hands-on work you love." }],
+    };
+    await state.db!.update(schema.matchRuns).set({ explanation: stale }).where(eq(schema.matchRuns.id, run!.id));
+    let t = text(await render());
+    expect(t).not.toContain("hands-on work");
+    // The page asks for one to be written (see ExplanationProvider).
+    expect(t).toContain("Writing a summary");
+
+    // One written from the current facts is shown.
+    const current: MatchExplanation = { ...stale, overview: "You love creating things.", factsVersion: EXPLANATION_FACTS_VERSION };
+    await state.db!.update(schema.matchRuns).set({ explanation: current }).where(eq(schema.matchRuns.id, run!.id));
+    t = text(await render());
+    expect(t).toContain("You love creating things.");
+    expect(t).not.toContain("Writing a summary");
   });
 
   it("shows one explanation to the overview and every career list", async () => {

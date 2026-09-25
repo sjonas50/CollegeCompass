@@ -9,7 +9,7 @@ import { BIG_FIVE, WORK_VALUE_INFO } from "@/lib/assessments/instruments";
 import { interestPattern, noAreaStandsOut } from "@/lib/assessments/interest-pattern";
 import { latestResult, nextRetakeDate } from "@/lib/assessments/service";
 import { requireUser } from "@/lib/auth/dal";
-import { explainLatestMatches } from "@/lib/matching/explain";
+import { explainLatestMatches, storedExplanation } from "@/lib/matching/explain";
 import { PATHWAY_INFO, type Pathway, fitLabel, pathwayFor } from "@/lib/matching/match";
 import { latestMatchRun } from "@/lib/matching/service";
 import { CareerReasons, ExplanationOverview, ExplanationProvider } from "./explanation";
@@ -32,10 +32,12 @@ export default async function ResultsPage() {
   ]);
   if (!interests || !run) redirect("/discover/interests");
 
-  const noLead = noAreaStandsOut(interestPattern(interests.scores.areas));
+  const pattern = interestPattern(interests.scores.areas);
+  const noLead = noAreaStandsOut(pattern);
   // With no area ahead it's always the template (written here, no AI), even over an explanation
-  // stored before that rule; otherwise the stored one, or the client asks for one to be written.
-  const explanation = noLead ? await explainLatestMatches(db, student.id) : run.explanation;
+  // stored before that rule. Otherwise the stored one, unless it was written from interest facts
+  // that have changed since (see storedExplanation); without one, the client asks for one.
+  const explanation = noLead ? await explainLatestMatches(db, student.id) : storedExplanation(run.explanation, pattern);
   const retakeAfter = nextRetakeDate(interests.completedAt);
   const careersFor = (pathway: Pathway) =>
     run.matches

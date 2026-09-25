@@ -10,6 +10,7 @@ import { buildStudentContext, formatStudentContext } from "./prompt";
 
 const now = new Date("2026-09-23T12:00:00Z");
 const interestsLine = (context: string) => context.split("\n").find((l) => /interest/i.test(l));
+const tiedBelowLine = (context: string) => context.split("\n").find((l) => l.includes("tied below the strongest"));
 
 describe("formatting the interests line", () => {
   const base = { grade: 9, month: 8 };
@@ -25,6 +26,25 @@ describe("formatting the interests line", () => {
     expect(interestsLine(context)).toBe("- Rated all six interest areas about the same (no clear lead yet).");
     expect(context).not.toContain("Strongest interests");
     expect(context).not.toContain("Hasn't taken the interests assessment");
+  });
+
+  it("says how areas tied below the strongest were rated", () => {
+    const areas = ["making things that express ideas", "working with people"];
+    const context = (level: "liked" | "not sure" | "disliked") =>
+      formatStudentContext({ ...base, interests: ["figuring things out"], interestsTiedBelow: { level, areas } });
+    expect(tiedBelowLine(context("liked"))).toBe(
+      "- Also leaned toward liking, tied below the strongest: making things that express ideas; working with people.",
+    );
+    expect(tiedBelowLine(context("not sure"))).toBe(
+      '- Rated "Not sure" on average, tied below the strongest: making things that express ideas; working with people.',
+    );
+    expect(tiedBelowLine(context("disliked"))).toBe(
+      "- Leaned toward disliking, tied below the strongest: making things that express ideas; working with people.",
+    );
+    // It follows the strongest interests.
+    const lines = context("liked").split("\n");
+    expect(lines.indexOf(tiedBelowLine(context("liked"))!)).toBe(lines.indexOf(interestsLine(context("liked"))!) + 1);
+    expect(tiedBelowLine(formatStudentContext({ ...base, interests: ["figuring things out"] }))).toBeUndefined();
   });
 
   it("says when the assessment isn't done", () => {
@@ -49,14 +69,19 @@ describe("building the context from results", () => {
     student = { id: res.value.userId, grade: 10 };
   });
 
-  /** Finishes interests with one answer for every activity in an area (1, "Strongly dislike", if not given). */
-  async function interestsFrom(answers: Partial<Record<Riasec, number>>) {
+  /**
+   * Finishes interests with one answer for every activity in an area (1, "Strongly dislike", if not
+   * given), or per activity in `items`, and returns the context.
+   */
+  async function contextFrom(answers: Partial<Record<Riasec, number>>, items: Record<string, number> = {}) {
     const start = await startOrResumeAttempt(db, student.id, "interests", now);
     if (!start.ok) throw new Error();
-    await saveResponses(db, student.id, start.attempt.id, Object.fromEntries(INTEREST_ITEMS.map((i) => [i.id, answers[i.area] ?? 1])));
+    const responses = Object.fromEntries(INTEREST_ITEMS.map((i) => [i.id, items[i.id] ?? answers[i.area] ?? 1]));
+    await saveResponses(db, student.id, start.attempt.id, responses);
     await completeAttempt(db, student.id, start.attempt.id, now);
-    return interestsLine(await buildStudentContext(db, student, { now }));
+    return buildStudentContext(db, student, { now });
   }
+  const interestsFrom = async (answers: Partial<Record<Riasec, number>>) => interestsLine(await contextFrom(answers));
 
   it("gives a clear top three", async () => {
     expect(await interestsFrom({ A: 5, S: 4, E: 3 })).toBe(
@@ -64,9 +89,28 @@ describe("building the context from results", () => {
     );
   });
 
-  it("gives only the areas above a tie", async () => {
+  it("gives only the areas that reached 'Not sure'", async () => {
     // The code is "ARI", but Realistic and Investigative scored 0 of 40, like the other three.
-    expect(await interestsFrom({ A: 5 })).toBe("- Strongest interests: making things that express ideas.");
+    const context = await contextFrom({ A: 5 });
+    expect(interestsLine(context)).toBe("- Strongest interests: making things that express ideas.");
+    expect(tiedBelowLine(context)).toBeUndefined();
+  });
+
+  it("never gives an area below 'Not sure' as a strongest interest", async () => {
+    // One "Dislike" among the social activities: Social scores 1 of 40, and the code is "ASR".
+    const social = INTEREST_ITEMS.find((i) => i.area === "S")!.id;
+    const context = await contextFrom({ A: 5 }, { [social]: 2 });
+    expect(interestsLine(context)).toBe("- Strongest interests: making things that express ideas.");
+    expect(context).not.toContain("working with people");
+  });
+
+  it("keeps liked areas that a tie keeps out of the strongest", async () => {
+    // "Strongly like" the investigative activities and "Like" the artistic, social and enterprising ones.
+    const context = await contextFrom({ I: 5, A: 4, S: 4, E: 4 });
+    expect(interestsLine(context)).toBe("- Strongest interests: figuring things out.");
+    expect(tiedBelowLine(context)).toBe(
+      "- Also leaned toward liking, tied below the strongest: making things that express ideas; working with people; leading and influencing.",
+    );
   });
 
   it("says every area was rated about the same, with no strongest interests", async () => {

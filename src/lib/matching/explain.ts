@@ -7,13 +7,18 @@ import { type MatchExplanation, matchRuns, users } from "@/db/schema";
 import { BIG_FIVE, RIASEC_INFO, type Riasec, WORK_VALUE_INFO } from "../assessments/instruments";
 import { displayTrait } from "../assessments/descriptions";
 import {
+  type AreaLevel,
   type InterestPattern,
+  type LeadPattern,
+  areaLevel,
   areaNames,
+  fewAreasText,
   interestPattern,
   noAreaStandsOut,
   noLeadReason,
   strongAreas,
   tiedAreasText,
+  tiedBelow,
 } from "../assessments/interest-pattern";
 import { latestResult } from "../assessments/service";
 import { getAnthropic } from "../ai/client";
@@ -77,6 +82,7 @@ function templateOverview(pattern: InterestPattern): string {
   if (noAreaStandsOut(pattern)) {
     return `You ${noLeadReason(pattern)}, so no area stands out yet. That's okay. The careers below are a starting point, so explore widely — you're not choosing forever, just finding a direction for now.`;
   }
+  if (pattern.kind === "few") return `${fewAreasText(pattern)} The careers below share that mix. ${EXPLORE}`;
   if (pattern.kind === "tied") return `${tiedAreasText(pattern)} The careers below share that mix. ${EXPLORE}`;
   const top = pattern.code.split("") as Riasec[];
   const lead = pattern.ties.length
@@ -117,30 +123,62 @@ export function templateExplanation(
   };
 }
 
+/** How the student rated areas below the top interests, to follow "and". */
+const LEVEL_FACT: Record<AreaLevel, string> = {
+  liked: "the student leaned toward liking them",
+  "not sure": "on average the student was not sure about them",
+  disliked: "the student leaned toward disliking them",
+};
+
 /**
  * What the model is told about the student's interests: only what the scores support (see
- * interestPattern). The code only when there is a clear one, the areas above a tie as the top
- * interests (never areas picked from a tie in RIASEC order), and any tie as a plain fact.
+ * interestPattern). The code only when there is a clear one, the areas above a tie or the one or
+ * two that reached "Not sure" as the top interests (never areas picked from a tie in RIASEC order,
+ * or areas the student disliked), any tie as a plain fact, and how the student rated the areas
+ * below the top interests, so liked areas aren't lost and disliked ones aren't claimed.
  */
-export function interestFacts(pattern: Extract<InterestPattern, { kind: "code" | "tied" }>) {
+export function interestFacts(pattern: LeadPattern, areas: Record<Riasec, number>) {
   const topInterests = strongAreas(pattern).map((a) => ({ area: RIASEC_INFO[a].name, meaning: RIASEC_INFO[a].description }));
   if (pattern.kind === "code") {
     const tie = pattern.ties.at(0);
     const tiedAreas = tie && `${areaNames(tie)} are tied, so their order doesn't matter.`;
     return { interestCode: pattern.code, topInterests, ...(tiedAreas && { tiedAreas }) };
   }
-  const { standOut, tied } = pattern;
-  const tiedAreas = standOut.length
-    ? `${areaNames(tied)} are tied below the top interests.`
-    : `${areaNames(tied)} are tied for the top interest.`;
+  if (pattern.kind === "few") {
+    return { topInterests, otherAreas: `${areaNames(pattern.rest)} are below the top interests, and ${LEVEL_FACT.disliked}.` };
+  }
+  const below = tiedBelow(pattern);
+  const tiedAreas = below.length
+    ? `${areaNames(below)} are tied below the top interests, and ${LEVEL_FACT[areaLevel(areas[below[0]])]}.`
+    : `${areaNames(pattern.tied)} are tied for the top interest.`;
   return { topInterests, tiedAreas };
+}
+
+/**
+ * Stored AI explanations carry the version of the interest facts they were written from. Version 2
+ * describes ties and areas below "Not sure" as they are. Before it, the model was told the code's
+ * three letters as the top interests, which for a tie or an area the student disliked named
+ * interests the scores don't show.
+ */
+export const EXPLANATION_FACTS_VERSION = 2;
+
+/**
+ * The stored explanation to show for these interests, or null when a new one is needed (written by
+ * the model, or the template). An explanation from older facts is kept only for a clear code with
+ * no ties, where the facts haven't changed. When no area stands out it's always the template.
+ */
+export function storedExplanation(explanation: MatchExplanation | null, pattern: InterestPattern): MatchExplanation | null {
+  if (!explanation || noAreaStandsOut(pattern)) return null;
+  if ((explanation.factsVersion ?? 1) >= EXPLANATION_FACTS_VERSION) return explanation;
+  return pattern.kind === "code" && pattern.ties.length === 0 ? explanation : null;
 }
 
 /**
  * Returns the explanation for the student's latest matches, writing it with the model the first
  * time. Falls back to a template (not stored) if AI is unavailable, over budget, or declines. When
  * no interest area stands out the student always gets the template, even over an explanation stored
- * before this rule: there are no top interests to explain the matches with.
+ * before this rule: there are no top interests to explain the matches with. An explanation written
+ * from older interest facts is written again when those facts have changed (see storedExplanation).
  */
 export async function explainLatestMatches(db: Db, userId: string, opts: Options = {}): Promise<MatchExplanation | null> {
   const run = await latestMatchRun(db, userId);
@@ -148,7 +186,8 @@ export async function explainLatestMatches(db: Db, userId: string, opts: Options
   const interests = await latestResult(db, userId, "interests");
   if (!interests) return run.explanation;
   const pattern = interestPattern(interests.scores.areas);
-  if (run.explanation && !noAreaStandsOut(pattern)) return run.explanation;
+  const stored = storedExplanation(run.explanation, pattern);
+  if (stored) return stored;
 
   const careers = run.matches;
   const profiles = new Map((await loadOccupationProfiles(db)).map((p) => [p.code, p.interests]));
@@ -166,7 +205,7 @@ export async function explainLatestMatches(db: Db, userId: string, opts: Options
 
     const facts = {
       grade: ctx.grade,
-      ...interestFacts(pattern),
+      ...interestFacts(pattern, interests.scores.areas),
       strengths: personality
         ? BIG_FIVE.map((t) => displayTrait(t, personality.scores.traits[t])).map((t) => `${t.name}: ${t.text}`)
         : undefined,
@@ -196,6 +235,7 @@ export async function explainLatestMatches(db: Db, userId: string, opts: Options
     const byCode = new Map(parsed.careers.map((c) => [c.code, c.why]));
     const explanation: MatchExplanation = {
       source: "ai",
+      factsVersion: EXPLANATION_FACTS_VERSION,
       overview: parsed.overview,
       careers: fallback.careers.map((c) => ({ code: c.code, why: byCode.get(c.code) ?? c.why })),
     };

@@ -2,8 +2,8 @@ import { and, eq } from "drizzle-orm";
 import type { Db } from "@/db";
 import { counselorMemory, weeklySteps } from "@/db/schema";
 import { displayTrait } from "../assessments/descriptions";
-import { BIG_FIVE, RIASEC_INFO, WORK_VALUE_INFO } from "../assessments/instruments";
-import { interestPattern, noLeadReason, strongAreas } from "../assessments/interest-pattern";
+import { BIG_FIVE, RIASEC_INFO, type Riasec, WORK_VALUE_INFO } from "../assessments/instruments";
+import { type AreaLevel, areaLevel, interestPattern, noLeadReason, strongAreas, tiedBelow } from "../assessments/interest-pattern";
 import { latestResult } from "../assessments/service";
 import { gradeBand } from "../auth/age";
 import { listNorthStars } from "../goals";
@@ -60,6 +60,11 @@ export type StudentContextData = {
    * areas about the same". Said instead of strongest interests the scores don't have.
    */
   interestsNoLead?: string;
+  /**
+   * Areas tied with each other just below the strongest interests, and how the student rated them
+   * (see areaLevel). A tie keeps them out of the strongest, but liked areas are still interests.
+   */
+  interestsTiedBelow?: { level: AreaLevel; areas: string[] };
   strengths?: string[];
   values?: string[];
   northStars?: string[];
@@ -71,6 +76,12 @@ export type StudentContextData = {
 /** Its own system block, since a conversation can enter support mode after its context is saved. */
 export const CONCERN_NOTE =
   "Earlier in this conversation the student shared something concerning and was given crisis resources. Start your reply by gently asking how they're doing right now and whether they're safe, without asking what happened. Then help with what they asked, keep encouraging them to reach a trusted adult, and don't push planning tasks unless they bring them up.";
+
+const TIED_BELOW: Record<AreaLevel, string> = {
+  liked: "Also leaned toward liking, tied below the strongest",
+  "not sure": 'Rated "Not sure" on average, tied below the strongest',
+  disliked: "Leaned toward disliking, tied below the strongest",
+};
 
 /** Formats the private per-student context block (pure, so evals use the exact same text). */
 export function formatStudentContext(d: StudentContextData): string {
@@ -86,6 +97,9 @@ export function formatStudentContext(d: StudentContextData): string {
         ? `- ${d.interestsNoLead[0].toUpperCase()}${d.interestsNoLead.slice(1)} (no clear lead yet).`
         : "- Hasn't taken the interests assessment yet (it's on their dashboard and unlocks career matches).",
   );
+  if (d.interests?.length && d.interestsTiedBelow?.areas.length) {
+    lines.push(`- ${TIED_BELOW[d.interestsTiedBelow.level]}: ${d.interestsTiedBelow.areas.join("; ")}.`);
+  }
   if (d.strengths?.length) lines.push(`- Strengths: ${d.strengths.join(" ")}`);
   if (d.values?.length) lines.push(`- What matters most in a job: ${d.values.join(", ")}.`);
   if (d.northStars?.length) lines.push(`- North stars (careers they're aiming for, for now): ${d.northStars.join("; ")}.`);
@@ -121,14 +135,19 @@ export async function buildStudentContext(
       .where(and(eq(weeklySteps.userId, student.id), eq(weeklySteps.weekStart, weekStartOf(now)))),
     db.select({ notes: counselorMemory.notes }).from(counselorMemory).where(eq(counselorMemory.userId, student.id)),
   ]);
-  // Only the areas the scores support: never the code's picks from a tie, and none when no area stands out.
+  // Only the areas the scores support: never the code's picks from a tie or areas below "Not sure",
+  // and none when no area stands out. Areas tied below them say how they were rated.
   const pattern = interests && interestPattern(interests.scores.areas);
+  const phrase = (a: Riasec) => RIASEC_INFO[a].description.split(":")[0].toLowerCase();
+  const below = pattern ? tiedBelow(pattern) : [];
   return formatStudentContext({
     grade: student.grade === null ? null : Math.min(student.grade, 12),
     graduated: student.grade !== null && student.grade > 12,
     month: now.getUTCMonth(),
-    interests: pattern ? strongAreas(pattern).map((a) => RIASEC_INFO[a].description.split(":")[0].toLowerCase()) : undefined,
+    interests: pattern ? strongAreas(pattern).map(phrase) : undefined,
     interestsNoLead: (pattern && noLeadReason(pattern)) ?? undefined,
+    interestsTiedBelow:
+      interests && below.length ? { level: areaLevel(interests.scores.areas[below[0]]), areas: below.map(phrase) } : undefined,
     strengths: personality ? BIG_FIVE.map((t) => displayTrait(t, personality.scores.traits[t])).map((t) => `${t.name}: ${t.text}`) : undefined,
     values: values?.scores.ranking.slice(0, 3).map((v) => WORK_VALUE_INFO[v].name.toLowerCase()),
     northStars: stars.map((s) => s.title),

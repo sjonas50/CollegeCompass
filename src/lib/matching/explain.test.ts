@@ -6,7 +6,7 @@ import { registerStudent } from "@/lib/accounts";
 import { INTEREST_ITEMS, type Riasec } from "../assessments/instruments";
 import { interestPattern } from "../assessments/interest-pattern";
 import { completeAttempt, saveResponses, startOrResumeAttempt } from "../assessments/service";
-import { explainLatestMatches, interestFacts, templateExplanation } from "./explain";
+import { EXPLANATION_FACTS_VERSION, explainLatestMatches, interestFacts, storedExplanation, templateExplanation } from "./explain";
 import { fitLabel, scoreOccupation } from "./match";
 import { computeMatches, latestMatchRun, loadOccupationProfiles } from "./service";
 
@@ -52,8 +52,18 @@ describe("template explanation", () => {
     expect(templateExplanation(areas({ R: 30, I: 30, A: 20, S: 10, E: 5 }), [chemist]).overview).toMatch(
       /^Your strongest interest areas are Realistic, Investigative and Artistic\. Realistic and Investigative are tied\./,
     );
-    expect(templateExplanation(areas({ A: 40, S: 30 }), [teacher]).overview).toMatch(
+    expect(templateExplanation(areas({ A: 40, S: 30, R: 20, I: 20, E: 20, C: 20 }), [teacher]).overview).toMatch(
       /^Artistic and Social stand out\. The other four areas are tied\./,
+    );
+  });
+
+  it("never names an area below 'Not sure' as one of the student's interests", () => {
+    // One "Dislike" among the social activities: Social scored 1 of 40, so it isn't second.
+    const e = templateExplanation(areas({ A: 40, S: 1 }), [teacher]);
+    expect(e.overview).toMatch(/^Artistic stands out\. You leaned toward disliking the other five areas\./);
+    expect(e.careers[0].why).toBe("Combines helping people and creating things, which lines up with your artistic interests.");
+    expect(templateExplanation(areas({ A: 40, S: 30 }), [teacher]).overview).toMatch(
+      /^Artistic and Social stand out\. You leaned toward disliking the other four areas\./,
     );
   });
 });
@@ -81,8 +91,8 @@ describe("fit labels", () => {
 describe("what the model is told about interests", () => {
   const facts = (scores: Partial<Record<Riasec, number>>) => {
     const pattern = interestPattern(areas(scores));
-    if (pattern.kind !== "code" && pattern.kind !== "tied") throw new Error(pattern.kind);
-    return interestFacts(pattern);
+    if (pattern.kind === "flat" || pattern.kind === "low") throw new Error(pattern.kind);
+    return interestFacts(pattern, areas(scores));
   };
   const names = (f: ReturnType<typeof facts>) => f.topInterests.map((t) => t.area);
 
@@ -100,16 +110,38 @@ describe("what the model is told about interests", () => {
     expect(names(f)).toEqual(["Realistic", "Investigative", "Artistic"]);
   });
 
-  it("gives only the areas above a tie as top interests, with no code", () => {
+  it("gives only the areas that reached 'Not sure' as top interests, with no code, and says the rest were disliked", () => {
     // The scoring's code is "ARI": Realistic and Investigative fill it in RIASEC order at 0 of 40.
     const f = facts({ A: 40 });
     expect(f).not.toHaveProperty("interestCode");
+    expect(f).not.toHaveProperty("tiedAreas");
     expect(names(f)).toEqual(["Artistic"]);
-    expect(f).toMatchObject({ tiedAreas: "Realistic, Investigative, Social, Enterprising and Conventional are tied below the top interests." });
+    expect(f).toMatchObject({
+      otherAreas: "Realistic, Investigative, Social, Enterprising and Conventional are below the top interests, and the student leaned toward disliking them.",
+    });
 
+    // One "Dislike" among the social activities (1 of 40) doesn't make Social an interest, or the code "ASR".
+    const barely = facts({ A: 40, S: 1 });
+    expect(barely).not.toHaveProperty("interestCode");
+    expect(names(barely)).toEqual(["Artistic"]);
+    expect(barely).toEqual(f);
+    expect(names(facts({ A: 40, S: 30, E: 19 }))).toEqual(["Artistic", "Social"]);
+  });
+
+  it("gives only the areas above a tie as top interests, and how the tied areas were rated", () => {
     const third = facts({ A: 40, S: 30, E: 20, C: 20, R: 10, I: 5 });
+    expect(third).not.toHaveProperty("interestCode");
     expect(names(third)).toEqual(["Artistic", "Social"]);
-    expect(third).toMatchObject({ tiedAreas: "Enterprising and Conventional are tied below the top interests." });
+    expect(third).toMatchObject({
+      tiedAreas: "Enterprising and Conventional are tied below the top interests, and on average the student was not sure about them.",
+    });
+
+    // Liked areas kept out of the top by a tie are still liked.
+    const liked = facts({ I: 40, A: 30, S: 30, E: 30 });
+    expect(names(liked)).toEqual(["Investigative"]);
+    expect(liked).toMatchObject({
+      tiedAreas: "Artistic, Social and Enterprising are tied below the top interests, and the student leaned toward liking them.",
+    });
   });
 
   it("gives every area tied for first as a top interest, and says they're tied", () => {
@@ -117,6 +149,28 @@ describe("what the model is told about interests", () => {
     expect(f).not.toHaveProperty("interestCode");
     expect(names(f)).toEqual(["Realistic", "Investigative", "Artistic", "Social"]);
     expect(f).toMatchObject({ tiedAreas: "Realistic, Investigative, Artistic and Social are tied for the top interest." });
+  });
+});
+
+describe("stored explanations", () => {
+  const old: MatchExplanation = { source: "ai", overview: "Written from the code's three letters.", careers: [] };
+  const current: MatchExplanation = { ...old, factsVersion: EXPLANATION_FACTS_VERSION };
+  const stored = (explanation: MatchExplanation | null, scores: Partial<Record<Riasec, number>>) =>
+    storedExplanation(explanation, interestPattern(areas(scores)));
+
+  it("keeps one written from older facts only for a clear code with no ties", () => {
+    expect(stored(old, { A: 40, S: 30, E: 20 })).toBe(old);
+    // A tie inside the code, a tie below the top, only one or two areas at "Not sure".
+    for (const scores of [{ R: 30, I: 30, A: 20 }, { A: 40, S: 30, E: 20, C: 20 }, { A: 40, S: 1 }, { A: 40, S: 30 }]) {
+      expect(stored(old, scores), JSON.stringify(scores)).toBeNull();
+      expect(stored(current, scores), JSON.stringify(scores)).toBe(current);
+    }
+  });
+
+  it("never keeps one when no area stands out", () => {
+    expect(stored(current, { R: 20, I: 20, A: 20, S: 20, E: 20, C: 20 })).toBeNull();
+    expect(stored(current, { C: 10 })).toBeNull();
+    expect(stored(null, { A: 40, S: 30, E: 20 })).toBeNull();
   });
 });
 
@@ -221,15 +275,50 @@ describe("explaining matches when areas are tied or none stands out", () => {
     expect(JSON.stringify(explanation)).not.toContain("hands-on work and figuring");
   });
 
-  it("still returns a stored explanation when areas stand out, without asking again", async () => {
-    await takeInterests({ I: 5, R: 4 });
+  it("still returns a stored explanation for a clear code, without asking again", async () => {
+    await takeInterests({ I: 5, R: 4, A: 3 });
     const run = await latestMatchRun(db, userId);
+    // Stored before facts had a version: for a clear code with no ties, the facts are the same.
     const stored: MatchExplanation = { source: "ai", overview: "You like figuring things out.", careers: [] };
     await db.update(schema.matchRuns).set({ explanation: stored }).where(eq(schema.matchRuns.id, run!.id));
     expect(await explainLatestMatches(db, userId, { now, client: refusingClient() })).toEqual(stored);
   });
 
-  it("tells the model only the areas above a tie, not the code's RIASEC-order picks", async () => {
+  it.each([
+    ["areas tied below the top", { A: 5, S: 4, E: 4, C: 4 }],
+    ["only two areas reaching 'Not sure'", { A: 5, S: 2 }],
+    ["areas tied inside the code", { R: 5, I: 5, A: 4 }],
+  ])("writes an explanation stored from older facts again for %s", async (_, answers: Partial<Record<Riasec, number>>) => {
+    await takeInterests(answers);
+    const run = await latestMatchRun(db, userId);
+    const stale: MatchExplanation = {
+      source: "ai",
+      overview: "You love creating things, working with your hands and figuring things out.",
+      careers: [{ code: "19-2031.00", why: "Chemists use the hands-on skills you enjoy." }],
+    };
+    await db.update(schema.matchRuns).set({ explanation: stale }).where(eq(schema.matchRuns.id, run!.id));
+    const { client, requests } = recordingClient({ overview: "You love making things.", careers: [] });
+    const explanation = await explainLatestMatches(db, userId, { now, client });
+    expect(requests).toHaveLength(1);
+    expect(explanation).toMatchObject({ source: "ai", overview: "You love making things.", factsVersion: EXPLANATION_FACTS_VERSION });
+    expect(JSON.stringify(explanation)).not.toContain("hands-on skills");
+
+    // Stored with the new version, so it isn't written a third time.
+    expect((await latestMatchRun(db, userId))?.explanation).toMatchObject({ factsVersion: EXPLANATION_FACTS_VERSION });
+    expect(await explainLatestMatches(db, userId, { now, client: refusingClient() })).toEqual(explanation);
+  });
+
+  it("uses the template for a stale explanation when the model can't write a new one", async () => {
+    await takeInterests({ A: 5 });
+    const run = await latestMatchRun(db, userId);
+    const stale: MatchExplanation = { source: "ai", overview: "You love hands-on work and figuring things out.", careers: [] };
+    await db.update(schema.matchRuns).set({ explanation: stale }).where(eq(schema.matchRuns.id, run!.id));
+    const explanation = await explainLatestMatches(db, userId, { now, client: refusingClient() });
+    expect(explanation?.source).toBe("template");
+    expect(explanation?.overview).toMatch(/^Artistic stands out\. You leaned toward disliking the other five areas\./);
+  });
+
+  it("tells the model only the areas that reached 'Not sure', not the code's RIASEC-order picks", async () => {
     // "Strongly like" on every artistic activity, "Strongly dislike" on the rest: the code is "ARI".
     await takeInterests({ A: 5 });
     const { client, requests } = recordingClient({
@@ -241,10 +330,34 @@ describe("explaining matches when areas are tied or none stands out", () => {
     expect(requests).toHaveLength(1);
     const facts = JSON.parse(requests[0].messages[0].content.replace(/^[^\n]*\n/, ""));
     expect(facts).not.toHaveProperty("interestCode");
+    expect(facts).not.toHaveProperty("tiedAreas");
     expect(facts.topInterests.map((t: { area: string }) => t.area)).toEqual(["Artistic"]);
-    expect(facts.tiedAreas).toBe("Realistic, Investigative, Social, Enterprising and Conventional are tied below the top interests.");
+    expect(facts.otherAreas).toBe(
+      "Realistic, Investigative, Social, Enterprising and Conventional are below the top interests, and the student leaned toward disliking them.",
+    );
     expect(facts.grade).toBe(10);
     expect(facts.careers.map((c: { code: string }) => c.code).sort()).toEqual(["19-2031.00", "25-2031.00"]);
+  });
+
+  it("never tells the model a disliked area is a top interest", async () => {
+    // "Dislike" on every social activity (10 of 40): the code is "ASR", but Social isn't an interest.
+    await takeInterests({ A: 5, S: 2 });
+    const { client, requests } = recordingClient({ overview: "You love making things.", careers: [] });
+    await explainLatestMatches(db, userId, { now, client });
+    const facts = JSON.parse(requests[0].messages[0].content.replace(/^[^\n]*\n/, ""));
+    expect(facts).not.toHaveProperty("interestCode");
+    expect(facts.topInterests.map((t: { area: string }) => t.area)).toEqual(["Artistic"]);
+  });
+
+  it("tells the model how areas tied below the top were rated", async () => {
+    // "Strongly like" investigative activities and "Like" artistic, social and enterprising ones.
+    await takeInterests({ I: 5, A: 4, S: 4, E: 4 });
+    const { client, requests } = recordingClient({ overview: "You like science.", careers: [] });
+    await explainLatestMatches(db, userId, { now, client });
+    const facts = JSON.parse(requests[0].messages[0].content.replace(/^[^\n]*\n/, ""));
+    expect(facts).not.toHaveProperty("interestCode");
+    expect(facts.topInterests.map((t: { area: string }) => t.area)).toEqual(["Investigative"]);
+    expect(facts.tiedAreas).toBe("Artistic, Social and Enterprising are tied below the top interests, and the student leaned toward liking them.");
   });
 
   it("still gives the model a clear code", async () => {
