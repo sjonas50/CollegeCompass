@@ -114,8 +114,8 @@ function ChildResultsSummary({ name, results: r }: { name: string; results: Chil
             </>
           ) : (
             <p className="text-muted">
-              Done. No strength stood out above the middle of the scale this time. Ask {name} what they learned about
-              themselves.
+              Done. None of the four strengths linked to careers was above the middle of the scale this time. Ask {name}{" "}
+              what they learned about themselves.
             </p>
           )}
         </div>
@@ -161,7 +161,9 @@ export function ChildProgressSummary({ name, progress: p }: { name: string; prog
             </li>
           ))}
         </ul>
-        {!p.results && <p className="text-muted">Results show up here once {name} finishes an activity.</p>}
+        {!p.results && (
+          <p className="text-muted">Results show up here once {name} finishes the Interests or Personality activity.</p>
+        )}
       </Block>
 
       <Block title="North stars">

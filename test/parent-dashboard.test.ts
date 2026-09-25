@@ -326,6 +326,10 @@ async function withResults(userId: string, { interests = IAS, traits = TRAITS } 
 /** Every way the page could describe emotional stability ("Staying calm"), at any level. */
 const STAYING_CALM = ["Staying calm", "Steady", "Bounces back", "Feels things deeply", "stress", "calm", "neuroticism"];
 
+/** What the page says when none of the four career-linked strengths is above the middle of the scale. */
+const NO_CAREER_STRENGTH = (name: string) =>
+  `Done. None of the four strengths linked to careers was above the middle of the scale this time. Ask ${name} what they learned about themselves.`;
+
 describe("what parents see of their children's results", () => {
   it("shows interests, the strengths that count and the top five matches for each child, and nothing for a child with none", async () => {
     const parent = await parentId();
@@ -676,7 +680,7 @@ describe("parent page", () => {
     for (const word of STAYING_CALM) expect(t).not.toContain(word);
     expect(html).not.toContain("SECRET");
 
-    expect(t).toContain("Results show up here once Kid8 finishes an activity.");
+    expect(t).toContain("Results show up here once Kid8 finishes the Interests or Personality activity.");
     expect(t).toContain("You see progress, results and plans here, not what your child talks about.");
     expect(t).toContain("O*NET Career Exploration Tools");
     expect(t).toContain("O*NET Database");
@@ -694,15 +698,48 @@ describe("parent page", () => {
     expect(t).not.toContain("interest code");
   });
 
-  it("says when no strength stood out, and what's still to come", async () => {
+  it("says when no strength linked to careers stood out, and what's still to come", async () => {
     const parent = await parentId();
     const kid = await child(parent, 7, "kid7");
     await result(kid, "personality", { traits: { extraversion: 30, agreeableness: 50, conscientiousness: 45, neuroticism: 90, intellect: 20 } });
     await signInParent(parent);
     const t = text(await renderParentPage());
-    expect(t).toContain("Done. No strength stood out above the middle of the scale this time. Ask Kid7 what they learned about themselves.");
+    expect(t).toContain(NO_CAREER_STRENGTH("Kid7"));
     expect(t.match(/Shows here after the Interests activity\./g)).toHaveLength(2);
     for (const word of STAYING_CALM) expect(t).not.toContain(word);
     expect(t).not.toContain("O*NET");
   });
+
+  it("doesn't say no strength stood out at all when only Staying calm was high", async () => {
+    const parent = await parentId();
+    const kid = await child(parent, 7, "kid7");
+    // Very calm: the student sees "Staying calm: Steady" as a strength. The four traits linked to careers are at or below the middle.
+    await result(kid, "personality", { traits: { extraversion: 50, agreeableness: 40, conscientiousness: 30, neuroticism: 10, intellect: 20 } });
+    await signInParent(parent);
+    const t = text(await renderParentPage());
+    expect(t).toContain(NO_CAREER_STRENGTH("Kid7"));
+    expect(t).not.toContain("No strength stood out");
+    for (const word of STAYING_CALM) expect(t).not.toContain(word);
+  });
+
+  it("names the activities that show results when a child has only finished What matters to you", async () => {
+    const parent = await parentId();
+    const kid = await child(parent, 8, "kid8");
+    await result(kid, "values", { ranking: ["relationships", "achievement", "support", "independence", "recognition", "working_conditions"] });
+    await signInParent(parent);
+
+    const [{ progress: p }] = await parentDashboard(db, parent, now);
+    expect(p.assessments.map((a) => a.state)).toEqual(["not_started", "not_started", "done"]);
+    expect(p.results).toBeNull();
+
+    const t = text(await renderParentPage());
+    expect(t).toContain("1 of 3 done");
+    expect(t).toContain("What matters to you · Done");
+    expect(t).toContain("Results show up here once Kid8 finishes the Interests or Personality activity.");
+    expect(t).not.toContain("finishes an activity");
+    expect(t).not.toContain("Results, for now");
+    // Values results stay out of the parent page.
+    expect(t).not.toContain("relationships");
+  });
 });
+
