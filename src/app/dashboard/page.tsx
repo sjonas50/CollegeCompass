@@ -10,6 +10,7 @@ import { SavedResultsImport } from "@/components/saved-results-import";
 import { FullAccessFeatures } from "@/app/account/access-ui";
 import { UNLOCK_PATH, describeAccess } from "@/lib/access/describe";
 import { accessFor } from "@/lib/access/guard";
+import { getStripe, paidPlansAvailable } from "@/lib/billing/stripe";
 import { getDb } from "@/db";
 import { INSTRUMENTS, type InstrumentId } from "@/lib/assessments/instruments";
 import { strengthsSummary } from "@/lib/assessments/descriptions";
@@ -102,7 +103,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         <Card className="space-y-3">
           <h2 className="font-medium">{accessSummary.headline}</h2>
           {accessSummary.detail && <p className="text-sm text-muted">{accessSummary.detail}</p>}
-          <FullAccessFeatures heading="Unlock these with your family's plan or free access:" />
+          {/* The access page's check: while paid plans are off, free access is the only way to unlock. */}
+          <FullAccessFeatures
+            heading={Boolean(getStripe()) && paidPlansAvailable() ? "Unlock these with your family's plan or free access:" : "Unlock these with free access:"}
+          />
           <ButtonLink href={UNLOCK_PATH}>See how to unlock</ButtonLink>
         </Card>
       ) : (

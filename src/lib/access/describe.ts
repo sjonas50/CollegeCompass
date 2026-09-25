@@ -137,7 +137,8 @@ export function describeAccess(access: HouseholdAccess, audience: "student" | "p
   if (access.freeAccess?.endsAt) {
     endings.push({ text: `Your family's free access ended on ${formatAccessDate(access.freeAccess.endsAt)}.`, at: access.freeAccess.endsAt.getTime() });
   }
-  if (access.trial?.endsAt) {
+  // A trial of no length (TRIAL_DAYS=0) was never offered, so it didn't end.
+  if (access.trial?.endsAt && access.trial.endsAt.getTime() > access.trial.startsAt.getTime()) {
     endings.push({ text: `Your free trial ended on ${formatAccessDate(access.trial.endsAt)}.`, at: access.trial.endsAt.getTime() });
   }
   const latest = endings.sort((a, b) => b.at - a.at)[0];

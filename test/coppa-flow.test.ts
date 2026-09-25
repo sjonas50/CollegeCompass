@@ -185,6 +185,25 @@ describe("parent controls", () => {
     expect(await submit(parentId)).toBe("/parent?not-deleted=1");
   });
 
+  it("gives the same neutral notice for a tampered form whose id isn't an account id", async () => {
+    const { parentId, childId } = await parentWithChild();
+    action.parentId = parentId;
+    const submit = (fields: Record<string, string>) => {
+      const form = new FormData();
+      for (const [k, v] of Object.entries(fields)) form.set(k, v);
+      return deleteChildAction(form).catch((e: { url?: string }) => e.url);
+    };
+    for (const studentId of ["not-a-uuid", "", "../../admin", `${parentId}x`]) {
+      expect(await submit({ studentId, confirm: "on" })).toBe("/parent?not-deleted=1");
+      // Never put in a URL, even when the box isn't ticked.
+      expect(await submit({ studentId })).toBe("/parent?not-deleted=1");
+    }
+    expect(await submit({ confirm: "on" })).toBe("/parent?not-deleted=1");
+    expect(await listChildren(db, parentId)).toHaveLength(1);
+    // A real id still asks for the box first.
+    expect(await submit({ studentId: childId })).toBe(`/parent/children/${childId}/delete?confirm=required`);
+  });
+
   it("deletes everything tied to the child", async () => {
     const { parentId, childId } = await parentWithChild();
     await createSession(db, childId);

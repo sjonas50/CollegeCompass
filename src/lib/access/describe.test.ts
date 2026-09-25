@@ -34,6 +34,17 @@ describe("describeAccess", () => {
     expect(describeFor([trialFrom(ago(30))], null)).toEqual({ headline: "Your free trial ended on September 8, 2026.", tone: "locked" });
   });
 
+  it("never says a trial ended when none was offered (TRIAL_DAYS=0 gives a trial of no length)", () => {
+    const none: GrantRow = { kind: "trial", startsAt: ago(0.5), endsAt: ago(0.5) };
+    for (const audience of ["student", "parent"] as const) {
+      expect(describeFor([none], null, audience)).toEqual({ headline: "Your family doesn't have full access right now.", tone: "locked" });
+      expect(describeFor([], null, audience)).toEqual({ headline: "Your family doesn't have full access right now.", tone: "locked" });
+    }
+    // What did end is still said.
+    const ended: GrantRow = { kind: "free_access", startsAt: ago(400), endsAt: ago(35) };
+    expect(describeFor([none, ended], null).headline).toBe("Your family's free access ended on August 20, 2026.");
+  });
+
   it("gives free access's end date, and says when it can be renewed", () => {
     const free: GrantRow = { kind: "free_access", startsAt: ago(100), endsAt: addMonths(ago(100), 12) };
     expect(describeFor([free], null)).toMatchObject({ headline: "Your family has free access until June 16, 2027.", tone: "ok" });

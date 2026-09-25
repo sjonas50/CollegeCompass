@@ -190,7 +190,7 @@ const HOW = [
   {
     n: 1,
     title: "Find your direction",
-    text: "Three short activities show what you like, how you work and what matters to you. Then see careers that fit, with pay, schooling and job outlook. Pick one or two as your north star, for now.",
+    text: "Three short activities show what you like, how you work and what matters to you. Then see careers that fit you, with the schooling each one takes. Pick one or two as your north star, for now.",
     facts: [
       "Interests: 60 quick activities, about 10 min",
       "Personality: 20 statements, about 3 min",
@@ -617,7 +617,7 @@ function Questions() {
 /* ───────────────────────── Get started ───────────────────────── */
 
 const FREE_TOOLS = [
-  { href: "/careers", icon: BriefcaseIcon, title: "Explore careers", text: "About 1,000 careers, with pay, schooling and outlook." },
+  { href: "/careers", icon: BriefcaseIcon, title: "Explore careers", text: "About 1,000 careers, with the schooling each one takes." },
   { href: "/colleges", icon: BuildingIcon, title: "Search colleges", text: "About 5,800 colleges, with net prices for your income range." },
   { href: "/aid", icon: BookIcon, title: "Paying for college", text: "FAFSA, CSS Profile, fee waivers and scholarships, in English and Spanish." },
 ];

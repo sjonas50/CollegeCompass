@@ -76,7 +76,7 @@ function TeenSignup({ birthDate, savingQuiz }: { birthDate: string; savingQuiz: 
             required
             errors={state?.errors?.password}
           />
-          <SavedQuizField defaultChecked={savingQuiz} />
+          <SavedQuizField defaultChecked={savingQuiz} submitted={values} />
           <Button type="submit" disabled={pending} className="w-full sm:w-auto">
             Create account
           </Button>

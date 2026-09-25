@@ -17,7 +17,7 @@ import SavedPage from "@/app/try/saved/page";
 import { removeImportQuestion } from "@/app/try/saved/remove-import";
 import InstrumentPage from "@/app/discover/[instrument]/page";
 import TryStrengthsPage from "@/app/try/strengths/page";
-import { ImportCard, SavedQuizChoice, SavedQuizField, SavedResultsImport } from "@/components/saved-results-import";
+import { ImportCard, SavedQuizChoice, SavedQuizField, SavedResultsImport, addSavedStrengths } from "@/components/saved-results-import";
 import { type Db, createTestDb, schema } from "@/db";
 import { createChildAccount, registerParent, registerStudent } from "@/lib/accounts";
 import {
@@ -485,13 +485,19 @@ describe("keeping the free results", () => {
       "Someone finished the free interest quiz on this device yesterday. Their top interests were artistic and social.",
     );
     expect(text(unticked)).toContain("Only add them if you took the quiz.");
-    expect(unticked).not.toContain(SAVED_ASSESSMENT_FIELD);
+    // The box is the quiz's only field, so unticked, nothing is sent.
+    const box = (html: string) => {
+      expect(html.match(/<input /g)).toHaveLength(1);
+      return /<input type="checkbox"([^>]*)>/.exec(html)![1];
+    };
+    expect(box(unticked)).toContain(`name="${SAVED_ASSESSMENT_FIELD}"`);
     expect(unticked).not.toContain("checked");
 
     const ticked = renderToStaticMarkup(createElement(SavedQuizChoice, { saved: finished, defaultChecked: true }));
-    expect(ticked).toContain(`name="${SAVED_ASSESSMENT_FIELD}"`);
+    expect(box(ticked)).toContain(`name="${SAVED_ASSESSMENT_FIELD}"`);
+    expect(box(ticked)).toContain('checked=""');
     // Only the answers go with the form, never the time.
-    const value = ticked.match(/name="savedAssessment" value="([^"]+)"/)![1].replaceAll("&quot;", '"');
+    const value = box(ticked).match(/ value="([^"]+)"/)![1].replaceAll("&quot;", '"');
     expect(JSON.parse(value)).not.toHaveProperty("savedAt");
 
     const forChild = text(renderToStaticMarkup(createElement(SavedQuizChoice, { saved: finished, forChild: true })));
@@ -504,9 +510,15 @@ describe("keeping the free results", () => {
     const strengths = { ...emptySavedStrengths(), answers: Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, 4])), savedAt: 1, counted: true as const };
     const ticked = renderToStaticMarkup(createElement(SavedQuizChoice, { saved: finished, strengths, defaultChecked: true }));
     expect(text(ticked)).toContain("They also answered the strengths questions.");
-    const value = ticked.match(/name="savedStrengths" value="([^"]+)"/)![1].replaceAll("&quot;", '"');
-    expect(JSON.parse(value)).toEqual({ v: 1, instrument: "personality", version: "mini-ipip-1", answers: strengths.answers });
-    expect(renderToStaticMarkup(createElement(SavedQuizChoice, { saved: finished, strengths }))).not.toContain(SAVED_STRENGTHS_FIELD);
+    // They're added as the form is submitted, and only when the quiz goes with it.
+    expect(ticked).not.toContain(SAVED_STRENGTHS_FIELD);
+    const withQuiz = new FormData();
+    withQuiz.set(SAVED_ASSESSMENT_FIELD, serializeSavedAssessment(finished));
+    addSavedStrengths(withQuiz, serializeSavedAssessment(strengths));
+    expect(JSON.parse(String(withQuiz.get(SAVED_STRENGTHS_FIELD)))).toEqual({ v: 1, instrument: "personality", version: "mini-ipip-1", answers: strengths.answers });
+    const withoutQuiz = new FormData();
+    addSavedStrengths(withoutQuiz, serializeSavedAssessment(strengths));
+    expect(withoutQuiz.has(SAVED_STRENGTHS_FIELD)).toBe(false);
   });
 });
 

@@ -70,7 +70,7 @@ export function ChildAccountForm({ consentToken }: { consentToken?: string }) {
           with our AI counselor stay private to them, and your download of their data leaves those chats out.
         </p>
         {/* Unticked by default, so a parent's own quiz (or another child's) isn't added by mistake. */}
-        <SavedQuizField forChild />
+        <SavedQuizField forChild submitted={values} />
         <Button type="submit" disabled={pending} className="w-full sm:w-auto">
           Create my child&apos;s account
         </Button>

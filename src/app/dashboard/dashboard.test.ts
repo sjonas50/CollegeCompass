@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DashboardPage from "@/app/dashboard/page";
 import { type Db, createTestDb, schema } from "@/db";
+import { resetEnvCache } from "@/env";
 import { addCustom, updateEntry } from "@/lib/applications/service";
 import type { SessionUser } from "@/lib/auth/sessions";
 
@@ -25,6 +26,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllEnvs();
+  resetEnvCache();
   state.db = null;
   state.user = null;
 });
@@ -70,5 +73,19 @@ describe("dashboard colleges card", () => {
     expect(t).toContain("1 on your list. Your deadlines show up here when your family has full access.");
     expect(t).not.toContain("No deadlines in the next two weeks");
     expect(t).toContain("Unlock my list");
+  });
+});
+
+describe("dashboard locked card", () => {
+  it("mentions a family plan only while paid plans are on", async () => {
+    await signIn(false);
+    const off = text(await dashboard());
+    expect(off).toContain("Unlock these with free access:");
+    expect(off).not.toMatch(/plan or free access/);
+
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_fake");
+    vi.stubEnv("STRIPE_PRICE_ANNUAL", "price_annual");
+    resetEnvCache();
+    expect(text(await dashboard())).toContain("Unlock these with your family's plan or free access:");
   });
 });

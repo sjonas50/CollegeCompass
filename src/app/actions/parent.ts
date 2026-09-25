@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import * as z from "zod";
 import { getDb } from "@/db";
 import { ChildAccountSchema, createChildAccount } from "@/lib/accounts";
 import { isUnder13 } from "@/lib/auth/age";
@@ -75,10 +76,12 @@ export async function createChildAction(_prev: FormState, formData: FormData): P
 
 export async function deleteChildAction(formData: FormData) {
   const parent = await requireUser(["parent"]);
-  const studentId = String(formData.get("studentId") ?? "");
-  if (formData.get("confirm") !== "on") redirect(`/parent/children/${studentId}/delete?confirm=required`);
-  // Nothing was deleted (not their child, or already gone): never claim it was, and say no more.
-  if (!(await deleteStudent(await getDb(), parent.id, studentId))) redirect("/parent?not-deleted=1");
+  // Nothing was deleted (not an account id, not their child, or already gone): never claim it was,
+  // and say no more.
+  const studentId = z.uuid().safeParse(formData.get("studentId"));
+  if (!studentId.success) redirect("/parent?not-deleted=1");
+  if (formData.get("confirm") !== "on") redirect(`/parent/children/${studentId.data}/delete?confirm=required`);
+  if (!(await deleteStudent(await getDb(), parent.id, studentId.data))) redirect("/parent?not-deleted=1");
   redirect("/parent?deleted=1");
 }
 

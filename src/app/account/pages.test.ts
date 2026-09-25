@@ -8,7 +8,7 @@ import CheckoutSuccessPage from "@/app/account/billing/success/page";
 import FreeAccessPage from "@/app/account/free-access/page";
 import { type Db, createTestDb, schema } from "@/db";
 import { resetEnvCache } from "@/env";
-import { CRISIS_LINE } from "@/lib/access/describe";
+import { CRISIS_LINE, formatAccessDate } from "@/lib/access/describe";
 import { grantFreeAccess } from "@/lib/access/service";
 import type { SessionUser } from "@/lib/auth/sessions";
 import { type FakeStripeRequest, fakeStripe, listObject, subscriptionObject } from "@/lib/billing/fake-stripe";
@@ -183,6 +183,28 @@ describe("/account/free-access", () => {
     const html = await render(FreeAccessPage());
     expect(html).not.toContain('name="statement"');
     expect(text(html)).toContain("Please ask your parent or guardian to turn on free access");
+  });
+
+  it("tells a student under 13 when the family already has free access, instead of asking a parent for it", async () => {
+    const { householdId } = await signIn("student", { birthDate: "2014-03-01" });
+    const endsAt = new Date(Date.now() + 200 * DAY_MS);
+    await db.insert(schema.accessGrants).values({ householdId, kind: "free_access", startsAt: new Date(Date.now() - 165 * DAY_MS), endsAt });
+    let t = text(await render(FreeAccessPage()));
+    expect(t).toContain(`Your family already has free access until ${formatAccessDate(endsAt)}.`);
+    expect(t).not.toContain("Please ask your parent");
+    expect(t).not.toContain("renew");
+
+    // In its last days, only a parent can renew it.
+    const other = await signIn("student", { birthDate: "2014-03-01" });
+    const soon = new Date(Date.now() + 10 * DAY_MS);
+    await db
+      .insert(schema.accessGrants)
+      .values({ householdId: other.householdId, kind: "free_access", startsAt: new Date(Date.now() - 355 * DAY_MS), endsAt: soon });
+    const html = await render(FreeAccessPage());
+    t = text(html);
+    expect(t).toContain(`Your family already has free access until ${formatAccessDate(soon)}. Your parent or guardian can renew it from their College Compass account.`);
+    expect(html).not.toContain('name="statement"');
+    expect(heading(html)).toBe("Free access");
   });
 
   it("says when free access can next be renewed", async () => {

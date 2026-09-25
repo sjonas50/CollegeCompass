@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { importSavedResultsAction } from "@/app/actions/try";
 import { forgetSavedAssessment, useSavedAssessment, useSavedStrengths } from "@/app/try/saved-store";
 import { Button, Card, FormMessage } from "@/components/ui";
@@ -118,6 +118,12 @@ type QuizChoiceProps = {
    * Otherwise a shared family or library computer could add someone else's quiz to a new account.
    */
   defaultChecked?: boolean;
+  /**
+   * The form's last submitted values (useFormAction's `values`, empty until the first submit). React
+   * resets a form after its action, so after a submit the box starts as it was sent, like the rest
+   * of the form.
+   */
+  submitted?: Record<string, string>;
 };
 
 /**
@@ -134,25 +140,52 @@ export function SavedQuizField(props: QuizChoiceProps) {
 }
 
 /**
+ * As a form is submitted, adds the strengths answers to its data when the quiz is going with it,
+ * and only then (see SavedQuizChoice).
+ */
+export function addSavedStrengths(formData: FormData, strengths: string) {
+  if (formData.get(SAVED_ASSESSMENT_FIELD)) formData.set(SAVED_STRENGTHS_FIELD, strengths);
+}
+
+/**
  * The box for a finished quiz. It says when the quiz was taken and its top interests, so whoever is
  * signing up can tell whether it's theirs.
+ *
+ * The box is itself the `savedAssessment` field, and uncontrolled, so the quiz is sent exactly when
+ * the box shows a tick, whatever React's form reset does. The strengths answers follow the quiz
+ * into the form's data as it's submitted.
  */
 export function SavedQuizChoice({
   saved,
   strengths = null,
   forChild = false,
   defaultChecked = false,
+  submitted = {},
   now,
 }: QuizChoiceProps & { saved: SavedAssessment; strengths?: SavedStrengths | null; now?: Date }) {
-  const [include, setInclude] = useState(defaultChecked);
   const aboutId = `${useId()}-about`;
+  const box = useRef<HTMLInputElement>(null);
+  // After a submit, as it was sent; before one, the form's default.
+  const ticked = Object.keys(submitted).length > 0 ? Boolean(submitted[SAVED_ASSESSMENT_FIELD]) : defaultChecked;
+  const strengthsAnswers = strengths ? serializeSavedAssessment(strengths) : null;
+
+  useEffect(() => {
+    const form = box.current?.form;
+    if (!form || !strengthsAnswers) return;
+    const add = (event: FormDataEvent) => addSavedStrengths(event.formData, strengthsAnswers);
+    form.addEventListener("formdata", add);
+    return () => form.removeEventListener("formdata", add);
+  }, [strengthsAnswers]);
+
   return (
     <div className="rounded-lg border border-border p-4 text-sm">
       <label className="flex min-h-11 items-start gap-3 py-1">
         <input
+          ref={box}
           type="checkbox"
-          checked={include}
-          onChange={(e) => setInclude(e.target.checked)}
+          name={SAVED_ASSESSMENT_FIELD}
+          value={serializeSavedAssessment(saved)}
+          defaultChecked={ticked}
           aria-describedby={aboutId}
           className="mt-0.5 size-5 shrink-0"
         />
@@ -166,8 +199,6 @@ export function SavedQuizChoice({
         {describeSavedQuiz(saved, now, { strengths: Boolean(strengths) })}{" "}
         {forChild ? "Only add them if this child took the quiz." : "Only add them if you took the quiz."}
       </p>
-      {include && <input type="hidden" name={SAVED_ASSESSMENT_FIELD} value={serializeSavedAssessment(saved)} />}
-      {include && strengths && <input type="hidden" name={SAVED_STRENGTHS_FIELD} value={serializeSavedAssessment(strengths)} />}
     </div>
   );
 }
