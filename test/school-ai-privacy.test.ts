@@ -13,6 +13,7 @@ import { counselorTools } from "@/lib/counselor/tools";
 import { addNorthStar } from "@/lib/goals";
 import { explainLatestMatches } from "@/lib/matching/explain";
 import { computeMatches, loadOccupationProfiles } from "@/lib/matching/service";
+import { acceptSuggestion, pathOverview, savePlanSettings, studentPath } from "@/lib/planner/service";
 import { exportStudentData } from "@/lib/privacy";
 import { saveSchoolSettings } from "@/lib/schools/student";
 import { insertSchools, school } from "@/lib/schools/test-fixtures";
@@ -165,6 +166,23 @@ describe("no AI payload carries the student's school", () => {
     expect(events.some((e) => e.type === "delta")).toBe(true);
     expect(requests.length).toBeGreaterThanOrEqual(2);
     expectNoSchool("counselor requests", requests);
+  });
+
+  it("the class path: its result, the parent's summary, and the counselor's view after planning", async () => {
+    await savePlanSettings(db, userId, { path: "degree", choices: { txEndorsements: ["stem"] } }, NOW);
+    const path = await studentPath(db, userId, NOW);
+    if (path.kind !== "planned") throw new Error(path.kind);
+    // The student's own screen may name the school (ctx), but the engine never sees it.
+    expect(JSON.stringify(path.ctx.school)).toMatch(/Zephyrhill/);
+    const key = path.result.plans[0]!.years.flatMap((y) => y.slots.flatMap((s) => (s.kind === "suggested" ? [s.key] : [])))[0];
+    expect(await acceptSuggestion(db, userId, key, NOW)).toMatchObject({ ok: true });
+    const again = await studentPath(db, userId, NOW);
+    if (again.kind !== "planned") throw new Error(again.kind);
+    expectNoSchool("path result", again.result);
+    expectNoSchool("path input", { ...again.input, content: null });
+    expectNoSchool("path overview", await pathOverview(db, userId, NOW));
+    expectNoSchool("planSummary after planning", await planSummary(db, userId));
+    expectNoSchool("counselor context after planning", await buildStudentContext(db, { id: userId, grade: 10 }, { now: NOW, knownNames: ["Maya"] }));
   });
 
   it("the career explanation's facts", async () => {

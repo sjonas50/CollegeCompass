@@ -27,6 +27,21 @@ proof-of-concept decisions override the design where they differ; see the end of
 | `routing.ts` | North-star careers to family targets through the CIP rules (pure) |
 | `north-stars.ts` | `northStarFamilyTargets(db, userId)`: the student's north stars, routed |
 | `engine/` | The engine: `plan(input)` (see `engine/README.md`) |
+| `prefs.ts` | `student_plan_prefs`: the kind of path, a chosen family, choices, limits, cohort overrides and set-aside suggestions, checked field by field when read |
+| `service.ts` | `studentPath(db, userId)`: gathers the engine's input from the database (grade, cohort, state, classes, north stars routed to families, the college list, prefs; generic class lists for now) and runs the engine. Add (`acceptSuggestion`), "Not for me" (`dismissSuggestion`), settings, and the parent summary (`pathOverview`) |
+| `view.ts` | Wording shared by "Your path", the print view, the parent view and `/graduation/[state]` |
+
+### Where it shows
+
+- `/plan` "Your path" (`src/app/plan/path/`): full access. Suggestions are looked up by key in
+  today's plan before anything is added, so the browser never decides what's added.
+- `/plan/print` and `/parent/children/[id]/plan` (+ `/print`): the counselor-meeting draft and the
+  parent's read-only view, full access.
+- `/graduation` and `/graduation/[state]`: free, from the same content.
+- Roadmap milestones about choosing classes link to `/plan#path` (`COURSE_PLANNING_MILESTONES`).
+- Students outside UT, TN and TX keep the checklist and course ideas, plus "coming later".
+- The school is shown only on the student's and parent's own screens; the engine never gets it,
+  so nothing from the path can carry it to the AI (`test/school-ai-privacy.test.ts`).
 
 ## Conventions
 

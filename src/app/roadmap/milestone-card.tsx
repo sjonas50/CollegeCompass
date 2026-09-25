@@ -1,4 +1,5 @@
-import { CATEGORY_LABELS, type MilestoneStatus, PATHWAY_LABELS, gradeName, monthList, monthsInSchoolYearOrder } from "@/lib/roadmap";
+import Link from "next/link";
+import { CATEGORY_LABELS, type MilestoneStatus, PATHWAY_LABELS, gradeName, milestonePathLink, monthList, monthsInSchoolYearOrder } from "@/lib/roadmap";
 import type { Milestone } from "@/lib/roadmap/types";
 import { MilestoneActions, type WeekState } from "./milestone-actions";
 
@@ -38,6 +39,8 @@ export function MilestoneCard({
   const Heading = headingLevel === 4 ? "h4" : "h3";
   const titleId = `m-${m.id}`;
   const links = officialLinks(m.sources);
+  // Class-choosing milestones open "Your path" on the Plan page.
+  const pathLink = milestonePathLink(m.id);
   const months = monthsInSchoolYearOrder(m);
 
   return (
@@ -62,6 +65,15 @@ export function MilestoneCard({
         <summary className="cursor-pointer py-3 font-medium underline-offset-2 hover:underline">Why it matters</summary>
         <p className="pb-2 text-muted">{m.why}</p>
       </details>
+
+      {pathLink && (
+        <p className="text-sm">
+          <Link href={pathLink.href} className="inline-flex min-h-11 items-center font-medium underline underline-offset-2">
+            {pathLink.label}
+            <span className="sr-only"> for “{m.title}”</span>
+          </Link>
+        </p>
+      )}
 
       {links.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-3 text-sm">

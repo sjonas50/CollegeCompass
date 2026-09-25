@@ -118,6 +118,8 @@ const WEIGHT: Record<number, number> = { 0: 1_000_000, 1: 10_000, 2: 100, 3: 1 }
 export function isRepeatable(typeId: CourseTypeId): boolean {
   const t = getCourseType(typeId);
   if (t.fallback) return true;
+  // A career pathway's levels go in order (level 1, then 2, then 3): never the same level twice.
+  if (t.ladder?.id.startsWith("cte.")) return false;
   if (/^(pe|arts|other|cte|health)\./.test(typeId)) return true;
   return ["ela.journalism", "ela.debate", "ela.speech", "ela.creative_writing"].includes(typeId);
 }
@@ -533,6 +535,34 @@ export class Filler {
   }
 
   /** The level the student has been taking in a subject (honors continuity), never college-level. */
+  /**
+   * Career pathway classes go in order within one cluster (a program of study): the next level of
+   * a pathway already in the plan comes first (0), then anything else (1); a level with its
+   * previous level missing, or a second pathway's first class, comes last (2).
+   */
+  private cteContinuity(typeId: CourseTypeId, grade: SchoolGrade): number {
+    const rung = getCourseType(typeId).ladder;
+    if (!rung?.id.startsWith("cte.")) return 1;
+    const { id: ladder, rank: level } = rung;
+    const placed = this.items.flatMap((i) => {
+      const r = getCourseType(i.typeId).ladder;
+      return r?.id.startsWith("cte.") ? [{ ladder: r.id, level: r.rank, grade: i.grade }] : [];
+    });
+    if (placed.some((p) => p.ladder === ladder && p.level === level - 1 && p.grade < grade)) return 0;
+    // Starting a pathway: one the class list offers more levels of can be finished in order.
+    if (level === 1 && !placed.some((p) => p.ladder !== ladder)) return 1 + (4 - this.cteLevelsOffered(ladder)) / 10;
+    return 2;
+  }
+
+  private cteLevelsOffered(ladder: string): number {
+    let levels = 0;
+    for (let level = 1; level <= 4; level++) {
+      const typeId = `${ladder}.${level}` as CourseTypeId;
+      if (this.ctx.planGrades.some((g) => (this.ctx.catalogs.get(g)?.byType.get(typeId)?.length ?? 0) > 0)) levels++;
+    }
+    return levels;
+  }
+
   private preferredLevel(subject: CourseSubject): CourseTypeLevel {
     const last = this.items
       .filter((i) => i.own && i.subject === subject && !i.noCredit)
@@ -583,6 +613,7 @@ export class Filler {
           -this.score(c.row, c.grade),
           c.row.collegeLevel ? 1 : 0,
           isRepeatable(c.row.typeId) && this.items.some((i) => i.typeId === c.row.typeId && i.subject === c.row.subject) ? 0 : 1,
+          this.cteContinuity(c.row.typeId, c.grade),
           c.row.level === pref ? 0 : 1,
           math ? (rank === nextRank ? 0 : rank !== null && rank > nextRank ? 2 : 1) : 0,
           ...this.gradePreference(c.row, c.grade),
@@ -683,7 +714,7 @@ export class Filler {
   }
 
   /** The best row for a rung in a grade: the student's family of courses, their level, the load cap. */
-  rowForRung(rank: number, grade: SchoolGrade, priority: DemandPriority): CatalogRow | null {
+  rowForRung(rank: number, grade: SchoolGrade, priority: DemandPriority, skip: (row: CatalogRow) => boolean = () => false): CatalogRow | null {
     const cat = this.ctx.catalogs.get(grade);
     if (!cat) return null;
     const sy = schoolYearOfGrade(this.ctx, grade);
@@ -695,7 +726,7 @@ export class Filler {
       const sorted = [...rows].sort(
         (a, b) => Number(a.collegeLevel) - Number(b.collegeLevel) || Number(a.level !== pref) - Number(b.level !== pref) || levelOrder(a.level) - levelOrder(b.level),
       );
-      const fit = sorted.find((r) => this.fits(grade, r, priority));
+      const fit = sorted.find((r) => !skip(r) && this.fits(grade, r, priority));
       if (fit) return fit;
     }
     return null;
@@ -760,9 +791,10 @@ export class Filler {
     for (const step of solution.steps) {
       const binding = solution.slack.find((s) => s.step === step)?.binding ?? null;
       const priority = (binding?.priority ?? minPriority) as DemandPriority;
-      const row = step.summer ? this.summerRow(step.rank, step.grade) : this.rowForRung(step.rank, step.grade, priority);
-      if (!row) continue;
       const need = this.needs.find((n) => n.id === binding?.id) ?? this.needs.find((n) => constraints.some((c) => c.id === n.id)) ?? null;
+      // A level the student said "Not for me" to gives way to another level of the same class.
+      const row = step.summer ? this.summerRow(step.rank, step.grade) : this.rowForRung(step.rank, step.grade, priority, (r) => this.dismissed(need, r));
+      if (!row || this.dismissed(need, row)) continue;
       // The rung's sources: the requirements and targets that set the ladder's goal.
       const targetNeeds = this.needs.filter((n) => constraints.some((c) => c.id === n.id && c.rank >= step.rank));
       const citations = [...new Set(targetNeeds.flatMap((n) => n.reasons.flatMap((r) => r.citations)))];
@@ -812,7 +844,7 @@ export class Filler {
         const it = rows[0] ? probe(rows[0], grade, y.schoolYear) : null;
         const need = it ? this.needs.find((n) => n.missing > 0 && !n.language && n.priority <= 3 && matchesAny(it, n.selectors) && n.selectors.some((s) => s.subjects?.includes("english") || s.types?.some((t) => t.startsWith("ela.")))) : undefined;
         if (!need || !this.yearAllows(grade, need.priority)) continue;
-        const row = rows.find((r) => this.fits(grade, r, need.priority));
+        const row = rows.find((r) => !this.dismissed(need, r) && this.fits(grade, r, need.priority));
         if (!row) continue;
         this.commit(row, grade, "english", need, need.priority);
         this.refreshNeeds(this.items[this.items.length - 1]);

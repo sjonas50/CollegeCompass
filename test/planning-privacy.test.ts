@@ -5,7 +5,7 @@ import { registerStudent } from "@/lib/accounts";
 import { deleteStudent, exportStudentData } from "@/lib/privacy";
 
 describe("Phase 2 data privacy", () => {
-  it("exports and deletes courses, roadmap progress, steps, conversations, memory, reminders, and state and school", async () => {
+  it("exports and deletes courses, roadmap progress, steps, conversations, memory, reminders, state and school, and plan choices", async () => {
     const db = await createTestDb();
     const res = await registerStudent(
       db,
@@ -24,12 +24,14 @@ describe("Phase 2 data privacy", () => {
     await db.insert(schema.reminderSends).values({ userId, weekStart: "2026-09-21" });
     await db.update(schema.users).set({ homeState: "TN" }).where(eq(schema.users.id, userId));
     await db.insert(schema.studentSchools).values({ userId, role: "current", choice: "not_listed", notListedName: "Oak Hill", fromSchoolYear: 2026, setBy: "student" });
+    await db.insert(schema.studentPlanPrefs).values({ userId, targets: { path: "degree" }, choices: { tnElectiveFocus: "cte" }, dismissed: ["tn.grad/arts.credit/arts.visual/regular"] });
 
     const data = await exportStudentData(db, userId, userId);
     expect(data?.profile.gradeSchoolYear).toBe(2026);
     expect(data?.profile.homeState).toBe("TN");
     expect(data?.schools).toEqual([expect.objectContaining({ role: "current", choice: "not_listed", notListedName: "Oak Hill" })]);
     expect(data?.courses).toHaveLength(1);
+    expect(data?.planChoices).toMatchObject({ targets: { path: "degree" }, choices: { tnElectiveFocus: "cte" }, dismissed: ["tn.grad/arts.credit/arts.visual/regular"] });
     expect(data?.roadmapProgress).toHaveLength(1);
     expect(data?.weeklySteps).toHaveLength(1);
     // The student's own copy is complete.
@@ -40,7 +42,7 @@ describe("Phase 2 data privacy", () => {
     expect(await deleteStudent(db, userId, userId)).toBe(true);
     for (const table of [
       schema.studentCourses, schema.studentMilestones, schema.weeklySteps, schema.counselorConversations,
-      schema.counselorMessages, schema.counselorMemory, schema.reminderSends, schema.studentSchools,
+      schema.counselorMessages, schema.counselorMemory, schema.reminderSends, schema.studentSchools, schema.studentPlanPrefs,
     ]) {
       expect(await db.select().from(table)).toHaveLength(0);
     }

@@ -19,6 +19,8 @@ import { parentDashboard } from "@/lib/parent-dashboard";
 import { billingCardNote, describeAccess } from "@/lib/access/describe";
 import { accessFor } from "@/lib/access/guard";
 import { getStripe, paidPlansAvailable } from "@/lib/billing/stripe";
+import { pathOverview } from "@/lib/planner/service";
+import { ChildPathBlock, type ChildPathState } from "./child-path";
 import { ChildProgressSummary } from "./child-progress";
 
 export const metadata: Metadata = { title: "Parent" };
@@ -57,6 +59,12 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
   const schools = await schoolSettingsFor(
     db,
     children.map((c) => c.id),
+  );
+  // Each child's class path (full access, like the child's Plan page): computed, never stored.
+  const paths = new Map<string, ChildPathState>(
+    await Promise.all(
+      children.map(async (c): Promise<[string, ChildPathState]> => [c.id, access.full ? await pathOverview(db, c.id) : { kind: "locked" }]),
+    ),
   );
   const plan = describeAccess(access, "parent");
   const showsInterests = children.some((c) => c.progress.results?.interests);
@@ -104,6 +112,7 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
                 {where && <p className="text-sm text-muted break-words">{where}</p>}
               </div>
               <ChildProgressSummary name={child.displayName} progress={child.progress} />
+              <ChildPathBlock childId={child.id} name={child.displayName} state={paths.get(child.id) ?? { kind: "no_state" }} />
               <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
                 <ButtonLink href={`/api/parent/children/${child.id}/export`} variant="secondary" prefetch={false}>
                   Download data

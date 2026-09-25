@@ -21,7 +21,7 @@ import utGraduation from "@/content/planner/ut/graduation.json";
 import type { IsoDate, PlannerState } from "./common";
 import { PLANNER_CONTENT_FILES } from "./content-files";
 import type { CipRoutingFile, MajorFamiliesFile, RigorFile } from "./content-types";
-import type { PlannerContent, ReviewNotice } from "./engine-io";
+import type { PlannerContent, ResolvedCitation, ReviewNotice } from "./engine-io";
 import { type FamilyId, routeCip } from "./families";
 import { contentFingerprint, reviewNotice, ruleSetFreshness } from "./review";
 import type { ContentHeader, InfoCard, RuleFile, RuleSet } from "./rules";
@@ -108,6 +108,31 @@ export function contentFiles(): { label: string; file: ContentHeader }[] {
   return labelled;
 }
 
+let CITATION_INDEX: Map<string, ResolvedCitation> | null = null;
+
+/**
+ * Citations by id, resolved with their source, for lines the engine doesn't carry (information
+ * cards, family cautions, the free graduation pages). Unknown ids are left out.
+ */
+export function resolveContentCitations(ids: Iterable<string>): Record<string, ResolvedCitation> {
+  if (!CITATION_INDEX) {
+    CITATION_INDEX = new Map();
+    for (const { file } of contentFiles()) {
+      for (const c of file.citations) {
+        const source = file.sources[c.source];
+        if (!source || CITATION_INDEX.has(c.id)) continue;
+        CITATION_INDEX.set(c.id, { id: c.id, quote: c.quote, pinpoint: c.pinpoint ?? null, source: { ...source, key: c.source } });
+      }
+    }
+  }
+  const out: Record<string, ResolvedCitation> = {};
+  for (const id of ids) {
+    const found = CITATION_INDEX.get(id);
+    if (found) out[id] = found;
+  }
+  return out;
+}
+
 /** Each file's current fingerprint and review status (what /admin/rules shows a reviewer). */
 export function contentFingerprints(): { id: string; label: string; fingerprint: string; status: ContentHeader["review"]["status"] }[] {
   return contentFiles().map(({ label, file }) => ({ id: file.id, label, fingerprint: contentFingerprint(file), status: file.review.status }));
@@ -149,6 +174,16 @@ export function ruleSetsForCollege(unitId: number): RuleSet[] {
 /** Information cards about a college (admission type, test policy), never evaluated. */
 export function infoCardsForCollege(unitId: number): InfoCard[] {
   return CONTENT.rules.flatMap((f) => (f.infoCards ?? []).filter((c) => c.unitId === unitId));
+}
+
+/**
+ * A state's information cards that aren't about one college: statewide admission programs (Texas
+ * automatic admission, Admit Utah) and scholarships decided by GPA and tests (Tennessee HOPE).
+ */
+export function stateInfoCards(state: PlannerState): { admissions: InfoCard[]; aid: InfoCard[] } {
+  const files = CONTENT.rules.filter((f) => f.state === state);
+  const cards = (kind: RuleFile["kind"]) => files.filter((f) => f.kind === kind).flatMap((f) => (f.infoCards ?? []).filter((c) => c.unitId === undefined));
+  return { admissions: cards("admissions"), aid: cards("aid") };
 }
 
 /** The labeled state default rule sets ("Texas: what Texas A&M recommends") for a student with no in-state public college. */

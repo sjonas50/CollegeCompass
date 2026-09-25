@@ -553,6 +553,7 @@
                   "label": "U.S. History and Geography",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.us_hist"] }],
                   "cite": ["tn-2103-i-12-courses"]
                 },
@@ -561,6 +562,7 @@
                   "label": "World History and Geography",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.world_hist"] }],
                   "cite": ["tn-2103-i-12-courses"]
                 },
@@ -569,6 +571,7 @@
                   "label": "Economics",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.econ"] }],
                   "cite": ["tn-2103-i-12-courses", "tn-3103-iii-1"]
                 },
@@ -577,6 +580,7 @@
                   "label": "U.S. Government and Civics",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.us_gov"] }],
                   "cite": ["tn-2103-i-12-courses", "tn-3103-iii-7"]
                 },
@@ -585,6 +589,7 @@
                   "label": "The rest of your 3 social studies credits",
                   "kind": "credits",
                   "units": 4,
+                  "allowSplit": true,
                   "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
                   "cite": ["tn-2103-i-12"]
                 }
@@ -930,6 +935,7 @@
                   "label": "U.S. History and Geography",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.us_hist"] }],
                   "cite": ["tn-2103-i-12-courses"]
                 },
@@ -938,6 +944,7 @@
                   "label": "World History and Geography",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.world_hist"] }],
                   "cite": ["tn-2103-i-12-courses"]
                 },
@@ -946,6 +953,7 @@
                   "label": "Economics",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.econ"] }],
                   "cite": ["tn-2103-i-12-courses", "tn-3103-iii-1"]
                 },
@@ -954,6 +962,7 @@
                   "label": "U.S. Government and Civics",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.us_gov"] }],
                   "cite": ["tn-2103-i-12-courses", "tn-3103-iii-7"]
                 },
@@ -962,6 +971,7 @@
                   "label": "The rest of your 3 social studies credits",
                   "kind": "credits",
                   "units": 4,
+                  "allowSplit": true,
                   "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
                   "cite": ["tn-2103-i-12"]
                 }

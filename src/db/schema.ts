@@ -632,6 +632,39 @@ export const studentSchools = pgTable(
   ],
 );
 
+/** What a student chose to plan toward on "Your path" (see src/lib/planner/prefs.ts). */
+export type StoredPlanTargets = {
+  /** "degree", "training" or "undecided"; absent until the student picks (then it's inferred). */
+  path?: string;
+  /** A major family the student chose to plan around; absent means their north-star careers decide. */
+  familyId?: string;
+};
+
+/**
+ * A student's class-planning choices for "Your path": the kind of path and major family they plan
+ * toward (`targets`), choices a rule depends on (a Texas endorsement, a Tennessee elective focus, a
+ * world language), their limits (at most how many college-level classes a year), cohort
+ * corrections, and the suggestions they said "Not for me" to. One row per student, deleted with
+ * them and in their data download. The plan itself is computed on demand and never stored. The
+ * JSON is validated when read (src/lib/planner/prefs.ts), so unknown values are dropped, never
+ * trusted. Holds no school: that's in student_schools, and never goes to the AI.
+ */
+export const studentPlanPrefs = pgTable("student_plan_prefs", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  targets: jsonb("targets").$type<StoredPlanTargets>().notNull().default({}),
+  // PlannerChoices (src/lib/planner/engine-io.ts).
+  choices: jsonb("choices").$type<Record<string, unknown>>().notNull().default({}),
+  // Partial PlannerLimits.
+  limits: jsonb("limits").$type<Record<string, unknown>>().notNull().default({}),
+  // CohortOverrides (src/lib/planner/cohort.ts): a different 9th-grade start or graduation year.
+  cohort: jsonb("cohort").$type<Record<string, unknown>>().notNull().default({}),
+  // Stable suggestion keys ("tx.fhsp.grad/arts/arts.visual/regular") the student set aside.
+  dismissed: text("dismissed").array().notNull().default(sql`'{}'::text[]`),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** A student's progress on roadmap milestones (the milestone library lives in code). */
 export const studentMilestones = pgTable(
   "student_milestones",

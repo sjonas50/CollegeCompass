@@ -71,6 +71,11 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   suggested again; the requirement reads "Ask your counselor".
 - **Generic lists** allow a class later than its usual grades (catching up), never earlier; the
   fill still prefers the usual grades. School lists' printed grades always win.
+- **Career pathway levels** (`cte.<cluster>.<level>`) are never suggested twice, and a requirement
+  met by CTE classes (a Texas endorsement's program of study) continues a pathway already in the
+  plan before starting another, preferring clusters whose later levels the class list offers.
+- **"Not for me"** holds everywhere a class can be placed, including English each year and the math
+  ladder: another level of the same class is suggested instead, or the need becomes a gap.
 
 ## Tests
 

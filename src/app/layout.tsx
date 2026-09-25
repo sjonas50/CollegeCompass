@@ -22,6 +22,7 @@ const FOOTER_LINKS = [
   { href: "/careers", label: "Explore careers" },
   { href: "/colleges", label: "Colleges" },
   { href: "/aid", label: "Financial aid guide" },
+  { href: "/graduation", label: "Graduation requirements" },
   { href: "/about/data", label: "Data sources" },
   { href: "/privacy", label: "Privacy" },
 ];

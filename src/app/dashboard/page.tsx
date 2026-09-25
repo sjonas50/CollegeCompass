@@ -20,7 +20,7 @@ import { requireUser } from "@/lib/auth/dal";
 import { computeGpa } from "@/lib/courses/gpa";
 import { listCourses } from "@/lib/courses/service";
 import { listNorthStars } from "@/lib/goals";
-import { buildRoadmap, getMilestoneProgress } from "@/lib/roadmap";
+import { buildRoadmap, getMilestoneProgress, milestonePathLink } from "@/lib/roadmap";
 import { MILESTONES } from "@/lib/roadmap/milestones";
 import { listEntries } from "@/lib/applications/service";
 import { formatDate, usToday } from "@/lib/applications/dates";
@@ -157,7 +157,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             <ul className="mt-3 space-y-2">
               {timely.map((m) => (
                 <li key={m.id}>
-                  <Link href="/roadmap" className="block rounded-xl border border-border bg-surface p-4 hover:border-accent">
+                  <Link href={milestonePathLink(m.id)?.href ?? "/roadmap"} className="block rounded-xl border border-border bg-surface p-4 hover:border-accent">
                     <span className="font-medium">{m.title}</span>
                     <span className="mt-1 block text-sm text-muted">{m.detail}</span>
                   </Link>

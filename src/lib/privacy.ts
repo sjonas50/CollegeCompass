@@ -33,6 +33,7 @@ import { endPlanWithoutParent } from "./billing/checkout";
 import { runOrQueueCleanup } from "./billing/cleanup";
 import { type Stripe, getStripe } from "./billing/stripe";
 import { consumeRateLimit } from "./rate-limit";
+import { exportPlanPrefs } from "./planner/prefs";
 import { exportSchoolData } from "./schools/student";
 
 /**
@@ -349,6 +350,9 @@ async function exportPlanningData(db: Db, studentId: string) {
   ]);
   return {
     courses: courses.map(({ userId: _userId, ...c }) => c),
+    // "Your path": what they plan toward, their choices and limits, and suggestions set aside.
+    // Plans themselves are computed, never stored.
+    planChoices: await exportPlanPrefs(db, studentId),
     roadmapProgress: milestones,
     weeklySteps: steps.map(({ userId: _userId, ...s }) => s),
     reminderEmails: reminders,

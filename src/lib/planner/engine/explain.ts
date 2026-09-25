@@ -37,8 +37,17 @@ export function leafCitations(rc: RuleSetCtx, leaf: CLeaf): CitationId[] {
   return uniq([...leaf.cite, ...(leaf.strengthCite ? [leaf.strengthCite] : []), rc.rs.strengthCite].filter((c) => c));
 }
 
+/** The rule set's title after the issuer, unless it only repeats it ("UT Austin (UT Austin high school prerequisites)"). */
+function ruleSetAside(rc: RuleSetCtx): string {
+  if (rc.rs.kind === "state_graduation" || rc.rs.kind === "local_graduation") return "";
+  const norm = (s: string) => s.toLowerCase().replace(/^the /, "").trim();
+  const issuer = norm(rc.rs.issuer.name);
+  const title = norm(rc.rs.title);
+  return title.includes(issuer) || issuer.includes(title) ? "" : ` (${rc.rs.title})`;
+}
+
 export function requirementReason(rc: RuleSetCtx, leaf: CLeaf): Reason {
-  const where = rc.rs.kind === "state_graduation" || rc.rs.kind === "local_graduation" ? "" : ` (${rc.rs.title})`;
+  const where = ruleSetAside(rc);
   return reason("requirement", `${strengthPhrase(leaf.strength, rc.rs.issuer.name)}${where}: ${leaf.label}.`, {
     claim: "rule",
     strength: leaf.strength,

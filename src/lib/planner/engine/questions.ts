@@ -28,6 +28,20 @@ const AREA_WORDS: Record<string, string> = {
   digital_studies: "a digital studies credit",
 };
 
+/**
+ * An unconfirmed item as a question for the counselor: the item's facts without its own "Ask your
+ * counselor …" advice (the student is asking now), ending in "Can you check this for me?".
+ */
+export function unverifiedQuestion(text: string): string {
+  const facts = text
+    .split(/(?<=[.!?])\s+/)
+    .filter((s) => !/^ask your counselor\b/i.test(s))
+    .map((s) => s.replace(/[;,]\s*(so )?ask your counselor\b[^.!?]*([.!?])/i, "$2"))
+    .join(" ")
+    .trim();
+  return `${facts || text} Can you check this for me?`;
+}
+
 function listWords(names: string[]): string {
   return names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
@@ -132,7 +146,7 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
   const total = audit.flatMap((rs) => (rs.kind === "state_graduation" ? rs.requirements : [])).find((r) => r.reqId && r.measure === "units" && r.label.toLowerCase().includes("total"));
   if (total && !ctx.ruleSets.some((r) => r.rs.kind === "local_graduation")) add("district-total", `Does our district require more than the state's ${toCredits(total.required)} credits?`);
   // Unverified items, shown once.
-  for (const rs of audit) for (const u of rs.unverified.slice(0, 1)) add(`unverified:${rs.ruleSetId}:${u.id}`, `Could you check this for me: ${u.text}`, [], rs.ruleSetId);
+  for (const rs of audit) for (const u of rs.unverified.slice(0, 1)) add(`unverified:${rs.ruleSetId}:${u.id}`, unverifiedQuestion(u.text), [], rs.ruleSetId);
 
   const fillers = [
     ["general:on-track", "Are my classes on track to graduate?"],
