@@ -8,8 +8,9 @@ export const CAREER_PAGE_SIZE = 25;
 /**
  * Everyday words → words in O*NET job titles. Keys are one or two typed words (singular). Each
  * value lists alternatives, any of which can match; an alternative with two words must find them
- * next to each other in the title. Keep this short: an entry belongs here only when students
- * really type the word and the titles never use it.
+ * next to each other in the title, and a word ending in "$" is a whole word only ("nurse$" finds
+ * Nurses, not Nursery). Keep this short: an entry belongs here only when students really type the
+ * word and the titles never use it, or use another form of it (Nursing Assistants for "nurse").
  */
 export const CAREER_SYNONYMS: Record<string, readonly string[]> = {
   cop: ["police"],
@@ -24,7 +25,8 @@ export const CAREER_SYNONYMS: Record<string, readonly string[]> = {
   "high school": ["secondary school"],
   art: ["art", "artist"],
   engineering: ["engineer", "engineering"],
-  nursing: ["nurse", "nursing"],
+  nurse: ["nurse$", "nursing$"],
+  nursing: ["nurse$", "nursing$"],
   teaching: ["teacher", "teaching"],
 };
 
@@ -75,7 +77,8 @@ function wordForms(word: string): Set<string> {
   return forms;
 }
 
-type QueryWord = { word: string; forms: Set<string> };
+/** A word to find in titles, in any of its forms; `whole` when it can't be the start of a longer word. */
+type QueryWord = { word: string; forms: Set<string>; whole: boolean };
 
 /**
  * One way to read the words typed. Each term is words that must be next to each other in the
@@ -86,8 +89,11 @@ type Alternative = { terms: QueryWord[][]; groups: (readonly string[])[] };
 
 /** A typed word is the whole title word, in any of its forms. */
 const isWord = (w: QueryWord, titleWord: string | undefined) => titleWord !== undefined && w.forms.has(titleWord);
-/** A typed word of 4 or more letters also matches the start of a longer word: "engin" finds Engineers. */
-const startsWord = (w: QueryWord, titleWord: string) => w.word.length >= 4 && titleWord.startsWith(w.word);
+/**
+ * A typed word of 4 or more letters also matches the start of a longer word: "engin" finds
+ * Engineers. A synonym's whole word ("nurse$") doesn't: "nurse" isn't Nursery.
+ */
+const startsWord = (w: QueryWord, titleWord: string) => !w.whole && w.word.length >= 4 && titleWord.startsWith(w.word);
 
 /**
  * What to look for: alternatives, each a list of terms and groups that must all match. Typed
@@ -102,7 +108,11 @@ function parseCareerQuery(text: string): Alternative[] {
   const synonym = (key: string) => (Object.hasOwn(CAREER_SYNONYMS, key) ? CAREER_SYNONYMS[key] : undefined);
   const group = (key: string) => (Object.hasOwn(CAREER_GROUPS, key) ? CAREER_GROUPS[key] : undefined);
   const segments: Alternative[][] = [];
-  const term = (words: string): Alternative => ({ terms: [words.split(" ").map((word) => ({ word, forms: wordForms(word) }))], groups: [] });
+  const queryWord = (spelled: string): QueryWord => {
+    const word = spelled.replace(/\$$/, "");
+    return { word, forms: wordForms(word), whole: spelled.endsWith("$") };
+  };
+  const term = (words: string): Alternative => ({ terms: [words.split(" ").map(queryWord)], groups: [] });
   for (let i = 0; i < typed.length; i++) {
     const next = typed[i + 1];
     const pair = next === undefined ? undefined : stems(next).map((s) => synonym(`${typed[i]} ${s}`)).find(Boolean);

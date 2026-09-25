@@ -138,8 +138,29 @@ describe("findCareers matching", () => {
 
   it("matches the start of longer words for 4 or more letters, after whole-word matches", async () => {
     expect(await titles("engin")).toEqual(["Airline Pilots, Copilots, and Flight Engineers", "Civil Engineers", "Engineering Teachers, Postsecondary"]);
-    // "Nursery" starts with "nurse", so it comes after every nurse.
-    expect((await titles("nurse")).at(-1)).toBe("Farmworkers and Laborers, Crop, Nursery, and Greenhouse");
+    // Part of a word finds every word it starts, Nursery too.
+    expect(await titles("nurs")).toContain("Farmworkers and Laborers, Crop, Nursery, and Greenhouse");
+  });
+
+  it("finds nurses and nursing careers for nurse, nurses and nursing, but not Nursery", async () => {
+    // Real O*NET 30.x titles. Before: "nurse" found Farmworkers and Laborers, Crop, Nursery, and
+    // Greenhouse but not Nursing Assistants, and "nurses" found neither.
+    await insertCareers(db, [
+      ["31-1131.00", "Nursing Assistants"],
+      ["25-1072.00", "Nursing Instructors and Teachers, Postsecondary"],
+    ]);
+    const nursing = [
+      "Nurse Practitioners",
+      "Nursing Assistants",
+      "Nursing Instructors and Teachers, Postsecondary",
+      "Licensed Practical and Licensed Vocational Nurses",
+      "Registered Nurses",
+    ];
+    for (const query of ["nurse", "Nurses", "NURSE", "nursing", "I want to be a nurse"]) expect(await titles(query), query).toEqual(nursing);
+    expect(await titles("nursing assistant")).toEqual(["Nursing Assistants"]);
+    expect(await titles("nurse practitioner")).toEqual(["Nurse Practitioners"]);
+    expect(await titles("registered nurse")).toEqual(["Registered Nurses"]);
+    expect(await titles("nursery")).toEqual(["Farmworkers and Laborers, Crop, Nursery, and Greenhouse"]);
   });
 
   it("ignores words after 'Except', which name what the career isn't", async () => {
@@ -208,7 +229,8 @@ describe("findCareers matching", () => {
     for (const [key, terms] of Object.entries(CAREER_SYNONYMS)) {
       expect(key, key).toMatch(/^[a-z]+( [a-z]+)?$/);
       expect(terms.length, key).toBeGreaterThan(0);
-      for (const term of terms) expect(term, key).toMatch(/^[a-z]+( [a-z]+)?$/);
+      // A word ending in "$" is a whole word only.
+      for (const term of terms) expect(term, key).toMatch(/^[a-z]+\$?( [a-z]+\$?)?$/);
     }
     for (const [key, codes] of Object.entries(CAREER_GROUPS)) {
       expect(key, key).toMatch(/^[a-z]+$/);
@@ -227,12 +249,7 @@ describe("findCareers matching", () => {
 
 describe("findCareers ranking", () => {
   it("puts exact titles first, then titles starting with the words, then titles with them in the middle", async () => {
-    expect(await titles("nurse")).toEqual([
-      "Nurse Practitioners",
-      "Licensed Practical and Licensed Vocational Nurses",
-      "Registered Nurses",
-      "Farmworkers and Laborers, Crop, Nursery, and Greenhouse",
-    ]);
+    expect(await titles("nurse")).toEqual(["Nurse Practitioners", "Licensed Practical and Licensed Vocational Nurses", "Registered Nurses"]);
     // "Dentists, General" is Dentists with a qualifier.
     expect(await titles("dentist")).toEqual(["Dentists, General"]);
     expect(await titles("middle school teacher")).toEqual(["Middle School Teachers, Except Special and Career/Technical Education"]);
