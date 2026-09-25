@@ -74,6 +74,14 @@ describe("free results", () => {
     expect(t).not.toContain("No area stands out");
   });
 
+  it("links to browse more careers in each top interest area, and only those", () => {
+    const html = renderToStaticMarkup(createElement(Results, { answers: answersWith({ A: 5, S: 2 }), viewer: "visitor" }));
+    expect(text(html)).toContain("Want more ideas? Browse all the careers built around each of your top interests. Art, music and writing (Artistic)");
+    expect(hrefs(html).filter((h) => h.startsWith("/careers?area="))).toEqual(["/careers?area=A#results"]);
+    const flat = renderToStaticMarkup(createElement(Results, { answers: answersWith({ R: 3, I: 3, A: 3, S: 3, E: 3, C: 3 }), viewer: "visitor" }));
+    expect(text(flat)).not.toContain("Want more ideas?");
+  });
+
   it("links each career with a way back here", () => {
     const html = renderToStaticMarkup(
       createElement(CareerList, {

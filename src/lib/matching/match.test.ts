@@ -7,6 +7,7 @@ import {
   PERSONALITY_WEIGHT,
   type StudentProfile,
   VALUES_WEIGHT,
+  isMatchable,
   occupationTraitDemands,
   pathwayFor,
   pearson,
@@ -14,9 +15,11 @@ import {
   rankForStudent,
   rankOccupations,
   scoreOccupation,
+  shownMatches,
   strengthsThatCount,
   withTraitDemands,
 } from "./match";
+import { NOT_MATCHED_FOR_MINORS, matchFamily } from "./minors";
 
 function occ(code: string, title: string, interests: Partial<Record<Riasec, number>>, values = {}): OccupationProfile {
   return {
@@ -72,6 +75,114 @@ describe("matching", () => {
     );
     expect(ranked.filter((r) => r.code.startsWith("19"))).toHaveLength(4);
     expect(ranked.some((r) => r.title.endsWith("All Other"))).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Careers for minors
+// ---------------------------------------------------------------------------
+
+describe("matches for minors", () => {
+  const people = { interests: { R: 10, I: 12, A: 20, S: 38, E: 30, C: 8 } };
+  const zone = (jobZone: number, o: OccupationProfile) => ({ ...o, jobZone });
+
+  it("never matches careers for adults only, however well they fit", () => {
+    // Profiles shaped exactly like the student's, so each would come first.
+    const bartenders = zone(2, occ("35-3011.00", "Bartenders", { R: 3, I: 3.2, A: 4.2, S: 7, E: 6, C: 2.8 }));
+    const dealers = zone(2, occ("39-3011.00", "Gambling Dealers", { R: 3, I: 3.2, A: 4.2, S: 7, E: 6, C: 2.8 }));
+    const managers = occ("11-9071.00", "Gambling Managers", { R: 3, I: 3.2, A: 4.2, S: 7, E: 6, C: 2.8 });
+    const waiters = zone(2, occ("35-3031.00", "Waiters and Waitresses", { S: 6, E: 5, R: 3 }));
+    expect(scoreOccupation(people, bartenders).score).toBe(100);
+
+    const all = [bartenders, dealers, managers, waiters, teacher, zone(2, accountant)];
+    const ranked = rankForStudent(people, all);
+    expect(ranked.map((r) => r.code)).toEqual([teacher.code, waiters.code, accountant.code]);
+    expect(rankOccupations(people, all).map((r) => r.code)).not.toContain(bartenders.code);
+    for (const code of Object.keys(NOT_MATCHED_FOR_MINORS)) {
+      expect(isMatchable({ code, title: NOT_MATCHED_FOR_MINORS[code].title })).toBe(false);
+    }
+  });
+
+  it("shows the best college teaching job in each group, and the next careers fill the freed places", () => {
+    // The student's own shape on O*NET's 1–7 scale fits perfectly (100); the others a little less.
+    const shape = { R: 2.5, I: 2.8, A: 4, S: 6.7, E: 5.5, C: 2.2 };
+    const english = occ("25-1123.00", "English Language and Literature Teachers, Postsecondary", shape);
+    const history = occ("25-1125.00", "History Teachers, Postsecondary", { ...shape, E: 4.5 }); // 99
+    const art = occ("25-1121.00", "Art, Drama, and Music Teachers, Postsecondary", { ...shape, E: 4 }); // 97
+    const counselors = occ("21-1012.00", "Educational, Guidance, and Career Advisors", { ...shape, E: 3 }); // 92
+    const careerTech = zone(3, occ("25-1194.00", "Career/Technical Education Teachers, Postsecondary", { ...shape, E: 4.5 }));
+    const coaches = zone(3, occ("27-2022.00", "Coaches and Scouts", { ...shape, E: 4, R: 4 })); // 93
+    const all = [english, history, art, careerTech, counselors, teacher, coaches, accountant];
+    const score = (o: OccupationProfile) => scoreOccupation(people, o).score;
+    expect([english, history, art, teacher, counselors].map(score)).toEqual([100, 99, 97, 96, 92]);
+
+    const ranked = rankForStudent(people, all);
+    const degree = ranked.filter((r) => pathwayFor(r.jobZone) === "degree").map((r) => r.title);
+    const training = ranked.filter((r) => pathwayFor(r.jobZone) === "training").map((r) => r.title);
+    expect(degree).toEqual([english.title, teacher.title, counselors.title, accountant.title]);
+    // A group of its own: the training path can show one too.
+    expect(training).toEqual([careerTech.title, coaches.title]);
+    // Skipped careers don't use up their field's places under perGroup: at most 2 from 25-1 here.
+    const assistants = occ("25-1999.00", "Graduate Teaching Assistants", { ...shape, E: 3 });
+    expect(rankOccupations(people, [history, art, english, assistants], { perGroup: 2 }).map((r) => r.title)).toEqual([
+      english.title,
+      assistants.title,
+    ]);
+  });
+
+  it("shows at most one modeling career, keeping the order of everything else", () => {
+    const models = zone(2, occ("41-9012.00", "Models", { A: 7, E: 6, S: 5 }));
+    const fashion = zone(2, occ("41-9012.01", "Fashion Models", { A: 7, E: 6, S: 5.1 }));
+    const promoters = zone(2, occ("41-9011.00", "Demonstrators and Product Promoters", { E: 6, S: 5, A: 4 }));
+    const artsy = { interests: { R: 5, I: 8, A: 38, S: 25, E: 32, C: 5 } };
+    const ranked = rankOccupations(artsy, [models, fashion, promoters]).map((r) => r.title);
+    expect(ranked).toEqual(["Fashion Models", "Demonstrators and Product Promoters"]);
+    expect(matchFamily(models)).toBe("model");
+    expect(matchFamily(promoters)).toBeNull();
+  });
+
+  it("keeps the ranking otherwise unchanged", () => {
+    const { profiles } = syntheticOccupations();
+    // Careers left out, each a copy of a synthetic career's profile under a listed code.
+    const leftOut = Object.entries(NOT_MATCHED_FOR_MINORS).map(([code, { title }], i) => ({ ...profiles[i * 7], code, title }));
+    const rand = random(17);
+    for (let i = 0; i < 20; i++) {
+      const s = randomStudent(rand);
+      expect(rankForStudent(s, [...leftOut, ...profiles])).toEqual(rankForStudent(s, profiles));
+      // None of the synthetic careers is in a family: without the field caps, the plain order by score.
+      const ranked = rankOccupations(s, profiles, { limit: 120, perGroup: 120 });
+      expect(ranked.map((r) => r.code)).toEqual(
+        profiles
+          .map((p) => scoreOccupation(s, p))
+          .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
+          .map((r) => r.code),
+      );
+    }
+  });
+});
+
+describe("stored matches", () => {
+  const stored = (occupationCode: string, title: string, jobZone: number) => ({ occupationCode, title, jobZone });
+
+  it("leave out careers no longer matched, and all but the first of a family in each pathway", () => {
+    const old = [
+      stored("25-1123.00", "English Language and Literature Teachers, Postsecondary", 5),
+      stored("27-3043.00", "Writers and Authors", 4),
+      stored("25-1125.00", "History Teachers, Postsecondary", 5),
+      stored("41-9012.00", "Models", 2),
+      stored("35-3011.00", "Bartenders", 2),
+      stored("25-1194.00", "Career/Technical Education Teachers, Postsecondary", 3),
+      stored("39-3011.00", "Gambling Dealers", 2),
+      stored("41-9012.01", "Fashion Models", 2),
+    ];
+    expect(shownMatches(old).map((m) => m.title)).toEqual([
+      "English Language and Literature Teachers, Postsecondary",
+      "Writers and Authors",
+      "Models",
+      "Career/Technical Education Teachers, Postsecondary",
+    ]);
+    // Matches made under these rules come back unchanged.
+    expect(shownMatches(shownMatches(old))).toEqual(shownMatches(old));
   });
 });
 

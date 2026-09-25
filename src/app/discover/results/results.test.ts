@@ -83,6 +83,17 @@ describe("/discover/results", () => {
     expect(t).not.toContain("No area stands out");
   });
 
+  it("links to browse more careers in each top interest area", async () => {
+    await takeInterests(SCIENTIST);
+    const html = await render();
+    // Each link names the area as the page does above it (Investigative, Realistic, Artistic).
+    expect(text(html)).toContain(
+      "Want more ideas? Browse all the careers built around each of your top interests. Science and solving problems (Investigative) Building and fixing things (Realistic) Art, music and writing (Artistic)",
+    );
+    for (const area of ["I", "R", "A"]) expect(html).toContain(`href="/careers?area=${area}#results"`);
+    expect(html).not.toContain('href="/careers?area=S#results"');
+  });
+
   it("says no area stands out when every answer is 'Not sure', with no great or good fits", async () => {
     await takeInterests({ R: 3, I: 3, A: 3, S: 3, E: 3, C: 3 });
     const html = await render();
@@ -93,6 +104,8 @@ describe("/discover/results", () => {
     expect(t).toContain("Worth exploring");
     expect(t).toMatch(/You can take the interests activity again after \w+ \d+, \d{4}\./);
     expect(html).toContain('href="/careers"');
+    // No top interests to browse by: "Browse all careers" leads to every area instead.
+    expect(t).not.toContain("Want more ideas?");
     // All six areas are described, since none is ahead.
     expect(t).toContain("Hands-on work:");
     expect(t).toContain("Keeping things in order:");

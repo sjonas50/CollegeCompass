@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
 import { registerStudent } from "@/lib/accounts";
 import { INTEREST_ITEMS, PERSONALITY_ITEMS, type Riasec } from "@/lib/assessments/instruments";
+import { SCORING_VERSION } from "@/lib/assessments/scoring";
 import { completeAttempt, saveResponses, startOrResumeAttempt } from "@/lib/assessments/service";
 import type { SessionUser } from "@/lib/auth/sessions";
 import { updateMatchesAction } from "@/app/actions/discover";
@@ -103,7 +104,7 @@ describe("/discover/personality once it's done", () => {
     await updateMatchesAction();
     const updated = await latestMatchRun(state.db!, state.user!.id);
     expect(updated?.id).not.toBe(run?.id);
-    expect(updated?.scoringVersion).toBe("2");
+    expect(updated?.scoringVersion).toBe(SCORING_VERSION);
     t = text(await render());
     expect(t).toContain("Your matches now give a small boost to careers that call for your social energy, warmth, organization and curiosity.");
     expect(t).toContain("See my updated matches");
@@ -120,7 +121,7 @@ describe("/discover/personality once it's done", () => {
     await finish("interests", (i) => (i.area === "I" ? 5 : 2));
     await finish("personality", (i) => (i.keyed === 1 ? 5 : 1));
     const run = await latestMatchRun(state.db!, state.user!.id);
-    expect(run).toMatchObject({ scoringVersion: "2", personalityAttemptId: null });
+    expect(run).toMatchObject({ scoringVersion: SCORING_VERSION, personalityAttemptId: null });
     const t = text(await render());
     expect(t).toContain("Your answers didn't change your matches. Your interests decide them.");
     expect(t).not.toMatch(/small boost|Update my matches|updated matches/);

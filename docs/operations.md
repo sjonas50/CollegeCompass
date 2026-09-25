@@ -125,9 +125,11 @@ error-monitoring service for anything older.
   1. Update the file URLs in `scripts/load-reference.ts`, and `SCORECARD_RELEASE` in
      `src/lib/colleges/describe.ts`.
   2. Locally: `npm run data:load`, `npm test`, `npm run check:matching`,
-     `npm run data:check-scorecard`.
+     `npm run data:check-scorecard`. If `check:matching` says a listed career changed or a new
+     gambling or bar job needs review, update `src/lib/matching/minors.ts`.
   3. Deploy, then load production: `DATABASE_URL="..." npm run data:load` and
-     `DATABASE_URL="..." npm run data:check-scorecard`. Student data isn't touched.
+     `DATABASE_URL="..." npm run data:check-scorecard`. Student data isn't touched. If you changed
+     `minors.ts`, also refill students' matches (see "Refilling career matches" below).
 - **Financial aid guide, before each FAFSA season** (the FAFSA opens around October 1):
   1. Re-check every date and dollar amount in `src/content/aid-guide/en.json` against
      studentaid.gov, fix what changed, and update `updated`.
@@ -160,6 +162,25 @@ DATABASE_URL="postgres://..." npm run access:grant -- --by <your staff email> --
 
 The script prints the household id. Don't write the family's name or email next to it in notes or
 tickets.
+
+### Refilling career matches
+
+Each student's career matches are saved when they finish an activity. When a deploy changes which
+careers can be matches (`src/lib/matching/minors.ts`), saved lists can still hold careers the new
+rules leave out. Pages hide those, so the lists come up short until the student finishes another
+activity. After the deploy, remake them:
+
+```bash
+DATABASE_URL="postgres://..." npm run matches:refill -- --dry-run   # counts the lists that need it
+DATABASE_URL="postgres://..." npm run matches:refill
+```
+
+- **Run it once after deploying scoring version 3**, the first version with these rules, and after
+  each later deploy that changes `minors.ts`.
+- Each short list is ranked again from the same activity results, under the new rules, so the next
+  careers down fill the gaps. Other lists aren't touched, and running it again changes nothing.
+- It prints counts only. The student sees a new explanation of their matches the next time they
+  look (written by the AI within their budget, or the template).
 
 ## Incidents
 

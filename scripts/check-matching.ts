@@ -4,6 +4,12 @@
  * least 8 of the top 10 lead with one of the student's interests (the main one, or either
  * letter of a blend — an RI student should see engineers, which O*NET codes as IR).
  *
+ * Matches for minors (src/lib/matching/minors.ts): no career in NOT_MATCHED_FOR_MINORS appears in
+ * any list checked here, nor for a student whose interests are shaped exactly like that career (who
+ * would otherwise get it first), and no list shows more than one of each MATCH_FAMILIES kind per
+ * pathway. Every listed code must still name the same career in the loaded data, and any other
+ * gambling or bartending title must be reviewed (listed, or in REVIEWED_AND_KEPT).
+ *
  * Personality: the same students with a few strengths profiles must stay credible, personality may
  * add at most PERSONALITY_WEIGHT × 100 points to any career, and at most 5 of the 20 careers shown
  * may change. Personality mustn't stand in for years of school: on each path, every strengths
@@ -14,6 +20,7 @@
  */
 import "dotenv/config";
 import { getDb } from "../src/db";
+import { occupations } from "../src/db/schema";
 import { type BigFive, RIASEC, type Riasec } from "../src/lib/assessments/instruments";
 import {
   type OccupationProfile,
@@ -24,6 +31,7 @@ import {
   rankForStudent,
   scoreOccupation,
 } from "../src/lib/matching/match";
+import { MATCH_FAMILIES, NOT_MATCHED_FOR_MINORS, REVIEWED_AND_KEPT, matchFamily } from "../src/lib/matching/minors";
 import { loadOccupationProfiles } from "../src/lib/matching/service";
 
 // A strongly typed student: "strongly like" every activity in the main area(s), "dislike" the rest.
@@ -73,6 +81,23 @@ function liftByZone(profiles: OccupationProfile[], traits: Record<BigFive, numbe
   return [...byZone].sort((a, b) => a[0] - b[0]).map(([zone, lifts]) => ({ zone, mean: lifts.reduce((a, b) => a + b, 0) / lifts.length }));
 }
 
+/** What's wrong with a match list under the rules for minors: listed careers, or a family shown twice on a path. */
+function minorsProblems(list: { code: string; title: string; jobZone: number | null }[]): string[] {
+  const problems = list.filter((m) => Object.hasOwn(NOT_MATCHED_FOR_MINORS, m.code)).map((m) => `${m.title} is never matched`);
+  for (const pathway of ["degree", "training"] as const) {
+    for (const family of MATCH_FAMILIES) {
+      const shown = list.filter((m) => pathwayFor(m.jobZone) === pathway && matchFamily(m) === family.id);
+      if (shown.length > 1) problems.push(`${shown.length} ${family.id} careers on the ${pathway} path: ${shown.map((m) => m.title).join("; ")}`);
+    }
+  }
+  return problems;
+}
+
+/** A student whose six scores (0–40) have exactly the shape of an occupation's O*NET profile (1–7). */
+function shapedLike(p: OccupationProfile) {
+  return { interests: Object.fromEntries(RIASEC.map((a) => [a, Math.round(((p.interests[a] - 1) / 6) * 40)])) as Record<Riasec, number> };
+}
+
 function leadsWith(byCode: Map<string, OccupationProfile>, codes: string[], c: (typeof CASES)[number]) {
   return codes.filter((code) => {
     const p = byCode.get(code)!;
@@ -82,7 +107,8 @@ function leadsWith(byCode: Map<string, OccupationProfile>, codes: string[], c: (
 }
 
 async function main() {
-  const profiles = await loadOccupationProfiles(await getDb(), { fresh: true });
+  const db = await getDb();
+  const profiles = await loadOccupationProfiles(db, { fresh: true });
   if (profiles.length === 0) throw new Error("No reference data. Run `npm run data:load` first.");
   const byCode = new Map(profiles.map((p) => [p.code, p]));
   const withStyles = profiles.filter((p) => p.traitDemand).length;
@@ -137,7 +163,44 @@ async function main() {
     }
   }
   console.log(`\n${ZONE_PROFILES.length * 2 - zoneFailures}/${ZONE_PROFILES.length * 2} Job Zone cases pass`);
-  process.exit(failures || personalityFailures || zoneFailures ? 1 : 0);
+
+  console.log("\nMatches for minors");
+  let minorsFailures = 0;
+  const fail = (message: string) => {
+    minorsFailures++;
+    console.log(`FAIL ${message}`);
+  };
+  // The listed codes still name the careers they were chosen for, and no gambling or bar job is new.
+  const titles = new Map((await db.select({ code: occupations.code, title: occupations.title }).from(occupations)).map((o) => [o.code, o.title]));
+  for (const [code, { title }] of Object.entries({ ...NOT_MATCHED_FOR_MINORS, ...REVIEWED_AND_KEPT })) {
+    if (titles.get(code) !== title) fail(`${code} is "${titles.get(code) ?? "missing"}" in the loaded data, not "${title}": review src/lib/matching/minors.ts`);
+  }
+  for (const [code, title] of titles) {
+    const reviewed = Object.hasOwn(NOT_MATCHED_FOR_MINORS, code) || Object.hasOwn(REVIEWED_AND_KEPT, code);
+    if (!reviewed && /gambl|casino|bartend|liquor|sports ?book/i.test(title)) fail(`${code} ${title} hasn't been reviewed for minors`);
+  }
+  // Every list above, at the signed-in and free quiz sizes (FREE_MATCH_LIMITS; import.ts is
+  // server-only), and students shaped exactly like each career left out or shown once per path, who
+  // would otherwise get it first.
+  const FREE_MATCH_LIMITS = { degree: 6, training: 6 };
+  const students = [
+    ...CASES.flatMap((c) => [student(c.main, c.second), ...STRENGTHS.map((s) => ({ ...student(c.main, c.second), personality: s.traits }))]),
+    ...profiles.filter((p) => Object.hasOwn(NOT_MATCHED_FOR_MINORS, p.code) || matchFamily(p)).map(shapedLike),
+  ];
+  let lists = 0;
+  for (const s of students) {
+    for (const limits of [undefined, FREE_MATCH_LIMITS]) {
+      lists++;
+      for (const problem of minorsProblems(rankForStudent(s, profiles, limits))) {
+        fail(`${RIASEC.map((a) => `${a}${s.interests[a]}`).join(" ")}: ${problem}`);
+      }
+    }
+  }
+  console.log(
+    `${minorsFailures ? "FAIL" : "PASS"} ${lists} match lists: none of the ${profiles.filter((p) => Object.hasOwn(NOT_MATCHED_FOR_MINORS, p.code)).length} ` +
+      `careers never matched, and at most one of each family per path (${profiles.filter((p) => matchFamily(p)).length} careers in families)`,
+  );
+  process.exit(failures || personalityFailures || zoneFailures || minorsFailures ? 1 : 0);
 }
 
 main().catch((e) => {
