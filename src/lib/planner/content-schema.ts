@@ -249,7 +249,16 @@ const RuleSetSchema = z.strictObject({
   recheckBy: IsoDate.optional(),
   appliesWhen: GateSchema,
   variants: z.array(VariantSchema).min(1),
-  testRoutes: z.array(z.strictObject({ id: Id, text: plain(TEXT_MAX), cite: CiteList })).optional(),
+  testRoutes: z
+    .array(
+      z.strictObject({
+        id: Id,
+        text: plain(TEXT_MAX),
+        cite: CiteList,
+        by: z.strictObject({ grade: Grade, month: z.number().int().min(1).max(12), day: z.number().int().min(1).max(31) }).optional(),
+      }),
+    )
+    .optional(),
 });
 
 const InfoCardSchema = z.strictObject({

@@ -1,0 +1,425 @@
+import { allCourseTypes, getCourseType } from "../course-types";
+import type {
+  AdmissionConflict,
+  AuditModifier,
+  AuditStatus,
+  CheckResult,
+  Reason,
+  RequirementAudit,
+  RuleSetAudit,
+} from "../engine-io";
+import type { Check, OptionPref, Selector } from "../rules";
+import { type AltResult, evaluateAlternative, languageProgress, leafAccepts, type LeafResult, pickAlternative, type PickOptions } from "./allocate";
+import type { CLeaf } from "./compile";
+import type { Ctx, RuleSetCtx } from "./context";
+import { leafPriority, rowIsOffered, schoolYearOfGrade } from "./context";
+import { leafNoteReason, reason, requirementReason, ruleSetNotes } from "./explain";
+import type { Item } from "./model";
+import { matchesAny } from "./select";
+import { nth } from "./util";
+
+// ---------------------------------------------------------------------------
+// The audit (design §5.5): for every rule set that applies, the requirements with who asks,
+// how strongly, what counts, and a status in words. Rule sets are audited independently, so one
+// Chemistry class counts for graduation, a college and major prep at once.
+// ---------------------------------------------------------------------------
+
+export type RuleSetEval = { rc: RuleSetCtx; best: AltResult | null };
+
+/** Every alternative, then the best (design §5.5). */
+export function evaluateRuleSet(rc: RuleSetCtx, items: Item[], opts: PickOptions = {}): RuleSetEval {
+  if (!rc.variant || rc.alternatives.length === 0) return { rc, best: null };
+  const alts = opts.allowed ? rc.alternatives.filter(opts.allowed) : rc.alternatives;
+  const results = (alts.length ? alts : rc.alternatives).map((alt) => evaluateAlternative(alt, items, rc.allocation));
+  return { rc, best: pickAlternative(results, opts) };
+}
+
+const SEVERITY: Record<AuditStatus, number> = { not_tracked: 0, done: 1, planned: 2, ask_counselor: 3, room_to_add: 4 };
+
+export function worst(statuses: AuditStatus[]): AuditStatus {
+  return statuses.reduce<AuditStatus>((w, s) => (SEVERITY[s] > SEVERITY[w] ? s : w), statuses.length ? "done" : "not_tracked");
+}
+
+/** Whether any remaining grade's class list offers something that would count (on a school's list). */
+export function offeredSomewhere(ctx: Ctx, leaf: CLeaf): { anyOffered: boolean; allSchool: boolean } {
+  const sels = leaf.req.kind === "credits" || leaf.req.kind === "count" ? leaf.req.select : null;
+  let anyOffered = false;
+  let allSchool = ctx.planGrades.length > 0;
+  for (const grade of ctx.planGrades) {
+    const cat = ctx.catalogs.get(grade)!;
+    if (!cat.school) allSchool = false;
+    if (anyOffered) continue;
+    const sy = schoolYearOfGrade(ctx, grade);
+    for (const row of cat.rows) {
+      if (!rowIsOffered(row, grade, sy)) continue;
+      if (leaf.req.kind === "same_language") {
+        if (row.subject === "world_language") anyOffered = true;
+      } else if (sels) {
+        const probe: Item = {
+          key: "probe",
+          ref: { kind: "suggestion", key: "probe" },
+          own: false,
+          typeId: row.typeId,
+          assumed: false,
+          level: row.level,
+          subject: row.subject,
+          grade,
+          schoolYear: sy,
+          term: row.defaultTerm,
+          units: row.units,
+          firm: false,
+          completed: false,
+          creditable: true,
+          noCredit: false,
+          hsCredit: true,
+          letter: null,
+          cte: row.cte,
+          lectureOnly: row.lectureOnly,
+        };
+        if (matchesAny(probe, sels)) anyOffered = true;
+      } else anyOffered = true;
+      if (anyOffered) break;
+    }
+  }
+  return { anyOffered, allSchool };
+}
+
+function localTotalKnown(ctx: Ctx): boolean {
+  return ctx.ruleSets.some((r) => r.rs.kind === "local_graduation");
+}
+
+export type LeafStatus = { status: AuditStatus; modifiers: AuditModifier[] };
+
+/** The student has a different class on the rung a math requirement names. */
+function equivalentMath(ctx: Ctx, sels: readonly Selector[]): boolean {
+  const ranks = new Set<number>();
+  for (const s of sels) for (const t of s.types ?? []) {
+    const l = getCourseType(t).ladder;
+    if (l?.id === "math" && l.rank >= 1 && l.rank <= 3) ranks.add(l.rank);
+  }
+  if (ranks.size === 0) return false;
+  return ctx.items.some((i) => {
+    const l = getCourseType(i.typeId).ladder;
+    return !i.noCredit && l?.id === "math" && ranks.has(l.rank) && !sels.some((s) => s.types?.includes(i.typeId));
+  });
+}
+
+export function leafStatus(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, needsPlanNow: boolean): LeafStatus {
+  const modifiers: AuditModifier[] = [];
+  let status: AuditStatus;
+  const req = r.leaf.req;
+  if (req.kind === "total_credits" && req.source === "state" && !localTotalKnown(ctx)) {
+    // The state minimum; the district may require more (design §3.1). Never Done.
+    status = r.missing > 0 ? "room_to_add" : "ask_counselor";
+  } else if (r.missing === 0) {
+    status = r.planned > 0 ? "planned" : "done";
+  } else {
+    status = "room_to_add";
+    if (req.kind === "credits" || req.kind === "count" || req.kind === "same_language") {
+      const { anyOffered, allSchool } = offeredSomewhere(ctx, r.leaf);
+      if (!anyOffered && allSchool) status = "ask_counselor";
+    }
+    // A class on the same math rung (Integrated Math I for "Algebra I") may count: the counselor decides.
+    if (req.kind === "credits" && equivalentMath(ctx, req.select)) status = "ask_counselor";
+  }
+  if (rc.projected) {
+    modifiers.push("projected");
+    if (status === "done" || status === "planned") status = "ask_counselor";
+  }
+  if (rc.stale) {
+    modifiers.push("stale");
+    if (status === "done") status = "ask_counselor";
+  }
+  if (rc.rs.confidence === "conflicting") {
+    modifiers.push("sources_disagree");
+    if (status === "done" || status === "planned") status = "ask_counselor";
+  }
+  if (rc.rs.confidence === "unverified") {
+    modifiers.push("unverified");
+    if (status === "done" || status === "planned") status = "ask_counselor";
+  }
+  if (r.guessed) modifiers.push("guessed_type");
+  if (needsPlanNow) modifiers.push("needs_plan_now");
+  return { status, modifiers };
+}
+
+// Checks ---------------------------------------------------------------------------------------
+
+function enrolledYears(items: Item[], subject: Item["subject"]): { firm: number; all: number } {
+  const hs = items.filter((i) => i.subject === subject && i.grade >= 9 && !(i.completed && i.letter === "W"));
+  return { firm: new Set(hs.filter((i) => i.firm).map((i) => i.grade)).size, all: new Set(hs.map((i) => i.grade)).size };
+}
+
+export function evaluateCheck(
+  ctx: Ctx,
+  rc: RuleSetCtx,
+  check: Check,
+  leaves: LeafResult[],
+  items: Item[],
+  statusOf: (ruleSetId: string) => AuditStatus | null,
+): CheckResult {
+  const base = { checkId: check.id, kind: check.kind, citations: check.cite };
+  switch (check.kind) {
+    case "enrolled_years": {
+      const { all } = enrolledYears(items, check.subject);
+      const ok = all >= check.years;
+      return {
+        ...base,
+        status: ok ? "ok" : "room_to_add",
+        text: ok
+          ? `${subjectWord(check.subject)} in at least ${check.years} years of high school: on your plan.`
+          : `Room to add ${subjectWord(check.subject).toLowerCase()} in more years of high school (${check.years} years needed).`,
+      };
+    }
+    case "on_schedule_by": {
+      const r = leaves.find((l) => l.leaf.id === check.req);
+      if (!r) return { ...base, status: "ask_counselor", text: "Ask your counselor whether this is on schedule." };
+      const late = r.counted.filter((c) => c.item.grade > check.grade);
+      const label = r.leaf.label;
+      if (r.missing === 0 && late.length === 0) return { ...base, status: "ok", text: `${label} is on your plan by the end of ${nth(check.grade)} grade.` };
+      if (ctx.grade > check.grade) return { ...base, status: "ask_counselor", text: `${label} wasn't on your record by the end of ${nth(check.grade)} grade. Ask your counselor what this means for you.` };
+      return { ...base, status: "room_to_add", text: `Room to add ${label} by the end of ${nth(check.grade)} grade.` };
+    }
+    case "senior_year_math": {
+      if (ctx.choices[check.unlessChoice]) return { ...base, status: "ok", text: "You recorded meeting the college-ready math competency, so a senior-year math class isn't required." };
+      if (ctx.input.targets.path === "training") return { ...base, status: "ok", text: "A full year of math in 12th grade applies if you're college-bound." };
+      const senior = items.filter((i) => i.subject === "math" && i.grade === 12 && !i.noCredit).reduce((n, i) => n + i.units, 0);
+      if (senior >= 4) return { ...base, status: "ok", text: "A full year of math in 12th grade is on your plan." };
+      return { ...base, status: "room_to_add", text: "Room to add a full year of math in 12th grade, unless you meet the college-ready math competency." };
+    }
+    case "no_endorsement_after": {
+      if (!ctx.choices.txFoundationOnly) return { ...base, status: "ok", text: "You're planning with an endorsement." };
+      if (ctx.grade <= check.grade && !(ctx.grade === check.grade && ctx.inProgressGrade === null)) {
+        return {
+          ...base,
+          status: "ask_counselor",
+          text: `You can't graduate without an endorsement until after ${nth(check.grade)} grade. After that it takes counselor advising and your parent's written permission. It also rules out the Distinguished Level of Achievement.`,
+        };
+      }
+      return {
+        ...base,
+        status: "ask_counselor",
+        text: "Graduating without an endorsement takes counselor advising and your parent's written permission. It also rules out the Distinguished Level of Achievement.",
+      };
+    }
+    case "requires_rule_set": {
+      const statuses = check.anyOf.map(statusOf).filter((s): s is AuditStatus => s !== null);
+      if (statuses.some((s) => s === "done" || s === "planned")) return { ...base, status: "ok", text: "The other part this needs is on your plan too." };
+      const names = check.anyOf.map((id) => ctx.allRuleSets.get(id)?.rs.title ?? id);
+      if (statuses.length === 0) return { ...base, status: "room_to_add", text: `This also needs one of: ${names.join(", ")}. Choose one to count it.` };
+      return { ...base, status: statuses.includes("ask_counselor") ? "ask_counselor" : "room_to_add", text: `This also needs one of: ${names.join(", ")}, finished or planned.` };
+    }
+  }
+}
+
+function subjectWord(subject: Item["subject"]): string {
+  return subject === "math" ? "Math" : subject === "english" ? "English" : subject === "science" ? "Science" : subject.replace(/_/g, " ");
+}
+
+// Conflicts --------------------------------------------------------------------------------------
+
+/** Would an admission requirement accept this class? */
+function admissionAccepts(leaf: CLeaf, item: Item): boolean {
+  const req = leaf.req;
+  if (req.kind === "credits" || req.kind === "count") return matchesAny(item, req.select);
+  if (req.kind === "same_language") return languageProgress([item], leaf).counted.length > 0;
+  return true;
+}
+
+const PARALLEL = new Map<string, boolean>();
+
+/**
+ * Two requirements are about the same kind of class when some course type counts for both (a
+ * diploma's "4th math" and a college's "four math units"), as opposed to only sharing an area (a
+ * diploma's "Secondary Math I" and a college's "one math beyond Math III").
+ */
+function parallel(grad: CLeaf, adm: CLeaf): boolean {
+  const key = `${JSON.stringify(grad.req)}|${JSON.stringify(adm.req)}`;
+  const cached = PARALLEL.get(key);
+  if (cached !== undefined) return cached;
+  let found = false;
+  for (const t of allCourseTypes()) {
+    if (t.fallback) continue;
+    const probe = typeProbe(t.id);
+    if (leafAccepts(grad, probe) && admissionAccepts(adm, probe)) {
+      found = true;
+      break;
+    }
+  }
+  PARALLEL.set(key, found);
+  return found;
+}
+
+function typeProbe(typeId: Item["typeId"]): Item {
+  const t = getCourseType(typeId);
+  return {
+    key: "probe",
+    ref: { kind: "suggestion", key: "probe" },
+    own: false,
+    typeId,
+    assumed: false,
+    level: "regular",
+    subject: t.subject,
+    grade: 11,
+    schoolYear: 2030,
+    term: "full_year",
+    units: t.units,
+    firm: true,
+    completed: false,
+    creditable: true,
+    noCredit: false,
+    hsCredit: true,
+    letter: null,
+    cte: t.cte === "always",
+    lectureOnly: false,
+  };
+}
+
+/**
+ * "This counts for your diploma, but UTC may not count it. Ask your counselor." (design §5.5): a
+ * class counts toward a graduation requirement; a target college's admission pattern has a
+ * requirement about the same kind of class that isn't met yet; and none of that college's
+ * requirements in the area would accept this class (computer science as the 4th math, Floral
+ * Design as fine arts, CTE as a lab science).
+ */
+export function admissionConflicts(evals: RuleSetEval[]): Map<string, AdmissionConflict[]> {
+  const out = new Map<string, AdmissionConflict[]>();
+  // Unit patterns only: a program gate ("Calculus I with a B") isn't a list of what counts in an area.
+  const admissions = evals.filter((e) => e.best && e.rc.rs.kind === "college_admission");
+  for (const e of evals) {
+    if (!e.best) continue;
+    const kind = e.rc.rs.kind;
+    if (kind !== "state_graduation" && kind !== "graduation_option" && kind !== "local_graduation") continue;
+    for (const r of e.best.leaves) {
+      if (!r.leaf.own || !r.leaf.area || r.leaf.area === "electives") continue;
+      if (r.leaf.req.kind === "total_credits" || r.leaf.req.kind === "remaining_electives") continue;
+      for (const c of r.counted) {
+        for (const a of admissions) {
+          const same = a.best!.leaves.filter((l) => l.leaf.area === r.leaf.area && l.leaf.req.kind !== "total_credits" && l.leaf.req.kind !== "remaining_electives");
+          if (same.length === 0 || same.some((l) => admissionAccepts(l.leaf, c.item))) continue;
+          const short = same.filter((l) => l.missing > 0 && parallel(r.leaf, l.leaf));
+          if (short.length === 0) continue;
+          const key = `${e.rc.rs.id}/${r.leaf.id}`;
+          const list = out.get(key) ?? [];
+          if (list.some((x) => x.admission.ruleSetId === a.rc.rs.id && sameRef(x.courseRef, c.item.ref))) continue;
+          list.push({
+            courseRef: c.item.ref,
+            graduation: { ruleSetId: e.rc.rs.id, reqId: r.leaf.id },
+            admission: { ruleSetId: a.rc.rs.id, reqId: short[0].leaf.id },
+            text: `This counts for your diploma, but ${a.rc.rs.issuer.name} may not count it. Ask your counselor.`,
+          });
+          out.set(key, list);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * A family-chosen waiver or opt-out (an `option` branch) where a target college lists the same area
+ * for admission: "You chose a waiver for world language, but UT Chattanooga lists it for admission."
+ * Keyed like conflicts: "<ruleSetId>/<reqId>".
+ */
+export const OPTION_WORDS: Record<OptionPref, string> = {
+  utMath3OptOut: "Secondary Math III opt-out",
+  tnWorldLanguageWaiver: "world language waiver",
+  tnFineArtsWaiver: "fine arts waiver",
+  txArtsHumanitiesScienceSwap: "4th science swap",
+};
+
+export function waiverNotes(evals: RuleSetEval[]): Map<string, Reason[]> {
+  const out = new Map<string, Reason[]>();
+  const admissions = evals.filter((e) => e.best && e.rc.rs.kind === "college_admission");
+  for (const e of evals) {
+    if (!e.best || (e.rc.rs.kind !== "state_graduation" && e.rc.rs.kind !== "graduation_option")) continue;
+    const noted = new Set<string>();
+    for (const r of e.best.leaves) {
+      if (!r.leaf.own || !r.leaf.optionPref || !r.leaf.area) continue;
+      for (const a of admissions) {
+        if (noted.has(`${r.leaf.optionPref}|${a.rc.rs.id}`)) continue;
+        const same = a.best!.leaves.find((l) => l.leaf.area === r.leaf.area);
+        if (!same) continue;
+        noted.add(`${r.leaf.optionPref}|${a.rc.rs.id}`);
+        const key = `${e.rc.rs.id}/${r.leaf.id}`;
+        const text = `You chose the ${OPTION_WORDS[r.leaf.optionPref as OptionPref] ?? "waiver"}, but ${a.rc.rs.issuer.name} lists "${same.leaf.label}" for admission. Ask your counselor.`;
+        out.set(key, [...(out.get(key) ?? []), reason("conflict", text, { ruleSetId: a.rc.rs.id, reqId: same.leaf.id, strength: same.leaf.strength, citations: same.leaf.cite })]);
+      }
+    }
+  }
+  return out;
+}
+
+function sameRef(a: Item["ref"], b: Item["ref"]): boolean {
+  return a.kind === b.kind && (a.kind === "course" ? a.courseId === (b as typeof a).courseId : a.key === (b as typeof a).key);
+}
+
+// Output ----------------------------------------------------------------------------------------
+
+export function requirementAudit(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, conflicts: AdmissionConflict[], needsPlanNowKeys: Set<string>): RequirementAudit {
+  const priority = leafPriority(rc, r.leaf.strength);
+  const npn =
+    ctx.inProgressGrade === 12 &&
+    priority === 0 &&
+    (r.missing > 0 || r.counted.some((c) => c.item.ref.kind === "suggestion" && needsPlanNowKeys.has(c.item.ref.key)));
+  const { status, modifiers } = leafStatus(ctx, rc, r, npn);
+  return {
+    reqId: r.leaf.id,
+    label: r.leaf.label,
+    strength: r.leaf.strength,
+    area: r.leaf.area,
+    status,
+    modifiers,
+    measure: r.leaf.measure,
+    required: r.required,
+    firm: r.firm,
+    planned: r.planned,
+    missing: r.missing,
+    counted: r.counted.map((c) => ({ ref: c.item.ref, amount: c.amount, firm: c.item.firm })),
+    reasons: [
+      requirementReason(rc, r.leaf),
+      ...[leafNoteReason(rc, r.leaf)].filter((x): x is Reason => x !== null),
+      ...ruleSetNotes(rc).filter((n) => n.kind === "projected" || n.kind === "stale"),
+    ],
+    conflicts,
+  };
+}
+
+export function ruleSetAudit(
+  ctx: Ctx,
+  e: RuleSetEval,
+  items: Item[],
+  conflicts: Map<string, AdmissionConflict[]>,
+  needsPlanNowKeys: Set<string>,
+  statusOf: (id: string) => AuditStatus | null,
+): RuleSetAudit {
+  const { rc, best } = e;
+  const variant = rc.variant;
+  const requirements = best ? best.leaves.filter((l) => l.leaf.own).map((l) => requirementAudit(ctx, rc, l, conflicts.get(`${rc.rs.id}/${l.leaf.id}`) ?? [], needsPlanNowKeys)) : [];
+  const checks = best && variant ? (variant.checks ?? []).map((c) => evaluateCheck(ctx, rc, c, best.leaves, items, statusOf)) : [];
+  const checkStatuses: AuditStatus[] = checks.map((c) => (c.status === "ok" ? "done" : c.status));
+  let status = variant ? worst([...requirements.map((r) => r.status), ...checkStatuses]) : "ask_counselor";
+  if (rc.rs.strength === "info" && status === "room_to_add") status = "not_tracked";
+  return {
+    ruleSetId: rc.rs.id,
+    title: rc.rs.title,
+    kind: rc.rs.kind,
+    issuer: rc.rs.issuer,
+    strength: rc.rs.strength,
+    confidence: rc.rs.confidence,
+    cohort: rc.cohort,
+    variantId: variant?.id ?? null,
+    alternativeIndex: best ? best.alt.index : null,
+    projected: rc.projected,
+    stale: rc.stale,
+    review: rc.file.review.status,
+    status,
+    requirements,
+    checks,
+    conditions: (variant?.conditions ?? []).map((c) => ({ id: c.id, label: c.label, kind: c.kind, citations: c.cite })),
+    unverified: variant?.unverified ?? [],
+    warnings: (variant?.warnings ?? []).map((w) => ({ id: w.id, text: w.text, citations: w.cite })),
+    testRoutes: (rc.rs.testRoutes ?? []).map((t) => ({ id: t.id, text: t.text, citations: t.cite })),
+  };
+}
+
