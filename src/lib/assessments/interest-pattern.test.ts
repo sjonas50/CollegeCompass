@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { describeSavedQuiz, emptySavedAssessment, topInterestsText } from "./anonymous";
-import { INTEREST_ITEMS, type Riasec } from "./instruments";
+import { INTEREST_ITEMS, RIASEC, RIASEC_INFO, type Riasec } from "./instruments";
 import {
   NOT_SURE_AREA_SCORE,
   areaLevel,
@@ -8,6 +8,7 @@ import {
   codeTieText,
   fewAreasText,
   interestPattern,
+  interestPhrase,
   isFlatProfile,
   noAreaStandsOut,
   noLeadReason,
@@ -194,5 +195,20 @@ describe("interest patterns", () => {
     expect(describeSavedQuiz({ ...emptySavedAssessment(), answers: artistic })).toBe(
       "Someone finished the free interest quiz on this device. Their top interests were artistic.",
     );
+  });
+});
+
+describe("interestPhrase", () => {
+  it("puts each area in plain words, without any area's label", () => {
+    expect(RIASEC.map(interestPhrase)).toEqual([
+      "hands-on work",
+      "figuring things out",
+      "making things that express ideas",
+      "working with people",
+      "leading and influencing",
+      "keeping things in order",
+    ]);
+    const labels = new RegExp(`\\b(${RIASEC.map((a) => RIASEC_INFO[a].name).join("|")})\\b`, "i");
+    for (const area of RIASEC) expect(interestPhrase(area)).not.toMatch(labels);
   });
 });

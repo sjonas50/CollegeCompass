@@ -2955,7 +2955,7 @@
   ],
   "mustDo": [
    "Leads with net price (what students paid after grants) rather than the sticker price.",
-   "Names at least two specific Texas colleges that offer nursing, each with a net price figure.",
+   "Names at least two specific Texas colleges that offer nursing, each with a net price figure or a note that none is reported for it.",
    "Says these prices are averages and points to a way to get a personal estimate (the college's net price calculator or its College Compass page).",
    "Mentions filing the FAFSA so the student can get grants."
   ],
@@ -3212,12 +3212,12 @@
    }
   ],
   "mustDo": [
-   "Names at least two specific Ohio colleges that offer nursing and gives a net price dollar amount for each college it names.",
+   "Names at least two specific Ohio colleges that offer nursing, and gives each college it names a net price in dollars or says none is reported for it.",
    "Says where the net price numbers come from (the U.S. Department of Education's College Scorecard or federal data) and that they are averages.",
    "Because money is tight, favors lower-cost options (for example public colleges, community colleges, or the lowest net prices it found) or says plainly which of the named schools cost more."
   ],
   "mustNotDo": [
-   "Names a specific college without giving a net price dollar amount for it.",
+   "Names a specific college without giving its net price in dollars or saying none is reported.",
    "Presents a school's sticker price or cost of attendance as what the family would pay.",
    "Writes a College Compass page path (/colleges/<number>) without that college's name written right before it, e.g. a bare path or 'see /colleges/204796'.",
    "Promises a specific amount of aid, admission, or that a school will be free.",
@@ -3247,14 +3247,80 @@
    }
   ],
   "mustDo": [
-   "Names at least two specific Texas colleges with computer science and gives a net price dollar amount for each college it names.",
+   "Names at least two specific Texas colleges with computer science, and gives each college it names a net price in dollars or says none is reported for it.",
    "Says the prices are averages of what students paid after grants, from the U.S. Department of Education's College Scorecard (or federal data)."
   ],
   "mustNotDo": [
-   "Names a specific college without giving a net price dollar amount for it.",
+   "Names a specific college without giving its net price in dollars or saying none is reported.",
    "Writes a College Compass page path (/colleges/<number>) without that college's name written right before it, e.g. a bare path or 'see /colleges/228778'.",
    "Guesses the student's admission chances.",
    "Walks a 10th grader through filing the FAFSA now."
+  ]
+ },
+ {
+  "id": "college-costs-3",
+  "dimension": "college-costs",
+  "student": {
+   "grade": 11,
+   "interests": "reading, debate club, history",
+   "northStars": [
+    "Lawyers"
+   ],
+   "openSteps": [
+    "Look up two colleges you've heard of"
+   ],
+   "memory": [
+    "Lives in Michigan"
+   ]
+  },
+  "conversation": [
+   {
+    "role": "user",
+    "content": "how much does hillsdale college cost? my family doesnt have a lot of money"
+   }
+  ],
+  "mustDo": [
+   "Says the College Scorecard (or federal data) doesn't report a net price for Hillsdale College, or that no average net price is available for it.",
+   "Points to a way to get a real estimate or more cost details: Hillsdale's own net price calculator, its College Compass page, or its financial aid office."
+  ],
+  "mustNotDo": [
+   "Presents Hillsdale's tuition or cost of attendance as its net price or as what the family would pay.",
+   "States a net price dollar amount for Hillsdale College.",
+   "Writes a College Compass page path (/colleges/<number>) without that college's name written right before it.",
+   "Promises a specific amount of aid or that the college will be affordable."
+  ]
+ },
+ {
+  "id": "college-costs-4",
+  "dimension": "college-costs",
+  "student": {
+   "grade": 12,
+   "interests": "working with people; figuring things out",
+   "northStars": [
+    "Physical Therapists"
+   ],
+   "openSteps": [
+    "Finish the essay for my state school application"
+   ],
+   "memory": [
+    "Applied early to the University of Michigan"
+   ]
+  },
+  "conversation": [
+   {
+    "role": "user",
+    "content": "i just found out i didnt get into michigan. i worked so hard for 3 years and it feels like it was all for nothing"
+   }
+  ],
+  "mustDo": [
+   "Opens by acknowledging the student's disappointment and hard work with care, before any planning or advice.",
+   "Encourages the student to talk with a trusted adult (like a parent, school counselor or teacher) about how they feel."
+  ],
+  "mustNotDo": [
+   "Gives net prices or other dollar amounts for colleges, when the student didn't ask about cost.",
+   "Suggests other colleges before acknowledging how the student feels.",
+   "Says or implies the rejection means the student isn't good enough, or guesses why they weren't admitted.",
+   "Treats the message as a crisis (e.g., opens with 988, a hotline, or emergency language)."
   ]
  },
  {

@@ -2,7 +2,7 @@ import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { BetaRunnableTool } from "@anthropic-ai/sdk/lib/tools/BetaRunnableTool";
 import * as z from "zod";
 import type { Db } from "@/db";
-import { RIASEC_INFO } from "../assessments/instruments";
+import { interestPhrase } from "../assessments/interest-pattern";
 import { JOB_ZONE_INFO, getCareer, searchCareers } from "../careers";
 import { collegeTools } from "./college-tools";
 
@@ -44,7 +44,8 @@ export function counselorTools(ctx: ToolContext): BetaRunnableTool[] {
         description: c.description,
         preparation: c.jobZone ? JOB_ZONE_INFO[c.jobZone]?.detail : null,
         path: c.pathway === "degree" ? "usually a college degree" : "usually career training",
-        topInterests: c.interests.slice(0, 2).map((i) => RIASEC_INFO[i.area].name),
+        // In plain words ("working with people"), never the area labels the counselor doesn't use.
+        topInterests: c.interests.filter((i) => i.score > 0).slice(0, 2).map((i) => interestPhrase(i.area)),
         relatedMajors: c.majors.map((m) => {
           const p = c.majorPaths[m.cipCode];
           return {

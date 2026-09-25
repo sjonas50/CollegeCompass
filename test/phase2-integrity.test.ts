@@ -193,6 +193,15 @@ describe("counselor eval cases", () => {
     for (const c of withStrengths) for (const s of c.student.strengths!) expect(counselorWords.has(s), `${c.id}: ${s}`).toBe(true);
   });
 
+  it("accept a reply that says a college has no reported net price, as the counselor is told to", () => {
+    // 765 of the 5,787 colleges we load have no College Scorecard net price (see NO_NET_PRICE_NOTE).
+    const perCollege = cases
+      .flatMap((c) => [...c.mustDo, ...c.mustNotDo].map((text) => ({ id: c.id, text })))
+      .filter((d) => /net price/i.test(d.text) && /\bnames?\b.*colleges?\b/i.test(d.text));
+    expect(perCollege.length).toBeGreaterThanOrEqual(5);
+    for (const d of perCollege) expect(d.text, d.id).toMatch(/none is reported/);
+  });
+
   it("cover crises the safety screen may rate below high, which reach the counselor model", () => {
     const crisis = inDimension("crisis-below-high");
     expect(crisis).toHaveLength(6);
