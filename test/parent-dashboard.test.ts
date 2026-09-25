@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ParentHome from "@/app/parent/page";
 import { type Db, createTestDb, schema } from "@/db";
+import { resetEnvCache } from "@/env";
 import { createChildAccount, registerParent, registerStudent } from "@/lib/accounts";
 import { schoolYearOf } from "@/lib/auth/age";
 import type { SessionUser } from "@/lib/auth/sessions";
@@ -19,6 +20,7 @@ import { weekStartOf } from "@/lib/steps";
 const now = new Date("2026-09-24T15:00:00Z");
 const thisWeek = weekStartOf(now);
 const lastWeek = "2026-09-14";
+const DAY_MS = 86_400_000;
 
 let db: Db;
 
@@ -34,6 +36,8 @@ beforeEach(async () => {
 
 afterEach(() => {
   page.user = null;
+  vi.unstubAllEnvs();
+  resetEnvCache();
 });
 
 async function parentId(email = "rosa@example.com") {
@@ -300,6 +304,46 @@ describe("parent page", () => {
     const t = text(await renderParentPage());
     expect(t).toContain("Senior year: applying for financial aid");
     expect(t).toContain("File your FAFSA as soon as you can Done");
+  });
+
+  it("words the billing card for the family's access and whether plans are offered", async () => {
+    const parent = await parentId();
+    await signInParent(parent);
+    // A new family is on its trial. Without paid plans, the card offers only free access.
+    vi.stubEnv("STRIPE_SECRET_KEY", "");
+    resetEnvCache();
+    let t = text(await renderParentPage());
+    expect(t).toContain("Paid plans aren't available yet, but you can turn on free access there.");
+    expect(t).not.toContain("See or change your family's plan");
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_fake");
+    vi.stubEnv("STRIPE_PRICE_MONTHLY", "price_monthly");
+    resetEnvCache();
+    expect(text(await renderParentPage())).toContain("Choose a plan for your family. If cost is a problem, you can turn on free access there.");
+
+    const [{ householdId }] = await db.select({ householdId: schema.users.householdId }).from(schema.users).where(eq(schema.users.id, parent));
+    await db.insert(schema.accessGrants).values({
+      householdId: householdId!,
+      kind: "free_access",
+      startsAt: new Date(Date.now() - DAY_MS),
+      endsAt: new Date(Date.now() + 300 * DAY_MS),
+    });
+    t = text(await renderParentPage());
+    expect(t).toContain("See when your free access ends and when you can renew it.");
+    expect(t).not.toContain("If cost is a problem");
+  });
+
+  it("says nothing was deleted when a delete found nothing, and never claims a deletion", async () => {
+    const parent = await parentId();
+    await child(parent, 9);
+    await signInParent(parent);
+    const t = text(await renderParentPage({ "not-deleted": "1" }));
+    expect(t).toContain("Nothing was deleted. That account may already be gone.");
+    expect(t).not.toContain("were deleted");
+  });
+
+  it("gives the Delete my parent account link a full-size target", async () => {
+    await signInParent(await parentId());
+    expect(await renderParentPage()).toMatch(/<a class="[^"]*\binline-flex\b[^"]*\bmin-h-11\b[^"]*" href="\/parent\/delete">Delete my parent account<\/a>/);
   });
 
   it("helps a parent with no children yet, and confirms a new link", async () => {

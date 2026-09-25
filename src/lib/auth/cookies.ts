@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { isFixedSessionToken } from "./sessions";
 
 export const SESSION_COOKIE = "cc_session";
 /** Remembers an under-13 answer so the age gate can't be retried with a different birthday. */
@@ -14,8 +15,15 @@ export const cookieOptions = {
   path: "/",
 } as const;
 
-export async function setSessionCookie(token: string) {
-  (await cookies()).set(SESSION_COOKIE, token, { ...cookieOptions, maxAge: SESSION_COOKIE_MAX_AGE });
+/**
+ * `expiresAt` is the session's end. Sessions that slide keep a 30-day cookie (the proxy renews it);
+ * staff sessions are never extended, so their cookie ends with the session.
+ */
+export async function setSessionCookie(token: string, expiresAt: Date, now = new Date()) {
+  const maxAge = isFixedSessionToken(token)
+    ? Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000))
+    : SESSION_COOKIE_MAX_AGE;
+  (await cookies()).set(SESSION_COOKIE, token, { ...cookieOptions, maxAge });
 }
 
 export async function readSessionToken() {

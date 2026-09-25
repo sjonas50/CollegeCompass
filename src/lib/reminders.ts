@@ -213,12 +213,23 @@ export async function* weeklyReminderBatches(
         for (const d of deadlines) lines.push(`- ${d.name}: ${formatDate(d.deadline)} (${relativeDays(d.daysLeft)})`);
         lines.push("");
       }
-      if (timely.length) {
-        lines.push(`Timely for ${toParent ? "them" : "you"} this month:`);
+      if (timely.length && toParent) {
+        // Roadmap titles speak to the student ("Find out who your school counselor is"), so a
+        // parent sees them quoted as the roadmap's words.
+        lines.push(`This month, ${s.displayName}'s roadmap suggests:`);
+        for (const m of timely) lines.push(`- "${m.title}"`);
+        lines.push(`Asking ${s.displayName} about one of these is an easy way to help.`);
+        lines.push("");
+      } else if (timely.length) {
+        lines.push("Timely for you this month:");
         for (const m of timely) lines.push(`- ${m.title}`);
         lines.push("");
       }
-      lines.push(`One small step at a time is how big goals happen. Open College Compass: ${new URL("/dashboard", appUrl)}`);
+      lines.push(
+        toParent
+          ? `See ${s.displayName}'s progress on your parent page: ${new URL("/parent", appUrl)}`
+          : `One small step at a time is how big goals happen. Open College Compass: ${new URL("/dashboard", appUrl)}`,
+      );
       lines.push("");
       lines.push(
         toParent

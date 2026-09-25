@@ -149,6 +149,25 @@ describe("weekly reminders (Monday 13:00 UTC)", () => {
     expect(reminders[0].email.text).toContain("Last week Leo finished:");
   });
 
+  it("writes a parent's email for a parent: quoted roadmap titles and a link to the parent page", async () => {
+    const { childId } = await parentWithChild("2014-03-01", 7); // 8th grade by October 2026
+    const timely = MILESTONES.filter((m) => m.grade === 8 && m.months.includes(10));
+    expect(timely.length).toBeGreaterThan(0);
+    const [r] = await buildWeeklyReminders(db, APP, now);
+    expect(r.userId).toBe(childId);
+    expect(r.email.text).toContain(`This month, Leo's roadmap suggests:\n- "${timely[0].title}"`);
+    expect(r.email.text).toContain("Asking Leo about one of these is an easy way to help.");
+    expect(r.email.text).not.toContain("Timely for");
+    expect(r.email.text).toContain(`See Leo's progress on your parent page: ${APP}/parent`);
+    expect(r.email.text).not.toContain("/dashboard");
+
+    // A student's own email is unchanged.
+    await teen(8);
+    const own = (await buildWeeklyReminders(db, APP, now)).find((x) => x.email.to === "ana@example.com")!;
+    expect(own.email.text).toContain(`Timely for you this month:\n- ${timely[0].title}`);
+    expect(own.email.text).toContain(`Open College Compass: ${APP}/dashboard`);
+  });
+
   it("keeps sending a parent-created account's reminders to the parent after the child turns 13", async () => {
     const { childId } = await parentWithChild("2013-06-01", 8); // 13 by October 2026, no email of their own
     await db.insert(schema.weeklySteps).values({ userId: childId, weekStart: thisWeek, text: "Pick an elective" });

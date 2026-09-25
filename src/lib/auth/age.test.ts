@@ -15,6 +15,21 @@ describe("age", () => {
     expect(isUnder13("2013-09-23", today)).toBe(false);
   });
 
+  it("counts a child as 13 only once their birthday has started everywhere in the US", () => {
+    const born = "2013-09-25";
+    // 6:30 pm in Denver, 5:30 pm in Los Angeles on the 24th: the UTC date is already the 25th.
+    expect(ageOn(born, new Date("2026-09-25T00:30:00Z"))).toBe(13);
+    expect(isUnder13(born, new Date("2026-09-25T00:30:00Z"))).toBe(true);
+    // Midnight in New York, Hawaii still on the 24th.
+    expect(isUnder13(born, new Date("2026-09-25T04:00:00Z"))).toBe(true);
+    // 11:59 pm on the 24th in American Samoa (UTC−11), the last US time zone to reach the 25th.
+    expect(isUnder13(born, new Date("2026-09-25T10:59:59Z"))).toBe(true);
+    expect(isUnder13(born, new Date("2026-09-25T11:00:00Z"))).toBe(false);
+    // A leap-day birthday turns 13 on March 1 in other years.
+    expect(isUnder13("2012-02-29", new Date("2025-03-01T10:59:59Z"))).toBe(true);
+    expect(isUnder13("2012-02-29", new Date("2025-03-01T11:00:00Z"))).toBe(false);
+  });
+
   it("rejects malformed or implausible birth dates", () => {
     expect(isPlausibleStudentBirthDate("2013-02-30", today)).toBe(false);
     expect(isPlausibleStudentBirthDate("2013-2-3", today)).toBe(false);

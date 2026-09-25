@@ -68,7 +68,8 @@ export async function deleteChildAction(formData: FormData) {
   const parent = await requireUser(["parent"]);
   const studentId = String(formData.get("studentId") ?? "");
   if (formData.get("confirm") !== "on") redirect(`/parent/children/${studentId}/delete?confirm=required`);
-  await deleteStudent(await getDb(), parent.id, studentId);
+  // Nothing was deleted (not their child, or already gone): never claim it was, and say no more.
+  if (!(await deleteStudent(await getDb(), parent.id, studentId))) redirect("/parent?not-deleted=1");
   redirect("/parent?deleted=1");
 }
 

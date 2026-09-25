@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import { rateLimits } from "@/db/schema";
 
@@ -27,4 +27,16 @@ export async function consumeRateLimit(
     })
     .returning({ count: rateLimits.count });
   return row.count <= limit;
+}
+
+/**
+ * Gives back one hit that consumeRateLimit counted, for an attempt that turned out not to count
+ * (a correct password, an email that definitely wasn't sent). Never goes below zero, and leaves the
+ * window where it is.
+ */
+export async function refundRateLimit(db: Db, key: string): Promise<void> {
+  await db
+    .update(rateLimits)
+    .set({ count: sql`greatest(${rateLimits.count} - 1, 0)` })
+    .where(eq(rateLimits.key, key));
 }

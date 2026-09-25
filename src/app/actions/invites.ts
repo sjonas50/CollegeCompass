@@ -17,8 +17,12 @@ import { deleteEmptyHousehold } from "@/lib/privacy";
 const HOUR = 60 * 60 * 1000;
 const TOKEN = /^[A-Za-z0-9_-]{1,128}$/;
 
-/** `delayed`: the email may take a few minutes (the email service didn't answer in time). */
-export type InviteFormState = { sent: true; delayed?: true } | FormState;
+/**
+ * The invite card's one state for sending and cancelling, so its notice is always about the last
+ * thing the student did. `delayed`: the email may take a few minutes (the email service didn't
+ * answer in time).
+ */
+export type InviteFormState = { sent: true; delayed?: true } | { cancelled: true } | FormState;
 
 const SEND_MESSAGES: Record<CreateInviteError, string> = {
   not_eligible: "Your account can't send invitations.",
@@ -47,10 +51,13 @@ export async function sendParentInviteAction(_prev: InviteFormState, formData: F
   return res.delayed ? { sent: true, delayed: true } : { sent: true };
 }
 
-export async function cancelParentInviteAction(formData: FormData) {
+/** "Yes, cancel it" on a waiting invitation (after the card asks to confirm). */
+export async function cancelParentInviteAction(_prev: InviteFormState, formData: FormData): Promise<InviteFormState> {
   const student = await requireUser(["student"]);
-  await cancelInvite(await getDb(), student.id, String(formData.get("inviteId") ?? ""));
+  const cancelled = await cancelInvite(await getDb(), student.id, String(formData.get("inviteId") ?? ""));
   refresh();
+  // Accepted, or cancelled from another tab: the refreshed list shows what's still waiting.
+  return cancelled ? { cancelled: true } : { message: "That invitation was already used or cancelled." };
 }
 
 function tokenFrom(formData: FormData): string | null {

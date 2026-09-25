@@ -12,6 +12,18 @@ const RENEW_WHEN_REMAINING_MS = 7 * DAY_MS;
 // never extended.
 export const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
+/**
+ * Staff session tokens start with this ("." never appears in a generated token). The proxy can't
+ * read the database, so it goes by the prefix to leave their cookie alone: it ends with the session
+ * instead of being renewed for 30 days.
+ */
+export const FIXED_SESSION_PREFIX = "staff.";
+
+/** A session that is never extended, so its cookie shouldn't be either. */
+export function isFixedSessionToken(token: string) {
+  return token.startsWith(FIXED_SESSION_PREFIX);
+}
+
 export type SessionUser = Pick<
   typeof users.$inferSelect,
   "id" | "role" | "displayName" | "username" | "householdId" | "parentManaged"
@@ -21,9 +33,10 @@ export type SessionUser = Pick<
 };
 
 export async function createSession(db: Db, userId: string, now = new Date()) {
-  const token = generateToken();
   const [user] = await db.select({ role: users.role }).from(users).where(eq(users.id, userId));
-  const expiresAt = new Date(now.getTime() + (user?.role === "admin" ? ADMIN_SESSION_TTL_MS : SESSION_TTL_MS));
+  const admin = user?.role === "admin";
+  const token = admin ? `${FIXED_SESSION_PREFIX}${generateToken()}` : generateToken();
+  const expiresAt = new Date(now.getTime() + (admin ? ADMIN_SESSION_TTL_MS : SESSION_TTL_MS));
   await db.insert(sessions).values({ id: hashToken(token), userId, expiresAt });
   return { token, expiresAt };
 }

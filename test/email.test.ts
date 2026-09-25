@@ -5,6 +5,7 @@ import {
   EmailSendError,
   RESEND_API_URL,
   type SendDeps,
+  isRefusedSend,
   isUncertainSend,
   sendEmail,
   sendWithResend,
@@ -313,6 +314,65 @@ describe("sendWithResend", () => {
     expect(starts).toHaveLength(10);
     // The nth start comes at least n × 125 ms after the first (less a millisecond or two of timer rounding).
     for (let i = 1; i < starts.length; i++) expect(starts[i] - starts[0]).toBeGreaterThanOrEqual(125 * i - 5);
+  });
+});
+
+describe("isRefusedSend", () => {
+  // Callers use this to tell "Resend won't take this email" from "the provider failed": a refusal
+  // is the requester's to fix, while an outage, rate limit or bad key would fail any email.
+  it("is true only for a 4xx refusal of this email", () => {
+    const refused = [
+      [400, "validation_error"],
+      [422, "validation_error"],
+      [422, "missing_required_field"],
+      [403, "validation_error"], // "You can only send testing emails to your own email address."
+      [409, "invalid_idempotent_request"],
+    ] as const;
+    const providerFailures = [
+      [500, "application_error"],
+      [503, "service_unavailable"],
+      [502, "http_error"],
+      [null, "timeout"],
+      [null, "network_error"],
+      [null, "unexpected_error"],
+      [null, "missing_api_key"],
+      [429, "rate_limit_exceeded"],
+      [429, "daily_quota_exceeded"],
+      [429, "monthly_quota_exceeded"],
+      [401, "missing_api_key"],
+      [401, "restricted_api_key"],
+      [401, "http_error"],
+      [403, "invalid_api_key"],
+      [403, "restricted_api_key"],
+      [403, "suspended_api_key"],
+      [403, "invalid_permission"],
+      [409, "concurrent_idempotent_requests"],
+    ] as const;
+    for (const [status, code] of refused) {
+      expect([status, code, isRefusedSend(new EmailSendError("resend", status, code))]).toEqual([status, code, true]);
+    }
+    for (const [status, code] of providerFailures) {
+      expect([status, code, isRefusedSend(new EmailSendError("resend", status, code))]).toEqual([status, code, false]);
+    }
+    expect(isRefusedSend(new EmailSendError("resend", 409, "concurrent_idempotent_requests", true))).toBe(false);
+    expect(isRefusedSend(new Error("validation_error"))).toBe(false);
+    expect(isRefusedSend(undefined)).toBe(false);
+  });
+
+  it("classifies what sendWithResend throws", async () => {
+    const bad = scriptedFetch(json(422, { name: "validation_error", message: `Invalid \`to\` field: ${email.to}` }));
+    expect(isRefusedSend(await failure(sendWithResend(email, config, deps(bad.fetch))))).toBe(true);
+
+    const badKey = scriptedFetch(json(403, { name: "invalid_api_key" }));
+    expect(isRefusedSend(await failure(sendWithResend(email, config, deps(badKey.fetch))))).toBe(false);
+
+    const outage = scriptedFetch(json(500, {}), json(500, {}), json(500, {}));
+    expect(isRefusedSend(await failure(sendWithResend(email, config, deps(outage.fetch))))).toBe(false);
+
+    const limited = scriptedFetch(rateLimited(), rateLimited(), rateLimited());
+    expect(isRefusedSend(await failure(sendWithResend(email, config, deps(limited.fetch))))).toBe(false);
+
+    expect(isRefusedSend(await failure(sendWithResend(email, { ...config, apiKey: undefined }, deps(scriptedFetch().fetch))))).toBe(false);
   });
 });
 

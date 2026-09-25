@@ -24,7 +24,8 @@ export default async function FreeAccessPage() {
   return (
     <div className="space-y-6">
       <PageHeading
-        title={running ? "Renew free access" : "Free access"}
+        // "Renew" only once renewing is open (see freeAccessRenewalOpens); before that, the page says when.
+        title={running && eligibility.ok ? "Renew free access" : "Free access"}
         lead={`Cost should never keep a student from planning their future. Free access gives everyone in your family's account full access for ${months} months.`}
       />
       <Card>
