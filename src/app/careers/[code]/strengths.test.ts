@@ -110,7 +110,7 @@ describe("/careers/[code] strengths", () => {
     await signInStudent();
     const t = text(await render());
     expect(t).toContain("Strengths that help in this work");
-    expect(t).toContain("Find your strengths to see which of these fit you (5 min)");
+    expect(t).toContain("Find your strengths to see which of these fit you (3 min)");
   });
 
   it("has no strengths section for a career without work styles", async () => {

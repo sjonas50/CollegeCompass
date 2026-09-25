@@ -8,14 +8,7 @@ import { majorsForCip6, offeredFamilies } from "./colleges/search";
 import { type Pathway, pathwayFor } from "./matching/match";
 import { socFromOnetCode } from "./reference/parsers";
 
-/** Plain-language O*NET Job Zones (31.0 merges zones 1 and 2). */
-export const JOB_ZONE_INFO: Record<number, { label: string; detail: string }> = {
-  1: { label: "Little preparation", detail: "Usually a high school diploma and on-the-job training." },
-  2: { label: "Some preparation", detail: "Usually a high school diploma, plus up to a year of on-the-job training." },
-  3: { label: "Medium preparation", detail: "Usually vocational training, an apprenticeship, or an associate degree." },
-  4: { label: "Considerable preparation", detail: "Usually a bachelor's degree." },
-  5: { label: "Extensive preparation", detail: "Usually a graduate degree, like a master's, law degree, or doctorate." },
-};
+export { JOB_ZONE_INFO } from "./job-zones";
 
 /**
  * How a student can study a major:

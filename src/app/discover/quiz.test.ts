@@ -4,11 +4,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { FreeQuiz } from "@/app/try/free-quiz";
 import { type Db, createTestDb } from "@/db";
 import { registerStudent } from "@/lib/accounts";
-import { INTEREST_ITEMS, LIKE_SCALE, PERSONALITY_ITEMS, WORK_VALUES, WORK_VALUE_INFO } from "@/lib/assessments/instruments";
+import { ACCURACY_SCALE, INTEREST_ITEMS, LIKE_SCALE, PERSONALITY_ITEMS, WORK_VALUES, WORK_VALUE_INFO } from "@/lib/assessments/instruments";
 import { completeAttempt, saveResponses, startOrResumeAttempt } from "@/lib/assessments/service";
 import type { SessionUser } from "@/lib/auth/sessions";
 import InstrumentPage from "./[instrument]/page";
-import { questionRange, showFirstQuestion, showQuestion, unansweredText } from "./question-list";
+import { AnswerScale, questionRange, showFirstQuestion, showQuestion, unansweredText } from "./question-list";
 import { PageButtons, Questionnaire } from "./questionnaire";
 import { RANKING_CLEARED, ValuesButtons, ValuesSort, focusFirstValue, rankChange, rankedName } from "./values-sort";
 
@@ -70,6 +70,40 @@ describe("turning a page", () => {
     expect(selected).toContain("has-focus-visible:outline-offset-2");
     expect(selected).toContain("has-focus-visible:outline-2");
     expect(selected).not.toContain("focus-within");
+  });
+});
+
+describe("the answer scale on phones", () => {
+  const scale = (options: typeof LIKE_SCALE, value?: number) =>
+    renderToStaticMarkup(createElement(AnswerScale, { name: "R1", options, value, onAnswer: () => {} }));
+
+  it("puts all five answers in one row, each at least 44px, as one radio group per question", () => {
+    const html = scale(LIKE_SCALE);
+    expect(html).toMatch(/^<div class="mt-3 grid grid-cols-5 /);
+    const labels = [...html.matchAll(/<label class="([^"]+)"/g)].map((m) => m[1]);
+    expect(labels).toHaveLength(5);
+    for (const cls of labels) expect(cls).toMatch(/\bmin-h-11\b.*\bmin-w-11\b/);
+    expect(html.match(/<input type="radio" class="sr-only" name="R1"/g)).toHaveLength(5);
+  });
+
+  it("keeps each answer's verbatim words for screen readers, and shows the ends of the scale", () => {
+    for (const options of [LIKE_SCALE, ACCURACY_SCALE]) {
+      const html = scale(options);
+      // Each radio is named by the scale's own words: hidden on phones, shown from `sm` up.
+      for (const { label } of options) expect(html).toContain(`<span class="max-sm:sr-only">${label}</span>`);
+      // The marks are decoration.
+      expect(html.match(/<span aria-hidden="true" class="size-4 rounded-full/g)).toHaveLength(5);
+      const ends = /<div aria-hidden="true" class="mt-1.5 flex justify-between[^"]*sm:hidden">(.*?)<\/div>/.exec(html)?.[1] ?? "";
+      expect(text(ends).trim()).toBe(`${options[0].label} ${options[4].label}`);
+      expect(html).not.toContain("Your answer");
+    }
+  });
+
+  it("shows the chosen answer's words on phones", () => {
+    for (const [value, label] of [[4, "Like"], [1, "Strongly dislike"]] as const) {
+      const html = scale(LIKE_SCALE, value);
+      expect(html).toContain(`<p aria-hidden="true" class="mt-1 text-xs sm:hidden">Your answer: <span class="font-medium">${label}</span></p>`);
+    }
   });
 });
 

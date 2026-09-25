@@ -5,18 +5,32 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createChildAction } from "@/app/actions/parent";
 import { freeMatchesAction, importSavedResultsAction, removeImportedResultsAction } from "@/app/actions/try";
 import Home from "@/app/page";
+import PrivacyPage from "@/app/privacy/page";
+import { FreeQuiz } from "@/app/try/free-quiz";
 import TryPage from "@/app/try/page";
+import { Results } from "@/app/try/results/free-results";
 import TryResultsPage from "@/app/try/results/page";
-import { SaveResultsCard } from "@/app/try/results/save-card";
+import { type ResultsViewer, SaveResultsCard } from "@/app/try/results/save-card";
+import { StrengthsCard } from "@/app/try/results/strengths-card";
 import { resultsViewer } from "@/app/try/results/viewer";
 import SavedPage from "@/app/try/saved/page";
-import { SavedQuizChoice, SavedQuizField, SavedResultsImport } from "@/components/saved-results-import";
+import { removeImportQuestion } from "@/app/try/saved/remove-import";
+import InstrumentPage from "@/app/discover/[instrument]/page";
+import TryStrengthsPage from "@/app/try/strengths/page";
+import { ImportCard, SavedQuizChoice, SavedQuizField, SavedResultsImport } from "@/components/saved-results-import";
 import { type Db, createTestDb, schema } from "@/db";
 import { createChildAccount, registerParent, registerStudent } from "@/lib/accounts";
-import { SAVED_ASSESSMENT_FIELD, emptySavedAssessment, serializeSavedAssessment } from "@/lib/assessments/anonymous";
+import {
+  SAVED_ASSESSMENT_FIELD,
+  SAVED_STRENGTHS_FIELD,
+  emptySavedAssessment,
+  emptySavedStrengths,
+  serializeSavedAssessment,
+} from "@/lib/assessments/anonymous";
+import { displayTrait } from "@/lib/assessments/descriptions";
 import { FREE_MATCH_RATE_LIMIT, importSavedAssessment } from "@/lib/assessments/import";
-import { INTEREST_ITEMS, type Riasec } from "@/lib/assessments/instruments";
-import { scoreInterests } from "@/lib/assessments/scoring";
+import { ACCURACY_SCALE, BIG_FIVE, INSTRUMENTS, INTEREST_ITEMS, PERSONALITY_ITEMS, type Riasec } from "@/lib/assessments/instruments";
+import { scoreInterests, scorePersonality } from "@/lib/assessments/scoring";
 import { completeAttempt, latestResult, saveResponses, startOrResumeAttempt } from "@/lib/assessments/service";
 import type { SessionUser } from "@/lib/auth/sessions";
 import { loadOccupationProfiles } from "@/lib/matching/service";
@@ -277,6 +291,53 @@ describe("free quiz pages", () => {
     expect(await redirectOf(removeImportedResultsAction(fd))).toBe("/try/saved?undo=failed");
   });
 
+  it("takes back the strengths imported with the quiz too, and says so wherever it's offered", async () => {
+    const student = await signInStudent();
+    const strengths = serializeSavedAssessment({ ...emptySavedStrengths(), answers: Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, 4])) });
+    expect(await importSavedResultsAction(saved, strengths)).toEqual({ ok: true });
+    const attempt = await latestResult(db, student.id, "interests");
+    expect(await latestResult(db, student.id, "personality")).not.toBeNull();
+    const instrumentPage = async (instrument: string) =>
+      text(await render(InstrumentPage({ params: Promise.resolve({ instrument }), searchParams: Promise.resolve({}) } as PageProps<"/discover/[instrument]">)));
+
+    expect(text(await render(SavedPage(savedPageProps())))).toContain(
+      "you can remove these results and strengths. Then you can take both yourself right away.",
+    );
+    expect(removeImportQuestion(true)).toBe("Remove these quiz results and strengths from your account? Then you can take both yourself.");
+    expect(removeImportQuestion(false)).toBe("Remove these quiz results from your account? Then you can take the quiz yourself.");
+    expect(await instrumentPage("interests")).toContain(
+      "Not your answers? These results and strengths came from the free quiz on this device. You can remove both and take them yourself.",
+    );
+    const personality = await render(
+      InstrumentPage({ params: Promise.resolve({ instrument: "personality" }), searchParams: Promise.resolve({}) } as PageProps<"/discover/[instrument]">),
+    );
+    expect(text(personality)).toContain(
+      "Not your answers? These strengths came with the free quiz results from this device. You can remove both from your interests .",
+    );
+    expect(personality).toContain('href="/discover/interests"');
+
+    const fd = new FormData();
+    fd.set("attemptId", attempt!.attemptId);
+    expect(await redirectOf(removeImportedResultsAction(fd))).toBe("/discover/interests");
+    expect(await latestResult(db, student.id, "personality")).toBeNull();
+    expect(await instrumentPage("personality")).not.toContain("Not your answers?");
+  });
+
+  it("points to nothing on the strengths page for strengths the student gave themself", async () => {
+    const student = await signInStudent();
+    const start = await startOrResumeAttempt(db, student.id, "personality", new Date(Date.now() - 600_000));
+    if (!start.ok) throw new Error();
+    await saveResponses(db, student.id, start.attempt.id, Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, 3])));
+    expect((await completeAttempt(db, student.id, start.attempt.id)).ok).toBe(true);
+    // The quiz imported alone: its undo doesn't touch these strengths.
+    expect(await importSavedResultsAction(saved)).toEqual({ ok: true });
+    const page = await render(
+      InstrumentPage({ params: Promise.resolve({ instrument: "personality" }), searchParams: Promise.resolve({}) } as PageProps<"/discover/[instrument]">),
+    );
+    expect(text(page)).not.toContain("Not your answers?");
+    expect(text(await render(SavedPage(savedPageProps())))).toContain("you can remove these results. Then you can take the quiz yourself right away.");
+  });
+
   it("never offers to remove results the student gave in their account", async () => {
     const student = await signInStudent();
     const start = await startOrResumeAttempt(db, student.id, "interests", new Date(Date.now() - 600_000));
@@ -313,6 +374,25 @@ describe("free quiz pages", () => {
   it("offers the saved results import only in the browser", async () => {
     expect(renderToStaticMarkup(createElement(SavedResultsImport, { startedInterests: true }))).toBe("");
     expect(renderToStaticMarkup(createElement(SavedQuizField))).toBe("");
+  });
+
+  it("says the strengths from this device stay out when the account has its own strengths activity", () => {
+    const finished = { ...emptySavedAssessment(), answers, savedAt: Date.now(), counted: true as const };
+    const strengths = { ...emptySavedStrengths(), answers: Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, 4])), savedAt: 1, counted: true as const };
+    const card = (personality?: "not_started" | "in_progress" | "done") =>
+      text(renderToStaticMarkup(createElement(ImportCard, { saved: finished, strengths, startedInterests: false, personality })));
+    expect(card()).toContain("They also answered the strengths questions.");
+    expect(card()).not.toContain("won't be added");
+    // Started in the account: its answers are kept, and the student is told before adding anything.
+    expect(card("in_progress")).toContain(
+      "The strengths answers on this device won't be added, because you've started the strengths activity in your account. You can finish it there.",
+    );
+    expect(card("in_progress")).not.toContain("They also answered the strengths questions.");
+    expect(card("done")).toContain("won't be added, because your account already has your strengths.");
+    // Nothing to say without finished strengths on this device.
+    expect(
+      text(renderToStaticMarkup(createElement(ImportCard, { saved: finished, strengths: null, startedInterests: false, personality: "in_progress" }))),
+    ).not.toContain("strengths");
   });
 });
 
@@ -370,6 +450,32 @@ describe("keeping the free results", () => {
     expect(hrefs(html)).toEqual(expect.arrayContaining(["/signup?from=quiz", "/login", "/signup/parent"]));
   });
 
+  it("says what an account adds, the trial, free access, and how under-13s get one", () => {
+    const html = renderToStaticMarkup(createElement(SaveResultsCard, { viewer: "visitor", trialDays: 14 }));
+    const t = text(html);
+    for (const line of [
+      "Why each career fits you, in plain words",
+      "Your strengths, from a 3-minute personality activity",
+      "What matters to you in a job, to fine-tune your matches",
+      "A grade-by-grade plan, with small steps each week",
+      "An AI counselor that remembers your goals",
+      "Try everything free for 14 days, with no card needed.",
+      "If cost is a problem, your family can get free access.",
+      "Under 13? A parent or guardian sets up your account",
+    ]) {
+      expect(t).toContain(line);
+    }
+    // Strengths already answered here come along instead.
+    const withStrengths = text(renderToStaticMarkup(createElement(SaveResultsCard, { viewer: "visitor", strengths: true })));
+    expect(withStrengths).toContain("Your strengths, saved with your results");
+    expect(withStrengths).toContain("keep these results and strengths");
+    // No trial is promised when there isn't one.
+    expect(withStrengths).not.toMatch(/free for \d+ days/);
+    expect(text(renderToStaticMarkup(createElement(SaveResultsCard, { viewer: "parent", strengths: true })))).toContain(
+      "you can add these results and strengths when you set up their account",
+    );
+  });
+
   it("says whose quiz it might be, and leaves the box unticked unless the visitor asked to save it", () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -391,6 +497,112 @@ describe("keeping the free results", () => {
     const forChild = text(renderToStaticMarkup(createElement(SavedQuizChoice, { saved: finished, forChild: true })));
     expect(forChild).toContain("My child took the free quiz on this device.");
     expect(forChild).toContain("Only add them if this child took the quiz.");
+  });
+
+  it("sends the strengths answers with the quiz when the box is ticked", () => {
+    const finished = { ...emptySavedAssessment(), answers };
+    const strengths = { ...emptySavedStrengths(), answers: Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, 4])), savedAt: 1, counted: true as const };
+    const ticked = renderToStaticMarkup(createElement(SavedQuizChoice, { saved: finished, strengths, defaultChecked: true }));
+    expect(text(ticked)).toContain("They also answered the strengths questions.");
+    const value = ticked.match(/name="savedStrengths" value="([^"]+)"/)![1].replaceAll("&quot;", '"');
+    expect(JSON.parse(value)).toEqual({ v: 1, instrument: "personality", version: "mini-ipip-1", answers: strengths.answers });
+    expect(renderToStaticMarkup(createElement(SavedQuizChoice, { saved: finished, strengths }))).not.toContain(SAVED_STRENGTHS_FIELD);
+  });
+});
+
+describe("the strengths add-on", () => {
+  const strengthsAnswers = (value: number) => Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, value]));
+  const card = (saved: Parameters<typeof StrengthsCard>[0]["saved"], viewer: ResultsViewer = "visitor") =>
+    renderToStaticMarkup(createElement(StrengthsCard, { saved, viewer }));
+  const hrefs = (html: string) => [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+
+  it("is offered after the free results: 20 statements, about 3 minutes, answered in the browser", () => {
+    const html = card(null);
+    expect(text(html)).toContain("See your strengths too?");
+    expect(text(html)).toContain("20 statements, about 3 minutes.");
+    expect(text(html)).toContain("your answers stay in this browser");
+    expect(hrefs(html)).toEqual(["/try/strengths"]);
+    expect(html).toContain('id="strengths"');
+    expect(text(card({ ...emptySavedStrengths(), answers: { P1: 3, P2: 4 } }))).toContain("You've answered 2 of 20. Keep going");
+    // Nothing until the browser's copy is read.
+    expect(card(undefined)).toBe("");
+  });
+
+  it("shows every strength in strengths words, never as a score", () => {
+    for (const value of [1, 3, 5]) {
+      const html = card({ ...emptySavedStrengths(), answers: strengthsAnswers(value) });
+      const t = text(html);
+      const { traits } = scorePersonality(strengthsAnswers(value));
+      for (const trait of BIG_FIVE) {
+        const { name, text: words } = displayTrait(trait, traits[trait]);
+        expect(t).toContain(`${name}. ${words}`);
+      }
+      expect(t).toContain("not a label");
+      expect(t).not.toMatch(/\d+ ?%|\bscore\b|\blow\b|\bhigh\b/i);
+    }
+  });
+
+  it("asks the Mini-IPIP statements verbatim, on the accuracy scale, with nothing sent", async () => {
+    const html = renderToStaticMarkup(
+      createElement(FreeQuiz, { instrument: "personality", items: PERSONALITY_ITEMS.map(({ id, text }) => ({ id, text })), options: ACCURACY_SCALE }),
+    );
+    for (const item of PERSONALITY_ITEMS.slice(0, 5)) expect(html).toContain(item.text.replace(/'/g, "&#x27;"));
+    for (const option of ACCURACY_SCALE) expect(html).toContain(option.label);
+    expect(text(html)).toContain("How well does this describe you?");
+    expect(html).not.toMatch(/<form|type="email"/i);
+
+    const page = text(await render(TryStrengthsPage()));
+    expect(page).toContain("20 statements, about 3 minutes.");
+    expect(page).toContain("your answers stay in this browser until you choose to save them to an account");
+  });
+
+  it("sends signed-in students to the same statements in their account", async () => {
+    await signInStudent();
+    expect(await redirectOf(Promise.resolve().then(() => TryStrengthsPage()))).toBe("/discover/personality");
+  });
+
+  it("tells signed-in students their strengths answers are saved in their account, not the browser", () => {
+    for (const saved of [null, { ...emptySavedStrengths(), answers: { P1: 3, P2: 4 } }]) {
+      const html = card(saved, "student");
+      expect(text(html)).toContain("See your strengths too?");
+      expect(text(html)).toContain("Answer 20 statements in your account, about 3 minutes.");
+      expect(INSTRUMENTS.personality.tagline).toContain("About 3 minutes.");
+      expect(text(html)).toContain("Your answers are saved in your account.");
+      expect(text(html)).not.toMatch(/browser|Keep going/);
+      expect(hrefs(html)).toEqual(["/discover/personality"]);
+    }
+    // Their account already has interest results, and its own strengths activity.
+    expect(card(null, "student_with_results")).toBe("");
+    // Visitors and parents answer in the browser, as the card says.
+    for (const viewer of ["visitor", "parent", "other"] as const) {
+      expect(text(card(null, viewer))).toContain("your answers stay in this browser");
+      expect(hrefs(card(null, viewer))).toEqual(["/try/strengths"]);
+    }
+    // Strengths already answered here are shown to anyone.
+    const done = { ...emptySavedStrengths(), answers: strengthsAnswers(4) };
+    for (const viewer of ["student", "student_with_results"] as const) expect(text(card(done, viewer))).toContain("Your strengths");
+
+    const results = (viewer: ResultsViewer) => text(renderToStaticMarkup(createElement(Results, { answers, viewer })));
+    for (const viewer of ["student", "student_with_results"] as const) {
+      expect(results(viewer)).toContain(
+        "Your quiz answers, and any strengths answers from before you signed in, are saved only in this browser.",
+      );
+    }
+    expect(results("parent")).toContain("Your answers, including any strengths answers, are saved only in this browser.");
+  });
+});
+
+describe("privacy promises about the free quiz", () => {
+  it("say what stays in the browser, and that finishes are counted without knowing who", async () => {
+    const privacy = text(renderToStaticMarkup(PrivacyPage()));
+    expect(privacy).toContain(
+      "your answers, including any answers to the optional strengths questions, stay in your browser, and your strengths are worked out there too.",
+    );
+    expect(privacy).toContain("We count how many people finish the quiz each day, without knowing who.");
+    expect(text(await render(TryPage()))).toContain("We only count how many people finish, not who.");
+    const results = text(renderToStaticMarkup(createElement(Results, { answers, viewer: "visitor" })));
+    expect(results).toContain("Your answers, including any strengths answers, are saved only in this browser.");
+    expect(results).toContain("We count how many people finish the quiz, but not who.");
   });
 });
 

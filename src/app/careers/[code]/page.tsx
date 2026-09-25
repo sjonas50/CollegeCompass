@@ -88,7 +88,7 @@ function CareerStrengths({ styles, traits, askToTake }: { styles: WorkStyle[]; t
       {askToTake && (
         <p className="mt-3 text-sm">
           <Link href="/discover/personality" className="inline-flex min-h-11 items-center underline underline-offset-2">
-            Find your strengths to see which of these fit you (5 min)
+            Find your strengths to see which of these fit you (3 min)
           </Link>
         </p>
       )}

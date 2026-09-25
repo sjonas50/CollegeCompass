@@ -2,22 +2,31 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_SAVED_ASSESSMENT_LENGTH,
   SAVED_ASSESSMENT_STORAGE_KEY,
+  SAVED_STRENGTHS_STORAGE_KEY,
   answeredCount,
   describeSavedQuiz,
   emptySavedAssessment,
+  emptySavedStrengths,
+  isComplete,
   isFinished,
+  parseStored,
   parseStoredAssessment,
+  readSaved,
   readSavedAssessment,
+  removeSaved,
   removeSavedAssessment,
   savedWhen,
   serializeSavedAssessment,
   topInterestsText,
   validateAreaScores,
   validateSavedAssessment,
+  validateSavedStrengths,
   withAnswer,
+  withSavedAnswer,
+  writeSaved,
   writeSavedAssessment,
 } from "./anonymous";
-import { INSTRUMENTS, INTEREST_ITEMS } from "./instruments";
+import { INSTRUMENTS, INTEREST_ITEMS, PERSONALITY_ITEMS } from "./instruments";
 
 const allAnswers = Object.fromEntries(INTEREST_ITEMS.map((i, n) => [i.id, (n % 5) + 1]));
 const finished = { ...emptySavedAssessment(), answers: allAnswers };
@@ -212,6 +221,65 @@ describe("describing a saved quiz on a shared device", () => {
     expect(describeSavedQuiz({ ...saved, savedAt: undefined }, now)).toBe(
       "Someone finished the free interest quiz on this device. Their top interests were artistic, social and enterprising.",
     );
+  });
+});
+
+describe("the strengths add-on's saved answers", () => {
+  const strengthsAnswers = Object.fromEntries(PERSONALITY_ITEMS.map((i, n) => [i.id, (n % 5) + 1]));
+  const strengths = { ...emptySavedStrengths(), answers: strengthsAnswers };
+
+  it("are checked just as strictly, and only as the strengths statements", () => {
+    expect(validateSavedStrengths(serializeSavedAssessment(strengths))).toEqual({ ok: true, answers: strengthsAnswers });
+    expect(validateSavedStrengths({ ...strengths, answers: { ...strengthsAnswers, R1: 3 } })).toEqual({ ok: false, error: "unknown_item" });
+    expect(validateSavedStrengths({ ...strengths, answers: { ...strengthsAnswers, P1: 6 } })).toEqual({ ok: false, error: "bad_value" });
+    expect(validateSavedStrengths({ ...strengths, answers: withoutKey(strengthsAnswers, "P20") })).toEqual({ ok: false, error: "incomplete" });
+    expect(validateSavedStrengths({ ...strengths, version: "mini-ipip-0" })).toEqual({ ok: false, error: "old_version" });
+    expect(validateSavedStrengths({ ...strengths, scores: { traits: {} } })).toEqual({ ok: false, error: "invalid_format" });
+    // Neither is taken for the other.
+    expect(validateSavedStrengths(serializeSavedAssessment(finished))).toEqual({ ok: false, error: "invalid_format" });
+    expect(validateSavedAssessment(serializeSavedAssessment(strengths))).toEqual({ ok: false, error: "invalid_format" });
+  });
+
+  it("are kept under their own key, and counted as 20 statements", () => {
+    const storage = new MemoryStorage();
+    let saved = withSavedAnswer("personality", null, "P1", 4, 1_000);
+    expect(saved).toEqual({ v: 1, instrument: "personality", version: INSTRUMENTS.personality.version, answers: { P1: 4 }, savedAt: 1_000 });
+    expect(answeredCount(saved)).toBe(1);
+    expect(isComplete(saved)).toBe(false);
+    saved = { ...saved, answers: strengthsAnswers };
+    expect(isComplete(saved)).toBe(true);
+    writeSaved(storage, saved);
+    writeSaved(storage, finished);
+    expect(JSON.parse(storage.getItem(SAVED_STRENGTHS_STORAGE_KEY)!).answers).toEqual(strengthsAnswers);
+    expect(readSaved("personality", storage)).toEqual(saved);
+    expect(readSaved("interests", storage)).toEqual(finished);
+    removeSaved("personality", storage);
+    expect(readSaved("personality", storage)).toBeNull();
+    expect(readSaved("interests", storage)).toEqual(finished);
+    // Interest answers never count as strengths answers.
+    expect(parseStored("personality", JSON.stringify(finished))).toBeNull();
+  });
+
+  it("say so when describing a saved quiz", () => {
+    const now = new Date(2026, 8, 24, 12);
+    expect(describeSavedQuiz({ ...finished, savedAt: now.getTime() }, now, { strengths: true })).toMatch(
+      /^Someone finished the free interest quiz on this device today\. .+\. They also answered the strengths questions\.$/,
+    );
+  });
+});
+
+describe("counting a finish once", () => {
+  it("remembers in the browser that the answers were counted, and never sends it", () => {
+    const storage = new MemoryStorage();
+    const counted = { ...finished, savedAt: 5_000, counted: true as const };
+    writeSaved(storage, counted);
+    expect(readSavedAssessment(storage)).toEqual(counted);
+    expect(JSON.parse(serializeSavedAssessment(counted))).not.toHaveProperty("counted");
+    expect(validateSavedAssessment(serializeSavedAssessment(counted)).ok).toBe(true);
+    // Only `true` means counted.
+    expect(parseStoredAssessment(JSON.stringify({ ...finished, counted: "yes" }))).toEqual(finished);
+    // Changing an answer later doesn't make it a new finish.
+    expect(withAnswer(counted, "R1", 1).counted).toBe(true);
   });
 });
 

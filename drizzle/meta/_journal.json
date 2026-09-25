@@ -92,6 +92,13 @@
       "when": 1790300861650,
       "tag": "0012_occupation_work_styles",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790306145604,
+      "tag": "0013_daily_counts",
+      "breakpoints": true
     }
   ]
 }

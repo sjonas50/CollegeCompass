@@ -193,7 +193,7 @@ const HOW = [
     text: "Three short activities show what you like, how you work and what matters to you. Then see careers that fit, with pay, schooling and job outlook. Pick one or two as your north star, for now.",
     facts: [
       "Interests: 60 quick activities, about 10 min",
-      "Personality: 20 statements, about 5 min",
+      "Personality: 20 statements, about 3 min",
       "What matters to you: rank 6 values, about 2 min",
     ],
     screen: <ResultsScreen />,

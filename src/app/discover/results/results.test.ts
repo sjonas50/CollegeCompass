@@ -226,7 +226,7 @@ describe("the strengths card", () => {
     await takeInterests(SCIENTIST);
     const html = await render();
     const t = text(html);
-    expect(t).toContain("Find my strengths (5 min)");
+    expect(t).toContain("Find my strengths (3 min)");
     expect(t.indexOf("Your interest areas")).toBeLessThan(t.indexOf("Your strengths"));
     expect(t.indexOf("Your strengths")).toBeLessThan(t.indexOf("College degree paths"));
     expect(html).toContain('href="/discover/personality"');

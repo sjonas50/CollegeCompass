@@ -169,7 +169,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
       <section>
         <h2 className="text-lg font-medium">Discover your direction</h2>
-        {statuses.interests.state !== "done" && <SavedResultsImport startedInterests={statuses.interests.state === "in_progress"} />}
+        {statuses.interests.state !== "done" && (
+          <SavedResultsImport startedInterests={statuses.interests.state === "in_progress"} personality={statuses.personality.state} />
+        )}
         <p className="mb-3 text-sm text-muted">{discoverText(statuses)}</p>
         <ol className="space-y-3">
           {ORDER.map((id, i) => {

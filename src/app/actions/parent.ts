@@ -8,7 +8,8 @@ import { clearSessionCookie } from "@/lib/auth/cookies";
 import { requireUser } from "@/lib/auth/dal";
 import { completeConsentRequest, findConsentRequest } from "@/lib/consent/requests";
 import { verifyParentConsent } from "@/lib/consent/verifier";
-import { SAVED_ASSESSMENT_FIELD } from "@/lib/assessments/anonymous";
+import { recordCount } from "@/lib/admin/counts";
+import { SAVED_ASSESSMENT_FIELD, SAVED_STRENGTHS_FIELD } from "@/lib/assessments/anonymous";
 import { importSavedAssessment } from "@/lib/assessments/import";
 import { type FormState, birthDateFromForm, fieldErrors } from "@/lib/forms";
 import { deleteParentAccount, deleteStudent } from "@/lib/privacy";
@@ -49,16 +50,24 @@ export async function createChildAction(_prev: FormState, formData: FormData): P
     const request = await findConsentRequest(db, consentToken);
     if (request) await completeConsentRequest(db, request.id);
   }
-  // The free quiz the child took on this device, when the parent ticked the box.
+  // The free quiz the child took on this device (with its strengths add-on, when they took it),
+  // when the parent ticked the box.
   const saved = formData.get(SAVED_ASSESSMENT_FIELD);
+  const strengths = formData.get(SAVED_STRENGTHS_FIELD);
   let imported = false;
   if (typeof saved === "string" && saved) {
     try {
-      imported = (await importSavedAssessment(db, parent.id, result.value.userId, saved, { via: "parent" })).ok;
+      imported = (
+        await importSavedAssessment(db, parent.id, result.value.userId, saved, {
+          via: "parent",
+          strengths: typeof strengths === "string" ? strengths : undefined,
+        })
+      ).ok;
     } catch (error) {
       console.error("[parent] quiz import failed", error instanceof Error ? error.name : "unknown");
     }
   }
+  if (imported) await recordCount(db, "child_added_with_quiz");
   // /try/saved clears the browser's copy, so the same answers can't be added to a second child,
   // then goes on to /parent?added=1&imported=1.
   redirect(imported ? "/try/saved" : "/parent?added=1");

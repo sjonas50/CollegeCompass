@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { OnetDataAttribution, OnetToolsAttribution } from "@/components/attribution";
 import { getDb } from "@/db";
+import { env } from "@/env";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { FreeResults } from "./free-results";
 import { resultsViewer } from "./viewer";
@@ -20,7 +21,7 @@ export default async function TryResultsPage() {
   return (
     <div className="space-y-8">
       {/* The heading is there too: it depends on whether this browser holds a finished quiz. */}
-      <FreeResults viewer={viewer} />
+      <FreeResults viewer={viewer} trialDays={env().TRIAL_DAYS} />
       <div className="space-y-1 border-t border-border pt-4">
         <OnetToolsAttribution />
         <OnetDataAttribution />

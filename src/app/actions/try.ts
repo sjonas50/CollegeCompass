@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import {
   type FreeMatchesResult,
   anonymousRateKey,
+  countFreeFinish,
   importSavedAssessment,
   matchFreeAssessment,
   rateKeySecret,
@@ -22,13 +23,27 @@ export async function freeMatchesAction(scores: unknown): Promise<FreeMatchesRes
   return matchFreeAssessment(await getDb(), scores, { rateKey });
 }
 
+/**
+ * Counts one finish of the free quiz ("interests") or its strengths add-on ("personality") in the
+ * anonymous daily totals. Public: takes only which one was finished, never answers or scores, and
+ * stores nothing about the visitor but a hashed, day-scoped rate-limit counter. The browser calls it
+ * once per finished set of answers (see markFinishCounted).
+ */
+export async function countFreeFinishAction(activity: unknown): Promise<void> {
+  const rateKey = anonymousRateKey(await clientIp(), rateKeySecret(), new Date(), "count");
+  await countFreeFinish(await getDb(), activity, { rateKey });
+}
+
 export type ImportSavedResult = { ok: true } | { ok: false; error: "already_done" | "invalid" | "failed"; message: string };
 
-/** Brings the free quiz saved in this browser into the signed-in student's own account. */
-export async function importSavedResultsAction(saved: unknown): Promise<ImportSavedResult> {
+/**
+ * Brings the free quiz saved in this browser into the signed-in student's own account, with the
+ * strengths add-on's answers when the visitor took it.
+ */
+export async function importSavedResultsAction(saved: unknown, strengths?: unknown): Promise<ImportSavedResult> {
   const student = await requireUser(["student"]);
   try {
-    const res = await importSavedAssessment(await getDb(), student.id, student.id, saved, { via: "dashboard" });
+    const res = await importSavedAssessment(await getDb(), student.id, student.id, saved, { via: "dashboard", strengths });
     if (res.ok) return { ok: true };
     if (res.error === "already_done") {
       return { ok: false, error: "already_done", message: "Your account already has interest results, so we didn't add these." };

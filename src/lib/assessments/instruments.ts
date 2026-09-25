@@ -142,7 +142,7 @@ export const INSTRUMENTS = {
     id: "personality",
     version: "mini-ipip-1",
     title: "Personality",
-    tagline: "20 statements about you. About 5 minutes.",
+    tagline: "20 statements about you. About 3 minutes.",
     itemIds: PERSONALITY_ITEMS.map((i) => i.id),
   },
   values: {

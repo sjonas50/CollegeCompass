@@ -53,7 +53,7 @@ export function StrengthsCard({ traits, matches }: { traits: Record<BigFive, num
         <div className="mt-2 space-y-3 text-sm text-muted">
           <p>Take the personality activity to see your strengths, what they mean for school and work, and careers that call for them.</p>
           <ButtonLink href="/discover/personality" variant="secondary">
-            Find my strengths (5 min)
+            Find my strengths (3 min)
           </ButtonLink>
         </div>
       )}

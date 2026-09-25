@@ -12,7 +12,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * The free interest quiz: no account, no email, no tracking. Answers stay in the visitor's browser.
+ * The free interest quiz: no account, no email, no tracking. Answers stay in the visitor's browser,
+ * and so do those of the optional strengths questions offered with the results. Finishing adds one
+ * to an anonymous daily count (see countFreeFinishAction), which says nothing about who finished.
  * Only essential cookies exist on this site, and this page sets none.
  */
 export default async function TryPage() {
@@ -27,9 +29,10 @@ export default async function TryPage() {
         lead="Would you like doing each of these activities? Don't worry about how much school or training it would take, or how much money you'd make. Just go with your gut."
       />
       <p className="mb-6 text-sm text-muted">
-        60 quick activities, about 10 minutes. Free, with no account and no email. Your answers stay in this browser.
+        60 quick activities, about 10 minutes. Free, with no account and no email. Your answers stay in this browser
+        unless you choose to save them to an account. We only count how many people finish, not who.
       </p>
-      <FreeQuiz items={INTEREST_ITEMS.map(({ id, text }) => ({ id, text }))} options={LIKE_SCALE} />
+      <FreeQuiz instrument="interests" items={INTEREST_ITEMS.map(({ id, text }) => ({ id, text }))} options={LIKE_SCALE} />
       <div className="mt-8">
         <OnetToolsAttribution />
       </div>
