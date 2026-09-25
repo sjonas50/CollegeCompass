@@ -31,8 +31,10 @@ const STARTERS = [
 const MAX_CHARS = 2000;
 
 /**
- * Text with our pages and https addresses as links. Our pages show their names (the path is still
- * the link's address); other websites open in a new tab and say so.
+ * Text with links (see chatLinks): paths to our pages, https addresses of government, college and
+ * a few trusted sites, and those trusted sites written without https:// ("studentaid.gov"). Our
+ * pages show a name instead of the path (for a college or career, the name the counselor wrote with
+ * it); other websites show the address as written, open in a new tab and say so.
  */
 export function Linked({ text }: { text: string }) {
   return (

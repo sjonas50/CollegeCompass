@@ -10,6 +10,7 @@ import {
 } from "@/app/actions/auth";
 import { SavedQuizField } from "@/components/saved-results-import";
 import { BirthdayFields, Button, Card, Field, FormMessage, GradeSelect, Notice, PageHeading } from "@/components/ui";
+import { useFocusFirstInvalid } from "@/components/use-focus-first-invalid";
 import { useFormAction } from "@/components/use-form-action";
 import { isFinished } from "@/lib/assessments/anonymous";
 import type { FormState } from "@/lib/forms";
@@ -25,6 +26,7 @@ export function StudentSignup({ startWithParentStep, savingQuiz = false }: { sta
     checkAgeAction,
     startWithParentStep ? { step: "child" } : undefined,
   );
+  const ageForm = useFocusFirstInvalid(age);
 
   if (age && "step" in age && age.step === "child") return <ParentHandoff />;
   if (age && "step" in age && age.step === "teen") return <TeenSignup birthDate={age.birthDate} savingQuiz={savingQuiz} />;
@@ -34,7 +36,7 @@ export function StudentSignup({ startWithParentStep, savingQuiz = false }: { sta
     <>
       <PageHeading title="Let's get started" lead="First, when's your birthday?" />
       <Card>
-        <form action={ageAction} className="space-y-4">
+        <form ref={ageForm} action={ageAction} className="space-y-4">
           <BirthdayFields
             legend="Your birthday"
             errors={errors?.birthDate}
@@ -54,11 +56,12 @@ export function StudentSignup({ startWithParentStep, savingQuiz = false }: { sta
 
 function TeenSignup({ birthDate, savingQuiz }: { birthDate: string; savingQuiz: boolean }) {
   const [state, action, pending, values] = useFormAction<FormState>(registerStudentAction, undefined);
+  const form = useFocusFirstInvalid(state);
   return (
     <>
       <PageHeading title="Create your account" lead="Just the basics. You can change these later." />
       <Card>
-        <form action={action} className="space-y-4">
+        <form ref={form} action={action} className="space-y-4">
           <input type="hidden" name="birthDate" value={birthDate} />
           <FormMessage message={state?.message} />
           <Field label="First name or nickname" name="displayName" autoComplete="given-name" required defaultValue={values.displayName} errors={state?.errors?.displayName} />
@@ -85,6 +88,7 @@ function TeenSignup({ birthDate, savingQuiz }: { birthDate: string; savingQuiz: 
 
 function ParentHandoff() {
   const [state, action, pending, values] = useFormAction<ParentRequestState>(requestParentConsentAction, undefined);
+  const form = useFocusFirstInvalid(state);
   if (state && "sent" in state) {
     return (
       <>
@@ -107,7 +111,7 @@ function ParentHandoff() {
         lead="A parent or guardian needs to set up your account. Enter their email and we'll send them a link."
       />
       <Card>
-        <form action={action} className="space-y-4">
+        <form ref={form} action={action} className="space-y-4">
           <Field label="Parent's email" name="parentEmail" type="email" required defaultValue={values.parentEmail} errors={errors?.parentEmail} />
           <p className="text-sm text-muted">
             We only use this email to ask your parent for permission. If they don&apos;t respond, we delete it.

@@ -10,6 +10,8 @@ type Link = Extract<ChatSegment, { type: "link" }>;
 const linkSegments = (text: string) => chatLinks(text).filter((s): s is Link => s.type === "link");
 /** [href, text shown, external] for each link. */
 const links = (text: string) => linkSegments(text).map((s) => [s.href, s.text, s.external]);
+/** What the counselor wrote, put back together from the segments. */
+const written = (text: string) => chatLinks(text).map((s) => s.source ?? s.text).join("");
 const hrefs = (text: string) => linkSegments(text).map((s) => s.href);
 /** Each <a> as its attributes (in any order) and its inner html. */
 const anchors = (html: string) =>
@@ -106,8 +108,10 @@ describe("chat links", () => {
     const texts = [
       "Look at /colleges/1 and https://bls.gov/ooh today, not http://x.com/colleges /aid/en/how-aid-works.",
       "- Boston College (/colleges/164924): see [the guide](/aid/en) and StudentAid.gov's help at studentaid.gov/es.",
+      "- Cornell University, Ithaca NY — /colleges/190415 (about $30,000)\n- Registered Nurses: /careers/29-1141.00",
+      "Check [studentaid.gov](https://studentaid.gov) or [here](/colleges?major=51.38).",
     ];
-    for (const text of texts) expect(chatLinks(text).map((s) => (s.type === "link" ? s.source : s.text)).join("")).toBe(text);
+    for (const text of texts) expect(written(text)).toBe(text);
   });
 });
 
@@ -156,6 +160,96 @@ describe("chat links to colleges and careers", () => {
     ]);
   });
 
+  it("uses our own name when a markdown label doesn't say where the link goes", () => {
+    expect(links("[here](/colleges?major=51.38) [Click here!](/careers/29-1141.00) [this page](/colleges/1) [link](/colleges/2) [More](/colleges/3)")).toEqual([
+      ["/colleges?major=51.38", "matching colleges", false],
+      ["/careers/29-1141.00", "career page", false],
+      ["/colleges/1", "college page", false],
+      ["/colleges/2", "college page", false],
+      ["/colleges/3", "college page", false],
+    ]);
+    expect(links("Mira [aquí](/colleges/1).")).toEqual([["/colleges/1", "college page", false]]);
+    // "Here's" isn't "here": a label that says something is kept.
+    expect(links("[Here's the list](/colleges?state=TX)")).toEqual([["/colleges?state=TX", "Here's the list", false]]);
+  });
+
+  it("links a markdown link once, never its label on its own", () => {
+    const one = (text: string) => chatLinks(text).map((s) => (s.type === "link" ? [s.text, s.href] : s.text));
+    expect(one("[/colleges/1](/colleges/1)")).toEqual([["college page", "/colleges/1"]]);
+    expect(one("[/aid/en](/aid/en/how-aid-works)")).toEqual([["How financial aid works", "/aid/en/how-aid-works"]]);
+    expect(one("Check [studentaid.gov](https://studentaid.gov) now")).toEqual([
+      "Check [studentaid.gov](",
+      ["https://studentaid.gov", "https://studentaid.gov/"],
+      ") now",
+    ]);
+  });
+
+  it("names a college written as 'Name, Place — /path', the way counselors list them", () => {
+    // The reply from the bug report.
+    const reply = "Two schools to compare:\n- Cornell University, Ithaca NY — /colleges/190415\n- Boston College, Chestnut Hill MA — /colleges/164924";
+    expect(links(reply)).toEqual([
+      ["/colleges/190415", "Cornell University", false],
+      ["/colleges/164924", "Boston College", false],
+    ]);
+    // The place stays; the path, and the dash joining it, don't show.
+    expect(shown(reply)).toBe("Two schools to compare:\n- Cornell University, Ithaca NY\n- Boston College, Chestnut Hill MA");
+    // The chat hands each list item over without its "- ".
+    expect(shown("Cornell University, Ithaca NY — /colleges/190415 — strong engineering")).toBe("Cornell University, Ithaca NY — strong engineering");
+    const named = [
+      "Cornell University: /colleges/190415",
+      "Cornell University — /colleges/190415.",
+      "Cornell University – /colleges/190415",
+      "Cornell University - /colleges/190415",
+      "Cornell University —/colleges/190415",
+      "Cornell University, Ithaca, NY: /colleges/190415",
+      "Cornell University, Ithaca, New York — /colleges/190415",
+      "Cornell University in Ithaca, New York — /colleges/190415",
+      "Cornell University, Ithaca NY (/colleges/190415)",
+      "Here's the page for Cornell University: /colleges/190415",
+    ];
+    for (const text of named) {
+      expect(links(text), text).toEqual([["/colleges/190415", "Cornell University", false]]);
+      expect(written(text), text).toBe(text);
+    }
+    expect(links("North Idaho College, Coeur d'Alene ID — /colleges/142559")).toEqual([["/colleges/142559", "North Idaho College", false]]);
+    expect(links("Georgetown University, Washington, D.C. — /colleges/131496")).toEqual([["/colleges/131496", "Georgetown University", false]]);
+    expect(links("University of Minnesota, St. Paul, Minnesota: /colleges/174066")).toEqual([["/colleges/174066", "University of Minnesota", false]]);
+    expect(shown("Rice University in Houston, Texas (/colleges/227757) is small.")).toBe("Rice University in Houston, Texas is small.");
+    expect(links("Registered Nurses — /careers/29-1141.00, Electricians: /careers/47-2111.00")).toEqual([
+      ["/careers/29-1141.00", "Registered Nurses", false],
+      ["/careers/47-2111.00", "Electricians", false],
+    ]);
+  });
+
+  it("links only the last school when names are joined by \"and\"", () => {
+    expect(links("Both Georgia Tech and Emory University (/colleges/139658) are in Atlanta.")).toEqual([["/colleges/139658", "Emory University", false]]);
+    expect(links("Harvard and Yale (/colleges/130794)")).toEqual([["/colleges/130794", "Yale", false]]);
+    expect(links("Students like Duke and Rice University (/colleges/227757)")).toEqual([["/colleges/227757", "Rice University", false]]);
+    expect(links("Harvard and the University of Chicago — /colleges/144050")).toEqual([["/colleges/144050", "University of Chicago", false]]);
+    expect(links("Harvard, Yale and Cornell University — /colleges/190415")).toEqual([["/colleges/190415", "Cornell University", false]]);
+    expect(shown("Both Georgia Tech and Emory University (/colleges/139658)")).toBe("Both Georgia Tech and Emory University");
+  });
+
+  it("keeps \"and\" inside a single name", () => {
+    const names = [
+      "College of William and Mary",
+      "William & Mary",
+      "Texas A&M",
+      "Washington and Lee University",
+      "Franklin and Marshall College",
+      "Lewis and Clark College",
+      "Hobart and William Smith Colleges",
+      "Virginia Polytechnic Institute and State University",
+      "Florida Agricultural and Mechanical University",
+      "Southcentral Kentucky Community and Technical College",
+      "Missouri University of Science and Technology",
+      "Savannah College of Art and Design",
+    ];
+    for (const name of names) expect(links(`${name} (/colleges/1)`), name).toEqual([["/colleges/1", name, false]]);
+    // Career titles often have "and" in them.
+    expect(links("Accountants and Auditors (/careers/13-2011.00)")).toEqual([["/careers/13-2011.00", "Accountants and Auditors", false]]);
+  });
+
   it("says \"college page\" when no name is written with it", () => {
     expect(links("Its College Compass page (/colleges/164924) links the calculator. Also see /colleges/190415.")).toEqual([
       ["/colleges/164924", "college page", false],
@@ -171,6 +265,10 @@ describe("chat links to colleges and careers", () => {
       ["/colleges/164924", "Boston College", false],
       ["/colleges/1", "college page", false],
     ]);
+    // Words that say what the link is, or only a place.
+    for (const text of ["Two options: /colleges/1", "Link: /colleges/1", "More — /colleges/1", "Houston, Texas — /colleges/1", "In NY: /colleges/1"]) {
+      expect(links(text), text).toEqual([["/colleges/1", "college page", false]]);
+    }
   });
 });
 
@@ -232,6 +330,12 @@ describe("chat link rendering", () => {
     expect(college).toEqual({ attrs: { href: "/colleges/166683", class: "underline underline-offset-2" }, inner: "college page" });
     expect(guide.attrs).toMatchObject({ href: "/aid/es/how-aid-works", lang: "es", hrefLang: "es" });
     expect(guide.inner).toBe("Cómo funciona la ayuda financiera");
+  });
+
+  it("links a college's name and keeps its place as text", () => {
+    expect(render("Cornell University, Ithaca NY — /colleges/190415")).toBe(
+      '<a class="underline underline-offset-2" href="/colleges/190415">Cornell University</a>, Ithaca NY',
+    );
   });
 
   it("says when a link opens in a new tab", () => {

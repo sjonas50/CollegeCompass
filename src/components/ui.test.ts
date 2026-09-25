@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -56,6 +56,21 @@ describe("color tokens", () => {
     const html = renderToStaticMarkup(createElement(Button, { variant: "danger" }, "Delete permanently"));
     expect(html).toContain("bg-danger text-danger-foreground");
     expect(html).not.toContain("text-white");
+  });
+
+  it("never puts fixed white text on the danger color, in any component", () => {
+    // White on the dark-mode danger red is 2.45:1. bg-danger-soft is a different, pale color.
+    const src = path.join(import.meta.dirname, "..");
+    const files = readdirSync(src, { recursive: true, encoding: "utf8" }).filter((f) => f.endsWith(".tsx"));
+    expect(files).toEqual(expect.arrayContaining(["app/counselor/confirm-button.tsx", "app/admin/ui.tsx"]));
+    const offenders: string[] = [];
+    for (const file of files) {
+      for (const [literal] of readFileSync(path.join(src, file), "utf8").matchAll(/"[^"\n]*"|'[^'\n]*'|`[^`]*`/g)) {
+        const classes = literal.slice(1, -1).split(/\s+/).map((c) => c.replace(/^(?:[\w-]+:)+/, ""));
+        if (classes.includes("bg-danger") && classes.includes("text-white")) offenders.push(`${file}: ${literal}`);
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 });
 

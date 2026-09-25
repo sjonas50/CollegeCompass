@@ -46,7 +46,7 @@ export function ConfirmButton({
       ))}
       <input type="hidden" name="returnTo" value={returnTo} />
       <span className="text-sm">{question}</span>
-      <button type="submit" className="min-h-11 rounded-lg bg-danger px-3 text-sm font-medium text-white" autoFocus>
+      <button type="submit" className="min-h-11 rounded-lg bg-danger px-3 text-sm font-medium text-danger-foreground" autoFocus>
         {confirmLabel}
       </button>
       <button type="button" onClick={() => setAsking(false)} className="min-h-11 px-2 text-sm underline">

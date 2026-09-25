@@ -6,7 +6,7 @@ import type { SafetyReviewOutcome } from "@/db/schema";
 // Small pieces shared by the staff pages. Status always has words, never color alone.
 
 const SEVERITY_STYLES: Record<EventSeverity, string> = {
-  imminent: "bg-danger text-white",
+  imminent: "bg-danger text-danger-foreground",
   high: "bg-danger-soft text-danger",
   medium: "bg-accent-soft text-foreground",
   low: "border border-border text-muted",
