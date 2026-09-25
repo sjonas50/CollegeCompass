@@ -18,6 +18,7 @@ import {
   strengthsFromUndoableImport,
   undoableImport,
 } from "./import";
+import { WORK_STYLES } from "../reference/work-styles";
 import { INTEREST_ITEMS, PERSONALITY_ITEMS, type Riasec } from "./instruments";
 import { scoreInterests, scorePersonality } from "./scoring";
 import { completeAttempt, instrumentStatuses, latestResult, saveResponses, startOrResumeAttempt } from "./service";
@@ -50,6 +51,10 @@ async function seedReference(target: Db) {
     occs.flatMap(([code, , , i]) =>
       (["R", "I", "A", "S", "E", "C"] as const).map((interest) => ({ occupationCode: code, interest, score: i[interest] ?? 1 })),
     ),
+  );
+  // Work styles, so strengths imported with the quiz count in matching (see computeMatches).
+  await target.insert(schema.occupationWorkStyles).values(
+    occs.flatMap(([code], k) => WORK_STYLES.map((s, j) => ({ occupationCode: code, style: s.id, impact: ((j * (k + 1)) % 5) - 1, distinctiveRank: null }))),
   );
   await loadOccupationProfiles(target, { fresh: true });
 }

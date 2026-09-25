@@ -88,13 +88,17 @@ export default async function InstrumentPage({ params }: PageProps<"/discover/[i
   if (instrument === "personality" && status.state === "done") {
     const [personality, run] = await Promise.all([latestResult(db, student.id, "personality"), latestMatchRun(db, student.id)]);
     if (personality) {
-      const matches = await strengthsInMatches(db, run, personality);
+      const [matches, fromQuiz] = await Promise.all([
+        strengthsInMatches(db, run, personality),
+        strengthsFromUndoableImport(db, student.id),
+      ]);
       return (
         <StrengthsView
           traits={personality.scores.traits}
           completedAt={status.completedAt}
           retakeAfter={status.retakeAfter}
           matches={matches}
+          notice={fromQuiz ? <ImportedStrengthsNotice /> : undefined}
         />
       );
     }
@@ -122,15 +126,7 @@ export default async function InstrumentPage({ params }: PageProps<"/discover/[i
             </div>
           </div>
         )}
-        {importedStrengths && (
-          <p className="rounded-lg border border-border p-3 text-sm">
-            Not your answers? These strengths came with the free quiz results from this device. You can remove both from{" "}
-            <Link href="/discover/interests" className="underline underline-offset-2">
-              your interests
-            </Link>
-            .
-          </p>
-        )}
+        {importedStrengths && <ImportedStrengthsNotice />}
         {status.state === "done" && (
           <p className="text-sm text-muted">
             You finished this on {formatDate(status.completedAt)}.
@@ -157,5 +153,18 @@ export default async function InstrumentPage({ params }: PageProps<"/discover/[i
         </Link>
       </p>
     </>
+  );
+}
+
+/** Strengths brought in with the free quiz are taken back from the interests page, with the quiz. */
+function ImportedStrengthsNotice() {
+  return (
+    <p className="rounded-lg border border-border p-3 text-sm">
+      Not your answers? These strengths came with the free quiz results from this device. You can remove both from{" "}
+      <Link href="/discover/interests" className="underline underline-offset-2">
+        your interests
+      </Link>
+      .
+    </p>
   );
 }

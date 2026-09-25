@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { startAssessmentAction } from "@/app/actions/discover";
 import { Button, ButtonLink, Card, PageHeading } from "@/components/ui";
@@ -40,11 +41,14 @@ export function StrengthsView({
   completedAt,
   retakeAfter,
   matches,
+  notice,
 }: {
   traits: Record<BigFive, number>;
   completedAt: Date;
   retakeAfter: Date;
   matches: StrengthsInMatches;
+  /** Shown under the heading, e.g. that these strengths came with the free quiz. */
+  notice?: ReactNode;
 }) {
   const strengths = strengthsFor(traits);
   const canRetake = retakeAfter <= new Date();
@@ -54,6 +58,7 @@ export function StrengthsView({
         title="Your strengths"
         lead="Every trait comes with its own strengths. These describe how you see yourself right now. They don't limit what you can do or become."
       />
+      {notice && <div className="mb-4">{notice}</div>}
       <ol className="space-y-4">
         {strengths.map((s) => (
           <li key={s.trait}>
