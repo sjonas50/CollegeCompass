@@ -26,7 +26,7 @@ export function counselorTools(ctx: ToolContext): BetaRunnableTool[] {
     inputSchema: z.object({ query: z.string().min(2).max(60).describe("A word or short phrase, e.g. 'nurse' or 'engineer'") }),
     run: async ({ query }) => {
       const results = await searchCareers(ctx.db, query, 15);
-      return JSON.stringify(results.length ? results.map((r) => ({ code: r.code, title: r.title })) : { note: "No careers matched. Try a shorter or different word." });
+      return JSON.stringify(results.length ? results.map((r) => ({ code: r.code, title: r.title })) : { note: 'No careers matched. Try another word for the job title, like "physician" or "software developer".' });
     },
   });
 

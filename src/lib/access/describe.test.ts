@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SubscriptionStatus } from "@/db/schema";
-import { CRISIS_LINE, LOCKED_COUNSELOR_NOTICE, describeAccess, formatAccessDate, formatStartDate } from "./describe";
+import { CRISIS_LINE, LOCKED_COUNSELOR_NOTICE, billingCardNote, describeAccess, formatAccessDate, formatStartDate } from "./describe";
 import { type BillingRow, DAY_MS, type GrantRow, addMonths, evaluateAccess } from "./entitlement";
 
 const NOW = new Date("2026-09-24T18:00:00Z");
@@ -34,6 +34,17 @@ describe("describeAccess", () => {
     expect(describeFor([trialFrom(ago(30))], null)).toEqual({ headline: "Your free trial ended on September 8, 2026.", tone: "locked" });
   });
 
+  it("never says a trial ended when none was offered (TRIAL_DAYS=0 gives a trial of no length)", () => {
+    const none: GrantRow = { kind: "trial", startsAt: ago(0.5), endsAt: ago(0.5) };
+    for (const audience of ["student", "parent"] as const) {
+      expect(describeFor([none], null, audience)).toEqual({ headline: "Your family doesn't have full access right now.", tone: "locked" });
+      expect(describeFor([], null, audience)).toEqual({ headline: "Your family doesn't have full access right now.", tone: "locked" });
+    }
+    // What did end is still said.
+    const ended: GrantRow = { kind: "free_access", startsAt: ago(400), endsAt: ago(35) };
+    expect(describeFor([none, ended], null).headline).toBe("Your family's free access ended on August 20, 2026.");
+  });
+
   it("gives free access's end date, and says when it can be renewed", () => {
     const free: GrantRow = { kind: "free_access", startsAt: ago(100), endsAt: addMonths(ago(100), 12) };
     expect(describeFor([free], null)).toMatchObject({ headline: "Your family has free access until June 16, 2027.", tone: "ok" });
@@ -64,6 +75,25 @@ describe("describeAccess", () => {
     expect(formatAccessDate(new Date("2026-10-09T05:00:00Z"))).toBe("October 8, 2026");
     // Midnight UTC is the evening before in the US: the day shown has begun everywhere by then.
     expect(formatStartDate(new Date("2027-08-25T00:00:00Z"))).toBe("August 25, 2027");
+  });
+
+  it("words the parent page's billing card for what Plan and billing offers", () => {
+    const note = (grants: GrantRow[], billing: BillingRow | null, plansOffered: boolean) =>
+      billingCardNote(evaluateAccess({ householdId: H, grants, billing }, NOW), plansOffered);
+    const free: GrantRow = { kind: "free_access", startsAt: ago(100), endsAt: addMonths(ago(100), 12) };
+    const ending: GrantRow = { kind: "free_access", startsAt: ago(350), endsAt: new Date(NOW.getTime() + 10 * DAY_MS) };
+
+    expect(note([], sub("active"), true)).toBe("See or change your family's plan.");
+    // Free access on: no "if cost is a problem" pitch for what the family already has.
+    for (const plansOffered of [true, false]) {
+      expect(note([free], null, plansOffered)).toBe("See when your free access ends and when you can renew it.");
+      expect(note([trialFrom(ago(4)), free], null, plansOffered)).toBe("See when your free access ends and when you can renew it.");
+      expect(note([ending], null, plansOffered)).toBe("You can renew your free access there now.");
+    }
+    expect(note([{ kind: "sponsored", startsAt: ago(10), endsAt: null }], null, true)).toBe("See your family's access.");
+    // Plans are offered only while they're on.
+    expect(note([trialFrom(ago(4))], null, true)).toBe("Choose a plan for your family. If cost is a problem, you can turn on free access there.");
+    expect(note([trialFrom(ago(30))], null, false)).toBe("Paid plans aren't available yet, but you can turn on free access there.");
   });
 
   it("keeps the crisis line in the counselor's locked notice", () => {

@@ -17,6 +17,7 @@ import {
   listMessages,
   saveConversationContext,
 } from "./conversations";
+import { type PageNames, pageNames } from "./page-names";
 import { CONCERN_NOTE, COUNSELOR_SYSTEM, buildStudentContext } from "./prompt";
 import { type ToolContext, counselorTools } from "./tools";
 
@@ -39,7 +40,11 @@ export type CounselorEvent =
   | { type: "replace"; text: string }
   | { type: "support"; text: string }
   | { type: "notice"; text: string }
-  | { type: "done"; messageId: string | null };
+  /**
+   * The turn is over. `names`: the real names of the college and career pages the reply links to
+   * (see pageNames), so the chat can name those links.
+   */
+  | { type: "done"; messageId: string | null; names?: PageNames };
 
 export type Student = { id: string; grade: number | null; displayName: string; username?: string | null };
 
@@ -306,7 +311,9 @@ export async function* respond(
       messageId = await appendMessage(db, conv.id, { role: "assistant", kind: "notice", content: notice });
       yield { type: "notice", text: notice };
     }
-    yield { type: "done", messageId };
+    // Looked up once the reply is written. Without them, the links keep the names the reply gives.
+    const names = result.text.trim() ? await safely("look up page names", () => pageNames(db, [result.text])) : null;
+    yield { type: "done", messageId, ...(names && Object.keys(names).length > 0 && { names }) };
   } finally {
     // If the consumer stops early (client gone, error), don't leave the model generating.
     if (!settled) abort.abort();

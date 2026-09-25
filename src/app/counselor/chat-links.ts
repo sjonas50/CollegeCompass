@@ -1,15 +1,31 @@
-import { linkify } from "@/lib/aid-guide/linkify";
+import { linkify, toSafeHref } from "@/lib/aid-guide/linkify";
 import type { AidGuideSectionId } from "@/lib/aid-guide/schema";
+import { US_STATES } from "@/lib/colleges/states";
+import type { PageNames } from "@/lib/counselor/page-names";
 
-// Turns https addresses and paths to our own pages in a counselor reply into link segments. Pure
-// and HTML-free: the chat renders each segment as text or an <a>. Links to our pages show the
-// page's name instead of the path, so they read well and make sense to screen readers.
+// Turns https addresses, a few trusted sites written without https:// and paths to our own pages
+// in a counselor reply into link segments. Pure and HTML-free: the chat renders each segment as
+// text or an <a>. Links to our pages show the page's name instead of the path, so they read well
+// and make sense to screen readers. A college or career page takes its real name, looked up from
+// our data (see pageNames), wherever the counselor put the path. Without one it takes the name the
+// counselor wrote with it, so two in a row don't both read "college page": "Boston College
+// (/colleges/164924)", "[Boston College](/colleges/164924)", "Boston College — /colleges/164924",
+// "Boston College: /colleges/164924", or with a place between, "Boston College, Chestnut Hill MA —
+// /colleges/164924" (the name is linked, the place stays as written and the path isn't shown).
 
 export type ChatSegment =
-  | { type: "text"; text: string }
+  | {
+      type: "text";
+      text: string;
+      /** Set when what the counselor wrote isn't shown: the path after a college's name and place. */
+      source?: string;
+    }
   | {
       type: "link";
-      /** What the student sees: the page's name for our pages, the address for other websites. */
+      /**
+       * What the student sees: the page's name for our pages (for a college or career, its real
+       * name, or else the name the counselor gave it), the address as written for other websites.
+       */
       text: string;
       href: string;
       /** Exactly what the counselor wrote. */
@@ -19,7 +35,12 @@ export type ChatSegment =
       lang?: "es";
     };
 
-type AppPage = { text: string; href: string; lang?: "es" };
+/**
+ * `placeholder`: the text only says what kind of page it is, so the counselor's words name it
+ * instead when they can: a markdown label for any of them, or a name written just before a
+ * college or career page.
+ */
+type AppPage = { text: string; href: string; lang?: "es"; placeholder?: "college" | "career" | "search" };
 
 // A path starts at the start of the text, after a space or after opening punctuation, never inside
 // a word, an address or "and/or". It runs to the next space, quote, bracket or typographic mark.
@@ -85,19 +106,224 @@ export function appPage(path: string): AppPage | null {
   const href = `/${route}`;
   if (query !== undefined) {
     // Only college search takes a query.
-    return route === "colleges" && QUERY.test(query) ? { text: "matching colleges", href: `${href}?${query}` } : null;
+    return route === "colleges" && QUERY.test(query) ? { text: "matching colleges", href: `${href}?${query}`, placeholder: "search" } : null;
   }
   if (Object.hasOwn(PAGES, route)) return { text: PAGES[route], href };
   const [first, second, third, ...rest] = segments;
   if (rest.length) return null;
   if (first === "aid" && second) return aidPage(second, third);
   if (third) return null;
-  if (first === "colleges" && /^\d+$/.test(second)) return { text: "college page", href };
-  if (first === "careers" && /^\d{2}-\d{4}\.\d{2}$/.test(second)) return { text: "career page", href };
+  if (first === "colleges" && /^\d+$/.test(second)) return { text: "college page", href, placeholder: "college" };
+  if (first === "careers" && /^\d{2}-\d{4}\.\d{2}$/.test(second)) return { text: "career page", href, placeholder: "career" };
   return null;
 }
 
+const MAX_NAME = 80;
+
+/** "[label](/path)" around the path at start–end: the whole span, and the label. */
+function markdownLink(text: string, start: number, end: number): { start: number; end: number; label: string } | null {
+  if (text.slice(Math.max(start - 2, 0), start) !== "](" || text[end] !== ")") return null;
+  const open = text.lastIndexOf("[", start - 2);
+  if (open < 0) return null;
+  const label = text.slice(open + 1, start - 2).trim();
+  if (/[[\]\n]/.test(label) || !/[\p{L}\p{N}]/u.test(label) || label.length > MAX_NAME) return null;
+  return { start: open, end: end + 1, label };
+}
+
+// Link words that don't say where the link goes (WCAG 2.4.4): our own name for the page says more.
+const GENERIC_LABELS = new Set(
+  ["here", "click here", "tap here", "this", "this page", "this link", "page", "link", "more", "read more", "learn more", "see more",
+    "more info", "details", "aquí", "haz clic aquí", "esta página", "este enlace", "enlace", "más"],
+);
+
+/** A markdown label that names the page, not "here" or the path again. */
+function namesPage(label: string): boolean {
+  const words = label.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").trim().replace(/\s+/g, " ");
+  return !GENERIC_LABELS.has(words) && !/^(?:\/|https?:)/i.test(label);
+}
+
+// A name: capitalized words, maybe joined by small words, as in "Texas A&M", "St. Olaf College",
+// "U.S. Naval Academy" or "University of Texas at Austin". It ends the text it's matched against.
+const NAME_WORD = String.raw`(?:\p{Lu}[\p{L}\p{N}'’&–-]*|\p{Lu}\p{Ll}{0,2}\.|(?:\p{Lu}\.){2,})`;
+const NAME_JOIN = String.raw`(?:of|at|the|de|la|del|du|des|and|in|for|on|y|&|[-–])`;
+const NAME_AT_END = new RegExp(String.raw`(?<=^|[\s(])${NAME_WORD}(?:\s+(?:${NAME_JOIN}\s+)*${NAME_WORD})*(?=\s*$)`, "u");
+const JOIN_WORD = new RegExp(String.raw`^${NAME_JOIN}$`, "u");
+// Capitalized words that start a sentence rather than a name ("Look at Texas A&M"), or that say
+// what a link is rather than name it ("Link: /colleges/1").
+const NOT_NAMES = new Set(
+  "i you your we it its this that these those here there look check see try visit compare consider explore read open both also then or and but maybe if some another next like for with in at link page site website more info details profile overview note tip".split(" "),
+);
+const notName = (word: string) => NOT_NAMES.has(word.split(/['’]/)[0].toLowerCase());
+
+// "and" usually joins two schools ("Georgia Tech and Emory University"), so a college's name starts
+// after it, unless the words on each side make one name: kinds of school or subjects ("Community
+// and Technical College", "University of Science and Technology"), or a few well-known names.
+// Career titles keep "and": O*NET writes 437 of its 1,016 that way ("Accountants and Auditors").
+const SCHOOL_WORDS = new Set(
+  `Academy Acupuncture Adult Aeronautics Agricultural Agriculture Allied Architecture Art Arts Barber Barbering Beauty Business
+  Career Careers Center College Community Continuing Cosmetology Culinary Culture Dental Design Dramatic Education Engineering
+  Esthetics Forestry Graduate Hairstyling Health Healthcare Hospitality Institute Integrative Justice Law Management Massage Mechanical
+  Medical Medicine Mines Mining Ministry Music Musical Nails Nursing Oriental Performing Pharmacy Religion Salon School Science
+  Sciences Seminary Spa State Studies Technical Technology Theological Theology Trade Tribal University Wellness`.split(/\s+/),
+);
+const AND_NAMES = new Set([
+  "Washington and Lee",
+  "Washington and Jefferson",
+  "William and Mary",
+  "Franklin and Marshall",
+  "Lewis and Clark",
+  "Hobart and William",
+  "Johnson and Wales",
+  "Davis and Elkins",
+  "Emory and Henry",
+  "Bryant and Stratton",
+  "University and A&M",
+]);
+// The word after "and", with "A & M" read as "A&M" ("Southern University and A & M College").
+const WORD_AFTER_AND = /^(?:\p{Lu}\s*&\s*\p{Lu}(?!\S)|\S+)/u;
+
+/** Where the last school in a run of names joined by "and" starts. */
+function lastSchool(name: string): number {
+  let start = 0;
+  for (const and of name.matchAll(/\s+and\s+/g)) {
+    const before = /\S+$/.exec(name.slice(0, and.index))?.[0] ?? "";
+    const after = WORD_AFTER_AND.exec(name.slice(and.index + and[0].length))?.[0].replace(/\s+/g, "") ?? "";
+    const oneName = (SCHOOL_WORDS.has(before) && SCHOOL_WORDS.has(after)) || AND_NAMES.has(`${before} and ${after}`);
+    if (!oneName) start = and.index + and[0].length;
+  }
+  return start;
+}
+
+/** The name written just before `at`, not reaching back past `from`. */
+function nameBefore(text: string, from: number, at: number, kind: "college" | "career"): { start: number; name: string } | null {
+  const base = Math.max(from, at - 2 * MAX_NAME);
+  const match = NAME_AT_END.exec(text.slice(base, at));
+  if (!match) return null;
+  let skipped = kind === "college" ? lastSchool(match[0]) : 0;
+  let name = match[0].slice(skipped);
+  for (let lead = /^(\S+)\s+/.exec(name); lead && (notName(lead[1]) || JOIN_WORD.test(lead[1])); lead = /^(\S+)\s+/.exec(name)) {
+    name = name.slice(lead[0].length);
+    skipped += lead[0].length;
+  }
+  if (notName(name) || name.length > MAX_NAME) return null;
+  return { start: base + match.index + skipped, name };
+}
+
+// What joins a name to its path besides "(...)": a dash or a colon ("Boston College — /colleges/164924").
+const JOIN_BEFORE_PATH = /(?:\s*[—–]\s*|\s+-\s+|:\s+)$/u;
+// Before a dash or colon, a label is as likely as a name ("- Reach: /colleges/1", "Cost: /colleges/1"),
+// so there a college's name has to say it's a school: a head word ("Boston College", "Ohio State",
+// "Georgia Tech") or an initialism ("MIT", "UCLA").
+const SCHOOL_HEADS = new Set("University College Colleges Institute Academy School State Tech Polytechnic Conservatory Seminary Community".split(" "));
+const namesSchool = (name: string) => /^\p{Lu}{2,6}$/u.test(name) || name.split(/[^\p{L}]+/u).some((word) => SCHOOL_HEADS.has(word));
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const STATE = [...US_STATES.flatMap((s) => [s.code, s.name]), "D.C."].sort((a, b) => b.length - a.length).map(escape).join("|");
+// A place after a college's name, as the tools give it (", Ithaca NY", ", Chestnut Hill, MA") or
+// in words (" in Houston, Texas"). The city is a few capitalized words ("St. Paul", "Coeur d'Alene").
+const CITY_WORD = String.raw`(?:${NAME_WORD}|d['’]\p{Lu}\p{L}*)`;
+const CITY = String.raw`${CITY_WORD}(?:\s+(?:(?:de|la|del|du|of|the)\s+)?${CITY_WORD}){0,3}`;
+const PLACE_AT_END = new RegExp(String.raw`(?:,|\s+in)\s+${CITY},?\s+(?:${STATE})\s*$`, "u");
+// A college is never named just "Texas" or "NY": that's where it is.
+const ONLY_A_STATE = new RegExp(String.raw`^(?:${STATE})$`, "u");
+
+/**
+ * Trusted sites the counselor names without https:// ("confirm dates at studentaid.gov"), and the
+ * host each is served from. Only these exact names are linked, never a look-alike or a subdomain.
+ */
+const BARE_SITES: Record<string, string> = {
+  "studentaid.gov": "studentaid.gov",
+  "fafsa.gov": "fafsa.gov",
+  // bls.gov/ooh redirects to BLS's home page, dropping the path.
+  "bls.gov": "www.bls.gov",
+  "collegescorecard.ed.gov": "collegescorecard.ed.gov",
+  "988lifeline.org": "988lifeline.org",
+  "collegeboard.org": "www.collegeboard.org",
+  "act.org": "www.act.org",
+  "apprenticeship.gov": "www.apprenticeship.gov",
+};
+// Starts where a path may and runs to the next space, quote or bracket, like CANDIDATE.
+const BARE_CANDIDATE = /(?<=^|[\s([{"'`“‘«¿¡—–])[^\s<>"'`“”‘’«»—–…()[\]{}]+/gu;
+// All of it (less sentence punctuation at the end) must be the site, maybe with www. and a plain
+// path: "studentaid.gov", "StudentAid.gov/es", "bls.gov/ooh/". Nothing like "@", ":", "?" or "#".
+const BARE_SITE = /^(?:www\.)?([a-z0-9.-]+)((?:\/[\w.~-]*)*)$/i;
+
+function bareSiteHref(written: string): string | null {
+  const match = BARE_SITE.exec(written);
+  if (!match) return null;
+  const site = match[1].toLowerCase();
+  if (!Object.hasOwn(BARE_SITES, site) || match[2].split("/").some((s) => s === "." || s === "..")) return null;
+  return toSafeHref(`https://${BARE_SITES[site]}${match[2]}`, { requireHttps: true });
+}
+
 type Placed = { start: number; end: number; segment: ChatSegment };
+
+// Words a written name and a real one may differ by: "The Ohio State University", "Ohio State University-Main Campus".
+const SMALL_WORDS = new Set("of at the and in for on de la del du des y".split(" "));
+const nameWords = (name: string) =>
+  name
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((w) => w && !SMALL_WORDS.has(w))
+    .map((w) => w.replace(/(?<=..)s$/, ""));
+/**
+ * Whether a name the counselor wrote is the real one or part of it: "Ohio State" or "Ohio State
+ * University" for "Ohio State University-Main Campus", "Nurses" for "Registered Nurses". Not
+ * "UCLA", or "Tuition at Ohio State".
+ */
+function partOfName(written: string, real: string): boolean {
+  const realWords = new Set(nameWords(real));
+  const words = nameWords(written);
+  return words.length > 0 && words.every((w) => realWords.has(w));
+}
+
+/**
+ * A college or career page written after its name: "Name (/path)", "Name — /path" or "Name: /path",
+ * and for a college also with its place between ("Cornell University, Ithaca NY — /colleges/190415").
+ * After a dash or colon, a college's name has to say it's a school (namesSchool).
+ * The name becomes the link, showing the page's real name when there is one (and only when the name
+ * written is part of it, so no words the counselor wrote are lost). A place stays as written, and the
+ * path and what joins it aren't shown.
+ * Looks back no further than `from`: the start of the line, or the end of the link before.
+ */
+function namedPage(
+  text: string,
+  from: number,
+  start: number,
+  end: number,
+  href: string,
+  kind: "college" | "career",
+  realName: string | undefined,
+): Placed[] | null {
+  let joinStart: number;
+  let linkEnd: number;
+  const inParentheses = text[start - 1] === "(" && text[end] === ")";
+  if (inParentheses) {
+    joinStart = start - 1;
+    linkEnd = end + 1;
+  } else {
+    const join = JOIN_BEFORE_PATH.exec(text.slice(from, start));
+    if (!join) return null;
+    joinStart = from + join.index;
+    linkEnd = end;
+  }
+  const headStart = Math.max(from, joinStart - 2 * MAX_NAME);
+  const head = text.slice(headStart, joinStart);
+  const place = kind === "college" ? PLACE_AT_END.exec(head) : null;
+  const named = nameBefore(text, from, place ? headStart + place.index : joinStart, kind);
+  if (!named) return null;
+  if (kind === "college" && (ONLY_A_STATE.test(named.name) || (!inParentheses && !namesSchool(named.name)))) return null;
+  if (realName !== undefined && !partOfName(named.name, realName)) return null;
+  const nameEnd = place ? named.start + named.name.length : linkEnd;
+  const source = text.slice(named.start, nameEnd);
+  const link: ChatSegment = { type: "link", text: realName ?? named.name, href, source, external: false };
+  if (!place) return [{ start: named.start, end: nameEnd, segment: link }];
+  const placeEnd = headStart + head.trimEnd().length;
+  const hidden: ChatSegment = { type: "text", text: "", source: text.slice(placeEnd, linkEnd) };
+  return [
+    { start: named.start, end: nameEnd, segment: link },
+    { start: placeEnd, end: linkEnd, segment: hidden },
+  ];
+}
 
 /** Besides any .gov or .edu site. Subdomains count too (npc.collegeboard.org, apply.commonapp.org). */
 const TRUSTED_SITES = ["collegeboard.org", "act.org", "commonapp.org", "careeronestop.org", "988lifeline.org", "crisistextline.org"];
@@ -114,7 +340,12 @@ function trustedLink(href: string): boolean {
   return /\.(gov|edu)$/.test(host) || TRUSTED_SITES.some((site) => host === site || host.endsWith(`.${site}`));
 }
 
-export function chatLinks(text: string): ChatSegment[] {
+/**
+ * `names`: the real names of college and career pages by path (see pageNames). A page in it is
+ * named that, wherever the counselor put its path; one that isn't takes the name written with it,
+ * and then just "college page" or "career page".
+ */
+export function chatLinks(text: string, names: PageNames = {}): ChatSegment[] {
   const links: Placed[] = [];
   let offset = 0;
   for (const segment of linkify(text)) {
@@ -126,15 +357,45 @@ export function chatLinks(text: string): ChatSegment[] {
     }
     offset += segment.text.length;
   }
+  const overlaps = (start: number, end: number) => links.some((l) => start < l.end && l.start < end);
+  // The label of a markdown link ("[studentaid.gov](https://studentaid.gov)") isn't a link of its own.
+  const isLabel = (end: number) => text.startsWith("](", end);
+  for (const match of text.matchAll(BARE_CANDIDATE)) {
+    const written = match[0].replace(TRAILING_PUNCTUATION, "");
+    const href = bareSiteHref(written);
+    const start = match.index;
+    const end = start + written.length;
+    if (!href || !trustedLink(href) || isLabel(end) || overlaps(start, end)) continue;
+    links.push({ start, end, segment: { type: "link", text: written, href, source: written, external: true } });
+  }
   for (const match of text.matchAll(CANDIDATE)) {
     const path = match[0].replace(TRAILING_PUNCTUATION, "");
+    const page = appPage(path);
     const start = match.index;
     const end = start + path.length;
-    if (links.some((l) => start < l.end && l.start < end)) continue;
-    const page = appPage(path);
-    if (!page) continue;
-    const link: ChatSegment = { type: "link", text: page.text, href: page.href, source: path, external: false, ...(page.lang && { lang: page.lang }) };
-    links.push({ start, end, segment: link });
+    if (!page || isLabel(end)) continue;
+    const lang = page.lang && { lang: page.lang };
+    const linked = (from: number, to: number, shown: string): Placed => ({
+      start: from,
+      end: to,
+      segment: { type: "link", text: shown, href: page.href, source: text.slice(from, to), external: false, ...lang },
+    });
+    const named = page.placeholder === "college" || page.placeholder === "career" ? page.placeholder : null;
+    const realName = named && Object.hasOwn(names, page.href) ? names[page.href] : undefined;
+    // The widest choice that's free: markdown around the path, or the name written with it, else the path.
+    const choices: Placed[][] = [];
+    const markdown = markdownLink(text, start, end);
+    if (markdown) {
+      choices.push([linked(markdown.start, markdown.end, realName ?? (page.placeholder && namesPage(markdown.label) ? markdown.label : page.text))]);
+    }
+    if (named) {
+      const from = Math.max(text.lastIndexOf("\n", start) + 1, ...links.filter((l) => l.end <= start).map((l) => l.end));
+      const withName = namedPage(text, from, start, end, page.href, named, realName);
+      if (withName) choices.push(withName);
+    }
+    choices.push([linked(start, end, realName ?? page.text)]);
+    const choice = choices.find((placed) => placed.every((p) => !overlaps(p.start, p.end)));
+    if (choice) links.push(...choice);
   }
   links.sort((a, b) => a.start - b.start);
 

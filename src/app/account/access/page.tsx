@@ -5,6 +5,7 @@ import { ButtonLink, Card, Notice, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
 import { BILLING_PATH, FREE_ACCESS_PATH, describeAccess, formatStartDate } from "@/lib/access/describe";
 import { freeAccessEligibility, getUserAccess } from "@/lib/access/service";
+import { getStripe, paidPlansAvailable } from "@/lib/billing/stripe";
 import { requireUser } from "@/lib/auth/dal";
 import { AccessStatus, CrisisLine, FreeFeatures, FullAccessFeatures } from "../access-ui";
 
@@ -13,8 +14,8 @@ export const metadata: Metadata = { title: "Your access" };
 const linkClass = "inline-flex min-h-11 items-center underline underline-offset-2";
 
 /**
- * Where a locked student lands: what's still free, and the two ways to unlock the rest (a parent
- * subscribes, or free access). Parents manage all of this on /account/billing.
+ * Where a locked student lands: what's still free, and the ways to unlock the rest (a parent
+ * subscribes, while paid plans are on, or free access). Parents manage all of this on /account/billing.
  */
 export default async function AccessPage({ searchParams }: PageProps<"/account/access">) {
   const user = await requireUser(["student", "parent"]);
@@ -29,6 +30,8 @@ export default async function AccessPage({ searchParams }: PageProps<"/account/a
   // Ways to unlock (or keep) full access, unless something other than a trial already covers it.
   const showOptions = !access.full || trialOnly || Boolean(runningFree && access.canRenewFreeAccess);
   const optionsHeading = !access.full ? "How to unlock it" : trialOnly ? "Keep full access after your trial" : "Keep your access going";
+  // The billing page's check, so a teen is never sent to ask a parent for a plan they can't choose.
+  const plansOffered = Boolean(getStripe()) && paidPlansAvailable();
 
   return (
     <div className="space-y-8">
@@ -52,7 +55,7 @@ export default async function AccessPage({ searchParams }: PageProps<"/account/a
           <h2 id="unlock-heading" className="text-lg font-medium">
             {optionsHeading}
           </h2>
-          {(!access.full || trialOnly) && (
+          {plansOffered && (!access.full || trialOnly) && (
             <Card>
               <h3 className="font-medium">Ask a parent or guardian</h3>
               <p className="mt-1 text-sm">
@@ -66,7 +69,9 @@ export default async function AccessPage({ searchParams }: PageProps<"/account/a
             {eligibility.ok ? (
               <>
                 <p className="mt-1 text-sm">
-                  If cost is a problem, your family can use College Compass for free. No documents and no questions about why.
+                  {/* Without paid plans, free access isn't only for when cost is a problem. */}
+                  {plansOffered ? "If cost is a problem, your family" : "Your family"} can use College Compass for free. No documents
+                  and no questions about why.
                 </p>
                 <div className="mt-3">
                   <ButtonLink href={FREE_ACCESS_PATH}>{runningFree ? "Renew free access" : "Turn on free access"}</ButtonLink>
@@ -74,8 +79,8 @@ export default async function AccessPage({ searchParams }: PageProps<"/account/a
               </>
             ) : eligibility.error === "under_13" ? (
               <p className="mt-1 text-sm">
-                If cost is a problem, ask your parent or guardian to turn on free access from their account. It&apos;s free and they
-                won&apos;t need any documents.
+                {plansOffered ? "If cost is a problem, ask" : "Ask"} your parent or guardian to turn on free access from their account.
+                It&apos;s free and they won&apos;t need any documents.
               </p>
             ) : eligibility.error === "not_yet_renewable" && access.freeAccessRenewableFrom ? (
               <p className="mt-1 text-sm">You can renew it starting {formatStartDate(access.freeAccessRenewableFrom)}.</p>

@@ -83,6 +83,10 @@ export default async function BillingPage({ searchParams }: PageProps<"/account/
   const prices = available && stripe && !subscribed ? await getPlanPrices(stripe) : null;
   const plans = (["monthly", "annual"] as const).filter((p) => priceIdFor(p));
   const runningFree = access.freeAccess?.active ? access.freeAccess : null;
+  // Free access (or a sponsored seat) already gives full access: no need to list what a plan
+  // unlocks, and no plan section at all while there are no plans to choose.
+  const trialOnly = access.sources.length === 1 && access.sources[0] === "trial";
+  const coveredWithoutPlan = !subscribed && access.full && !trialOnly;
 
   return (
     <div className="space-y-8">
@@ -93,37 +97,42 @@ export default async function BillingPage({ searchParams }: PageProps<"/account/
 
       <AccessStatus summary={summary} />
 
-      <section aria-labelledby="plan-heading" className="space-y-4">
-        <h2 id="plan-heading" className="text-lg font-medium">
-          {subscribed ? "Your plan" : "Choose a plan"}
-        </h2>
-        {subscribed ? (
-          !manages ? (
-            <p className="text-sm">This plan was set up from another account, so it can&apos;t be changed here.</p>
-          ) : stripe ? (
-            <ManageBilling lead="Change your plan, update your card, see receipts or cancel on Stripe's secure page." />
+      {(subscribed || available || !coveredWithoutPlan) && (
+        <section aria-labelledby="plan-heading" className="space-y-4">
+          <h2 id="plan-heading" className="text-lg font-medium">
+            {subscribed ? "Your plan" : available ? "Choose a plan" : "Full access"}
+          </h2>
+          {subscribed ? (
+            !manages ? (
+              <p className="text-sm">This plan was set up from another account, so it can&apos;t be changed here.</p>
+            ) : stripe ? (
+              <ManageBilling lead="Change your plan, update your card, see receipts or cancel on Stripe's secure page." />
+            ) : (
+              <p className="text-sm">Billing changes aren&apos;t available right now. Please try again later.</p>
+            )
+          ) : available ? (
+            <>
+              <ul className="grid gap-4 sm:grid-cols-2">
+                {plans.map((plan) => (
+                  <PlanOption key={plan} plan={plan} price={prices?.[plan] ?? null} />
+                ))}
+              </ul>
+              <p className="text-sm text-muted">
+                You&apos;ll pay on Stripe&apos;s secure page. We never see or store your card details. You can cancel any time.
+              </p>
+              {manages && stripe && <ManageBilling lead="See past receipts or update your card." />}
+            </>
           ) : (
-            <p className="text-sm">Billing changes aren&apos;t available right now. Please try again later.</p>
-          )
-        ) : available ? (
-          <>
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {plans.map((plan) => (
-                <PlanOption key={plan} plan={plan} price={prices?.[plan] ?? null} />
-              ))}
-            </ul>
-            <p className="text-sm text-muted">
-              You&apos;ll pay on Stripe&apos;s secure page. We never see or store your card details. You can cancel any time.
-            </p>
-            {manages && stripe && <ManageBilling lead="See past receipts or update your card." />}
-          </>
-        ) : (
-          <Card>
-            <p>Paid plans aren&apos;t available yet. Your family can keep full access with free access, below.</p>
-          </Card>
-        )}
-        {!subscribed && <FullAccessFeatures heading="A plan unlocks" />}
-      </section>
+            <Card>
+              <p>
+                Paid plans aren&apos;t available yet. Your family can {access.full ? "keep" : "get"} full access with free access,
+                below.
+              </p>
+            </Card>
+          )}
+          {!subscribed && !coveredWithoutPlan && <FullAccessFeatures heading={available ? "A plan unlocks" : "Full access unlocks"} />}
+        </section>
+      )}
 
       <section aria-labelledby="free-access-heading" className="space-y-3">
         <h2 id="free-access-heading" className="text-lg font-medium">

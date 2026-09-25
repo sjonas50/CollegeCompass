@@ -9,7 +9,6 @@ import {
   exists,
   gt,
   gte,
-  ilike,
   inArray,
   isNull,
   lt,
@@ -23,6 +22,7 @@ import type { Db } from "@/db";
 import { type NetPriceByIncome, collegePrograms, colleges, majors } from "@/db/schema";
 import { cleanTitle } from "./format";
 import { isGraduateProgram } from "./graduate";
+import { type NameMatch, nameMatch } from "./name-match";
 import {
   type CollegeSize,
   type Control,
@@ -39,9 +39,10 @@ import { normalizeState } from "./states";
 
 export const PAGE_SIZE = 20;
 
-export const SORTS = ["name", "net_price", "completion", "earnings"] as const;
+export const SORTS = ["relevance", "name", "net_price", "completion", "earnings"] as const;
 export type CollegeSort = (typeof SORTS)[number];
 export const SORT_LABELS: Record<CollegeSort, string> = {
+  relevance: "Best match",
   name: "Name (A to Z)",
   net_price: "Lowest average net price",
   completion: "Highest graduation rate",
@@ -70,7 +71,10 @@ export const CollegeSearchFiltersSchema = z.object({
   hispanicServing: z.boolean().optional().describe("Hispanic-serving institutions"),
   tribal: z.boolean().optional().describe("Tribal colleges and universities"),
   includeOnlineOnly: z.boolean().optional().describe("Include fully online colleges (left out by default)"),
-  sort: z.enum(SORTS).optional().describe("Default 'name'. 'net_price' lowest first; 'completion' and 'earnings' highest first"),
+  sort: z
+    .enum(SORTS)
+    .optional()
+    .describe("Default 'relevance': best name matches for q first, then larger colleges (by name without q). 'net_price' lowest first; 'completion' and 'earnings' highest first"),
   page: z.number().int().min(1).optional().describe(`1-based page of ${PAGE_SIZE} results`),
 });
 export type CollegeSearchFilters = z.infer<typeof CollegeSearchFiltersSchema>;
@@ -109,19 +113,11 @@ export type CollegeSearchResult = {
   results: CollegeSummary[];
 };
 
-function escapeLike(text: string) {
-  return text.replace(/[\\%_]/g, (c) => `\\${c}`);
-}
-
-/** Up to six words, each of which must appear somewhere in the text. */
-function words(text: string | undefined) {
-  return (text ?? "").trim().slice(0, 100).split(/\s+/).filter(Boolean).slice(0, 6).map(escapeLike);
-}
-
-function conditions(filters: CollegeSearchFilters): SQL[] {
+function conditions(filters: CollegeSearchFilters, name: NameMatch | null): SQL[] {
   const where: (SQL | undefined)[] = [];
-  // Each word typed in the name box is in the college's name or its city ("austin community").
-  for (const word of words(filters.q)) where.push(or(ilike(colleges.name, `%${word}%`), ilike(colleges.city, `%${word}%`)));
+  // Each word typed in the name box starts a word of the college's name or its city ("austin
+  // community"), or starts its initials ("mit").
+  if (name) where.push(name.where);
 
   // Undergraduate options only: graduate-only schools are never a fit for grades 7–12.
   where.push(or(isNull(colleges.predominantDegree), lt(colleges.predominantDegree, 4)));
@@ -164,7 +160,7 @@ function conditions(filters: CollegeSearchFilters): SQL[] {
 }
 
 const byName = [asc(sql`lower(${colleges.name})`), asc(colleges.unitId)];
-const ORDER: Record<CollegeSort, SQL[]> = {
+const ORDER: Record<Exclude<CollegeSort, "relevance">, SQL[]> = {
   name: byName,
   net_price: [sql`${colleges.avgNetPrice} asc nulls last`, ...byName],
   completion: [sql`${colleges.completionRate} desc nulls last`, ...byName],
@@ -210,8 +206,14 @@ function toSummary(row: SummaryRow): CollegeSummary {
   };
 }
 
+/** Best name matches first (see nameMatch), then larger colleges. By name when no name was typed. */
+function byRelevance(name: NameMatch | null): SQL[] {
+  return name ? [asc(name.rank), sql`${colleges.enrollment} desc nulls last`, ...byName] : byName;
+}
+
 export async function searchColleges(db: Db, filters: CollegeSearchFilters = {}): Promise<CollegeSearchResult> {
-  const where = and(...conditions(filters));
+  const name = nameMatch(colleges.name, colleges.city, filters.q);
+  const where = and(...conditions(filters, name));
   const [{ total }] = await db.select({ total: count() }).from(colleges).where(where);
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const requested = Number.isFinite(filters.page) ? Math.floor(filters.page as number) : 1;
@@ -220,7 +222,7 @@ export async function searchColleges(db: Db, filters: CollegeSearchFilters = {})
     .select(summaryColumns)
     .from(colleges)
     .where(where)
-    .orderBy(...ORDER[filters.sort ?? "name"])
+    .orderBy(...(!filters.sort || filters.sort === "relevance" ? byRelevance(name) : ORDER[filters.sort]))
     .limit(PAGE_SIZE)
     .offset((page - 1) * PAGE_SIZE);
   return { total, page, pageSize: PAGE_SIZE, results: rows.map(toSummary) };
@@ -570,7 +572,7 @@ export function parseCollegeSearchParams(params: Params): { filters: CollegeSear
     if (flag(params[param])) filters[key] = true;
   }
   const sort = first(params.sort);
-  if (SORTS.includes(sort as CollegeSort) && sort !== "name") filters.sort = sort as CollegeSort;
+  if (SORTS.includes(sort as CollegeSort) && sort !== "relevance") filters.sort = sort as CollegeSort;
   const page = Number(first(params.page));
   if (Number.isInteger(page) && page > 1) filters.page = Math.min(page, 10_000);
   const majorQuery = filters.major ? null : (first(params.mq)?.slice(0, 60) ?? null);
@@ -589,7 +591,7 @@ export function collegeSearchHref(filters: CollegeSearchFilters): string {
   for (const [key, param] of Object.entries(FLAG_PARAMS) as [keyof typeof FLAG_PARAMS, string][]) {
     if (filters[key]) params.set(param, "1");
   }
-  if (filters.sort && filters.sort !== "name") params.set("sort", filters.sort);
+  if (filters.sort && filters.sort !== "relevance") params.set("sort", filters.sort);
   if (filters.page && filters.page > 1) params.set("page", String(filters.page));
   const query = params.toString();
   return query ? `/colleges?${query}` : "/colleges";

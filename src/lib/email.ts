@@ -1,6 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { env } from "@/env";
+import { outboundFetch } from "./outbound-fetch";
 
 export type Email = {
   to: string;
@@ -34,6 +35,8 @@ export const EMAIL_MAX_RATE_LIMIT_WAIT_MS = 10_000;
 export const RESEND_REQUESTS_PER_SECOND = 8;
 
 const QUOTA_CODES = new Set(["daily_quota_exceeded", "monthly_quota_exceeded"]);
+/** Resend's answers for an API key it won't take (401 or 403): every email fails until the key is fixed. */
+const API_KEY_CODES = new Set(["missing_api_key", "invalid_api_key", "restricted_api_key", "suspended_api_key", "invalid_permission"]);
 
 /**
  * A failed send. The message holds only the provider, HTTP status and the provider's error code
@@ -67,11 +70,27 @@ export class EmailSendError extends Error {
     if (this.status === 409) return this.code === "concurrent_idempotent_requests";
     return this.status >= 500;
   }
+
+  /**
+   * Resend refused this email itself (a 4xx such as 422 validation_error, often for an address it
+   * won't take), so sending it again would fail the same way. Not an outage, a timeout, a network
+   * error, a rate limit or quota (429), a missing or bad API key, or Resend still busy with the
+   * email: those say nothing about this email.
+   */
+  get refused() {
+    if (this.status === null || this.status < 400 || this.status >= 500 || this.status === 429) return false;
+    return !this.retryable && this.status !== 401 && !API_KEY_CODES.has(this.code);
+  }
 }
 
 /** The send failed, but the email may still arrive (see EmailSendError.uncertain). */
 export function isUncertainSend(error: unknown): boolean {
   return error instanceof EmailSendError && error.uncertain;
+}
+
+/** Resend refused this particular email, rather than failing to send (see EmailSendError.refused). */
+export function isRefusedSend(error: unknown): boolean {
+  return error instanceof EmailSendError && error.refused;
 }
 
 /** Waits for this caller's turn to start a request. */
@@ -144,7 +163,7 @@ type Failure = { error: EmailSendError; retryAfterMs: number | null };
  */
 export async function sendWithResend(email: Email, config: ResendConfig, deps: SendDeps = {}): Promise<void> {
   if (!config.apiKey) throw logged(new EmailSendError("resend", null, "missing_api_key"));
-  const doFetch = deps.fetch ?? fetch;
+  const doFetch = deps.fetch ?? outboundFetch();
   const sleep = deps.sleep ?? wait;
   const limiter = deps.limiter ?? resendLimiter;
   const timeoutMs = deps.timeoutMs ?? EMAIL_TIMEOUT_MS;

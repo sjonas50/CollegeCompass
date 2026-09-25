@@ -4,12 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui";
+import type { PageNames } from "@/lib/counselor/page-names";
 import {
   type AccessRequired,
   type ChatMessage,
   type ServerEvent,
   type Turn,
   accessRequired,
+  addPageNames,
   announcement as announce,
   applyEvent,
   finishTurn,
@@ -31,13 +33,16 @@ const STARTERS = [
 const MAX_CHARS = 2000;
 
 /**
- * Text with our pages and https addresses as links. Our pages show their names (the path is still
- * the link's address); other websites open in a new tab and say so.
+ * Text with links (see chatLinks): paths to our pages, https addresses of government, college and
+ * a few trusted sites, and those trusted sites written without https:// ("studentaid.gov"). Our
+ * pages show a name instead of the path (for a college or career, its real name from `names`, or
+ * else the name the counselor wrote with it); other websites show the address as written, open in a
+ * new tab and say so.
  */
-export function Linked({ text }: { text: string }) {
+export function Linked({ text, names }: { text: string; names?: PageNames }) {
   return (
     <>
-      {chatLinks(text).map((s, i) =>
+      {chatLinks(text, names).map((s, i) =>
         s.type === "text" ? (
           s.text
         ) : s.external ? (
@@ -59,7 +64,7 @@ export function Linked({ text }: { text: string }) {
 }
 
 /** Renders model text as plain paragraphs and "- " lists. Never as HTML. */
-function RichText({ text }: { text: string }) {
+function RichText({ text, names }: { text: string; names?: PageNames }) {
   const blocks = text.split(/\n{2,}/);
   return (
     <>
@@ -70,7 +75,7 @@ function RichText({ text }: { text: string }) {
             <ul key={i} className="my-2 list-disc space-y-1 pl-5">
               {lines.map((l, j) => (
                 <li key={j}>
-                  <Linked text={l.replace(/^\s*[-•]\s+/, "")} />
+                  <Linked text={l.replace(/^\s*[-•]\s+/, "")} names={names} />
                 </li>
               ))}
             </ul>
@@ -78,7 +83,7 @@ function RichText({ text }: { text: string }) {
         }
         return (
           <p key={i} className="my-2 whitespace-pre-wrap first:mt-0 last:mb-0">
-            <Linked text={block} />
+            <Linked text={block} names={names} />
           </p>
         );
       })}
@@ -86,7 +91,7 @@ function RichText({ text }: { text: string }) {
   );
 }
 
-function Bubble({ m }: { m: ChatMessage }) {
+function Bubble({ m, names }: { m: ChatMessage; names: PageNames }) {
   if (m.role === "user") {
     return (
       <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-4 py-2 text-accent-foreground">
@@ -132,7 +137,7 @@ function Bubble({ m }: { m: ChatMessage }) {
   }
   return (
     <div className="max-w-[90%] rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-2">
-      {m.pending && !m.content ? <span className="animate-pulse text-muted">Thinking…</span> : <RichText text={m.content} />}
+      {m.pending && !m.content ? <span className="animate-pulse text-muted">Thinking…</span> : <RichText text={m.content} names={names} />}
     </div>
   );
 }
@@ -148,8 +153,21 @@ function subscribePointer(onChange: () => void) {
 // Streamed text follows the end of the chat while the student is within this distance of it.
 const FOLLOW_PX = 160;
 
-export function Chat({ conversationId: initialId, initialMessages }: { conversationId?: string; initialMessages: ChatMessage[] }) {
+/**
+ * `pageNames`: the real names of the college and career pages the saved replies link to (see
+ * pageNames). A new reply's names come with the end of its stream.
+ */
+export function Chat({
+  conversationId: initialId,
+  initialMessages,
+  pageNames = {},
+}: {
+  conversationId?: string;
+  initialMessages: ChatMessage[];
+  pageNames?: PageNames;
+}) {
   const [messages, setMessages] = useState(initialMessages);
+  const [names, setNames] = useState(pageNames);
   const [conversationId, setConversationId] = useState(initialId);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -305,7 +323,10 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
               setConversationId(event.id);
               window.history.replaceState(null, "", `/counselor/${event.id}`);
             }
-          } else apply((s) => applyEvent(s, event));
+          } else {
+            if (event.type === "done" && !stale()) setNames((known) => addPageNames(known, event));
+            apply((s) => applyEvent(s, event));
+          }
         }
       }
     } catch {
@@ -366,7 +387,7 @@ export function Chat({ conversationId: initialId, initialMessages }: { conversat
         )}
         {messages.map((m) => (
           <div key={m.id} id={`message-${m.id}`} className="flex scroll-mt-4 flex-col">
-            <Bubble m={m} />
+            <Bubble m={m} names={names} />
           </div>
         ))}
         <div ref={endRef} />

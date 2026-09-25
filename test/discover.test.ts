@@ -105,8 +105,9 @@ describe("discover flow", () => {
     const explanation = await explainLatestMatches(db, userId, { now, client: fakeClient(null) });
     expect(explanation?.source).toBe("template");
     expect(explanation?.overview).toContain("Investigative");
-    expect(explanation?.careers.find((c) => c.code === "19-2031.00")?.why).toBe(
-      "Combines figuring things out and hands-on work, which lines up with your investigative and realistic interests.",
+    // The template's reason: the career's preparation, what the work is, and the interests it shares.
+    expect(explanation?.careers.find((c) => c.code === "19-2031.00")?.why).toMatch(
+      /^Usually after a bachelor's degree, you could .+, using your interest in figuring things out and hands-on work\.$/,
     );
     expect((await latestMatchRun(db, userId))?.explanation).toBeNull();
   });

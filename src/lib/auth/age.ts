@@ -14,8 +14,19 @@ export function ageOn(birthDate: string, today: Date = new Date()): number {
   return age;
 }
 
-export function isUnder13(birthDate: string, today?: Date): boolean {
-  return ageOn(birthDate, today) < COPPA_AGE;
+/**
+ * American Samoa (UTC−11, no daylight saving time) is the last US time zone to reach each new day.
+ * Its date is the earliest calendar date anywhere in the US.
+ */
+const LATEST_US_OFFSET_MS = 11 * 60 * 60 * 1000;
+
+/**
+ * Whether COPPA applies. The server doesn't know where the child lives, so a child counts as 13
+ * only once their 13th birthday has started everywhere in the US (in American Samoa, last of all).
+ * Until then they may still be 12 at home.
+ */
+export function isUnder13(birthDate: string, now: Date = new Date()): boolean {
+  return ageOn(birthDate, new Date(now.getTime() - LATEST_US_OFFSET_MS)) < COPPA_AGE;
 }
 
 /** Validates a birth date for a plausible middle/high school student (ages 10–20). */

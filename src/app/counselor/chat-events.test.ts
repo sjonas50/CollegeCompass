@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { CLIENT_NOTICES, type ChatMessage, type ServerEvent, announcement, applyEvent, finishTurn, httpFailure, startTurn } from "./chat-events";
+import {
+  CLIENT_NOTICES,
+  type ChatMessage,
+  type ServerEvent,
+  addPageNames,
+  announcement,
+  applyEvent,
+  finishTurn,
+  httpFailure,
+  startTurn,
+} from "./chat-events";
 
 const start = () => ({
   messages: [
@@ -68,5 +78,36 @@ describe("chat events", () => {
     expect(shown(finishTurn(httpFailure(start(), 500), false).messages)).toEqual([["notice", CLIENT_NOTICES.server]]);
     const signedOut = finishTurn(httpFailure(start(), 401), false);
     expect(signedOut.messages[1].link).toEqual({ href: "/login?next=/counselor", label: "Sign in" });
+  });
+});
+
+describe("page names from the end of a reply", () => {
+  const known = { "/colleges/1": "Prairie State University" };
+
+  it("adds the names of the colleges and careers a new reply links to", () => {
+    const event: ServerEvent = {
+      type: "done",
+      messageId: "m",
+      names: { "/colleges/204796": "Ohio State University-Main Campus", "/careers/29-1141.00": "Registered Nurses" },
+    };
+    expect(addPageNames(known, event)).toEqual({
+      "/colleges/1": "Prairie State University",
+      "/colleges/204796": "Ohio State University-Main Campus",
+      "/careers/29-1141.00": "Registered Nurses",
+    });
+    // Nothing new: the same names.
+    expect(addPageNames(known, { type: "done", messageId: "m" })).toBe(known);
+    expect(addPageNames(known, { type: "delta", text: "/colleges/2" })).toBe(known);
+  });
+
+  it("keeps only names for college and career pages", () => {
+    const event: ServerEvent = {
+      type: "done",
+      messageId: null,
+      names: { "/admin": "Admin", "/colleges/2?x=1": "X", "/colleges/3": 42, "/colleges/4": " ", "/careers/47-2111.00": "Electricians" },
+    };
+    expect(addPageNames({}, event)).toEqual({ "/careers/47-2111.00": "Electricians" });
+    expect(addPageNames(known, { type: "done", messageId: null, names: "nope" })).toBe(known);
+    expect(addPageNames(known, { type: "done", messageId: null, names: null })).toBe(known);
   });
 });

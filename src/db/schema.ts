@@ -230,6 +230,22 @@ export const rateLimits = pgTable("rate_limits", {
   count: integer("count").notNull(),
 });
 
+/**
+ * Anonymous daily totals for the staff overview: how many people finished the free quiz, signed up,
+ * and so on (see src/lib/admin/counts.ts). One number per UTC day and metric, and nothing else: no
+ * user ids, no addresses, nothing about any one person. Not personal data, so it isn't in any
+ * export and isn't deleted with an account.
+ */
+export const dailyCounts = pgTable(
+  "daily_counts",
+  {
+    day: date("day").notNull(),
+    metric: text("metric").notNull(),
+    count: integer("count").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.metric] })],
+);
+
 // ---------------------------------------------------------------------------
 // Reference data (loaded from public sources, read-only at runtime)
 // ---------------------------------------------------------------------------
@@ -358,6 +374,28 @@ export const occupationValues = pgTable(
   (t) => [primaryKey({ columns: [t.occupationCode, t.value] })],
 );
 
+/**
+ * O*NET 31.0 Work Styles: 21 styles (like Attention to Detail or Empathy) per occupation, with
+ * both of the file's scales. O*NET rated them with a hybrid AI/expert method (Domain Source
+ * "AI/Expert"), not by surveying workers, so they are used lightly and described as estimates.
+ */
+export const occupationWorkStyles = pgTable(
+  "occupation_work_styles",
+  {
+    occupationCode: text("occupation_code")
+      .notNull()
+      .references(() => occupations.code, { onDelete: "cascade" }),
+    // Our id for the style, e.g. "attention_to_detail" (WORK_STYLES in src/lib/reference/work-styles.ts).
+    style: text("style").notNull(),
+    // Work Styles Impact (WI), −3 to +3: how much the style helps (+) or gets in the way of (−) the work.
+    impact: real("impact").notNull(),
+    // Distinctiveness Rank (DR): 1 is the style that most sets this occupation apart from others.
+    // Null when the style isn't among the occupation's ranked ones (up to 10; published as 0).
+    distinctiveRank: smallint("distinctive_rank"),
+  },
+  (t) => [primaryKey({ columns: [t.occupationCode, t.style] })],
+);
+
 // ---------------------------------------------------------------------------
 // Assessments and career matching (student data — deleted with the student)
 //
@@ -407,6 +445,8 @@ export type MatchExplanation = {
   careers: { code: string; why: string }[];
   /** "ai" when written by the model, "template" when generated without it. */
   source: "ai" | "template";
+  /** Which interest facts the model was given (see EXPLANATION_FACTS_VERSION); missing before version 2. */
+  factsVersion?: number;
 };
 
 export const matchRuns = pgTable(

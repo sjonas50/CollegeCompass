@@ -749,14 +749,12 @@ export const MILESTONES: Milestone[] = [
       10,
       11
     ],
-    "title": "Retake an interest quiz for high school",
-    "detail": "Take the free Interest Assessment on CareerOneStop, a U.S. Department of Labor site. It's 30 quick questions, and you can use a phone or a school or library computer. Pick 2 or 3 careers from your results and check the pay and the education or training each needs. Want it in Spanish? Try miproximopaso.org.",
+    "title": "Retake the Interests quiz for high school",
+    "detail": "Interests change as you grow. On your Home page, open Interests and take the quiz again. You can retake it 90 days after you last took it. Then pick 2 or 3 careers from your matches and check the education or training each needs. Want it in Spanish? Try miproximopaso.org.",
     "why": "Knowing if a job needs a degree, an apprenticeship, or a certificate helps you pick classes and plans that fit.",
     "category": "career_exploration",
     "pathway": "all",
     "sources": [
-      "https://www.careeronestop.org/Toolkit/Careers/interest-assessment.aspx",
-      "https://www.careeronestop.org/Toolkit/Careers/Occupations/occupation-profile.aspx?keyword=Electricians&onetcode=47-2111.00&location=US",
       "https://www.miproximopaso.org/"
     ]
   },
@@ -882,13 +880,13 @@ export const MILESTONES: Milestone[] = [
       5
     ],
     "title": "See if your state has a scholarship to earn now",
-    "detail": "Some states pay for college or job training if you take certain classes, keep a certain GPA, or sign up early in high school. For example, Oklahoma's Promise asks 8th to 11th graders to apply by June 30. Ask your counselor or your state's college aid office what your state offers, and write down the rules.",
+    "detail": "Some states pay for college or job training if you take certain classes, keep a certain GPA, or sign up early in high school. Find your state's college aid office on the list at nassgap.org, see what it offers, and write down the rules. Your counselor can help you check.",
     "why": "Some state money depends on what you do in high school. Knowing the rules now means you won't miss out.",
     "category": "financial_aid",
     "pathway": "all",
     "sources": [
-      "https://okpromise.org/scholarship-deadlines.shtml",
-      "https://okpromise.org/"
+      "https://www.nassgap.org/advocacy-news-history/links-and-resources/",
+      "https://studentaid.gov/understand-aid/types"
     ]
   },
   {

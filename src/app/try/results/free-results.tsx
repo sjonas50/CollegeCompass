@@ -4,48 +4,75 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useState } from "react";
 import { freeMatchesAction } from "@/app/actions/try";
-import { Button, ButtonLink, Card, FormMessage } from "@/components/ui";
-import { answeredCount, isFinished } from "@/lib/assessments/anonymous";
+import { InterestAreasCard } from "@/app/discover/results/interest-areas";
+import { Button, ButtonLink, Card, FormMessage, PageHeading } from "@/components/ui";
+import { type SavedAssessment, answeredCount, isComplete, isFinished } from "@/lib/assessments/anonymous";
 import type { FreeCareer, FreeMatchesResult } from "@/lib/assessments/import";
-import { INTEREST_ITEMS, RIASEC, RIASEC_INFO, type Riasec } from "@/lib/assessments/instruments";
+import { INTEREST_ITEMS, RIASEC } from "@/lib/assessments/instruments";
 import { type Responses, scoreInterests } from "@/lib/assessments/scoring";
 import { PATHWAY_INFO, type Pathway } from "@/lib/matching/match";
-import { forgetSavedAssessment, useSavedAssessment } from "../saved-store";
+import { forgetSavedAssessment, useSavedAssessment, useSavedStrengths } from "../saved-store";
 import { freeMatchesProblem, keptFreeMatches, loadFreeMatches } from "./free-matches";
 import { type ResultsViewer, SaveResultsCard } from "./save-card";
+import { StrengthsCard } from "./strengths-card";
 
 const PATHWAYS: Pathway[] = ["degree", "training"];
 
+/**
+ * The page heading. Until this browser's copy is read, it expects results, which are what bring most
+ * visitors here; without a finished quiz (after "Take it again", say) there's no direction to show.
+ */
+export function resultsHeading(saved: SavedAssessment | null | undefined): string {
+  return saved === undefined || isFinished(saved) ? "Your direction, for now" : "Your quiz results";
+}
+
 /** The free quiz's results, scored in the browser from the answers saved there. */
-export function FreeResults({ viewer }: { viewer: ResultsViewer }) {
+export function FreeResults({ viewer, trialDays }: { viewer: ResultsViewer; trialDays?: number }) {
   const saved = useSavedAssessment();
-  if (saved === undefined) return <p className="animate-pulse text-muted">Loading your results…</p>;
+  const heading = <PageHeading title={resultsHeading(saved)} />;
+  if (saved === undefined) {
+    return (
+      <>
+        {heading}
+        <p className="animate-pulse text-muted">Loading your results…</p>
+      </>
+    );
+  }
   if (!isFinished(saved)) {
     const answered = answeredCount(saved);
     return (
-      <Card className="space-y-4">
-        <p>
-          {answered > 0
-            ? `You've answered ${answered} of ${INTEREST_ITEMS.length}. Finish the quiz to see your results.`
-            : "Take the free quiz to see which careers fit your interests."}
-        </p>
-        <ButtonLink href="/try">{answered > 0 ? "Keep going" : "Take the free quiz"}</ButtonLink>
-      </Card>
+      <>
+        {heading}
+        <Card className="space-y-4">
+          <p>
+            {answered > 0
+              ? `You've answered ${answered} of ${INTEREST_ITEMS.length}. Finish the quiz to see your results.`
+              : "Take the free quiz to see which careers fit your interests."}
+          </p>
+          <ButtonLink href="/try">{answered > 0 ? "Keep going" : "Take the free quiz"}</ButtonLink>
+        </Card>
+      </>
     );
   }
-  return <Results answers={saved.answers} viewer={viewer} />;
+  return (
+    <>
+      {heading}
+      <Results answers={saved.answers} viewer={viewer} trialDays={trialDays} />
+    </>
+  );
 }
 
-function Results({ answers, viewer }: { answers: Responses; viewer: ResultsViewer }) {
+export function Results({ answers, viewer, trialDays }: { answers: Responses; viewer: ResultsViewer; trialDays?: number }) {
   const router = useRouter();
+  const strengths = useSavedStrengths();
   // The same scoring as signed-in students, run here: the answers never leave the browser.
-  const { areas, code } = scoreInterests(answers);
-  const top = code.split("") as Riasec[];
+  const { areas } = scoreInterests(answers);
   const areasKey = RIASEC.map((a) => areas[a]).join(",");
   const { matches, retry } = useFreeMatches(areasKey);
 
   function takeAgain() {
-    if (!window.confirm("Erase these answers from this device and take the quiz again?")) return;
+    if (!window.confirm("Erase your answers from this device and take the quiz again?")) return;
+    // The strengths answers go too: they belong to the same person.
     forgetSavedAssessment();
     router.push("/try");
   }
@@ -54,30 +81,22 @@ function Results({ answers, viewer }: { answers: Responses; viewer: ResultsViewe
     <div className="space-y-8">
       {matches?.ok && <p className="text-lg leading-relaxed">{matches.overview}</p>}
 
-      <Card>
-        <h2 className="font-medium">Your interest areas</h2>
-        <p className="mt-1 text-sm text-muted">
-          Your code is <strong className="text-foreground">{code}</strong>: {top.map((l) => RIASEC_INFO[l].name).join(", ")}.
-        </p>
-        <ul className="mt-4 space-y-3">
-          {RIASEC.map((area) => (
-            <li key={area}>
-              <div className="flex justify-between text-sm">
-                <span className={top.includes(area) ? "font-medium" : ""}>
-                  {RIASEC_INFO[area].name} <span className="text-muted">· {RIASEC_INFO[area].short}</span>
-                </span>
-              </div>
-              <div className="mt-1 h-2 rounded-full bg-border" aria-hidden>
-                <div
-                  className={`h-2 rounded-full ${top.includes(area) ? "bg-accent" : "bg-muted"}`}
-                  style={{ width: `${Math.max(4, (areas[area] / 40) * 100)}%` }}
-                />
-              </div>
-              {top.includes(area) && <p className="mt-1 text-sm text-muted">{RIASEC_INFO[area].description}</p>}
-            </li>
-          ))}
-        </ul>
-      </Card>
+      <InterestAreasCard
+        areas={areas}
+        whenNoLead={
+          <>
+            <p>Explore careers from different areas to see what clicks, or take the quiz again and go with your gut on each activity.</p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={takeAgain}>
+                Take it again
+              </Button>
+              <ButtonLink href="/careers" variant="secondary">
+                Browse all careers
+              </ButtonLink>
+            </div>
+          </>
+        }
+      />
 
       <div aria-live="polite" className="space-y-8">
         {matches === null && <p className="animate-pulse text-muted">Finding careers that fit you…</p>}
@@ -95,11 +114,17 @@ function Results({ answers, viewer }: { answers: Responses; viewer: ResultsViewe
           ))}
       </div>
 
-      <SaveResultsCard viewer={viewer} onTakeAgain={takeAgain} />
+      <StrengthsCard saved={strengths} viewer={viewer} />
+
+      <SaveResultsCard viewer={viewer} onTakeAgain={takeAgain} strengths={isComplete(strengths)} trialDays={trialDays} />
 
       <p className="text-sm text-muted">
-        Your answers are saved only in this browser. To find careers, we used just your six interest scores, and we
-        didn&apos;t keep them. &ldquo;Take it again&rdquo; erases your answers from this browser.
+        {/* A signed-in student answers the strengths statements in their account, where they're saved. */}
+        {viewer === "student" || viewer === "student_with_results"
+          ? "Your quiz answers, and any strengths answers from before you signed in, are saved only in this browser."
+          : "Your answers, including any strengths answers, are saved only in this browser."}{" "}
+        To find careers, we used just your six interest scores, and we didn&apos;t keep them. We count how many people finish
+        the quiz, but not who. &ldquo;Take it again&rdquo; erases your answers from this browser.
       </p>
     </div>
   );
@@ -133,7 +158,7 @@ function useFreeMatches(areasKey: string): { matches: FreeMatchesResult | null; 
   };
 }
 
-function CareerList({ pathway, careers }: { pathway: Pathway; careers: FreeCareer[] }) {
+export function CareerList({ pathway, careers }: { pathway: Pathway; careers: FreeCareer[] }) {
   if (careers.length === 0) return null;
   return (
     <section>
@@ -142,7 +167,11 @@ function CareerList({ pathway, careers }: { pathway: Pathway; careers: FreeCaree
       <ul className="grid gap-3 sm:grid-cols-2">
         {careers.map((c) => (
           <li key={c.code}>
-            <Link href={`/careers/${c.code}`} className="block h-full rounded-xl border border-border bg-surface p-4 hover:border-accent">
+            {/* The career page links back here. */}
+            <Link
+              href={`/careers/${c.code}?from=quiz`}
+              className="block h-full rounded-xl border border-border bg-surface p-4 hover:border-accent"
+            >
               <span className="flex items-start justify-between gap-2">
                 <span className="font-medium">{c.title}</span>
                 <span className="shrink-0 rounded-full bg-accent-soft px-2 py-0.5 text-xs">{c.fit}</span>

@@ -16,6 +16,7 @@
     "data:check-scorecard": "tsx scripts/check-scorecard.ts",
     "eval:safety": "tsx scripts/eval-safety.ts",
     "check:matching": "tsx scripts/check-matching.ts",
+    "check:reasons": "tsx scripts/check-reasons.ts",
     "eval:counselor": "tsx scripts/eval-counselor.ts",
     "admin:create": "tsx scripts/create-admin.ts",
     "access:grant": "tsx scripts/grant-access.ts"
@@ -33,6 +34,7 @@
     "read-excel-file": "^9.3.10",
     "server-only": "^0.0.1",
     "stripe": "^22.6.2",
+    "undici": "^8.11.2",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -51,6 +53,6 @@
     "vitest": "^5.0.1"
   },
   "engines": {
-    "node": ">=24"
+    "node": "24.x"
   }
 }

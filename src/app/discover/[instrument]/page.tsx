@@ -15,12 +15,14 @@ import {
   WORK_VALUE_INFO,
   isInstrumentId,
 } from "@/lib/assessments/instruments";
-import { instrumentStatuses, startOrResumeAttempt } from "@/lib/assessments/service";
-import { undoableImport } from "@/lib/assessments/import";
+import { instrumentStatuses, latestResult, startOrResumeAttempt } from "@/lib/assessments/service";
+import { strengthsFromUndoableImport, undoableImport } from "@/lib/assessments/import";
 import { requireUser } from "@/lib/auth/dal";
+import { latestMatchRun, strengthsInMatches } from "@/lib/matching/service";
 import { RemoveImportButton } from "@/app/try/saved/remove-import";
 import { Questionnaire } from "../questionnaire";
 import { ValuesSort } from "../values-sort";
+import { StrengthsView } from "./strengths-view";
 
 export const metadata: Metadata = { title: "Discover" };
 
@@ -28,14 +30,17 @@ const INTRO = {
   interests: {
     lead: "Would you like doing each of these activities? Don't worry about how much school or training it would take, or how much money you'd make. Just go with your gut.",
     why: "Your answers show which of six interest areas fit you best, and we match those to real careers.",
+    change: "Your interests can change as you grow",
   },
   personality: {
     lead: "How well does each statement describe you right now? There are no right or wrong answers.",
-    why: "This shows your strengths and how you like to work. It helps explain why certain careers might fit.",
+    why: "This shows your strengths and how you like to work. It can also give a small boost to careers that call for your strengths. Your interests still count the most.",
+    change: "How you see yourself can change as you grow",
   },
   values: {
     lead: "What matters most to you in a future job?",
     why: "Your top values fine-tune your career matches.",
+    change: "What matters to you can change as you grow",
   },
 } as const;
 
@@ -79,9 +84,31 @@ export default async function InstrumentPage({ params }: PageProps<"/discover/[i
     );
   }
 
+  // Finished personality: the student's strengths, where finishing it leads.
+  if (instrument === "personality" && status.state === "done") {
+    const [personality, run] = await Promise.all([latestResult(db, student.id, "personality"), latestMatchRun(db, student.id)]);
+    if (personality) {
+      const [matches, fromQuiz] = await Promise.all([
+        strengthsInMatches(db, run, personality),
+        strengthsFromUndoableImport(db, student.id),
+      ]);
+      return (
+        <StrengthsView
+          traits={personality.scores.traits}
+          completedAt={status.completedAt}
+          retakeAfter={status.retakeAfter}
+          matches={matches}
+          notice={fromQuiz ? <ImportedStrengthsNotice /> : undefined}
+        />
+      );
+    }
+  }
+
   const canStart = status.state === "not_started" || status.retakeAfter <= new Date();
-  // Interests brought in from the free quiz on this device can still be taken back for a while.
-  const imported = instrument === "interests" && status.state === "done" ? await undoableImport(await getDb(), student.id) : null;
+  // Interests brought in from the free quiz on this device can still be taken back for a while, with
+  // the strengths brought in with them. Those strengths are taken back from the interests page.
+  const imported = instrument === "interests" && status.state === "done" ? await undoableImport(db, student.id) : null;
+  const importedStrengths = instrument === "personality" && status.state === "done" && (await strengthsFromUndoableImport(db, student.id));
   return (
     <>
       <PageHeading title={info.title} lead={info.tagline} />
@@ -89,16 +116,21 @@ export default async function InstrumentPage({ params }: PageProps<"/discover/[i
         <p>{INTRO[instrument].why}</p>
         {imported && (
           <div className="rounded-lg border border-border p-3 text-sm">
-            <p>Not your answers? These came from the free quiz on this device. You can remove them and take the quiz yourself.</p>
+            <p>
+              {imported.strengthsAttemptId
+                ? "Not your answers? These results and strengths came from the free quiz on this device. You can remove both and take them yourself."
+                : "Not your answers? These came from the free quiz on this device. You can remove them and take the quiz yourself."}
+            </p>
             <div className="mt-2">
-              <RemoveImportButton attemptId={imported.attemptId} />
+              <RemoveImportButton attemptId={imported.attemptId} strengths={Boolean(imported.strengthsAttemptId)} />
             </div>
           </div>
         )}
+        {importedStrengths && <ImportedStrengthsNotice />}
         {status.state === "done" && (
           <p className="text-sm text-muted">
             You finished this on {formatDate(status.completedAt)}.
-            {!canStart && <> Interests and personality change as you grow — you can retake it after {formatDate(status.retakeAfter)}.</>}
+            {!canStart && <> {INTRO[instrument].change} — you can retake it after {formatDate(status.retakeAfter)}.</>}
           </p>
         )}
         <div className="flex flex-wrap gap-2">
@@ -121,5 +153,18 @@ export default async function InstrumentPage({ params }: PageProps<"/discover/[i
         </Link>
       </p>
     </>
+  );
+}
+
+/** Strengths brought in with the free quiz are taken back from the interests page, with the quiz. */
+function ImportedStrengthsNotice() {
+  return (
+    <p className="rounded-lg border border-border p-3 text-sm">
+      Not your answers? These strengths came with the free quiz results from this device. You can remove both from{" "}
+      <Link href="/discover/interests" className="underline underline-offset-2">
+        your interests
+      </Link>
+      .
+    </p>
   );
 }

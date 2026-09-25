@@ -24,17 +24,27 @@ export default async function FreeAccessPage() {
   return (
     <div className="space-y-6">
       <PageHeading
-        title={running ? "Renew free access" : "Free access"}
+        // "Renew" only once renewing is open (see freeAccessRenewalOpens); before that, the page says when.
+        title={running && eligibility.ok ? "Renew free access" : "Free access"}
         lead={`Cost should never keep a student from planning their future. Free access gives everyone in your family's account full access for ${months} months.`}
       />
       <Card>
         {eligibility.ok ? (
           <FreeAccessForm renewal={Boolean(running)} months={months} />
         ) : eligibility.error === "under_13" ? (
-          <p>
-            Please ask your parent or guardian to turn on free access from their College Compass account. It&apos;s free, and they
-            won&apos;t need any documents.
-          </p>
+          running ? (
+            // Never sent to ask a parent for what the family already has.
+            <p>
+              Your family already has free access
+              {running.endsAt ? <> until {formatAccessDate(running.endsAt)}</> : null}.
+              {eligibility.access?.canRenewFreeAccess && <> Your parent or guardian can renew it from their College Compass account.</>}
+            </p>
+          ) : (
+            <p>
+              Please ask your parent or guardian to turn on free access from their College Compass account. It&apos;s free, and
+              they won&apos;t need any documents.
+            </p>
+          )
         ) : eligibility.error === "not_yet_renewable" && running ? (
           <p>
             Your family already has free access

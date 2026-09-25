@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { deleteChildAction } from "@/app/actions/parent";
 import { type Db, createTestDb, schema } from "@/db";
 import {
   authenticate,
@@ -11,6 +12,7 @@ import {
 import { createSession, validateSession } from "@/lib/auth/sessions";
 import {
   completeConsentRequest,
+  consentLinkStatus,
   createConsentRequest,
   findConsentRequest,
   sweepExpiredConsentRequests,
@@ -22,9 +24,20 @@ const today = new Date("2026-09-23T12:00:00Z");
 const TWELVE_YEAR_OLD = "2014-03-01";
 const FIFTEEN_YEAR_OLD = "2011-01-15";
 
+// The parent's delete form posts to deleteChildAction, which reads these.
+const action = vi.hoisted(() => ({ db: null as unknown, parentId: "" }));
+vi.mock("@/db", async (original) => ({ ...(await original<typeof import("@/db")>()), getDb: async () => action.db }));
+vi.mock("@/lib/auth/dal", () => ({ requireUser: async () => ({ id: action.parentId, role: "parent" }) }));
+vi.mock("next/navigation", () => ({
+  redirect: (url: string) => {
+    throw Object.assign(new Error(`redirect ${url}`), { url });
+  },
+}));
+
 let db: Db;
 beforeEach(async () => {
   db = await createTestDb();
+  action.db = db;
 });
 
 async function makeParent(email = "parent@example.com") {
@@ -85,7 +98,11 @@ describe("under-13 signup via parental consent", () => {
     if (!child.ok) throw new Error(child.error);
     await completeConsentRequest(db, request!.id);
 
-    expect(await db.select().from(schema.consentRequests)).toHaveLength(0);
+    // The email is gone at once; the link now says it was used, and can't set up a second child.
+    const rows = await db.select().from(schema.consentRequests);
+    expect(rows.map((r) => r.parentEmail)).toEqual([""]);
+    expect(await consentLinkStatus(db, token, today)).toBe("used");
+    expect(await findConsentRequest(db, token, today)).toBeNull();
     const [record] = await db.select().from(schema.consentRecords);
     expect(record).toMatchObject({ parentUserId: parentId, studentUserId: child.value.userId, method: "dev_attestation" });
 
@@ -101,8 +118,22 @@ describe("under-13 signup via parental consent", () => {
     const { token } = await createConsentRequest(db, "parent@example.com", today);
     const eightDaysLater = new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000);
     expect(await findConsentRequest(db, token, eightDaysLater)).toBeNull();
+    expect(await consentLinkStatus(db, token, eightDaysLater)).toBe("unavailable");
     expect(await sweepExpiredConsentRequests(db, eightDaysLater)).toBe(1);
     expect(await db.select().from(schema.consentRequests)).toHaveLength(0);
+  });
+
+  it("keeps a used link's row, without the email, only until the link would have expired", async () => {
+    const used = await createConsentRequest(db, "parent@example.com", today);
+    await completeConsentRequest(db, (await findConsentRequest(db, used.token, today))!.id);
+    await createConsentRequest(db, "other.parent@example.com", today);
+    const eightDaysLater = new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000);
+    // Only the request that was never finished counts as expired.
+    expect(await sweepExpiredConsentRequests(db, eightDaysLater)).toBe(1);
+    expect(await db.select().from(schema.consentRequests)).toHaveLength(0);
+    const [expired] = await db.select().from(schema.auditLog).where(eq(schema.auditLog.action, "consent.request_expired"));
+    expect(expired.metadata).toEqual({ count: 1 });
+    expect(await consentLinkStatus(db, used.token, eightDaysLater)).toBe("unavailable");
   });
 });
 
@@ -134,6 +165,43 @@ describe("parent controls", () => {
     const stranger = await makeParent("stranger@example.com");
     expect(await exportStudentData(db, stranger, childId)).toBeNull();
     expect(await deleteStudent(db, stranger, childId)).toBe(false);
+  });
+
+  it("never tells a parent an account was deleted when nothing was", async () => {
+    const { parentId, childId } = await parentWithChild();
+    const stranger = await makeParent("stranger@example.com");
+    const submit = async (asParent: string) => {
+      action.parentId = asParent;
+      const form = new FormData();
+      form.set("studentId", childId);
+      form.set("confirm", "on");
+      return deleteChildAction(form).catch((e: { url?: string }) => e.url);
+    };
+    // Another family's child (a tampered form): nothing is deleted, and nothing about the child is said.
+    expect(await submit(stranger)).toBe("/parent?not-deleted=1");
+    expect(await listChildren(db, parentId)).toHaveLength(1);
+    expect(await submit(parentId)).toBe("/parent?deleted=1");
+    // Sent again from a second tab: already gone.
+    expect(await submit(parentId)).toBe("/parent?not-deleted=1");
+  });
+
+  it("gives the same neutral notice for a tampered form whose id isn't an account id", async () => {
+    const { parentId, childId } = await parentWithChild();
+    action.parentId = parentId;
+    const submit = (fields: Record<string, string>) => {
+      const form = new FormData();
+      for (const [k, v] of Object.entries(fields)) form.set(k, v);
+      return deleteChildAction(form).catch((e: { url?: string }) => e.url);
+    };
+    for (const studentId of ["not-a-uuid", "", "../../admin", `${parentId}x`]) {
+      expect(await submit({ studentId, confirm: "on" })).toBe("/parent?not-deleted=1");
+      // Never put in a URL, even when the box isn't ticked.
+      expect(await submit({ studentId })).toBe("/parent?not-deleted=1");
+    }
+    expect(await submit({ confirm: "on" })).toBe("/parent?not-deleted=1");
+    expect(await listChildren(db, parentId)).toHaveLength(1);
+    // A real id still asks for the box first.
+    expect(await submit({ studentId: childId })).toBe(`/parent/children/${childId}/delete?confirm=required`);
   });
 
   it("deletes everything tied to the child", async () => {

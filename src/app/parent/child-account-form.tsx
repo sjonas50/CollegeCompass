@@ -3,6 +3,7 @@
 import { createChildAction } from "@/app/actions/parent";
 import { BirthdayFields, Button, Card, Field, FieldError, FormMessage, GradeSelect } from "@/components/ui";
 import { SavedQuizField } from "@/components/saved-results-import";
+import { useFocusFirstInvalid } from "@/components/use-focus-first-invalid";
 import { useFormAction } from "@/components/use-form-action";
 import type { FormState } from "@/lib/forms";
 
@@ -12,9 +13,10 @@ import type { FormState } from "@/lib/forms";
  */
 export function ChildAccountForm({ consentToken }: { consentToken?: string }) {
   const [state, action, pending, values] = useFormAction<FormState>(createChildAction, undefined);
+  const form = useFocusFirstInvalid(state);
   return (
     <Card>
-      <form action={action} className="space-y-4">
+      <form ref={form} action={action} className="space-y-4">
         {consentToken && <input type="hidden" name="consentToken" value={consentToken} />}
         <FormMessage message={state?.message} />
         <Field label="Child's first name or nickname" name="displayName" required defaultValue={values.displayName} errors={state?.errors?.displayName} />
@@ -50,8 +52,15 @@ export function ChildAccountForm({ consentToken }: { consentToken?: string }) {
             show ads, or use it to train AI. At any time, you can download a copy of everything, including their
             counselor chats, or delete it all from your parent page.
           </p>
-          <label className="mt-3 flex items-start gap-2">
-            <input type="checkbox" name="consent" className="mt-1 size-4" />
+          <label className="mt-3 flex min-h-11 items-start gap-3 py-1">
+            <input
+              type="checkbox"
+              name="consent"
+              defaultChecked={values.consent === "on"}
+              aria-invalid={state?.errors?.consent?.length ? true : undefined}
+              aria-describedby={state?.errors?.consent?.length ? "consent-error" : undefined}
+              className="mt-0.5 size-5 shrink-0"
+            />
             <span>I am this child&apos;s parent or legal guardian, and I consent to College Compass collecting and using their information as described.</span>
           </label>
           <FieldError id="consent-error" errors={state?.errors?.consent} />
@@ -61,7 +70,7 @@ export function ChildAccountForm({ consentToken }: { consentToken?: string }) {
           with our AI counselor stay private to them, and your download of their data leaves those chats out.
         </p>
         {/* Unticked by default, so a parent's own quiz (or another child's) isn't added by mistake. */}
-        <SavedQuizField forChild />
+        <SavedQuizField forChild submitted={values} />
         <Button type="submit" disabled={pending} className="w-full sm:w-auto">
           Create my child&apos;s account
         </Button>

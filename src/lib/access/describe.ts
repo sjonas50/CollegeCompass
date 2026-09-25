@@ -137,9 +137,25 @@ export function describeAccess(access: HouseholdAccess, audience: "student" | "p
   if (access.freeAccess?.endsAt) {
     endings.push({ text: `Your family's free access ended on ${formatAccessDate(access.freeAccess.endsAt)}.`, at: access.freeAccess.endsAt.getTime() });
   }
-  if (access.trial?.endsAt) {
+  // A trial of no length (TRIAL_DAYS=0) was never offered, so it didn't end.
+  if (access.trial?.endsAt && access.trial.endsAt.getTime() > access.trial.startsAt.getTime()) {
     endings.push({ text: `Your free trial ended on ${formatAccessDate(access.trial.endsAt)}.`, at: access.trial.endsAt.getTime() });
   }
   const latest = endings.sort((a, b) => b.at - a.at)[0];
   return { headline: latest?.text ?? "Your family doesn't have full access right now.", tone: "locked" };
+}
+
+/**
+ * What a parent can do on Plan and billing, for the card that links there: a plan only while paid
+ * plans are on (`plansOffered`), and free access only when it can be turned on or renewed.
+ */
+export function billingCardNote(access: HouseholdAccess, plansOffered: boolean): string {
+  if (access.sources[0] === "subscription") return "See or change your family's plan.";
+  if (access.freeAccess?.active) {
+    return access.canRenewFreeAccess ? "You can renew your free access there now." : "See when your free access ends and when you can renew it.";
+  }
+  if (access.full && access.sources[0] !== "trial") return "See your family's access.";
+  return plansOffered
+    ? "Choose a plan for your family. If cost is a problem, you can turn on free access there."
+    : "Paid plans aren't available yet, but you can turn on free access there.";
 }

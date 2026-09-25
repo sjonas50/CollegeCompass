@@ -8,7 +8,7 @@ import { completeAttempt, saveResponses, startOrResumeAttempt } from "@/lib/asse
 import { requireUser } from "@/lib/auth/dal";
 import { addNorthStar, removeNorthStar } from "@/lib/goals";
 import { explainLatestMatches } from "@/lib/matching/explain";
-import { computeMatches } from "@/lib/matching/service";
+import { computeMatches, updateMatchesForStrengths } from "@/lib/matching/service";
 
 export async function startAssessmentAction(formData: FormData) {
   const student = await requireUser(["student"]);
@@ -40,7 +40,19 @@ export async function finishAssessmentAction(attemptId: string, answers: Record<
     return { ok: false as const, message: "A few questions still need an answer." };
   }
   const runId = await computeMatches(db, student.id);
+  // Personality has its own results view (the student's strengths), which links to the matches.
+  if (result.instrument === "personality") redirect("/discover/personality");
   redirect(runId ? "/discover/results" : "/dashboard");
+}
+
+/**
+ * "Update my matches": remakes matches made before the student's strengths counted (see
+ * updateMatchesForStrengths; it does nothing when they already count), then shows them.
+ */
+export async function updateMatchesAction() {
+  const student = await requireUser(["student"]);
+  await updateMatchesForStrengths(await getDb(), student.id);
+  redirect("/discover/results");
 }
 
 export async function explainMatchesAction() {
@@ -48,11 +60,23 @@ export async function explainMatchesAction() {
   return explainLatestMatches(await getDb(), student.id);
 }
 
+/**
+ * The career page again after a north star change, with its notice. Keeps ?from=quiz (sent by the
+ * page's form), so "Back to my results" still leads to the free results.
+ */
+function careerPageAfter(code: string, formData: FormData, notice?: "starred" | "limit"): string {
+  const query = new URLSearchParams();
+  if (notice) query.set(notice, "1");
+  if (formData.get("from") === "quiz") query.set("from", "quiz");
+  const search = query.toString();
+  return `/careers/${encodeURIComponent(code)}${search ? `?${search}` : ""}`;
+}
+
 export async function addNorthStarAction(formData: FormData) {
   const student = await requireUser(["student"]);
   const code = String(formData.get("code") ?? "");
   const res = await addNorthStar(await getDb(), student.id, code);
-  redirect(`/careers/${encodeURIComponent(code)}${res.ok ? "?starred=1" : res.error === "limit" ? "?limit=1" : ""}`);
+  redirect(careerPageAfter(code, formData, res.ok ? "starred" : res.error === "limit" ? "limit" : undefined));
 }
 
 export async function removeNorthStarAction(formData: FormData) {
@@ -60,5 +84,5 @@ export async function removeNorthStarAction(formData: FormData) {
   const code = String(formData.get("code") ?? "");
   await removeNorthStar(await getDb(), student.id, code);
   const back = formData.get("back");
-  redirect(back === "dashboard" ? "/dashboard" : `/careers/${encodeURIComponent(code)}`);
+  redirect(back === "dashboard" ? "/dashboard" : careerPageAfter(code, formData));
 }

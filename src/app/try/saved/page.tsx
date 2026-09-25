@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ButtonLink, Card, FormMessage, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
 import { listChildren } from "@/lib/accounts";
-import { interestAreasText } from "@/lib/assessments/anonymous";
+import { interestPattern, noLeadReason, strongAreasText } from "@/lib/assessments/interest-pattern";
 import { undoableImport } from "@/lib/assessments/import";
 import { latestResult } from "@/lib/assessments/service";
 import { getCurrentUser } from "@/lib/auth/dal";
@@ -38,6 +38,8 @@ export default async function SavedPage({ searchParams }: PageProps<"/try/saved"
   if (user?.role !== "student") redirect("/try/results");
   if (!(await latestResult(db, user.id, "interests"))) redirect("/dashboard");
   const [imported, { undo }] = await Promise.all([undoableImport(db, user.id), searchParams]);
+  const top = imported && strongAreasText(imported.areas);
+  const noLead = imported && noLeadReason(interestPattern(imported.areas));
   return (
     <>
       <PageHeading title="You're all set" />
@@ -49,7 +51,9 @@ export default async function SavedPage({ searchParams }: PageProps<"/try/saved"
         <Card className="space-y-4">
           <p>
             Your quiz results are saved to your account.
-            {imported && <> Your top interests are {interestAreasText(imported.code)}.</>}
+            {top && <> Your top interests are {top}.</>}
+            {noLead && <> You {noLead}.</>}
+            {imported?.strengthsAttemptId && <> Your strengths are saved too.</>}
           </p>
           <ButtonLink href="/discover/results">See my career matches</ButtonLink>
         </Card>
@@ -57,10 +61,11 @@ export default async function SavedPage({ searchParams }: PageProps<"/try/saved"
           <Card className="space-y-3">
             <h2 className="font-medium">Not your answers?</h2>
             <p className="text-sm text-muted">
-              If someone else took the quiz on this device, you can remove these results. Then you can take the quiz
-              yourself right away.
+              If someone else took the quiz on this device, you can remove these results
+              {imported.strengthsAttemptId && " and strengths"}. Then you can take{" "}
+              {imported.strengthsAttemptId ? "both" : "the quiz"} yourself right away.
             </p>
-            <RemoveImportButton attemptId={imported.attemptId} />
+            <RemoveImportButton attemptId={imported.attemptId} strengths={Boolean(imported.strengthsAttemptId)} />
           </Card>
         )}
       </div>
