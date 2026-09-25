@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, createTestDb } from "@/db";
 import { registerStudent } from "@/lib/accounts";
-import { INTEREST_ITEMS, PERSONALITY_ITEMS, type Riasec } from "../assessments/instruments";
+import { INTEREST_ITEMS, PERSONALITY_ITEMS, RIASEC_INFO, type Riasec } from "../assessments/instruments";
 import { completeAttempt, saveResponses, startOrResumeAttempt } from "../assessments/service";
-import { buildStudentContext, formatStudentContext } from "./prompt";
+import { COUNSELOR_SYSTEM, buildStudentContext, formatStudentContext } from "./prompt";
 
 // The counselor's private context tells it only the interests the scores support: never areas the
 // interest code picked from a tie in RIASEC order, and no strongest interests when none stands out.
@@ -184,5 +184,12 @@ describe("strengths in the context", () => {
   it("formats the four strengths on one line", () => {
     const context = formatStudentContext({ grade: 9, month: 8, strengths: ["Warmth: You're caring and tuned in to how other people feel."] });
     expect(strengthsLine(context)).toBe("- Strengths: Warmth: You're caring and tuned in to how other people feel.");
+  });
+});
+
+describe("the counselor's standing instructions", () => {
+  it("name every interest-area label, for the counselor to put in plain words instead", () => {
+    const labels = /interest-area labels \(([^)]*)\)/.exec(COUNSELOR_SYSTEM)?.[1].split(", ");
+    expect(labels).toEqual(Object.values(RIASEC_INFO).map((i) => i.name));
   });
 });

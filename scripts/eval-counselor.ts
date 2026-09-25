@@ -29,6 +29,8 @@ type Case = {
   student: {
     grade: number;
     interests: string;
+    /** Personality strengths as production words them ("Warmth: You're caring and..."), when the case needs them. */
+    strengths?: string[];
     northStars: string[];
     openSteps: string[];
     memory: string[];
@@ -57,6 +59,7 @@ async function runCase(client: Anthropic, db: Awaited<ReturnType<typeof getDb>>,
     grade: c.student.grade,
     month: 8, // September
     interests: [c.student.interests],
+    strengths: c.student.strengths,
     northStars: c.student.northStars,
     steps: c.student.openSteps.map((text) => ({ text, done: false })),
     memory: c.student.memory,

@@ -11,6 +11,8 @@ import { createChildAccount, listChildren, registerParent, registerStudent } fro
 import { supportResponse } from "@/lib/ai/safety/responses";
 import { classifyWithRules } from "@/lib/ai/safety/rules";
 import { SEVERITY_ORDER } from "@/lib/ai/safety/types";
+import { TRAIT_COPY } from "@/lib/assessments/descriptions";
+import { BIG_FIVE } from "@/lib/assessments/instruments";
 import { createSession, validateSession } from "@/lib/auth/sessions";
 import { verifyParentConsent } from "@/lib/consent/verifier";
 import { deleteStudent, exportStudentData } from "@/lib/privacy";
@@ -154,6 +156,7 @@ describe("counselor eval cases", () => {
     student: z.strictObject({
       grade: z.number().int().min(7).max(12),
       interests: z.string().min(1),
+      strengths: z.array(z.string().min(1)).min(1).optional(),
       northStars: z.array(z.string().min(1)),
       openSteps: z.array(z.string().min(1)),
       memory: z.array(z.string().min(1)),
@@ -176,6 +179,18 @@ describe("counselor eval cases", () => {
       expect(roles.at(-1), c.id).toBe("user");
       roles.forEach((r, i) => expect(r === "user", `${c.id} turn ${i}`).toBe(i % 2 === 0));
     }
+  });
+
+  it("give strengths only as the counselor's context words them, never staying calm", () => {
+    // buildStudentContext sends four traits as "Name: text" (no emotional stability).
+    const counselorWords = new Set(
+      BIG_FIVE.filter((t) => t !== "neuroticism").flatMap((t) =>
+        (["high", "middle", "low"] as const).map((level) => `${TRAIT_COPY[t].name}: ${TRAIT_COPY[t][level]}`),
+      ),
+    );
+    const withStrengths = cases.filter((c) => c.student.strengths);
+    expect(withStrengths.length).toBeGreaterThan(0);
+    for (const c of withStrengths) for (const s of c.student.strengths!) expect(counselorWords.has(s), `${c.id}: ${s}`).toBe(true);
   });
 
   it("cover crises the safety screen may rate below high, which reach the counselor model", () => {
