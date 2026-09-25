@@ -27,8 +27,8 @@ export type WeeklyStep = {
 
 export type StepStats = {
   /**
-   * Every step ever finished. Never goes down because a week was missed, and finished steps
-   * can't be removed; only un-checking a step (a correction) takes it back out.
+   * Every finished step the student has kept. Never goes down because a week was missed: only the
+   * student un-checking a step or removing a finished one (the card asks first) takes it out.
    */
   stepsCompleted: number;
   /** Weeks with at least one finished step (not necessarily in a row). */
@@ -129,17 +129,38 @@ export async function reopenStep(db: Db, userId: string, stepId: string) {
   return updateOwnStep(db, userId, stepId, { status: "open", completedAt: null });
 }
 
+export type EditStepError = "invalid_text" | "not_found";
+export type EditStepResult = { ok: true; step: WeeklyStep } | { ok: false; error: EditStepError; message?: string };
+
 /**
- * Removes one of the student's own unfinished steps. Finished steps stay: they are the lifetime
- * progress in `stepStats`, and removing one would quietly take progress away. (A step checked
- * by mistake can be un-checked with `reopenStep` first.) False if the step doesn't exist, isn't
- * theirs, or is already finished.
+ * Changes the text of one of the student's own steps, open or finished (to fix a typo, say). The
+ * text follows the same rules as adding a step (StepTextSchema). Nothing else changes: the step
+ * keeps its week, its roadmap milestone and whether it's done. "not_found" if the step doesn't
+ * exist or isn't theirs.
+ */
+export async function editStep(db: Db, userId: string, stepId: unknown, text: unknown): Promise<EditStepResult> {
+  const parsed = StepTextSchema.safeParse(text);
+  if (!parsed.success) return { ok: false, error: "invalid_text", message: parsed.error.issues[0]?.message };
+  const id = StepId.safeParse(stepId);
+  if (!id.success) return { ok: false, error: "not_found" };
+  const [step] = await db
+    .update(weeklySteps)
+    .set({ text: parsed.data })
+    .where(and(eq(weeklySteps.id, id.data), eq(weeklySteps.userId, userId)))
+    .returning(stepColumns);
+  return step ? { ok: true, step } : { ok: false, error: "not_found" };
+}
+
+/**
+ * Removes one of the student's own steps, open or finished. A finished step then stops counting
+ * in `stepStats`, so the card asks before removing one (an open step goes right away). False if
+ * the step doesn't exist or isn't theirs.
  */
 export async function removeStep(db: Db, userId: string, stepId: string) {
   if (!StepId.safeParse(stepId).success) return false;
   const rows = await db
     .delete(weeklySteps)
-    .where(and(eq(weeklySteps.id, stepId), eq(weeklySteps.userId, userId), eq(weeklySteps.status, "open")))
+    .where(and(eq(weeklySteps.id, stepId), eq(weeklySteps.userId, userId)))
     .returning({ id: weeklySteps.id });
   return rows.length > 0;
 }

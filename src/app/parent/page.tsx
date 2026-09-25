@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { logoutAction } from "@/app/actions/auth";
 import { setChildGradeAction, setChildRemindersAction } from "@/app/actions/settings";
+import { OnetDataAttribution, OnetToolsAttribution } from "@/components/attribution";
 import { GradeSettingSelect } from "@/components/student-settings";
 import { reminderGoesToParent } from "@/lib/reminders";
 import { gradeQuestion } from "@/lib/auth/age";
@@ -40,6 +41,8 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
   const parent = await requireUser(["parent"]);
   const [children, access] = await Promise.all([parentDashboard(await getDb(), parent.id), accessFor(parent)]);
   const plan = describeAccess(access, "parent");
+  const showsInterests = children.some((c) => c.progress.results?.interests);
+  const showsCareers = children.some((c) => c.progress.results?.topMatches.length || c.progress.northStars.length);
   const { added, deleted, "not-deleted": notDeleted, saved, stale, linked, imported } = await searchParams;
 
   return (
@@ -56,7 +59,7 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
         {children.length > 0 && (
           <p className="rounded-lg border border-border px-3 py-2 text-sm">
             <span className="font-medium">Chats with the AI counselor aren&apos;t shown on this page.</span> You see
-            progress and plans here, not what your child talks about.
+            progress, results and plans here, not what your child talks about.
           </p>
         )}
         {children.length === 0 && (
@@ -134,6 +137,14 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
           </div>
         </Card>
       </div>
+
+      {/* Interest results come from the O*NET Interest Profiler, and career titles from the O*NET Database. */}
+      {(showsInterests || showsCareers) && (
+        <div className="mt-8 space-y-1">
+          {showsInterests && <OnetToolsAttribution />}
+          {showsCareers && <OnetDataAttribution />}
+        </div>
+      )}
 
       <div className="mt-10 flex flex-wrap gap-3 border-t border-border pt-6">
         <form action={logoutAction}>

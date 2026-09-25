@@ -581,7 +581,7 @@ const FAQ = [
   },
   {
     q: "What will I see as a parent?",
-    a: "Progress: activities, goals, the roadmap, classes and the college list. Your parent page doesn't show your child's chats with the AI counselor. You can also download or delete your child's data.",
+    a: "Progress and results: interest areas, strengths, top career matches, goals, the roadmap, classes and the college list. Your parent page doesn't show your child's chats with the AI counselor. You can also download or delete your child's data.",
   },
 ];
 

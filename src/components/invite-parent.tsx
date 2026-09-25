@@ -29,7 +29,7 @@ export async function InviteParentCard() {
         them, they can:
       </p>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted">
-        <li>see your progress: activities, goals, roadmap, classes and college list</li>
+        <li>see your progress and results: interest areas, strengths, top career matches, goals, roadmap, classes and college list</li>
         <li>change your grade and your weekly reminder emails</li>
         <li>manage your family&apos;s plan and billing</li>
         <li>download a copy of your data, or delete your account</li>
@@ -38,8 +38,12 @@ export async function InviteParentCard() {
         They can&apos;t read your chats with the AI counselor. When they download your data, it leaves out your
         chats, what the counselor remembers about you, and any safety flags.
       </p>
+      <p className="mt-2 text-sm text-muted">
+        Once someone accepts, you&apos;ll see their name in Settings. If it isn&apos;t the person you invited, you can remove
+        them there.
+      </p>
       <InviteParentForm
-        pending={state.pending.map((i) => ({ id: i.id, sentOn: day(i.createdAt), worksUntil: day(i.expiresAt) }))}
+        pending={state.pending.map((i) => ({ id: i.id, sentTo: i.sentTo, sentOn: day(i.createdAt), worksUntil: day(i.expiresAt) }))}
         canSend={state.canSend}
         max={MAX_PENDING_INVITES}
       />

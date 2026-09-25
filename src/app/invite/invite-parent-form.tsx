@@ -5,7 +5,8 @@ import { type InviteFormState, cancelParentInviteAction, sendParentInviteAction 
 import { Button, Field, FormMessage, Notice } from "@/components/ui";
 import { useFormAction } from "@/components/use-form-action";
 
-export type PendingInviteView = { id: string; sentOn: string; worksUntil: string };
+/** `sentTo`: the address the student typed (null for invitations from before addresses were kept). */
+export type PendingInviteView = { id: string; sentTo: string | null; sentOn: string; worksUntil: string };
 
 /** Sending and cancelling share one state (see InviteFormState): a cancel form posts an inviteId. */
 export function inviteAction(prev: InviteFormState, formData: FormData) {
@@ -67,7 +68,6 @@ export function InviteParentForm({ pending, canSend, max }: { pending: PendingIn
               <PendingInvite key={invite.id} invite={invite} action={action} busy={isPending} />
             ))}
           </ul>
-          <p className="mt-2 text-sm text-muted">We don&apos;t keep the email address, so it isn&apos;t shown here.</p>
         </div>
       )}
 
@@ -118,13 +118,19 @@ function PendingInvite({ invite, action, busy }: { invite: PendingInviteView; ac
   return (
     <li className="rounded-lg border border-border px-3 py-2">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <span className="text-sm">
-          Sent {invite.sentOn}
+        <span className="min-w-0 text-sm">
+          {invite.sentTo ? (
+            <>
+              Sent to <span className="break-all">{invite.sentTo}</span> on {invite.sentOn}
+            </>
+          ) : (
+            <>Sent {invite.sentOn}</>
+          )}
           <span className="block text-muted">The link works until {invite.worksUntil}.</span>
         </span>
         {!confirming && (
           <button ref={cancelRef} type="button" onClick={() => setConfirming(true)} className="min-h-11 text-sm text-muted underline">
-            Cancel<span className="sr-only"> the invitation sent {invite.sentOn}</span>
+            Cancel<span className="sr-only"> the invitation sent {invite.sentOn}{invite.sentTo && ` to ${invite.sentTo}`}</span>
           </button>
         )}
       </div>

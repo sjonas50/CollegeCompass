@@ -27,7 +27,10 @@ function WhatLinkingMeans({ name }: { name: string }) {
     <Card>
       <h2 className="font-medium">As a linked parent or guardian, you can</h2>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-        <li>See {name}&apos;s progress: activities, goals, roadmap, classes and college list</li>
+        <li>
+          See {name}&apos;s progress and results: interest areas, strengths, top career matches, goals, roadmap, classes
+          and college list
+        </li>
         <li>Change {name}&apos;s grade and weekly reminder emails</li>
         <li>Manage your family&apos;s plan and billing</li>
         <li>Download a copy of {name}&apos;s data, or delete {name}&apos;s account</li>
@@ -36,7 +39,7 @@ function WhatLinkingMeans({ name }: { name: string }) {
       <p className="mt-1 text-sm">
         Conversations with the AI counselor stay private to {name}. You won&apos;t see them on your parent page, and
         your download of {name}&apos;s data leaves them out, along with the counselor&apos;s notes and any safety
-        flags. {name} keeps their own account and sign-in.
+        flags. {name} keeps their own account and sign-in, and can remove the link from their settings.
       </p>
     </Card>
   );

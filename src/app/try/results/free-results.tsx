@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useState } from "react";
 import { freeMatchesAction } from "@/app/actions/try";
+import { BrowseMoreCareers } from "@/app/careers/browse-more";
 import { InterestAreasCard } from "@/app/discover/results/interest-areas";
 import { Button, ButtonLink, Card, FormMessage, PageHeading } from "@/components/ui";
 import { type SavedAssessment, answeredCount, isComplete, isFinished } from "@/lib/assessments/anonymous";
 import type { FreeCareer, FreeMatchesResult } from "@/lib/assessments/import";
 import { INTEREST_ITEMS, RIASEC } from "@/lib/assessments/instruments";
+import { interestPattern, strongAreas } from "@/lib/assessments/interest-pattern";
 import { type Responses, scoreInterests } from "@/lib/assessments/scoring";
 import { PATHWAY_INFO, type Pathway } from "@/lib/matching/match";
 import { forgetSavedAssessment, useSavedAssessment, useSavedStrengths } from "../saved-store";
@@ -113,6 +115,8 @@ export function Results({ answers, viewer, trialDays }: { answers: Responses; vi
             <CareerList key={pathway} pathway={pathway} careers={matches.careers.filter((c) => c.pathway === pathway)} />
           ))}
       </div>
+
+      <BrowseMoreCareers areas={strongAreas(interestPattern(areas))} />
 
       <StrengthsCard saved={strengths} viewer={viewer} />
 

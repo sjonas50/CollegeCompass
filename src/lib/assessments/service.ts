@@ -130,12 +130,9 @@ export async function completeAttempt(db: Db, userId: string, attemptId: string,
 
 export type LatestResult<I extends InstrumentId> = { attemptId: string; completedAt: Date; scores: ScoresFor[I] };
 
-export async function latestResult<I extends InstrumentId>(
-  db: Db,
-  userId: string,
-  instrument: I,
-): Promise<LatestResult<I> | null> {
-  const [row] = await db
+/** Scored attempts, as latestResult and resultOfAttempt give them. */
+function scoredAttempts(db: Db) {
+  return db
     .select({
       attemptId: assessmentAttempts.id,
       completedAt: assessmentAttempts.completedAt,
@@ -143,11 +140,43 @@ export async function latestResult<I extends InstrumentId>(
     })
     .from(assessmentAttempts)
     .innerJoin(assessmentResults, eq(assessmentResults.attemptId, assessmentAttempts.id))
+    .$dynamic();
+}
+
+function toResult<I extends InstrumentId>(row: { attemptId: string; completedAt: Date | null; scores: unknown } | undefined) {
+  if (!row?.completedAt) return null;
+  return { attemptId: row.attemptId, completedAt: row.completedAt, scores: row.scores as ScoresFor[I] } satisfies LatestResult<I>;
+}
+
+export async function latestResult<I extends InstrumentId>(
+  db: Db,
+  userId: string,
+  instrument: I,
+): Promise<LatestResult<I> | null> {
+  const [row] = await scoredAttempts(db)
     .where(and(eq(assessmentAttempts.userId, userId), eq(assessmentAttempts.instrument, instrument)))
     .orderBy(desc(assessmentAttempts.completedAt))
     .limit(1);
-  if (!row?.completedAt) return null;
-  return { attemptId: row.attemptId, completedAt: row.completedAt, scores: row.scores as ScoresFor[I] };
+  return toResult<I>(row);
+}
+
+/**
+ * The result of one of the student's attempts, as latestResult gives it, whether or not it's the
+ * latest (a match run's inputs, see refillMatches). Null when that attempt isn't theirs, isn't for
+ * `instrument`, or isn't scored.
+ */
+export async function resultOfAttempt<I extends InstrumentId>(
+  db: Db,
+  userId: string,
+  instrument: I,
+  attemptId: string,
+): Promise<LatestResult<I> | null> {
+  const [row] = await scoredAttempts(db)
+    .where(
+      and(eq(assessmentAttempts.id, attemptId), eq(assessmentAttempts.userId, userId), eq(assessmentAttempts.instrument, instrument)),
+    )
+    .limit(1);
+  return toResult<I>(row);
 }
 
 export type InstrumentStatus =

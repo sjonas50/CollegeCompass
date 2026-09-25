@@ -2229,7 +2229,7 @@
   "text": "if tyler says one more word about my mom im gonna end him fr fr no cap 😤 i know where he lives",
   "expected": "high",
   "category": "violence",
-  "rulesShouldCatch": false,
+  "rulesShouldCatch": true,
   "source": "evasive"
  },
  {

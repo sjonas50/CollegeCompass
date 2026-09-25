@@ -1,11 +1,14 @@
-import { asc, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import {
   type ApplicationChecklist,
   type CollegeListStatus,
   type DeadlineType,
   assessmentAttempts,
+  assessmentResults,
+  careerMatches,
   collegeList,
+  matchRuns,
   northStarGoals,
   studentCourses,
   studentMilestones,
@@ -14,21 +17,38 @@ import {
 import { listChildren } from "./accounts";
 import { usToday } from "./applications/dates";
 import { dueWithin } from "./applications/timeline";
-import { INSTRUMENTS, type InstrumentId } from "./assessments/instruments";
+import { strengthFor } from "./assessments/descriptions";
+import { type BigFive, INSTRUMENTS, type InstrumentId, type Riasec } from "./assessments/instruments";
+import {
+  areaNames,
+  codeTieText,
+  fewAreasText,
+  interestPattern,
+  noLeadReason,
+  strongAreas,
+  tiedAreasText,
+} from "./assessments/interest-pattern";
+import type { InterestScores, PersonalityScores } from "./assessments/scoring";
 import { MAX_GRADE } from "./auth/age";
 import { type GpaCourse, computeGpa } from "./courses/gpa";
+import { strengthsThatCount } from "./matching/match";
+import type { MappedTrait } from "./reference/work-styles";
 import { type MilestoneStatus, buildRoadmap, countedTotal, progressByGrade } from "./roadmap";
 import { MILESTONES } from "./roadmap/milestones";
 import type { Milestone } from "./roadmap/types";
 import { weekStartOf } from "./steps";
 
-// What a linked parent sees about each child. Built only from progress data: counselor
-// conversations, memory notes and safety events are never read here.
+// What a linked parent sees about each child. Built only from progress data and activity results:
+// counselor conversations, memory notes and safety events are never read here. The results are
+// the same ones a linked parent's data download has, for a teen who owns their account too (see
+// exportStudentData): the latest interest scores, strengths, north stars and career matches.
 
 /** Timely roadmap milestones shown per child (the same ones the student's dashboard shows first). */
 export const PARENT_TIMELY_LIMIT = 3;
 /** Upcoming application deadlines shown per child in grades 11 and up. */
 export const PARENT_DEADLINE_LIMIT = 3;
+/** Career matches shown per child: the highest-scoring ones in their latest matches. */
+export const PARENT_TOP_MATCHES = 5;
 /** How far ahead to look for those deadlines. */
 const DEADLINE_LOOKAHEAD_DAYS = 365;
 
@@ -40,13 +60,35 @@ export const PARENT_GPA_NOTE =
 
 export type AssessmentState = "not_started" | "in_progress" | "done";
 
+/** A career by its O*NET code, so the page can link to /careers/<code>. */
+export type CareerLink = { code: string; title: string };
+
+/** A strength that counts (see strengthsThatCount), in the words the student sees: "Curiosity: Curious". */
+export type ParentStrength = { trait: MappedTrait; name: string; label: string };
+
+/** What a child's activities found so far. Each part is null until its activity is done. */
+export type ChildResults = {
+  /** What the latest interest scores say (see interestsForParent). */
+  interests: { text: string; noLead: boolean } | null;
+  /**
+   * The strengths that count from the latest personality result, highest first: empty when no
+   * trait is above the middle of the scale. Never emotional stability ("Staying calm"): that's
+   * mood data about a minor, and MappedTrait leaves it out.
+   */
+  strengths: ParentStrength[] | null;
+  /** The highest-scoring careers in the latest matches, at most PARENT_TOP_MATCHES. */
+  topMatches: CareerLink[];
+};
+
 export type ChildProgress = {
   /** Current grade (advanced each August); above 12 means finished high school. */
   grade: number | null;
   graduated: boolean;
   assessments: { id: InstrumentId; title: string; state: AssessmentState }[];
-  /** Titles of the careers the student is aiming for, for now. */
-  northStars: string[];
+  /** Null until the child finishes the interests or personality activity. */
+  results: ChildResults | null;
+  /** The careers the student is aiming for, for now, oldest first. */
+  northStars: CareerLink[];
   /** This grade's roadmap, not counting milestones set aside. Null when there's no grade or they've graduated. */
   roadmap: { done: number; total: number; timely: { id: string; title: string }[] } | null;
   steps: { thisWeekDone: number; thisWeekTotal: number; lifetimeDone: number };
@@ -71,6 +113,71 @@ export function fafsaMilestones(library: readonly Milestone[] = MILESTONES): Mil
   );
 }
 
+/**
+ * What a child's latest interest scores say, for their parent: the same honest reading as the
+ * student's results page (see interestPattern), about the child by name. When no area stands out
+ * (`noLead`), it says so rather than naming the least-disliked areas as interests.
+ */
+export function interestsForParent(areas: Record<Riasec, number>, name: string): { text: string; noLead: boolean } {
+  const pattern = interestPattern(areas);
+  const who = { name, their: "their" };
+  switch (pattern.kind) {
+    case "flat":
+      return { noLead: true, text: `No area stands out yet. ${name} ${noLeadReason(pattern)}, which can happen when they're not sure yet.` };
+    case "low":
+      return {
+        noLead: true,
+        text: `No area stands out yet. ${name} ${noLeadReason(pattern)}, which can happen before they've tried many of these activities.`,
+      };
+    case "few":
+      return { noLead: false, text: fewAreasText(pattern, who) };
+    case "tied":
+      return { noLead: false, text: tiedAreasText(pattern, who) };
+    case "code": {
+      const tie = codeTieText(pattern);
+      return { noLead: false, text: `${name}'s interest code is ${pattern.code}: ${areaNames(strongAreas(pattern))}.${tie ? ` ${tie}` : ""}` };
+    }
+  }
+}
+
+/**
+ * The strengths that count (see strengthsThatCount), highest first, in the words the student sees
+ * on their results page. Only the four traits linked to careers can be in it: emotional stability
+ * ("Staying calm") never is, whatever its score.
+ */
+export function strengthsForParent(traits: Record<BigFive, number>): ParentStrength[] {
+  return strengthsThatCount(traits).map((trait) => {
+    const { name, label } = strengthFor(trait, traits[trait]);
+    return { trait, name, label };
+  });
+}
+
+type MatchRow = { code: string; title: string; score: number; rank: number };
+
+/**
+ * The highest-scoring careers in a set of matches. Matches are stored degree paths first, then
+ * training paths (see rankForStudent), so this takes the best of both rather than the first five.
+ * Equal scores keep their stored order.
+ */
+export function topMatches(rows: readonly MatchRow[], limit = PARENT_TOP_MATCHES): CareerLink[] {
+  return [...rows]
+    .sort((a, b) => b.score - a.score || a.rank - b.rank)
+    .slice(0, limit)
+    .map(({ code, title }) => ({ code, title }));
+}
+
+type AttemptRow = { instrument: string; completedAt: Date | null; scores: unknown };
+
+/** The scores of the latest finished attempt at `instrument`, like latestResult. */
+function latestScores<T>(attempts: readonly AttemptRow[], instrument: InstrumentId): T | null {
+  let latest: AttemptRow | null = null;
+  for (const a of attempts) {
+    if (a.instrument !== instrument || !a.completedAt || a.scores === null) continue;
+    if (!latest || a.completedAt > latest.completedAt!) latest = a;
+  }
+  return (latest?.scores as T | undefined) ?? null;
+}
+
 function groupBy<T extends { userId: string }>(rows: readonly T[]): Map<string, T[]> {
   const map = new Map<string, T[]>();
   for (const row of rows) {
@@ -82,7 +189,7 @@ function groupBy<T extends { userId: string }>(rows: readonly T[]): Map<string, 
 }
 
 /**
- * Every child linked to `parentUserId`, with a progress summary each. The same seven queries run
+ * Every child linked to `parentUserId`, with a progress summary each. The same eight queries run
  * however many children there are (one per table, for all of them at once).
  */
 export async function parentDashboard(
@@ -96,13 +203,31 @@ export async function parentDashboard(
   const ids = children.map((c) => c.id);
   const week = weekStartOf(now);
 
-  const [attempts, stars, milestones, stepCounts, courses, list] = await Promise.all([
+  // Each child's latest set of career matches.
+  const latestRuns = db
+    .selectDistinctOn([matchRuns.userId], { id: matchRuns.id, userId: matchRuns.userId })
+    .from(matchRuns)
+    .where(inArray(matchRuns.userId, ids))
+    .orderBy(matchRuns.userId, desc(matchRuns.createdAt))
+    .as("latest_runs");
+
+  const [attempts, stars, milestones, stepCounts, courses, list, matches] = await Promise.all([
+    // Scores only for the results shown (interests and personality), never values.
     db
-      .select({ userId: assessmentAttempts.userId, instrument: assessmentAttempts.instrument, completedAt: assessmentAttempts.completedAt })
+      .select({
+        userId: assessmentAttempts.userId,
+        instrument: assessmentAttempts.instrument,
+        completedAt: assessmentAttempts.completedAt,
+        scores: assessmentResults.scores,
+      })
       .from(assessmentAttempts)
+      .leftJoin(
+        assessmentResults,
+        and(eq(assessmentResults.attemptId, assessmentAttempts.id), inArray(assessmentAttempts.instrument, ["interests", "personality"])),
+      )
       .where(inArray(assessmentAttempts.userId, ids)),
     db
-      .select({ userId: northStarGoals.userId, title: northStarGoals.title })
+      .select({ userId: northStarGoals.userId, code: northStarGoals.occupationCode, title: northStarGoals.title })
       .from(northStarGoals)
       .where(inArray(northStarGoals.userId, ids))
       .orderBy(asc(northStarGoals.createdAt)),
@@ -144,6 +269,16 @@ export async function parentDashboard(
       })
       .from(collegeList)
       .where(inArray(collegeList.userId, ids)),
+    db
+      .select({
+        userId: latestRuns.userId,
+        code: careerMatches.occupationCode,
+        title: careerMatches.title,
+        score: careerMatches.score,
+        rank: careerMatches.rank,
+      })
+      .from(careerMatches)
+      .innerJoin(latestRuns, eq(careerMatches.runId, latestRuns.id)),
   ]);
 
   const byChild = {
@@ -153,6 +288,7 @@ export async function parentDashboard(
     steps: new Map(stepCounts.map((s) => [s.userId, s])),
     courses: groupBy(courses),
     list: groupBy(list),
+    matches: groupBy(matches),
   };
   const today = usToday(now);
 
@@ -162,13 +298,15 @@ export async function parentDashboard(
     return {
       ...child,
       progress: summarize({
+        name: child.displayName,
         grade: child.grade,
         now,
         today,
         library,
         progress,
         attempts: byChild.attempts.get(id) ?? [],
-        stars: (byChild.stars.get(id) ?? []).map((s) => s.title),
+        stars: (byChild.stars.get(id) ?? []).map(({ code, title }) => ({ code, title })),
+        matches: byChild.matches.get(id) ?? [],
         steps: byChild.steps.get(id),
         courses: byChild.courses.get(id) ?? [],
         list: byChild.list.get(id) ?? [],
@@ -178,13 +316,15 @@ export async function parentDashboard(
 }
 
 type SummaryInput = {
+  name: string;
   grade: number | null;
   now: Date;
   today: string;
   library: readonly Milestone[];
   progress: Map<string, "done" | "skipped">;
-  attempts: { instrument: string; completedAt: Date | null }[];
-  stars: string[];
+  attempts: AttemptRow[];
+  stars: CareerLink[];
+  matches: MatchRow[];
   steps: { thisWeekTotal: number; thisWeekDone: number; lifetimeDone: number } | undefined;
   courses: GpaCourse[];
   list: ListRow[];
@@ -202,6 +342,17 @@ function assessmentState(attempts: SummaryInput["attempts"], instrument: Instrum
   const mine = attempts.filter((a) => a.instrument === instrument);
   if (mine.some((a) => a.completedAt !== null)) return "done";
   return mine.length > 0 ? "in_progress" : "not_started";
+}
+
+function childResults(input: SummaryInput): ChildResults | null {
+  const interests = latestScores<InterestScores>(input.attempts, "interests");
+  const personality = latestScores<PersonalityScores>(input.attempts, "personality");
+  const results: ChildResults = {
+    interests: interests ? interestsForParent(interests.areas, input.name) : null,
+    strengths: personality ? strengthsForParent(personality.traits) : null,
+    topMatches: topMatches(input.matches),
+  };
+  return results.interests || results.strengths || results.topMatches.length ? results : null;
 }
 
 function summarize(input: SummaryInput): ChildProgress {
@@ -253,6 +404,7 @@ function summarize(input: SummaryInput): ChildProgress {
     grade,
     graduated,
     assessments,
+    results: childResults(input),
     northStars: input.stars,
     roadmap,
     steps,

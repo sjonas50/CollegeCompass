@@ -92,7 +92,7 @@ describe("a parent leaves while teens stay", () => {
     });
 
     await deleteParentAccount(db, parentId, { stripe });
-    expect(errors).toHaveBeenCalledWith("[billing] couldn't end a plan without a parent", "StripeAPIError");
+    expect(errors).toHaveBeenCalledWith("[billing] couldn't set a plan to end", "StripeAPIError");
     expect(await cleanupQueue()).toEqual([
       expect.objectContaining({ action: "cancel_at_period_end", stripeSubscriptionId: "sub_1", stripeCustomerId: null, attempts: 1 }),
     ]);

@@ -6,7 +6,14 @@ import { requestFreeAccessAction } from "@/app/actions/access";
 import { addCollegeAction, addCustomEntryAction, removeEntryAction, updateEntryAction } from "@/app/actions/applications";
 import { clearMemoryAction, deleteConversationAction } from "@/app/actions/counselor";
 import { addCourseAction, deleteCourseAction, updateCourseAction } from "@/app/actions/plan";
-import { addMilestoneStepAction, addStepAction, markMilestoneAction, removeStepAction, setStepDoneAction } from "@/app/actions/roadmap";
+import {
+  addMilestoneStepAction,
+  addStepAction,
+  editStepAction,
+  markMilestoneAction,
+  removeStepAction,
+  setStepDoneAction,
+} from "@/app/actions/roadmap";
 import { POST as counselorApi } from "@/app/api/counselor/route";
 import EntryPage from "@/app/applications/[id]/page";
 import ComparePage from "@/app/applications/compare/page";
@@ -164,6 +171,7 @@ describe("gated actions", () => {
     ["addMilestoneStepAction", () => addMilestoneStepAction("m")],
     ["addStepAction", () => addStepAction(undefined, form({ stepText: "Email my counselor" }))],
     ["setStepDoneAction", () => setStepDoneAction("x", true)],
+    ["editStepAction", () => editStepAction(undefined, form({ stepId: "x", stepText: "Email my coach" }))],
     ["removeStepAction", () => removeStepAction("x")],
     ["addCollegeAction", () => addCollegeAction({ status: "idle" }, form({ unitId: "100001" }))],
     ["addCustomEntryAction", () => addCustomEntryAction(undefined, form({ name: "Welding program", kind: "program" }))],
@@ -203,8 +211,11 @@ describe("gated actions", () => {
     expect(await addStepAction(undefined, form({ stepText: "Email my counselor" }))).toEqual({ ok: true });
     const [step] = await db.select().from(schema.weeklySteps).where(eq(schema.weeklySteps.text, "Email my counselor"));
     expect(await setStepDoneAction(step.id, true)).toEqual({ ok: true });
+    expect(await editStepAction(undefined, form({ stepId: step.id, stepText: "Email my coach" }))).toEqual({ ok: true });
     const [openStep] = await db.select().from(schema.weeklySteps).where(eq(schema.weeklySteps.status, "open"));
     expect(await removeStepAction(openStep.id)).toEqual({ ok: true });
+    // A finished step can be removed too.
+    expect(await removeStepAction(step.id)).toEqual({ ok: true });
 
     expect(await addCollegeAction({ status: "idle" }, form({ unitId: "100001" }))).toMatchObject({ status: "added" });
     expect(await addCustomEntryAction(undefined, form({ name: "Welding program", kind: "program" }))).toMatchObject({ ok: true });

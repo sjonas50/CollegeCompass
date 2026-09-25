@@ -91,6 +91,10 @@ describe("interest patterns", () => {
     expect(two).toEqual({ kind: "few", standOut: ["A", "S"], rest: ["R", "I", "E", "C"] });
     if (two.kind !== "few") throw new Error();
     expect(fewAreasText(two)).toBe("Artistic and Social stand out. You leaned toward disliking the other four areas.");
+    // About someone else, for the parent page.
+    expect(fewAreasText(two, { name: "Mia", their: "their" })).toBe(
+      "Artistic and Social stand out. Mia leaned toward disliking the other four areas.",
+    );
     // Even when those two are tied with each other.
     expect(interestPattern(areas({ A: 30, S: 30 }))).toEqual({ kind: "few", standOut: ["A", "S"], rest: ["R", "I", "E", "C"] });
 
@@ -149,6 +153,10 @@ describe("interest patterns", () => {
     expect(strongAreas(first)).toEqual(["R", "I", "A", "S"]);
     if (first.kind !== "tied") throw new Error();
     expect(tiedAreasText(first)).toBe("Realistic, Investigative, Artistic and Social are tied for your top area.");
+    expect(tiedAreasText(first, { name: "Mia", their: "their" })).toBe(
+      "Realistic, Investigative, Artistic and Social are tied for their top area.",
+    );
+    expect(tiedAreasText(third, { name: "Mia", their: "their" })).toBe(tiedAreasText(third));
     // A tie for first is the strong areas, not a tie below them.
     expect(tiedBelow(first)).toEqual([]);
     expect(tiedBelow(interestPattern(areas({ A: 40, S: 30, E: 20 })))).toEqual([]);

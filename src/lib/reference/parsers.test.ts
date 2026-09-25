@@ -13,6 +13,7 @@ import {
   parseWorkStyle,
   collectWorkStyles,
   socFromOnetCode,
+  withLeadInterests,
 } from "./parsers";
 
 // Rows copied from the real O*NET 31.0, NCES CIP2020–SOC2018 and College Scorecard files.
@@ -32,6 +33,22 @@ describe("reference parsers", () => {
     expect(
       parseOccupationInterest({ ...base, "Element ID": "1.B.1.g", "Element Name": "First Interest High-Point", "Scale ID": "IH", "Data Value": "5.00" }),
     ).toBeNull();
+  });
+
+  it("marks each occupation's highest-scored interest areas, ties included, only when all six are scored", () => {
+    // O*NET 31.0 scores: Veterinarians are tied on Realistic and Investigative.
+    const scores = (code: string, s: Record<string, number>) => Object.entries(s).map(([interest, score]) => ({ occupationCode: code, interest, score }));
+    const rows = withLeadInterests([
+      ...scores("29-1131.00", { R: 5.98, I: 5.98, A: 1, S: 3.45, E: 1.7, C: 3.47 }),
+      ...scores("11-1011.00", { R: 1.26, I: 3.05, A: 2.16, S: 3.54, E: 6.96, C: 4.97 }),
+      ...scores("99-9999.00", { R: 7, I: 1 }),
+    ]);
+    const leading = (code: string) => rows.filter((r) => r.occupationCode === code && r.leads).map((r) => r.interest);
+    expect(leading("29-1131.00")).toEqual(["R", "I"]);
+    expect(leading("11-1011.00")).toEqual(["E"]);
+    expect(leading("99-9999.00")).toEqual([]);
+    expect(rows).toHaveLength(14);
+    expect(rows[0]).toEqual({ occupationCode: "29-1131.00", interest: "R", score: 5.98, leads: true });
   });
 
   it("keeps only work value extent scores", () => {

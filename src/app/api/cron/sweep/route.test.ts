@@ -48,6 +48,25 @@ describe("GET /api/cron/sweep", () => {
     expect(await db.select().from(schema.billingAccounts)).toHaveLength(0);
   });
 
+  it("forgets the address on parent invitations that expired unanswered", async () => {
+    const db = state.db!;
+    state.stripe = null;
+    const [household] = await db.insert(schema.households).values({}).returning();
+    const [teen] = await db
+      .insert(schema.users)
+      .values({ role: "student", householdId: household.id, displayName: "Ana", passwordHash: "x", grade: 10, gradeSchoolYear: 2026 })
+      .returning();
+    const day = 24 * 60 * 60 * 1000;
+    await db.insert(schema.parentInvites).values([
+      { studentUserId: teen.id, sentTo: "old@example.com", tokenHash: "a", expiresAt: new Date(Date.now() - day) },
+      { studentUserId: teen.id, sentTo: "new@example.com", tokenHash: "b", expiresAt: new Date(Date.now() + day) },
+    ]);
+
+    const res = await sweep();
+    expect(await res.json()).toMatchObject({ inviteAddresses: 1 });
+    expect((await db.select().from(schema.parentInvites)).map((i) => i.sentTo).sort()).toEqual(["new@example.com", null]);
+  });
+
   it("needs the cron secret", async () => {
     expect((await sweep("Bearer wrong")).status).toBe(401);
   });

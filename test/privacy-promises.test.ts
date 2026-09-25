@@ -101,7 +101,7 @@ describe("privacy promises", () => {
     await signIn(teen.value.userId);
     const card = await render(InviteParentCard());
     for (const promise of [
-      "see your progress: activities, goals, roadmap, classes and college list",
+      "see your progress and results: interest areas, strengths, top career matches, goals, roadmap, classes and college list",
       "change your grade and your weekly reminder emails",
       "manage your family's plan and billing",
       "download a copy of your data, or delete your account",
@@ -116,14 +116,26 @@ describe("privacy promises", () => {
     page.user = null;
     const invite = await render(InvitePage({ params: Promise.resolve({ token }), searchParams: Promise.resolve({}) } as PageProps<"/invite/[token]">));
     for (const promise of [
-      "See Ana's progress: activities, goals, roadmap, classes and college list",
+      "See Ana's progress and results: interest areas, strengths, top career matches, goals, roadmap, classes and college list",
       "Change Ana's grade and weekly reminder emails",
       "Manage your family's plan and billing",
       "Download a copy of Ana's data, or delete Ana's account",
       "your download of Ana's data leaves them out, along with the counselor's notes and any safety flags",
+      // A teen who owns their account can remove a linked parent (see removeLinkedParent).
+      "Ana keeps their own account and sign-in, and can remove the link from their settings.",
     ]) {
       expect(invite).toContain(promise);
     }
+  });
+
+  it("the privacy page says what happens to the address a teen invites, and that it isn't in a parent's download", async () => {
+    const t = await render(PrivacyPage());
+    expect(t).toContain("Those teens can also remove a linked parent or guardian from Settings.");
+    expect(t).toContain("we keep the email address they typed so the teen can see where the invitation went. Only the teen sees it; it isn't in a parent's download.");
+
+    const { rosa, ana } = await family();
+    expect(JSON.stringify(await exportStudentData(db, ana, ana))).toContain("rosa@example.com");
+    expect(JSON.stringify(await exportStudentData(db, rosa, ana))).not.toContain("rosa@example.com");
   });
 
   it("the privacy page says which data parents can download", async () => {

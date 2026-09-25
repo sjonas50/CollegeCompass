@@ -270,8 +270,14 @@ export const occupationInterests = pgTable(
     interest: riasecEnum("interest").notNull(),
     // O*NET occupational interest score, 1–7.
     score: real("score").notNull(),
+    // The occupation's highest-scored area (each of them when tied), for occupations with all six
+    // scores. Set by `npm run data:load` (withLeadInterests); /careers?area= browses by it.
+    leads: boolean("leads").notNull().default(false),
   },
-  (t) => [primaryKey({ columns: [t.occupationCode, t.interest] })],
+  (t) => [
+    primaryKey({ columns: [t.occupationCode, t.interest] }),
+    index("occupation_interests_leads_idx").on(t.interest).where(sql`${t.leads}`),
+  ],
 );
 
 /** CIP 2020 instructional programs (majors), e.g. "11.0701" Computer Science. */
@@ -730,6 +736,11 @@ export const accessGrants = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }),
     // Who asked for it (a parent or teen for free access, staff for comps). Kept only as a link.
     grantedByUserId: uuid("granted_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    // The student it's for, when it was given to one student rather than the whole family: a staff
+    // grant made with that student's email or username, grants the student brought along when they
+    // joined a parent's household, and the paid time carried over from their old plan. If the
+    // student leaves the household (see removeLinkedParent), it goes with them. Kept only as a link.
+    forUserId: uuid("for_user_id").references(() => users.id, { onDelete: "set null" }),
     createdAt: createdAt(),
   },
   (t) => [index("access_grants_household_idx").on(t.householdId, t.endsAt)],
@@ -774,7 +785,7 @@ export const stripeEvents = pgTable("stripe_events", {
 
 /**
  * A student's invitation for a parent or guardian to link to their account (for teens who
- * signed up on their own). Only a hash of the token is kept, and not the email address.
+ * signed up on their own). Only a hash of the token is kept.
  */
 export const parentInvites = pgTable(
   "parent_invites",
@@ -783,6 +794,12 @@ export const parentInvites = pgTable(
     studentUserId: uuid("student_user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    // The address the student typed, shown only to that student (in Settings and their own data
+    // export) so they can tell who they invited and who accepted. Deleted with the invitation when
+    // it's cancelled, forgotten by the daily sweep once it expires unanswered, and deleted when the
+    // student removes the parent who accepted it or that parent deletes their account. Null for
+    // invitations sent before addresses were kept.
+    sentTo: text("sent_to"),
     tokenHash: text("token_hash").notNull().unique(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     acceptedAt: timestamp("accepted_at", { withTimezone: true }),
