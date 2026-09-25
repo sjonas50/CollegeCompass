@@ -294,12 +294,17 @@ describe("returning from Checkout", () => {
   it("turns on access right away for the household that started the session", async () => {
     const periodEnd = Math.floor(Date.now() / 1000) + 30 * 86_400;
     const sub = subscriptionObject({ id: "sub_1", customer: "cus_new", status: "active", priceId: "price_monthly", periodEnd, metadata: { householdId } });
-    const { stripe } = withSession({ mode: "subscription", customer: "cus_new", client_reference_id: householdId }, [sub]);
+    const { stripe } = withSession({ mode: "subscription", status: "complete", customer: "cus_new", client_reference_id: householdId }, [sub]);
     const res = await syncCheckoutSession(db, stripe, parentId, "cs_test_1");
-    expect(res).toMatchObject({ ok: true, sync: { householdId, status: "active", changed: true } });
+    expect(res).toMatchObject({ ok: true, completed: true, sync: { householdId, status: "active", changed: true } });
     const [account] = await db.select().from(schema.billingAccounts);
     expect(account).toMatchObject({ stripeCustomerId: "cus_new", stripeSubscriptionId: "sub_1", status: "active", plan: "monthly" });
     expect((await getUserAccess(db, parentId, new Date(Date.now() + 60 * 86_400_000))).sources).toEqual(["subscription"]);
+  });
+
+  it("says whether the parent finished checkout", async () => {
+    const { stripe } = withSession({ mode: "subscription", status: "open", customer: "cus_new", client_reference_id: householdId }, []);
+    expect(await syncCheckoutSession(db, stripe, parentId, "cs_test_1")).toMatchObject({ ok: true, completed: false });
   });
 
   it("ignores another household's session and malformed ids", async () => {

@@ -83,21 +83,32 @@ function TeenSignup({ birthDate, savingQuiz }: { birthDate: string; savingQuiz: 
   );
 }
 
+/** For a child who comes back once their parent has set things up. */
+function SignInWithUsername() {
+  return (
+    <p className="mt-4 text-sm text-muted">
+      Got your username from your parent? <Link href="/login" className="underline">Sign in</Link>
+    </p>
+  );
+}
+
+/** After the email to the parent went out (`delayed`: it may take a few minutes to arrive). */
+export function ParentEmailSent({ delayed }: { delayed: boolean }) {
+  return (
+    <>
+      <PageHeading title="Check with your parent" />
+      <Notice>
+        We sent your parent an email. Once they set things up, they&apos;ll give you your username and password.
+        {delayed && <> It may take a few minutes to arrive. If your parent doesn&apos;t see it soon, ask them to check their spam folder.</>}
+      </Notice>
+      <SignInWithUsername />
+    </>
+  );
+}
+
 function ParentHandoff() {
   const [state, action, pending, values] = useFormAction<ParentRequestState>(requestParentConsentAction, undefined);
-  if (state && "sent" in state) {
-    return (
-      <>
-        <PageHeading title="Check with your parent" />
-        <Notice>
-          We sent your parent an email. Once they set things up, they&apos;ll give you your username and password.
-          {"delayed" in state && state.delayed && (
-            <> It may take a few minutes to arrive. If your parent doesn&apos;t see it soon, ask them to check their spam folder.</>
-          )}
-        </Notice>
-      </>
-    );
-  }
+  if (state && "sent" in state) return <ParentEmailSent delayed={Boolean(state.delayed)} />;
   const errors = state && "errors" in state ? state.errors : undefined;
   const message = state && "message" in state ? state.message : undefined;
   return (
@@ -123,6 +134,7 @@ function ParentHandoff() {
           </Button>
         </form>
       </Card>
+      <SignInWithUsername />
     </>
   );
 }

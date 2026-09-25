@@ -23,6 +23,7 @@ import {
   setUnder13Gate,
 } from "@/lib/auth/cookies";
 import { homePathFor, getCurrentUser } from "@/lib/auth/dal";
+import { beginSignIn, signInSucceeded } from "@/lib/auth/login-limit";
 import { createSession, invalidateSession, validateSession } from "@/lib/auth/sessions";
 import { hashToken } from "@/lib/auth/tokens";
 import { createConsentRequest, cancelConsentRequest } from "@/lib/consent/requests";
@@ -77,8 +78,8 @@ export async function registerStudentAction(_prev: FormState, formData: FormData
     }
     return { errors: { email: ["An account with this email already exists."] } };
   }
-  const { token } = await createSession(db, result.value.userId);
-  await setSessionCookie(token);
+  const { token, expiresAt } = await createSession(db, result.value.userId);
+  await setSessionCookie(token, expiresAt);
   const imported = await importAtSignup(db, result.value.userId, formData.get(SAVED_ASSESSMENT_FIELD));
   // /try/saved clears the browser's copy of the quiz, then shows the results.
   redirect(imported ? "/try/saved" : "/dashboard");
@@ -109,15 +110,22 @@ export async function requestParentConsentAction(
 
   const db = await getDb();
   const { parentEmail } = parsed.data;
-  const underLimit =
-    (await consumeRateLimit(db, `consent:email:${hashToken(parentEmail)}`, 3, 24 * 60 * MINUTE)) &&
-    (await consumeRateLimit(db, `consent:ip:${await clientIpKey()}`, 10, 60 * MINUTE));
-  // Same response either way, so the form can't be used to probe or spam an address.
-  if (underLimit) {
-    const { token, expiresAt } = await createConsentRequest(db, parentEmail);
-    const link = new URL(`/parent/consent/${token}`, env().APP_URL).toString();
-    try {
-      await sendEmail({
+  // When a limit stops the email, the child is told so: they'd otherwise wait for a username that
+  // never comes. The words say nothing about whether the address has an account. The network is
+  // checked first, so requests refused there don't use up the address's emails for the day.
+  if (!(await consumeRateLimit(db, `consent:ip:${await clientIpKey()}`, 10, 60 * MINUTE))) {
+    return { message: "A lot of parent emails were just sent from here, so we can't send yours right now. Please try again in an hour." };
+  }
+  if (!(await consumeRateLimit(db, `consent:email:${hashToken(parentEmail)}`, 3, 24 * 60 * MINUTE))) {
+    return {
+      message:
+        "We've already sent a few emails to that address today. Ask your parent to check their inbox and spam folder, or try again tomorrow.",
+    };
+  }
+  const { token, expiresAt } = await createConsentRequest(db, parentEmail);
+  const link = new URL(`/parent/consent/${token}`, env().APP_URL).toString();
+  try {
+    await sendEmail({
       to: parentEmail,
       subject: "Your child asked to join College Compass",
       text: [
@@ -133,18 +141,17 @@ export async function requestParentConsentAction(
         `This link expires on ${expiresAt.toDateString()}. If you do nothing, we will delete your email address`,
         "and won't contact you again.",
       ].join("\n"),
-      });
-    } catch (error) {
-      if (isUncertainSend(error)) {
-        // Resend got the email but didn't answer in time, so it may still arrive. Its link keeps
-        // working: the request expires, and the daily sweep deletes the address with it.
-        console.warn("[consent] email may be delayed");
-        return { sent: true, delayed: true };
-      }
-      console.error("[consent] email failed", error instanceof Error ? error.name : "unknown");
-      await cancelConsentRequest(db, token);
-      return { message: "We couldn't send the email right now. Please try again in a few minutes." };
+    });
+  } catch (error) {
+    if (isUncertainSend(error)) {
+      // Resend got the email but didn't answer in time, so it may still arrive. Its link keeps
+      // working: the request expires, and the daily sweep deletes the address with it.
+      console.warn("[consent] email may be delayed");
+      return { sent: true, delayed: true };
     }
+    console.error("[consent] email failed", error instanceof Error ? error.name : "unknown");
+    await cancelConsentRequest(db, token);
+    return { message: "We couldn't send the email right now. Please try again in a few minutes." };
   }
   return { sent: true };
 }
@@ -165,8 +172,8 @@ export async function registerParentAction(_prev: FormState, formData: FormData)
   const result = await registerParent(db, parsed.data);
   if (!result.ok) return { errors: { email: ["An account with this email already exists."] } };
 
-  const { token } = await createSession(db, result.value.userId);
-  await setSessionCookie(token);
+  const { token, expiresAt } = await createSession(db, result.value.userId);
+  await setSessionCookie(token, expiresAt);
   redirect(safeNext(formData.get("next")) ?? "/parent");
 }
 
@@ -178,16 +185,17 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
   if (!parsed.success) return fieldErrors(parsed.error);
 
   const db = await getDb();
-  const underLimit =
-    (await consumeRateLimit(db, `login:id:${hashToken(parsed.data.identifier)}`, 10, 15 * MINUTE)) &&
-    (await consumeRateLimit(db, `login:ip:${await clientIpKey()}`, 50, 15 * MINUTE));
-  if (!underLimit) return { message: "Too many sign-in attempts. Please wait 15 minutes and try again." };
+  const { identifier } = parsed.data;
+  if (!(await beginSignIn(db, identifier, await clientIpKey()))) {
+    return { message: "Too many sign-in attempts. Please wait 15 minutes and try again." };
+  }
 
   const result = await authenticate(db, parsed.data);
   if (!result) return { message: "That email/username and password don't match." };
+  await signInSucceeded(db, identifier);
 
-  const { token } = await createSession(db, result.userId);
-  await setSessionCookie(token);
+  const { token, expiresAt } = await createSession(db, result.userId);
+  await setSessionCookie(token, expiresAt);
   const session = await validateSession(db, token);
   redirect(safeNext(formData.get("next")) ?? homePathFor(session!.user));
 }

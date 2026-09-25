@@ -172,14 +172,14 @@ const CHECKOUT_SESSION_ID = /^cs_[A-Za-z0-9_]{1,200}$/;
 /**
  * After Checkout sends the parent back: reads the session from Stripe and updates the household
  * right away, so access doesn't wait for the webhook. Only the household that started the session
- * can use it.
+ * can use it. `completed`: the parent finished checkout (a session still open was never paid).
  */
 export async function syncCheckoutSession(
   db: Db,
   stripe: Stripe,
   parentUserId: string,
   sessionId: string,
-): Promise<{ ok: true; sync: SyncResult } | { ok: false; error: "not_parent" | "not_found" }> {
+): Promise<{ ok: true; completed: boolean; sync: SyncResult } | { ok: false; error: "not_parent" | "not_found" }> {
   const householdId = await parentHousehold(db, parentUserId);
   if (!householdId) return { ok: false, error: "not_parent" };
   if (!CHECKOUT_SESSION_ID.test(sessionId)) return { ok: false, error: "not_found" };
@@ -187,7 +187,7 @@ export async function syncCheckoutSession(
   const owner = session.client_reference_id ?? session.metadata?.householdId ?? null;
   const customerId = typeof session.customer === "string" ? session.customer : (session.customer?.id ?? null);
   if (owner !== householdId || !customerId || session.mode !== "subscription") return { ok: false, error: "not_found" };
-  return { ok: true, sync: await syncCustomer(db, stripe, customerId, householdId, parentUserId) };
+  return { ok: true, completed: session.status === "complete", sync: await syncCustomer(db, stripe, customerId, householdId, parentUserId) };
 }
 
 export type EndPlanResult =

@@ -2,7 +2,9 @@ import { eq } from "drizzle-orm";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cancelParentInviteAction } from "@/app/actions/invites";
 import InvitePage from "@/app/invite/[token]/page";
+import { inviteNotice } from "@/app/invite/invite-parent-form";
 import { InviteParentCard } from "@/components/invite-parent";
 import { type Db, createTestDb, schema } from "@/db";
 import { resetEnvCache } from "@/env";
@@ -43,6 +45,7 @@ const send = async (email: Email) => {
 const page = vi.hoisted(() => ({ db: null as Db | null, user: null as SessionUser | null }));
 vi.mock("@/db", async (original) => ({ ...(await original<typeof import("@/db")>()), getDb: async () => page.db }));
 vi.mock("@/lib/auth/dal", () => ({ requireUser: async () => page.user, getCurrentUser: async () => page.user }));
+vi.mock("next/cache", () => ({ refresh: () => {} }));
 
 beforeEach(async () => {
   db = await createTestDb();
@@ -696,9 +699,31 @@ describe("the invite card", () => {
     await signIn(studentId);
     const html = await render(InviteParentCard());
     expect(text(html)).toContain("Invitations sent");
-    expect(html.match(/name="inviteId"/g)).toHaveLength(MAX_PENDING_INVITES);
+    expect(html.match(/<button type="button"[^>]*>Cancel<span class="sr-only"> the invitation sent/g)).toHaveLength(MAX_PENDING_INVITES);
+    // Cancel asks first: nothing on the card posts an invitation id until the student confirms.
+    expect(html).not.toContain('name="inviteId"');
     expect(html).not.toContain('name="parentEmail"');
     expect(text(html)).toContain("Cancel one to send another");
+  });
+
+  it("confirms a cancellation in place of the sent notice, and never twice", async () => {
+    const studentId = await teen();
+    const { inviteId, token } = await invite(studentId, new Date());
+    await signIn(studentId);
+    const form = new FormData();
+    form.set("inviteId", inviteId);
+    // The card had just sent an invitation; the cancel shares its state, so that notice goes.
+    const sentState = { sent: true } as const;
+    expect(inviteNotice(sentState)).toBe("Invitation sent. Ask them to check their email, including the spam folder.");
+    const cancelled = await cancelParentInviteAction(sentState, form);
+    expect(cancelled).toEqual({ cancelled: true });
+    expect(inviteNotice(cancelled)).toBe("Invitation cancelled. The link in that email won't work anymore.");
+    expect(await findInvite(db, token)).toEqual({ status: "not_found" });
+
+    // From a second tab: nothing left to cancel, so no success notice.
+    const again = await cancelParentInviteAction(cancelled, form);
+    expect(again).toEqual({ message: "That invitation was already used or cancelled." });
+    expect(inviteNotice(again)).toBeNull();
   });
 
   it("renders nothing once a parent is linked", async () => {
