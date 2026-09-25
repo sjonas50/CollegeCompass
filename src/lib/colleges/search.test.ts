@@ -220,25 +220,80 @@ describe("searchColleges by name", () => {
     expect(await names({ q: "bayamon" })).toEqual(["Universidad Central de Bayamon"]);
   });
 
-  it("matches the start of words, and inside words only for 4 or more letters, ranked after word starts", async () => {
+  it("matches the start of words, and inside words for 4 or more letters, as good as a word start", async () => {
+    // Every "Virginia Tech" match in the June 2026 Scorecard.
     await insertColleges(db, [
       { unitId: 30, name: "Virginia Polytechnic Institute and State University", city: "Blacksburg", enrollment: 30_923 },
-      { unitId: 31, name: "West Virginia University Institute of Technology", city: "Beckley", enrollment: 981 },
-      { unitId: 32, name: "Northwestern University", city: "Evanston", enrollment: 9_201 },
+      { unitId: 31, name: "Southern West Virginia Community and Technical College", city: "Logan", enrollment: 1_064 },
+      { unitId: 32, name: "West Virginia University Institute of Technology", city: "Beckley", enrollment: 981 },
+      { unitId: 33, name: "Eastern West Virginia Community and Technical College", city: "Moorefield", enrollment: 225 },
+      { unitId: 34, name: "West Virginia University Hospital Departments of Rad Tech and Nutrition", city: "Morgantown", enrollment: 62 },
+      { unitId: 35, name: "Advanced Technology Institute", city: "Virginia Beach", enrollment: 415 },
+      { unitId: 36, name: "Northwestern University", city: "Evanston", enrollment: 9_201 },
     ]);
     // Before: "mit" found Smith and Summit.
     expect(await names({ q: "mit" })).toEqual(["Massachusetts Institute of Technology", "Mitchell College"]);
-    // "Virginia Tech" is Virginia Polytechnic, after the name where "tech" starts a word.
-    expect(await names({ q: "Virginia Tech" })).toEqual([
-      "West Virginia University Institute of Technology",
-      "Virginia Polytechnic Institute and State University",
-    ]);
+    // Before: Virginia Polytechnic 5th, after four small West Virginia schools where "tech" starts
+    // a word. Every name with both words comes first, larger colleges first, then the one with
+    // Virginia only in its city.
+    for (const q of ["Virginia Tech", "virginia tech"]) {
+      expect(await names({ q }), q).toEqual([
+        "Virginia Polytechnic Institute and State University",
+        "Southern West Virginia Community and Technical College",
+        "West Virginia University Institute of Technology",
+        "Eastern West Virginia Community and Technical College",
+        "West Virginia University Hospital Departments of Rad Tech and Nutrition",
+        "Advanced Technology Institute",
+      ]);
+    }
     expect(await names({ q: "tech" })).toEqual([
-      "Massachusetts Institute of Technology",
-      "West Virginia University Institute of Technology",
       "Virginia Polytechnic Institute and State University",
+      "Massachusetts Institute of Technology",
+      "Southern West Virginia Community and Technical College",
+      "West Virginia University Institute of Technology",
+      "Advanced Technology Institute",
+      "Eastern West Virginia Community and Technical College",
+      "West Virginia University Hospital Departments of Rad Tech and Nutrition",
     ]);
     expect(await names({ q: "north western" })).toEqual(["Northwestern University"]);
+    // Short words only start words: "tec" isn't in Polytechnic.
+    expect(await names({ q: "virginia tec" })).not.toContain("Virginia Polytechnic Institute and State University");
+  });
+
+  it("reads A&M and S&T as an abbreviation, never as letters starting any words", async () => {
+    // Real Scorecard names (June 2026) that "A&M" used to find, and schools named for it.
+    await insertColleges(db, [
+      { unitId: 30, name: "William & Mary", city: "Williamsburg", enrollment: 7_055 },
+      { unitId: 31, name: "Missouri University of Science and Technology", city: "Rolla", enrollment: 5_521 },
+      { unitId: 32, name: "Minneapolis Community and Technical College", city: "Minneapolis", enrollment: 5_268 },
+      { unitId: 33, name: "Franklin and Marshall College", city: "Lancaster", enrollment: 1_799 },
+      { unitId: 34, name: "Merrimack College", city: "North Andover", enrollment: 3_916 },
+      { unitId: 35, name: "Prairie View A & M University", city: "Prairie View", enrollment: 8_877 },
+      { unitId: 36, name: "Florida Agricultural and Mechanical University", city: "Tallahassee", enrollment: 7_582 },
+      { unitId: 37, name: "Louisiana State University and Agricultural & Mechanical College", city: "Baton Rouge", enrollment: 30_594 },
+      { unitId: 38, name: "The University of Texas MD Anderson Cancer Center", city: "Houston", enrollment: 334 },
+      { unitId: 39, name: "North Carolina A & T State University", city: "Greensboro", enrollment: 12_182 },
+    ]);
+    // Before: William & Mary 7th and Missouri S&T 12th of 106, with Merrimack, Franklin and
+    // Marshall and beauty schools on later pages. Names with A&M as written come first, larger
+    // colleges first, then names that spell it out.
+    for (const q of ["A&M", "a & m", "A and M"]) {
+      expect(await names({ q }), q).toEqual([
+        "Texas A&M University-College Station",
+        "Prairie View A & M University",
+        "West Texas A & M University",
+        "Louisiana State University and Agricultural & Mechanical College",
+        "Florida Agricultural and Mechanical University",
+      ]);
+    }
+    // Before: also MD Anderson ("a" in Anderson, "m" in MD).
+    expect(await names({ q: "Texas A&M" })).toEqual(["Texas A&M University-College Station", "West Texas A & M University"]);
+    expect(await names({ q: "Florida A&M" })).toEqual(["Florida Agricultural and Mechanical University"]);
+    expect(await names({ q: "William & Mary" })).toEqual(["William & Mary"]);
+    expect(await names({ q: "W&M" })).toEqual(["William & Mary"]);
+    expect(await names({ q: "S&T" })).toEqual(["Missouri University of Science and Technology"]);
+    expect(await names({ q: "Missouri S&T" })).toEqual(["Missouri University of Science and Technology"]);
+    expect(await names({ q: "NC A&T" })).toEqual(["North Carolina A & T State University"]);
   });
 
   it("puts University of … and College of … with the names that start with the words, larger colleges first", async () => {

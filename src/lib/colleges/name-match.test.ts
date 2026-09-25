@@ -79,6 +79,17 @@ describe("typedWords", () => {
     expect(typedWords("Pennst")).toEqual(["pennst"]);
     expect(typedWords("constructor")).toEqual(["constructor"]);
   });
+
+  it("reads letters joined by & or 'and' as one abbreviation, however it's spaced", () => {
+    for (const text of ["A&M", "a & m", "A and M", " a&M. "]) expect(typedWords(text), text).toEqual(["a and m"]);
+    expect(typedWords("Texas A&M")).toEqual(["texas", "a and m"]);
+    expect(typedWords("NC A&T St")).toEqual(["nc", "a and t", "state"]);
+    expect(typedWords("Missouri S&T")).toEqual(["missouri", "s and t"]);
+    // Words, not letters: each is its own word.
+    expect(typedWords("William & Mary")).toEqual(["william", "and", "mary"]);
+    expect(typedWords("AT&T")).toEqual(["at", "and", "t"]);
+    expect(typedWords("a&")).toEqual(["a", "and"]);
+  });
 });
 
 describe("wordMatch", () => {
@@ -103,10 +114,19 @@ describe("wordMatch", () => {
     ["Massachusetts Institute of Technology", "Cambridge"],
     ["University of California-Los Angeles", "Los Angeles"],
     ["Monty Tech", "Fitchburg"],
+    ["Florida Agricultural and Mechanical University", "Tallahassee"],
+    ["William & Mary", "Williamsburg"],
   ];
   const SHORT_FORMS = new Set(["st", "mt", "ft"]);
 
-  /** Typed words the full match should find in this college: word starts, inside a name's words, and initials. */
+  /** Abbreviations the full match should find in this name: "a and m" in A&M and in Agricultural and Mechanical. */
+  function abbreviationsFor(name: string): Set<string> {
+    const words = nameWords(name);
+    const found = words.flatMap((w, i) => (i > 0 && w === "and" && i + 1 < words.length ? [`${words[i - 1][0]} and ${words[i + 1][0]}`] : []));
+    return new Set(found.filter((a) => /^[a-z] and [a-z]$/.test(a)));
+  }
+
+  /** Typed words the full match should find in this college: word starts, inside a name's words, initials and abbreviations. */
   function wordsFor(name: string, city: string): Set<string> {
     const found = new Set<string>();
     const prefixes = (word: string, min = 1) => Array.from({ length: word.length - min + 1 }, (_, i) => word.slice(0, i + min));
@@ -118,6 +138,7 @@ describe("wordMatch", () => {
       for (let from = 1; from + 4 <= word.length; from++) for (let to = from + 4; to <= word.length; to++) found.add(word.slice(from, to));
     }
     for (const p of prefixes(initials(nameWords(name)), 2)) if (/^[a-z]+$/.test(p) && !SHORT_FORMS.has(p)) found.add(p);
+    for (const a of abbreviationsFor(name)) found.add(a);
     return found;
   }
 
@@ -125,10 +146,15 @@ describe("wordMatch", () => {
     const db = await createTestDb();
     await insertColleges(db, TRICKY.map(([name, city], i) => ({ unitId: i + 1, name, city })));
     const expected = new Map(TRICKY.map(([name, city]) => [name, wordsFor(name, city)]));
-    const typed = [...new Set([...[...expected.values()].flatMap((words) => [...words]), "a", "an", "and", "st", "mt", "ft"])];
+    const typed = [
+      ...new Set([...[...expected.values()].flatMap((words) => [...words]), "a", "an", "and", "st", "mt", "ft", "a and c", "s and c", "a and t", "s and t", "x and y"]),
+    ];
 
     const missedByCheap = new Map<string, string[]>();
     const notFound = new Map<string, string[]>();
+    // Abbreviations are the words next to each other, never letters that start any words: "a and
+    // m" isn't William & Mary.
+    const extraAbbreviations = new Map<string, string[]>();
     const CHUNK = 40;
     for (let i = 0; i < typed.length; i += CHUNK) {
       const chunk = typed.slice(i, i + CHUNK);
@@ -136,23 +162,30 @@ describe("wordMatch", () => {
       const rows = await db
         .select({
           name: colleges.name,
-          missed: sql<string>`concat_ws(' ', ${sql.join(checks.map((c) => sql`case when (${c.full}) and not (${c.cheap}) then ${c.w}::text end`), sql`, `)})`,
-          full: sql<string>`concat_ws(' ', ${sql.join(checks.map((c) => sql`case when ${c.full} then ${c.w}::text end`), sql`, `)})`,
+          missed: sql<string>`concat_ws('|', ${sql.join(checks.map((c) => sql`case when (${c.full}) and not (${c.cheap}) then ${c.w}::text end`), sql`, `)})`,
+          full: sql<string>`concat_ws('|', ${sql.join(checks.map((c) => sql`case when ${c.full} then ${c.w}::text end`), sql`, `)})`,
         })
         .from(colleges);
       for (const row of rows) {
-        if (row.missed) missedByCheap.set(row.name, [...(missedByCheap.get(row.name) ?? []), ...row.missed.split(" ")]);
-        const full = new Set(row.full.split(" "));
+        if (row.missed) missedByCheap.set(row.name, [...(missedByCheap.get(row.name) ?? []), ...row.missed.split("|")]);
+        const full = new Set(row.full.split("|"));
         const missing = chunk.filter((w) => expected.get(row.name)!.has(w) && !full.has(w));
         if (missing.length) notFound.set(row.name, [...(notFound.get(row.name) ?? []), ...missing]);
+        const extra = chunk.filter((w) => w.includes(" ") && full.has(w) && !abbreviationsFor(row.name).has(w));
+        if (extra.length) extraAbbreviations.set(row.name, [...(extraAbbreviations.get(row.name) ?? []), ...extra]);
       }
     }
     expect(Object.fromEntries(missedByCheap)).toEqual({});
     expect(Object.fromEntries(notFound)).toEqual({});
+    expect(Object.fromEntries(extraAbbreviations)).toEqual({});
     // Among them, the ones that used to slip past the cheap check: initials after "The" and a
     // double space, and "&" for "an".
     expect(expected.get("The  Beauty Institute")).toContain("bi");
     expect(expected.get("The  Salon Professional Academy of Holland")).toContain("sp");
     expect(expected.get("Porter & Chester Institute")).toContain("an");
+    // And abbreviations, as letters and spelled out.
+    expect(expected.get("Texas A&M University-College Station")).toContain("a and m");
+    expect(expected.get("Florida Agricultural and Mechanical University")).toContain("a and m");
+    expect(expected.get("William & Mary")).toContain("w and m");
   }, 30_000);
 });
