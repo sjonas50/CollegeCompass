@@ -71,8 +71,8 @@ describe("finding the household", () => {
   it("by its id, or a student's email or username in any case", async () => {
     const ana = await teen();
     const household = await householdOf(ana);
-    expect(await findHousehold(db, household)).toBe(household);
-    expect(await findHousehold(db, " ana@example.COM ")).toBe(household);
+    expect(await findHousehold(db, household)).toEqual({ householdId: household, studentId: null });
+    expect(await findHousehold(db, " ana@example.COM ")).toEqual({ householdId: household, studentId: ana });
 
     const parent = await registerParent(db, { displayName: "Rosa", email: "rosa@example.com", password: "correct horse battery" });
     if (!parent.ok) throw new Error(parent.error);
@@ -84,7 +84,7 @@ describe("finding the household", () => {
       NOW,
     );
     if (!leo.ok) throw new Error(leo.error);
-    expect(await findHousehold(db, "leo_seven")).toBe(await householdOf(parent.value.userId));
+    expect(await findHousehold(db, "leo_seven")).toEqual({ householdId: await householdOf(parent.value.userId), studentId: leo.value.userId });
   });
 
   it("not by a parent's or staff email, or an id that isn't a household", async () => {
@@ -101,16 +101,30 @@ describe("granting access as staff", () => {
     const ana = await teen();
     const household = await householdOf(ana);
     const endsAt = new Date("2027-07-01T00:00:00Z");
-    expect(await grantStaffAccess(db, adminId, { household: "ana@example.com", kind: "comp", endsAt }, NOW)).toEqual({ ok: true, householdId: household, endsAt });
+    expect(await grantStaffAccess(db, adminId, { household: "ana@example.com", kind: "comp", endsAt }, NOW)).toEqual({
+      ok: true,
+      householdId: household,
+      endsAt,
+      forStudent: true,
+    });
 
     const access = await getHouseholdAccess(db, household, new Date("2027-06-30T12:00:00Z"));
     expect(access).toMatchObject({ full: true, sources: ["comp"], other: { kind: "comp", endsAt } });
     const [grant] = await db.select().from(schema.accessGrants).where(eq(schema.accessGrants.kind, "comp"));
-    expect(grant).toMatchObject({ householdId: household, startsAt: NOW, endsAt, grantedByUserId: adminId });
+    // Made with Ana's email, so it's hers: it goes with her if she leaves the household.
+    expect(grant).toMatchObject({ householdId: household, startsAt: NOW, endsAt, grantedByUserId: adminId, forUserId: ana });
 
     const [entry] = (await db.select().from(schema.auditLog)).filter((a) => a.action === "access.granted_by_staff");
     expect(entry).toMatchObject({ actorUserId: adminId, subjectUserId: null, metadata: { kind: "comp", days: 280 } });
     expect(JSON.stringify(entry)).not.toMatch(/ana|Ana|example|household/i);
+  });
+
+  it("is for the whole family when given by household id", async () => {
+    const ana = await teen();
+    const household = await householdOf(ana);
+    expect(await grantStaffAccess(db, adminId, { household, kind: "sponsored", endsAt: null }, NOW)).toMatchObject({ ok: true, forStudent: false });
+    const [grant] = await db.select().from(schema.accessGrants).where(eq(schema.accessGrants.kind, "sponsored"));
+    expect(grant).toMatchObject({ householdId: household, forUserId: null });
   });
 
   it("can have no end", async () => {

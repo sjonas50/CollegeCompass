@@ -76,7 +76,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     listEntries(db, user.id),
     latestResult(db, user.id, "personality"),
     // Only ever the signed-in student's own parents.
-    listLinkedParents(db, user.id),
+    listLinkedParents(db, user),
   ]);
   const roadmap = buildRoadmap(MILESTONES, grade, new Date(), progress);
   const timely = [...roadmap.now, ...roadmap.catchUp].slice(0, 3);
@@ -104,6 +104,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       {parent === "removed" && (
         <Notice>Done. That parent or guardian isn&apos;t linked to your account anymore. You can invite a parent or guardian again anytime.</Notice>
       )}
+      {settings === "password" && <Notice>Your new password is set. We signed you out on every other device.</Notice>}
 
       {!full ? (
         <Card className="space-y-3">

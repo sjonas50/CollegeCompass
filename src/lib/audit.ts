@@ -3,6 +3,7 @@ import { auditLog } from "@/db/schema";
 
 export type AuditAction =
   | "account.created"
+  | "account.password_changed"
   | "auth.login"
   | "auth.login_failed"
   | "consent.requested"

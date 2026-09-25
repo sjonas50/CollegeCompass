@@ -158,6 +158,10 @@ DATABASE_URL="postgres://..." npm run access:grant -- --by <your staff email> --
   audited, without names, emails or ids.
 - `--kind comp` is access we give ourselves; `--kind sponsored` is a seat someone else pays for.
 - `--until` is the last day of access (a UTC calendar day), or `none` for no end date.
+- `--household` with a student's email or username gives the access for that student: if they
+  later leave the household (a teen removing their parent), it goes with them. With a household
+  id, it's the whole family's and stays with the household. Use the student's email or username
+  for a sponsorship meant for one student.
 
 The script prints the household id. Don't write the family's name or email next to it in notes or
 tickets.
@@ -168,14 +172,25 @@ A teen who owns their account can remove a linked parent or guardian from Settin
 dashboard (for example, when a forwarded invitation reached the wrong adult). A child a parent set
 up under 13 can't. What happens (`removeLinkedParent` in `src/lib/parent-links.ts`):
 
-- The teen gets a household of their own. Free access the teen turned on and the days left on a
-  running trial go with them. The plan, free access the parent turned on, and comp or sponsored
-  access stay with the parent's household. If a comp was meant for the teen, grant it again on the
-  teen's new household (`--household` takes the teen's email or username).
+- If that parent set the account up (a username login), they chose its password, so the teen must
+  choose a new one to remove them. It's saved with the removal and signs out every device. Teens
+  who own their account can also change their password any time in Settings
+  (`account.password_changed` in the audit log). There's no password reset: a teen who forgets it
+  can't sign in.
+- The teen gets a household of their own, taking what's theirs: free access they turned on,
+  grants given for them (`access_grants.for_user_id`: a comp or sponsorship granted with their
+  email or username, grants they brought along when they joined the parent's household, and paid
+  time carried over from their old plan), and the days left on a running trial. The plan, free
+  access the parent turned on, and comp or sponsored access given to the whole family (granted by
+  household id, or before `for_user_id` existed) stay with the parent's household; the teen is
+  told to contact us if it was meant for them. To move it, grant it again on the teen's new
+  household (`--household` takes the teen's email or username).
 - If the teen was the last student in that household, a renewing plan is set to end with the
-  period it's paid through. The parent can keep it going from Manage billing.
+  period it's paid through. The parent can keep it going from Manage billing. The Stripe change is
+  queued in the same transaction as the removal, then tried at once; if that fails, the daily
+  sweep retries it (see "Stripe clean-up").
 - The parent isn't emailed. The teen simply stops showing on their parent page. The audit log has
-  `parent_link.removed_by_student` (ids and counts only).
+  `parent_link.removed_by_student` (ids, counts and yes/no answers only), written with the removal.
 
 ## Incidents
 
@@ -268,11 +283,13 @@ match what you sent.
 
 Two Stripe changes must not be lost: deleting a family's Stripe customer when their account is
 deleted (which cancels any plan), and setting a plan to end at the close of its paid period when
-the parent who pays leaves. When Stripe can't be reached, the app logs
-`[billing] couldn't delete a Stripe customer` or `[billing] couldn't end a plan without a parent`
-with the error's name, and saves the job in the `stripe_cleanup` table (Stripe ids only, never
-whose they were). The daily sweep tries each job again: daily for the first five days, then
-weekly. Its log line includes `stripeCleanup: { done, failed, waiting }`.
+the parent who pays leaves, or when a teen removes their parent and the plan no longer covers any
+student. When Stripe can't be reached, the app logs `[billing] couldn't delete a Stripe customer`
+or `[billing] couldn't set a plan to end` with the error's name, and saves the job in the
+`stripe_cleanup` table (Stripe ids only, never whose they were). A teen removing their parent
+queues the job in the same transaction as the removal and then tries it, so it survives a crash in
+between. The daily sweep tries each job again: daily for the first five days, then weekly. Its
+log line includes `stripeCleanup: { done, failed, waiting }`.
 
 **When a job keeps failing** (the sweep logs `[billing] Stripe clean-up keeps failing` with the
 job's row id, action, attempts and last error):

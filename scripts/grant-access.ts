@@ -4,7 +4,9 @@
  *
  *   npm run access:grant -- --by staff@example.com --household ana@example.com --kind comp --until 2027-06-30
  *
- * --household is a household id, or the email or username of a student in it. --until is the last
+ * --household is a household id, or the email or username of a student in it. A grant made with a
+ * student's email or username is recorded as that student's: if they later leave the household
+ * (a teen removing a linked parent), it goes with them. --until is the last
  * day of access (a UTC calendar day, so access ends that evening in the US), or "none". --by is your
  * staff account (see npm run admin:create); the grant is recorded with it, and audited as
  * access.granted_by_staff without names, emails or ids. Uses DATABASE_URL, or the local PGlite
@@ -37,7 +39,8 @@ async function main() {
     return 1;
   }
   const until = result.endsAt ? `until ${formatAccessDate(result.endsAt)}` : "with no end date";
-  console.log(`Household ${result.householdId} has ${args.kind} access ${until}.`);
+  const whose = result.forStudent ? ", given for that student" : "";
+  console.log(`Household ${result.householdId} has ${args.kind} access ${until}${whose}.`);
   return 0;
 }
 

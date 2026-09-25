@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { setMyGradeAction, setMyRemindersAction } from "@/app/actions/settings";
+import { ChangePasswordForm } from "@/components/change-password";
 import { RemoveParent } from "@/components/remove-parent";
 import { Button, ButtonLink, gradeOptionLabel } from "@/components/ui";
 import { formatDate, usToday } from "@/lib/applications/dates";
@@ -54,6 +55,19 @@ function originText(origin: LinkOrigin): string | null {
 }
 
 /**
+ * What a teen who owns their account is told about their linked parents. A parent who set the
+ * account up made its password, so they could sign in as the teen and see everything, chats
+ * included, until the teen changes it.
+ */
+function linkedParentsIntro(parents: LinkedParent[]): string {
+  const madePassword = parents.find((p) => p.origin.kind === "set_up");
+  const password = madePassword
+    ? ` ${madePassword.displayName} made your password, though. If they still know it, they can sign in as you and see everything, including your chats. You can change your password below.`
+    : "";
+  return `They can see your progress, but not your chats with the counselor.${password} If someone here isn't your parent or guardian, remove them.`;
+}
+
+/**
  * The parents or guardians linked to the student (from listLinkedParents, for this student only):
  * each one's name, how they were linked (for an invitation, the address the student typed) and,
  * for a teen who owns their account, Remove. A child a parent set up under 13 is told that parent
@@ -67,9 +81,7 @@ function LinkedParents({ parents, parentManaged }: { parents: LinkedParent[]; pa
         {parents.length === 1 ? "Your parent or guardian" : "Your parents or guardians"}
       </h3>
       <p className="text-sm text-muted">
-        {parentManaged
-          ? "Your parent or guardian set up your account and manages it, so they stay linked."
-          : "They can see your progress, but not your chats with the counselor. If someone here isn't your parent or guardian, remove them."}
+        {parentManaged ? "Your parent or guardian set up your account and manages it, so they stay linked." : linkedParentsIntro(parents)}
       </p>
       <ul aria-labelledby="linked-parents" className="mt-2 space-y-2">
         {parents.map((p) => {
@@ -89,7 +101,14 @@ function LinkedParents({ parents, parentManaged }: { parents: LinkedParent[]; pa
                 </p>
               )}
               <p className="text-muted">Linked since {formatDate(usToday(p.linkedAt))}</p>
-              {p.removal && <RemoveParent parentId={p.id} name={p.displayName} accessNote={removalAccessNote(p.displayName, p.removal)} />}
+              {p.removal && (
+                <RemoveParent
+                  parentId={p.id}
+                  name={p.displayName}
+                  accessNote={removalAccessNote(p.displayName, p.removal)}
+                  madePassword={p.origin.kind === "set_up"}
+                />
+              )}
             </li>
           );
         })}
@@ -100,8 +119,8 @@ function LinkedParents({ parents, parentManaged }: { parents: LinkedParent[]; pa
 
 /**
  * Small settings panel for the student dashboard: grade correction, reminder emails, linked parents,
- * a copy of their data, and deleting the account (a child a parent set up under 13 is sent to that
- * parent).
+ * changing the password (for a teen who owns their account), a copy of their data, and deleting the
+ * account (a child a parent set up under 13 is sent to that parent).
  */
 export function StudentSettings({
   studentId,
@@ -152,6 +171,13 @@ export function StudentSettings({
           </p>
         )}
         <LinkedParents parents={parents} parentManaged={parentManaged} />
+        {!parentManaged && (
+          <details>
+            <summary className="min-h-11 cursor-pointer content-center text-sm font-medium">Change your password</summary>
+            <p className="text-sm text-muted">Changing it signs you out on every other device.</p>
+            <ChangePasswordForm />
+          </details>
+        )}
         <div>
           <h3 className="text-sm font-medium">Your data</h3>
           <p className="text-sm text-muted">

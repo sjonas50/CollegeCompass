@@ -136,8 +136,9 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
   ]);
 
   const planning = await exportPlanningData(db, studentId);
-  // Phase 4: the household's access (shared by everyone in it): trial, free access and any plan.
-  const householdAccess = await exportHouseholdAccess(db, householdId);
+  // Phase 4: the household's access (shared by everyone in it): trial, free access and any plan,
+  // and which grants were given for this student.
+  const householdAccess = await exportHouseholdAccess(db, householdId, undefined, studentId);
   // Phase 3: colleges and programs on the student's list, with deadlines, checklist, aid offers and notes.
   const listRows = await db
     .select()

@@ -6,15 +6,17 @@ import { removeMyParentAction } from "@/app/actions/settings";
 import DashboardPage from "@/app/dashboard/page";
 import InvitePage from "@/app/invite/[token]/page";
 import ParentHome from "@/app/parent/page";
-import { RemoveParentQuestion } from "@/components/remove-parent";
+import { RemoveParentConfirm, RemoveParentQuestion } from "@/components/remove-parent";
 import { type Db, createTestDb, schema } from "@/db";
 import { resetEnvCache } from "@/env";
 import { formatAccessDate } from "@/lib/access/describe";
 import { evaluateAccess } from "@/lib/access/entitlement";
 import { getHouseholdAccess, getUserAccess, grantFreeAccess } from "@/lib/access/service";
-import { createChildAccount, isLinkedParent, registerParent, registerStudent } from "@/lib/accounts";
+import { authenticate, createChildAccount, isLinkedParent, registerParent, registerStudent } from "@/lib/accounts";
+import { grantStaffAccess } from "@/lib/access/staff";
+import { runStripeCleanup } from "@/lib/billing/cleanup";
 import { type FakeStripeRequest, fakeStripe } from "@/lib/billing/fake-stripe";
-import type { SessionUser } from "@/lib/auth/sessions";
+import { type SessionUser, createSession, validateSession } from "@/lib/auth/sessions";
 import { verifyParentConsent } from "@/lib/consent/verifier";
 import type { Email } from "@/lib/email";
 import { acceptInvite, createInvite, findInvite, inviteCardState } from "@/lib/invites";
@@ -24,7 +26,7 @@ import { deleteOwnStudentAccount, deleteParentAccount, deleteStudent, exportStud
 // A teen sees the parent or guardian linked to their account and can remove them. The parent keeps
 // their household and plan; the teen gets a household of their own and the free access they turned on.
 
-const state = vi.hoisted(() => ({ db: null as Db | null, user: null as SessionUser | null }));
+const state = vi.hoisted(() => ({ db: null as Db | null, user: null as SessionUser | null, cookies: [] as string[] }));
 
 class Redirect extends Error {
   constructor(public url: string) {
@@ -38,6 +40,10 @@ vi.mock("next/navigation", () => ({
   },
 }));
 vi.mock("next/cache", () => ({ refresh: () => {} }));
+vi.mock("@/lib/auth/cookies", async (original) => ({
+  ...(await original<typeof import("@/lib/auth/cookies")>()),
+  setSessionCookie: async (token: string) => void state.cookies.push(token),
+}));
 vi.mock("@/db", async (original) => ({ ...(await original<typeof import("@/db")>()), getDb: async () => state.db }));
 vi.mock("@/lib/auth/dal", () => ({
   requireUser: async (roles?: string[]) => {
@@ -55,6 +61,7 @@ vi.mock("@/components/invite-parent", () => ({ InviteParentCard: () => null }));
 const now = new Date("2026-09-24T15:00:00Z");
 const DAY = 24 * 60 * 60 * 1000;
 const PASSWORD = "correct horse battery";
+const NEW_PASSWORD = "only mia knows this";
 const APP = "https://compass.example";
 
 let db: Db;
@@ -63,6 +70,7 @@ let sent: Email[];
 beforeEach(async () => {
   db = await createTestDb();
   state.db = db;
+  state.cookies = [];
   sent = [];
 });
 
@@ -83,6 +91,15 @@ async function parent(email = "rosa@example.com", name = "Rosa") {
   const res = await registerParent(db, { displayName: name, email, password: PASSWORD });
   if (!res.ok) throw new Error(res.error);
   return res.value.userId;
+}
+
+/** A staff admin, for access:grant. */
+async function admin() {
+  const [row] = await db
+    .insert(schema.users)
+    .values({ role: "admin", email: "staff@compass.example", displayName: "Jordan", passwordHash: "x" })
+    .returning({ id: schema.users.id });
+  return row.id;
 }
 
 /** A child the parent sets up: under 13 (parentManaged, with consent) or 13 and older. */
@@ -152,10 +169,26 @@ function stripeAccount() {
 }
 const calls = (requests: FakeStripeRequest[]) => requests.map((r) => `${r.method} ${r.path}`);
 
-async function signIn(userId: string) {
-  const [u] = await db.select().from(schema.users).where(eq(schema.users.id, userId));
-  state.user = { id: u.id, role: u.role, displayName: u.displayName, username: u.username, householdId: u.householdId, parentManaged: u.parentManaged, grade: u.grade };
+/** Stripe for the daily sweep's retry: it reads the subscription (still renewing), then sets it to end. */
+function stripePlans() {
+  return fakeStripe((req: FakeStripeRequest) => {
+    const sub = /^\/v1\/subscriptions\/(sub_\w+)$/.exec(req.path);
+    if (!sub) return undefined;
+    return { body: { id: sub[1], object: "subscription", status: "active", cancel_at_period_end: req.method === "POST" } };
+  });
 }
+
+/** The user as their session has them. */
+async function sessionUser(userId: string): Promise<SessionUser> {
+  const [u] = await db.select().from(schema.users).where(eq(schema.users.id, userId));
+  return { id: u.id, role: u.role, displayName: u.displayName, username: u.username, householdId: u.householdId, parentManaged: u.parentManaged, grade: u.grade };
+}
+
+async function signIn(userId: string) {
+  state.user = await sessionUser(userId);
+}
+
+const parentsOf = async (userId: string, at = now) => listLinkedParents(db, await sessionUser(userId), at);
 
 function form(fields: Record<string, string>) {
   const fd = new FormData();
@@ -177,7 +210,7 @@ const text = (html: string) =>
 const render = async (node: Promise<ReactNode> | ReactNode) => text(renderToStaticMarkup((await node) as ReactNode));
 
 const removalOf = async (studentId: string, at = now) => {
-  const [p] = await listLinkedParents(db, studentId, at);
+  const [p] = await parentsOf(studentId, at);
   return p.removal!;
 };
 const removedAudits = () => db.select().from(schema.auditLog).where(eq(schema.auditLog.action, "parent_link.removed_by_student"));
@@ -187,12 +220,12 @@ const removedAudits = () => db.select().from(schema.auditLog).where(eq(schema.au
 describe("who can see and remove a linked parent", () => {
   it("lists the parent for the student themself: their name and the address the student typed", async () => {
     const { ana, rosa } = await family();
-    const [p] = await listLinkedParents(db, ana, now);
+    const [p] = await parentsOf(ana);
     expect(p).toMatchObject({ id: rosa, displayName: "Rosa", origin: { kind: "invite", sentTo: "rosa.parent@example.com" } });
     expect(p.removal).toMatchObject({ kind: "split" });
     // Parents and unknown ids get nothing.
-    expect(await listLinkedParents(db, rosa, now)).toEqual([]);
-    expect(await listLinkedParents(db, "not-a-uuid", now)).toEqual([]);
+    expect(await parentsOf(rosa)).toEqual([]);
+    expect(await listLinkedParents(db, { ...(await sessionUser(ana)), id: "not-a-uuid" }, now)).toEqual([]);
   });
 
   it("lets only the student remove their own parent", async () => {
@@ -219,7 +252,7 @@ describe("who can see and remove a linked parent", () => {
     expect(await removeLinkedParent(db, leo, rosa, { now })).toEqual({ ok: false, error: "parent_managed" });
     expect(await isLinkedParent(db, rosa, leo)).toBe(true);
     expect(await householdOf(leo)).toBe(household);
-    const [p] = await listLinkedParents(db, leo, now);
+    const [p] = await parentsOf(leo);
     expect(p).toMatchObject({ displayName: "Rosa", origin: { kind: "set_up" }, removal: null });
 
     await signIn(leo);
@@ -234,11 +267,15 @@ describe("who can see and remove a linked parent", () => {
     expect(settings).not.toContain("Remove Rosa");
   });
 
-  it("lets a teen their parent set up at 13 or older remove them", async () => {
+  it("lets a teen their parent set up at 13 or older remove them, with a new password", async () => {
     const rosa = await parent();
     const mia = await child(rosa, "mia15", false);
-    expect((await listLinkedParents(db, mia, now))[0]).toMatchObject({ origin: { kind: "set_up" }, removal: { kind: "split" } });
-    expect(await removeLinkedParent(db, mia, rosa, { now })).toMatchObject({ ok: true, householdMoved: true });
+    expect((await parentsOf(mia))[0]).toMatchObject({ origin: { kind: "set_up" }, removal: { kind: "split" } });
+    expect(await removeLinkedParent(db, mia, rosa, { now, password: { current: PASSWORD, next: NEW_PASSWORD } })).toMatchObject({
+      ok: true,
+      householdMoved: true,
+      passwordChanged: true,
+    });
     expect(await isLinkedParent(db, rosa, mia)).toBe(false);
     expect(await householdOf(mia)).not.toBe(await householdOf(rosa));
   });
@@ -274,6 +311,159 @@ describe("who can see and remove a linked parent", () => {
     // The confirm step (and its "Yes") appear only after Remove is pressed.
     expect(html).not.toContain("Yes, remove");
   });
+
+  it("reads the student's household once, however many parents share it", async () => {
+    const { ana, household } = await family();
+    // A second parent in the same household (no flow links one today, but nothing depends on that).
+    const sam = await parent("sam@example.com", "Sam");
+    await db.update(schema.users).set({ householdId: household }).where(eq(schema.users.id, sam));
+    await db.insert(schema.parentStudentLinks).values({ parentUserId: sam, studentUserId: ana, createdAt: new Date(Date.now() + DAY) });
+    const user = await sessionUser(ana);
+
+    const select = vi.spyOn(db, "select");
+    const parents = await listLinkedParents(db, user, now);
+    expect(parents.map((p) => p.displayName)).toEqual(["Rosa", "Sam"]);
+    expect(parents[1].removal).toBe(parents[0].removal);
+    // The links; then, at once, the invitations, the household's grants and billing, and the birthday.
+    expect(select).toHaveBeenCalledTimes(5);
+
+    // Nothing more than the links for a student with no parent.
+    const bo = await sessionUser(await teen("Bo", "bo@example.com"));
+    select.mockClear();
+    expect(await listLinkedParents(db, bo, now)).toEqual([]);
+    expect(select).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+describe("a teen whose parent set up their account (and so made their password)", () => {
+  const passwordAudits = () => db.select().from(schema.auditLog).where(eq(schema.auditLog.action, "account.password_changed"));
+  const newPassword = (current = PASSWORD, next = NEW_PASSWORD, again = next) => ({ currentPassword: current, newPassword: next, confirmPassword: again });
+
+  it("can't remove that parent without a new password: they could still sign in as the teen", async () => {
+    const rosa = await parent();
+    const mia = await child(rosa, "mia15", false);
+    const household = await householdOf(mia);
+
+    expect(await removeLinkedParent(db, mia, rosa, { now })).toEqual({ ok: false, error: "password_required" });
+    expect(await removeLinkedParent(db, mia, rosa, { now, password: { current: "not the password", next: NEW_PASSWORD } })).toEqual({
+      ok: false,
+      error: "wrong_password",
+    });
+    expect(await removeLinkedParent(db, mia, rosa, { now, password: { current: PASSWORD, next: PASSWORD } })).toEqual({ ok: false, error: "same_password" });
+    // Nothing changed.
+    expect(await isLinkedParent(db, rosa, mia)).toBe(true);
+    expect(await householdOf(mia)).toBe(household);
+    expect(await authenticate(db, { identifier: "mia15", password: PASSWORD })).toEqual({ userId: mia });
+    expect(await removedAudits()).toHaveLength(0);
+  });
+
+  it("saves the new password with the removal and signs out every device, so the parent can't sign in as the teen", async () => {
+    const rosa = await parent();
+    const mia = await child(rosa, "mia15", false);
+    // Rosa signed in as Mia on her own laptop when she set the account up.
+    const rosasLaptop = await createSession(db, mia);
+    const miasPhone = await createSession(db, mia);
+
+    expect(await removeLinkedParent(db, mia, rosa, { now, password: { current: PASSWORD, next: NEW_PASSWORD } })).toMatchObject({
+      ok: true,
+      passwordChanged: true,
+    });
+    expect(await validateSession(db, rosasLaptop.token)).toBeNull();
+    expect(await validateSession(db, miasPhone.token)).toBeNull();
+    expect(await authenticate(db, { identifier: "mia15", password: PASSWORD })).toBeNull();
+    expect(await authenticate(db, { identifier: "mia15", password: NEW_PASSWORD })).toEqual({ userId: mia });
+
+    const [removal] = await removedAudits();
+    expect(removal.metadata).toMatchObject({ passwordChanged: true });
+    const [changed] = await passwordAudits();
+    expect(changed).toMatchObject({ actorUserId: mia, metadata: null });
+  });
+
+  it("only asks for a new password to remove the parent who made it", async () => {
+    // Mia removed Rosa (who set her up), then invited Sam.
+    const rosa = await parent();
+    const mia = await child(rosa, "mia15", false);
+    await removeLinkedParent(db, mia, rosa, { now, password: { current: PASSWORD, next: NEW_PASSWORD } });
+    const sam = await parent("sam@example.com", "Sam");
+    await link(mia, sam, "sam@example.com");
+    expect((await parentsOf(mia))[0]).toMatchObject({ id: sam, origin: { kind: "invite" } });
+    expect(await removeLinkedParent(db, mia, sam, { now })).toMatchObject({ ok: true, passwordChanged: false });
+    expect(await authenticate(db, { identifier: "mia15", password: NEW_PASSWORD })).toEqual({ userId: mia });
+  });
+
+  it("the confirm step tells them the parent made their password and asks for a new one", async () => {
+    const html = await render(RemoveParentConfirm({ parentId: "p1", name: "Rosa", accessNote: "ACCESS-NOTE", madePassword: true }));
+    expect(html).toContain(
+      "Rosa made your password, so they could still sign in as you. To remove them, choose a new password that only you know. We'll sign you out on every other device.",
+    );
+    expect(html).toContain(
+      "After that, Rosa won't see your progress anymore. They also can't change your settings, download your data or delete your account.",
+    );
+    // Never the promise on its own, without the new password.
+    expect(html).not.toMatch(/[^,] Rosa won't see your progress anymore/);
+    expect(html).toContain("Current password");
+    expect(html).toContain("New password At least 10 characters. Pick one you'll remember. If you forget it, we can't reset it for you.");
+    expect(html).toContain("Type the new password again");
+    const raw = renderToStaticMarkup(RemoveParentConfirm({ parentId: "p1", name: "Rosa", accessNote: "", madePassword: true }));
+    expect(raw.match(/type="password"/g)).toHaveLength(3);
+    // Ids don't clash with the change-password form in the same Settings panel.
+    expect(raw).toContain('id="remove-parent-p1-new-password"');
+  });
+
+  it("Settings say the parent made their password and could sign in as them, and offer to change it", async () => {
+    const rosa = await parent();
+    const mia = await child(rosa, "mia15", false);
+    await signIn(mia);
+    const html = await render(DashboardPage({ params: Promise.resolve({}), searchParams: Promise.resolve({}) } as PageProps<"/dashboard">));
+    expect(html).toContain(
+      "They can see your progress, but not your chats with the counselor. Rosa made your password, though. If they still know it, they can sign in as you and see everything, including your chats. You can change your password below. If someone here isn't your parent or guardian, remove them.",
+    );
+    expect(html).toContain("Change your password");
+
+    // A teen who invited their parent isn't told that.
+    const ana = await teen();
+    await link(ana, await parent("sam@example.com", "Sam"), "sam@example.com");
+    await signIn(ana);
+    const anas = await render(DashboardPage({ params: Promise.resolve({}), searchParams: Promise.resolve({}) } as PageProps<"/dashboard">));
+    expect(anas).toContain("They can see your progress, but not your chats with the counselor. If someone here isn't your parent or guardian, remove them.");
+    expect(anas).not.toContain("made your password");
+  });
+
+  it("the action saves the new password, keeps this device signed in and says so", async () => {
+    const rosa = await parent();
+    const mia = await child(rosa, "mia15", false);
+    const old = await createSession(db, mia);
+    await signIn(mia);
+
+    // Without the new password (a Settings page from before), it asks for one.
+    expect(await removeMyParentAction(undefined, form({ parentId: rosa }))).toEqual({ message: "They made your password, so choose a new one to remove them." });
+    expect(await removeMyParentAction(undefined, form({ parentId: rosa, ...newPassword(PASSWORD, NEW_PASSWORD, "only mia knows thiz") }))).toEqual({
+      errors: { confirmPassword: ["The two new passwords don't match."] },
+    });
+    expect(await removeMyParentAction(undefined, form({ parentId: rosa, ...newPassword("wrong password!", NEW_PASSWORD) }))).toEqual({
+      errors: { currentPassword: ["That password isn't right."] },
+    });
+    expect(await removeMyParentAction(undefined, form({ parentId: rosa, ...newPassword(PASSWORD, "short") }))).toMatchObject({
+      errors: { newPassword: ["Use at least 10 characters."] },
+    });
+    expect(await isLinkedParent(db, rosa, mia)).toBe(true);
+    expect(state.cookies).toEqual([]);
+
+    expect(await redirectOf(removeMyParentAction(undefined, form({ parentId: rosa, ...newPassword() }))) ).toBe("/dashboard?parent=removed&settings=password");
+    expect(await isLinkedParent(db, rosa, mia)).toBe(false);
+    expect(await validateSession(db, old.token)).toBeNull();
+    // This device got a new session.
+    expect(state.cookies).toHaveLength(1);
+    expect((await validateSession(db, state.cookies[0]))?.user.id).toBe(mia);
+
+    const html = await render(
+      DashboardPage({ params: Promise.resolve({}), searchParams: Promise.resolve({ parent: "removed", settings: "password" }) } as PageProps<"/dashboard">),
+    );
+    expect(html).toContain("Done. That parent or guardian isn't linked to your account anymore.");
+    expect(html).toContain("Your new password is set. We signed you out on every other device.");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -288,7 +478,7 @@ describe("households and access after removing a parent", () => {
     const { stripe, requests } = stripeAccount();
 
     const res = await removeLinkedParent(db, ana, rosa, { stripe, now });
-    expect(res).toEqual({ ok: true, householdMoved: true, grantsMoved: 0, trialCarried: false, planEnding: false });
+    expect(res).toEqual({ ok: true, householdMoved: true, grantsMoved: 0, trialCarried: false, planEnding: false, passwordChanged: false });
 
     const own = (await householdOf(ana))!;
     expect(own).not.toBe(household);
@@ -358,7 +548,7 @@ describe("households and access after removing a parent", () => {
     expect((await getUserAccess(db, rosa, now)).sources).toEqual(["subscription"]);
     expect((await getUserAccess(db, ana, now)).full).toBe(false);
     const [entry] = await removedAudits();
-    expect(entry.metadata).toEqual({ householdMoved: true, grantsMoved: 0, trialCarried: false, planEnding: true });
+    expect(entry.metadata).toEqual({ householdMoved: true, grantsMoved: 0, trialCarried: false, planEnding: true, passwordChanged: false });
   });
 
   it("queues ending the plan when Stripe can't be reached", async () => {
@@ -371,6 +561,106 @@ describe("households and access after removing a parent", () => {
       expect.objectContaining({ action: "cancel_at_period_end", stripeSubscriptionId: "sub_rosa", stripeCustomerId: null }),
     ]);
     expect(await billingIn(household)).toMatchObject({ cancelAtPeriodEnd: false });
+
+    // The daily sweep finishes it.
+    const { stripe, requests } = stripePlans();
+    expect(await runStripeCleanup(db, stripe, new Date(now.getTime() + DAY))).toMatchObject({ done: 1, waiting: 0 });
+    expect(calls(requests)).toEqual(["GET /v1/subscriptions/sub_rosa", "POST /v1/subscriptions/sub_rosa"]);
+    expect(await billingIn(household)).toMatchObject({ cancelAtPeriodEnd: true });
+  });
+
+  it("records the removal first: a failure while ending the plan afterwards doesn't hide or undo it", async () => {
+    const { ana, rosa, household } = await family();
+    await renewingPlan(household, rosa);
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { stripe, requests } = stripeAccount();
+    // Stripe sets the plan to end, then the database fails while marking it (only the billing step
+    // writes after the removal commits).
+    const update = vi.spyOn(db, "update").mockImplementation(() => {
+      throw new Error("connection lost");
+    });
+    expect(await removeLinkedParent(db, ana, rosa, { stripe, now })).toMatchObject({ ok: true, planEnding: true });
+    update.mockRestore();
+    expect(calls(requests)).toEqual(["POST /v1/subscriptions/sub_rosa"]);
+    expect(errors).toHaveBeenCalledWith("[billing] couldn't set a plan to end", "Error");
+    expect(await isLinkedParent(db, rosa, ana)).toBe(false);
+    expect(await removedAudits()).toHaveLength(1);
+    // Still queued, so the daily sweep marks the billing account.
+    expect(await db.select().from(schema.stripeCleanup)).toEqual([expect.objectContaining({ stripeSubscriptionId: "sub_rosa" })]);
+    const sweep = stripePlans();
+    expect(await runStripeCleanup(db, sweep.stripe, new Date(now.getTime() + DAY))).toMatchObject({ done: 1, waiting: 0 });
+    expect(await billingIn(household)).toMatchObject({ cancelAtPeriodEnd: true });
+  });
+
+  it("the action still says the parent was removed when the billing step fails", async () => {
+    const { ana, rosa, household } = await family();
+    await renewingPlan(household, rosa);
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    // No Stripe here, so the job waits for the sweep; and the database fails while noting that.
+    const update = vi.spyOn(db, "update").mockImplementation(() => {
+      throw new Error("connection lost");
+    });
+
+    await signIn(ana);
+    expect(await redirectOf(removeMyParentAction(undefined, form({ parentId: rosa })))).toBe("/dashboard?parent=removed");
+    update.mockRestore();
+    expect(errors).toHaveBeenCalledWith("[billing] couldn't set a plan to end", "Error");
+    expect(await isLinkedParent(db, rosa, ana)).toBe(false);
+    const [entry] = await removedAudits();
+    expect(entry.metadata).toMatchObject({ householdMoved: true, planEnding: true });
+    // The change waits for the daily sweep, which finishes it.
+    expect(await db.select().from(schema.stripeCleanup)).toEqual([expect.objectContaining({ action: "cancel_at_period_end", stripeSubscriptionId: "sub_rosa" })]);
+    // (The action ran on the real clock.)
+    const sweep = stripePlans();
+    expect(await runStripeCleanup(db, sweep.stripe, new Date(Date.now() + DAY))).toMatchObject({ done: 1, waiting: 0 });
+    expect(await billingIn(household)).toMatchObject({ cancelAtPeriodEnd: true });
+  });
+
+  it("queues ending the plan with the removal, so a crash before Stripe is called can't lose it", async () => {
+    const { ana, rosa, household } = await family();
+    await renewingPlan(household, rosa);
+    // Stripe answers only after the removal committed: the job is already queued by then.
+    let queuedBeforeStripe: unknown[] = [];
+    const { stripe } = fakeStripe(async (req) => {
+      queuedBeforeStripe = await db.select().from(schema.stripeCleanup);
+      return { body: { id: req.path.split("/").pop(), object: "subscription", status: "active", cancel_at_period_end: true } };
+    });
+    expect(await removeLinkedParent(db, ana, rosa, { stripe, now })).toMatchObject({ ok: true, planEnding: true });
+    expect(queuedBeforeStripe).toEqual([expect.objectContaining({ action: "cancel_at_period_end", stripeSubscriptionId: "sub_rosa", attempts: 0 })]);
+    expect(await removedAudits()).toHaveLength(1);
+    // Done, so it's no longer queued.
+    expect(await db.select().from(schema.stripeCleanup)).toEqual([]);
+    expect(await billingIn(household)).toMatchObject({ cancelAtPeriodEnd: true });
+    const changed = await db.select().from(schema.auditLog).where(eq(schema.auditLog.action, "billing.subscription_changed"));
+    expect(changed.map((a) => a.metadata)).toEqual([{ status: "active", cancelAtPeriodEnd: true }]);
+  });
+
+  it("brings back the grants the teen brought along when they joined, and the paid time from their old plan", async () => {
+    const ana = await teen();
+    const rosa = await parent();
+    const from = (await householdOf(ana))!;
+    const staff = await admin();
+    await db.delete(schema.accessGrants);
+    const sponsoredUntil = new Date("2027-07-01T00:00:00Z");
+    const paidUntil = new Date(now.getTime() + 40 * DAY);
+    // A school sponsors Ana, given by her household's id; and her old plan (from a parent who
+    // deleted their account) is paid through `paidUntil`.
+    await grantStaffAccess(db, staff, { household: from, kind: "sponsored", endsAt: sponsoredUntil }, now);
+    await db.insert(schema.billingAccounts).values({ householdId: from, stripeCustomerId: "cus_old", stripeSubscriptionId: "sub_old", status: "active", currentPeriodEnd: paidUntil });
+    await link(ana, rosa);
+    const household = (await householdOf(rosa))!;
+    expect((await grantsIn(household)).map((g) => [g.kind, g.forUserId]).sort()).toEqual([
+      ["comp", ana],
+      ["sponsored", ana],
+    ]);
+
+    expect(removalAccessNote("Rosa", await removalOf(ana))).toBe(`You keep the full access given to you. It lasts until ${formatAccessDate(sponsoredUntil)}.`);
+    expect(await removeLinkedParent(db, ana, rosa, { now })).toMatchObject({ ok: true, grantsMoved: 2, trialCarried: false });
+    const own = (await householdOf(ana))!;
+    expect((await grantsIn(own)).map((g) => g.kind).sort()).toEqual(["comp", "sponsored"]);
+    // Rosa's household keeps none of them.
+    expect(await grantsIn(household)).toEqual([]);
+    expect((await getUserAccess(db, ana, now)).sources).toEqual(["sponsored", "comp"]);
   });
 
   it("leaves a plan that has already ended alone", async () => {
@@ -387,7 +677,14 @@ describe("households and access after removing a parent", () => {
     const [elsewhere] = await db.insert(schema.households).values({}).returning();
     await db.update(schema.users).set({ householdId: elsewhere.id }).where(eq(schema.users.id, ana));
     expect(await removalOf(ana)).toEqual({ kind: "unchanged" });
-    expect(await removeLinkedParent(db, ana, rosa, { now })).toEqual({ ok: true, householdMoved: false, grantsMoved: 0, trialCarried: false, planEnding: false });
+    expect(await removeLinkedParent(db, ana, rosa, { now })).toEqual({
+      ok: true,
+      householdMoved: false,
+      grantsMoved: 0,
+      trialCarried: false,
+      planEnding: false,
+      passwordChanged: false,
+    });
     expect(await householdOf(ana)).toBe(elsewhere.id);
   });
 });
@@ -416,12 +713,38 @@ describe("what the teen is told about their access", () => {
     expect((await getUserAccess(db, ana, now)).full).toBe(false);
   });
 
-  it("a comp on the parent's household stays with them", async () => {
-    const { ana, household } = await family();
+  it("sponsored or comp access given to the whole family stays with it, and isn't credited to the parent", async () => {
+    const { ana, rosa, household } = await family();
     await db.insert(schema.accessGrants).values({ householdId: household, kind: "comp", startsAt: new Date(now.getTime() - DAY), endsAt: null });
-    expect(removalAccessNote("Rosa", await removalOf(ana))).toBe(
-      `Your full access comes from Rosa's account, and it stays with them. After you remove them, ${TURN_ON}`,
+    const note = removalAccessNote("Rosa", await removalOf(ana));
+    expect(note).toBe(
+      "Your full access was given to the family account you share with Rosa, and it stays with that account. " +
+        `If it was meant for you, contact us and we'll help. After you remove them, ${TURN_ON}`,
     );
+    expect(note).not.toContain("Rosa's");
+    await removeLinkedParent(db, ana, rosa, { now });
+    expect((await getUserAccess(db, ana, now)).full).toBe(false);
+    expect((await getUserAccess(db, rosa, now)).sources).toEqual(["comp"]);
+  });
+
+  it("sponsored access given for the teen goes with them, and the note says so", async () => {
+    const { ana, rosa, household } = await family();
+    const staff = await admin();
+    const endsAt = new Date("2027-07-01T00:00:00Z");
+    // A school sponsors Ana: staff grant it with her email, while she shares Rosa's household.
+    expect(await grantStaffAccess(db, staff, { household: "ana@example.com", kind: "sponsored", endsAt }, now)).toMatchObject({ ok: true, forStudent: true });
+    // The whole family also has a comp.
+    await db.insert(schema.accessGrants).values({ householdId: household, kind: "comp", startsAt: new Date(now.getTime() - DAY), endsAt: null });
+
+    expect(removalAccessNote("Rosa", await removalOf(ana))).toBe(
+      "The full access given to the family account you share with Rosa stays with that account. If it was meant for you, contact us and we'll help. " +
+        `You keep the full access given to you. It lasts until ${formatAccessDate(endsAt)}.`,
+    );
+    expect(await removeLinkedParent(db, ana, rosa, { now })).toMatchObject({ ok: true, grantsMoved: 1 });
+    const own = (await householdOf(ana))!;
+    expect(await grantsIn(own)).toEqual([expect.objectContaining({ kind: "sponsored", endsAt, forUserId: ana })]);
+    expect((await getUserAccess(db, ana, now)).sources).toEqual(["sponsored"]);
+    expect((await getUserAccess(db, rosa, now)).sources).toEqual(["comp"]);
   });
 
   it("the teen keeps the free access they turned on", async () => {
@@ -477,6 +800,18 @@ describe("what the teen is told about their access", () => {
     ]) {
       expect(html).toContain(line);
     }
+    expect(html).not.toMatch(/password/i);
+  });
+
+  it("both confirm buttons point to the question, so a screen reader reads it on Keep too", () => {
+    const html = renderToStaticMarkup(RemoveParentConfirm({ parentId: "p1", name: "Rosa", accessNote: "ACCESS-NOTE", madePassword: false }));
+    expect(html).toContain('id="remove-parent-p1"');
+    const buttons = [...html.matchAll(/<button[^>]*>[^<]*<\/button>/g)].map((m) => m[0]);
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]).toMatch(/aria-describedby="remove-parent-p1"[^>]*>Yes, remove Rosa</);
+    expect(buttons[1]).toMatch(/aria-describedby="remove-parent-p1"[^>]*>Keep Rosa</);
+    // No password fields for a parent who didn't make the password.
+    expect(html).not.toContain('type="password"');
   });
 });
 
@@ -556,6 +891,30 @@ describe("export and delete after removing a parent", () => {
     expect(await billingIn(household)).toMatchObject({ stripeCustomerId: "cus_rosa", cancelAtPeriodEnd: false });
   });
 
+  it("the export says which grants were given for the teen, and deleting the teen removes that link", async () => {
+    const { ana, rosa, household } = await family();
+    const leo = await child(rosa, "leo12", true);
+    const staff = await admin();
+    await grantStaffAccess(db, staff, { household: "ana@example.com", kind: "sponsored", endsAt: null }, now);
+    await grantStaffAccess(db, staff, { household, kind: "comp", endsAt: null }, now);
+
+    const own = await exportStudentData(db, ana, ana);
+    expect(own?.householdAccess.grants).toEqual([
+      expect.objectContaining({ kind: "sponsored", forThisStudent: true }),
+      expect.objectContaining({ kind: "comp", forThisStudent: false }),
+    ]);
+    // Rosa's copy of Leo: neither is his, and nobody's id is in it.
+    const leos = await exportStudentData(db, rosa, leo);
+    expect(leos?.householdAccess.grants).toEqual([
+      expect.objectContaining({ kind: "sponsored", forThisStudent: false }),
+      expect.objectContaining({ kind: "comp", forThisStudent: false }),
+    ]);
+    expect(JSON.stringify(leos?.householdAccess)).not.toContain(ana);
+
+    expect(await deleteOwnStudentAccount(db, ana, PASSWORD, { stripe: null, now })).toEqual({ ok: true });
+    expect((await grantsIn(household)).find((g) => g.kind === "sponsored")).toMatchObject({ forUserId: null });
+  });
+
   it("the parent's deletion no longer reaches the teen", async () => {
     const { ana, rosa, household } = await family();
     await renewingPlan(household, rosa);
@@ -604,7 +963,7 @@ describe("inviting again", () => {
     expect(await db.select().from(schema.households).where(eq(schema.households.id, own))).toHaveLength(0);
     // Ana's free access came back with her.
     expect((await getUserAccess(db, rosa, now)).sources).toContain("free_access");
-    expect((await listLinkedParents(db, ana, now))[0]).toMatchObject({ id: rosa, origin: { kind: "invite", sentTo: "rosa@example.com" } });
+    expect((await parentsOf(ana))[0]).toMatchObject({ id: rosa, origin: { kind: "invite", sentTo: "rosa@example.com" } });
   });
 
   it("the teen can invite someone else, and the dashboard says the parent was removed", async () => {

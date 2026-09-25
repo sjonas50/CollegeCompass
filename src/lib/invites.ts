@@ -304,7 +304,7 @@ export type HouseholdMerge = {
   billing: "none" | "moved" | "swapped" | "parked" | "stayed";
   /**
    * The end of the time already paid for on a plan left behind (parked, stayed or swapped out),
-   * carried into the parent's household as a comp grant so the student keeps it.
+   * carried into the parent's household as a comp grant for the student, so they keep it.
    */
   paidUntil?: Date;
   /** The old household was deleted: nobody was left in it and no billing account was parked there. */
@@ -320,7 +320,8 @@ export type HouseholdMerge = {
 const NO_MERGE: HouseholdMerge = { moved: false, grantsMoved: 0, grantsCopied: 0, billing: "none", oldHouseholdDeleted: false };
 
 /**
- * Puts the student into the parent's household. Access grants still active come along. The old
+ * Puts the student into the parent's household. Access grants still active come along, marked as
+ * the student's (forUserId). The old
  * household's billing account comes along only when the accepting parent is the one who pays
  * through it; any other plan stays behind and ends, and the time already paid for on it comes along
  * as a grant. Linking is never blocked by a plan in the student's old household: nobody could
@@ -357,14 +358,18 @@ async function mergeIntoParentHousehold(
   const merge: HouseholdMerge = { ...NO_MERGE, moved: true };
   if (!from) return merge;
 
+  // The grants the student brings along are theirs (forUserId): if they leave the parent's
+  // household later, the grants go with them (see removeLinkedParent).
   const active = and(eq(accessGrants.householdId, from), or(isNull(accessGrants.endsAt), gt(accessGrants.endsAt, now)));
   if (leaving) {
-    const moved = await tx.update(accessGrants).set({ householdId: target }).where(active).returning({ id: accessGrants.id });
+    const moved = await tx.update(accessGrants).set({ householdId: target, forUserId: student.id }).where(active).returning({ id: accessGrants.id });
     merge.grantsMoved = moved.length;
   } else {
     const grants = await tx.select().from(accessGrants).where(active);
     if (grants.length > 0) {
-      await tx.insert(accessGrants).values(grants.map(({ id: _id, householdId: _household, ...grant }) => ({ ...grant, householdId: target })));
+      await tx
+        .insert(accessGrants)
+        .values(grants.map(({ id: _id, householdId: _household, ...grant }) => ({ ...grant, householdId: target, forUserId: student.id })));
     }
     merge.grantsCopied = grants.length;
   }
@@ -391,10 +396,11 @@ async function mergeIntoParentHousehold(
       merge.billing = "parked";
     }
     // Time already paid for on a plan left behind comes along, so linking never costs the student
-    // days of access.
+    // days of access. It's the student's, unless the plan left behind is the parent's own (swapped).
     const paidUntil = leftBehind?.currentPeriodEnd;
     if (leftBehind && paidUntil && subscriptionGrantsAccess(leftBehind.status) && paidUntil > now) {
-      await tx.insert(accessGrants).values({ householdId: target, kind: "comp", startsAt: now, endsAt: paidUntil });
+      const forUserId = merge.billing === "swapped" ? null : student.id;
+      await tx.insert(accessGrants).values({ householdId: target, kind: "comp", startsAt: now, endsAt: paidUntil, forUserId });
       merge.paidUntil = paidUntil;
     }
   }

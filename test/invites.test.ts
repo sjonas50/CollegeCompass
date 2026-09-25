@@ -362,11 +362,12 @@ describe("household merge", () => {
     (await db.select().from(schema.billingAccounts).where(eq(schema.billingAccounts.householdId, householdId)))[0];
 
   it("carries a teen's running trial into the parent's household", async () => {
-    const { parentId, token, from, to } = await setup();
+    const { studentId, parentId, token, from, to } = await setup();
     const trial = (await grantsIn(from)).find((g) => g.kind === "trial");
     expect(trial).toBeTruthy();
     await acceptInvite(db, token, parentId, now);
-    expect((await grantsIn(to)).map((g) => g.id)).toContain(trial!.id);
+    // The same grant, now marked as the teen's.
+    expect(await grantsIn(to)).toContainEqual(expect.objectContaining({ id: trial!.id, forUserId: studentId }));
   });
 
   it("moves grants that are still active; ended ones are deleted with the old household", async () => {
@@ -495,7 +496,10 @@ describe("household merge", () => {
     expect(res.ok && res.merge).toMatchObject({ billing: "parked", paidUntil, parkedHouseholdId: from });
     expect(await billingIn(to)).toMatchObject({ stripeCustomerId: "cus_parent" });
     expect(await billingIn(from)).toMatchObject({ stripeCustomerId: "cus_teen" });
-    expect(await grantsIn(to)).toContainEqual(expect.objectContaining({ kind: "comp", startsAt: now, endsAt: paidUntil, grantedByUserId: null }));
+    // The paid time is the teen's: it goes with them if they later remove this parent.
+    expect(await grantsIn(to)).toContainEqual(
+      expect.objectContaining({ kind: "comp", startsAt: now, endsAt: paidUntil, grantedByUserId: null, forUserId: studentId }),
+    );
     const audit = (await db.select().from(schema.auditLog)).find((a) => a.action === "parent_invite.accepted");
     expect(audit?.metadata).toMatchObject({ billing: "parked", paidTimeCarried: true });
     expect(await householdOf(studentId)).toBe(to);
@@ -511,6 +515,19 @@ describe("household merge", () => {
     expect(res.ok && res.merge).toMatchObject({ billing: "swapped", parkedHouseholdId: from });
     expect(await billingIn(to)).toMatchObject({ stripeCustomerId: "cus_live", plan: "annual" });
     expect(await billingIn(from)).toMatchObject({ stripeCustomerId: "cus_old" });
+  });
+
+  it("keeps the paid time on the parent's own swapped-out plan as the family's, not the teen's", async () => {
+    const { parentId, token, from, to } = await setup();
+    const paidUntil = new Date(now.getTime() + 12 * DAY);
+    await db.insert(schema.billingAccounts).values([
+      { householdId: from, stripeCustomerId: "cus_live", payerUserId: parentId, stripeSubscriptionId: "sub_live", status: "active", plan: "annual" },
+      // Rosa's own older plan, already set to end: it gives way, and its paid time comes along.
+      { householdId: to, stripeCustomerId: "cus_old", payerUserId: parentId, stripeSubscriptionId: "sub_old", status: "active", cancelAtPeriodEnd: true, currentPeriodEnd: paidUntil },
+    ]);
+    const res = await acceptInvite(db, token, parentId, now);
+    expect(res.ok && res.merge).toMatchObject({ billing: "swapped", paidUntil });
+    expect(await grantsIn(to)).toContainEqual(expect.objectContaining({ kind: "comp", endsAt: paidUntil, forUserId: null }));
   });
 
   it("links even when both households have a plan that renews: the teen's old one is left behind and ended", async () => {
@@ -561,9 +578,12 @@ describe("household merge", () => {
     expect(res.ok && res.merge).toMatchObject({ moved: true, grantsMoved: 0, grantsCopied: 1, billing: "stayed", oldHouseholdDeleted: false });
     expect(await householdOf(a)).toBe(await householdOf(newParent));
     expect(await householdOf(b)).toBe(shared);
-    expect(await grantsIn(shared)).toHaveLength(1);
-    // The new parent's own trial, plus the copied free access.
-    expect((await grantsIn(await householdOf(newParent))).map((g) => g.kind).sort()).toEqual(["free_access", "trial"]);
+    expect(await grantsIn(shared)).toEqual([expect.objectContaining({ forUserId: null })]);
+    // The new parent's own trial, plus the copied free access, now marked as the teen's.
+    expect((await grantsIn(await householdOf(newParent))).map((g) => [g.kind, g.forUserId]).sort()).toEqual([
+      ["free_access", a],
+      ["trial", null],
+    ]);
     expect((await billingIn(shared)).stripeCustomerId).toBe("cus_shared");
   });
 

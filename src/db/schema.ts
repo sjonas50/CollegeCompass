@@ -730,6 +730,11 @@ export const accessGrants = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }),
     // Who asked for it (a parent or teen for free access, staff for comps). Kept only as a link.
     grantedByUserId: uuid("granted_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    // The student it's for, when it was given to one student rather than the whole family: a staff
+    // grant made with that student's email or username, grants the student brought along when they
+    // joined a parent's household, and the paid time carried over from their old plan. If the
+    // student leaves the household (see removeLinkedParent), it goes with them. Kept only as a link.
+    forUserId: uuid("for_user_id").references(() => users.id, { onDelete: "set null" }),
     createdAt: createdAt(),
   },
   (t) => [index("access_grants_household_idx").on(t.householdId, t.endsAt)],

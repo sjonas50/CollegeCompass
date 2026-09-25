@@ -5,9 +5,11 @@ import { redirect } from "next/navigation";
 import * as z from "zod";
 import { getDb } from "@/db";
 import { isLinkedParent, setStudentGrade } from "@/lib/accounts";
-import { clearSessionCookie } from "@/lib/auth/cookies";
+import { ChangePasswordSchema, type PasswordChangeError, changeOwnPassword } from "@/lib/auth/change-password";
+import { clearSessionCookie, setSessionCookie } from "@/lib/auth/cookies";
 import { requireUser } from "@/lib/auth/dal";
-import type { FormState } from "@/lib/forms";
+import { createSession } from "@/lib/auth/sessions";
+import { type FormState, fieldErrors } from "@/lib/forms";
 import { removeLinkedParent } from "@/lib/parent-links";
 import { deleteOwnStudentAccount } from "@/lib/privacy";
 import { setOwnRemindersEnabled, setRemindersEnabled } from "@/lib/reminders";
@@ -69,23 +71,90 @@ export async function deleteMyAccountAction(_prev: FormState, formData: FormData
   redirect("/?account-deleted=1");
 }
 
+/** The change-password fields (see NewPasswordFields), checked, or the errors to show. */
+function newPasswordFrom(formData: FormData): { ok: true; current: string; next: string } | { ok: false; state: FormState } {
+  const field = (name: string) => {
+    const value = formData.get(name);
+    return typeof value === "string" ? value : "";
+  };
+  const parsed = ChangePasswordSchema.safeParse({
+    currentPassword: field("currentPassword"),
+    newPassword: field("newPassword"),
+    confirmPassword: field("confirmPassword"),
+  });
+  if (!parsed.success) return { ok: false, state: fieldErrors(parsed.error) };
+  return { ok: true, current: parsed.data.currentPassword, next: parsed.data.newPassword };
+}
+
+/** What a student is told when their new password wasn't saved. */
+function passwordErrorState(error: PasswordChangeError): FormState {
+  switch (error) {
+    case "wrong_password":
+      return { errors: { currentPassword: ["That password isn't right."] } };
+    case "same_password":
+      return { errors: { newPassword: ["Choose a password that's different from the one you have now."] } };
+    case "invalid_password":
+      return { errors: { newPassword: ["Use 10 to 128 characters."] } };
+    case "rate_limited":
+      return { message: "Too many tries. Please wait 15 minutes and try again." };
+    case "parent_managed":
+      return { message: "Your parent or guardian set up your account and manages it, so you can't change its password here." };
+    default:
+      return { message: "We couldn't change your password. Please sign out, sign in again and try again." };
+  }
+}
+
+/** Every session ended with the password change, so this device gets a new one. */
+async function signInAgainHere(studentId: string) {
+  const { token, expiresAt } = await createSession(await getDb(), studentId);
+  await setSessionCookie(token, expiresAt);
+}
+
+/** A teen who owns their account changes its password (see changeOwnPassword). */
+export async function changeMyPasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const student = await requireUser(["student"]);
+  const input = newPasswordFrom(formData);
+  if (!input.ok) return input.state;
+  const result = await changeOwnPassword(await getDb(), student.id, { current: input.current, next: input.next });
+  if (!result.ok) return passwordErrorState(result.error);
+  await signInAgainHere(student.id);
+  redirect("/dashboard?settings=password");
+}
+
 /**
  * "Yes, remove" on a linked parent in the student's Settings (after the confirm step). Always the
- * signed-in student's own link; see removeLinkedParent.
+ * signed-in student's own link; see removeLinkedParent. When that parent set up the account, the
+ * confirm step asks for a new password, which is saved with the removal.
  */
 export async function removeMyParentAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const student = await requireUser(["student"]);
   const parentId = formData.get("parentId");
-  const result = await removeLinkedParent(await getDb(), student.id, typeof parentId === "string" ? parentId : "");
-  if (!result.ok) {
-    if (result.error === "parent_managed") {
-      return { message: "Your parent or guardian set up your account and manages it, so they stay linked." };
-    }
-    // Removed already (from another tab, say): the refreshed Settings show who's still linked.
-    refresh();
-    return { message: "That parent or guardian isn't linked to your account anymore." };
+  let password: { current: string; next: string } | undefined;
+  if (formData.has("newPassword")) {
+    const input = newPasswordFrom(formData);
+    if (!input.ok) return input.state;
+    password = { current: input.current, next: input.next };
   }
-  redirect("/dashboard?parent=removed");
+  const result = await removeLinkedParent(await getDb(), student.id, typeof parentId === "string" ? parentId : "", { password });
+  if (!result.ok) {
+    switch (result.error) {
+      case "parent_managed":
+        return { message: "Your parent or guardian set up your account and manages it, so they stay linked." };
+      case "password_required":
+        // Settings were out of date: the refreshed confirm step asks for the new password.
+        refresh();
+        return { message: "They made your password, so choose a new one to remove them." };
+      case "not_found":
+      case "not_linked":
+        // Removed already (from another tab, say): the refreshed Settings show who's still linked.
+        refresh();
+        return { message: "That parent or guardian isn't linked to your account anymore." };
+      default:
+        return passwordErrorState(result.error);
+    }
+  }
+  if (result.passwordChanged) await signInAgainHere(student.id);
+  redirect(result.passwordChanged ? "/dashboard?parent=removed&settings=password" : "/dashboard?parent=removed");
 }
 
 async function linkedChild(formData: FormData) {
