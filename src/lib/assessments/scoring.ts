@@ -13,9 +13,14 @@ import {
 
 /**
  * Recorded with each result and match run. "2": career matches count personality lightly
- * (src/lib/matching/match.ts); assessment scoring itself is unchanged since "1".
+ * (src/lib/matching/match.ts). "3": match lists leave out careers that are for adults only, and
+ * show at most one college teaching job and one modeling job in each group
+ * (src/lib/matching/minors.ts). Assessment scoring itself is unchanged since "1".
  */
-export const SCORING_VERSION = "2";
+export const SCORING_VERSION = "3";
+
+/** The first SCORING_VERSION whose match runs count personality (and record it only when it counted). */
+export const PERSONALITY_COUNTS_SINCE = 2;
 
 export type Responses = Record<string, number>;
 

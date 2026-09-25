@@ -139,11 +139,70 @@ describe("updating matches made before strengths counted", () => {
     expect(await updateMatchesForStrengths(db, userId)).toBe(false);
   });
 
+  it("still counts strengths in matches made under an earlier version that counted them", async () => {
+    await interests();
+    await finish("personality", personality(3));
+    await computeMatches(db, userId);
+    // Version 2 counted personality too; version 3 changed only which careers can be matches.
+    await db.update(schema.matchRuns).set({ scoringVersion: "2" });
+    expect(await state()).toMatchObject({ state: "boosted" });
+    const run = (await latestMatchRun(db, userId))!;
+    expect(await updateMatchesForStrengths(db, userId)).toBe(false);
+    expect((await latestMatchRun(db, userId))!.id).toBe(run.id);
+  });
+
   it("names what will count before there are matches", async () => {
     await finish("personality", personality(3));
     expect(await strengthsInMatches(db, null, (await latestResult(db, userId, "personality"))!)).toEqual({
       state: "none",
       counted: ["extraversion", "agreeableness", "conscientiousness", "intellect"],
     });
+  });
+});
+
+describe("matches for minors", () => {
+  const scientist = () => finish("interests", Object.fromEntries(INTEREST_ITEMS.map((i) => [i.id, i.area === "I" ? 5 : 2])));
+
+  it("never stores careers for adults only, and one college teaching job per group", async () => {
+    // A casino job shaped like the student's interests, and a second college teaching job.
+    const extra = [
+      ["39-3011.00", "Gambling Dealers", { I: 7, R: 4 }],
+      ["25-1054.00", "Physics Teachers, Postsecondary", { I: 6.5, S: 5 }],
+    ] as const;
+    await db.insert(schema.occupations).values(extra.map(([code, title]) => ({ code, title, jobZone: 5, description: "" })));
+    await db.insert(schema.occupationInterests).values(
+      extra.flatMap(([code, , i]) => RIASEC.map((interest) => ({ occupationCode: code, interest, score: (i as Record<string, number>)[interest] ?? 1 }))),
+    );
+    await loadOccupationProfiles(db, { fresh: true });
+    await scientist();
+    await computeMatches(db, userId);
+    const stored = await db.select({ code: schema.careerMatches.occupationCode, title: schema.careerMatches.title }).from(schema.careerMatches);
+    expect(stored.map((m) => m.code)).not.toContain("39-3011.00");
+    expect(stored.filter((m) => m.title.endsWith("Teachers, Postsecondary"))).toHaveLength(1);
+    expect((await latestMatchRun(db, userId))!.matches).toHaveLength(stored.length);
+  });
+
+  it("shows matches stored before these rules without the careers they now leave out", async () => {
+    await scientist();
+    await computeMatches(db, userId);
+    const run = (await latestMatchRun(db, userId))!;
+    // As an older run could have stored them: a casino job and a second college teaching job.
+    await db.update(schema.matchRuns).set({ scoringVersion: "2" });
+    await db.insert(schema.careerMatches).values([
+      { runId: run.id, rank: 90, occupationCode: "39-3011.00", title: "Gambling Dealers", jobZone: 2, score: 99, interestFit: 99, valuesFit: null },
+      { runId: run.id, rank: 91, occupationCode: "25-1054.00", title: "Physics Teachers, Postsecondary", jobZone: 5, score: 90, interestFit: 90, valuesFit: null },
+    ]);
+    const shownCodes = run.matches.map((m) => m.occupationCode);
+    const explanation = (codes: string[]) => ({ source: "ai" as const, overview: "Overview.", careers: codes.map((code) => ({ code, why: "Why." })) });
+
+    // An explanation written for the old list could name a career no longer shown: it's written again.
+    await db.update(schema.matchRuns).set({ explanation: explanation([...shownCodes, "39-3011.00", "25-1054.00"]) });
+    const old = (await latestMatchRun(db, userId))!;
+    expect(old.matches.map((m) => m.occupationCode)).toEqual(shownCodes);
+    expect(old.explanation).toBeNull();
+
+    // One written for the careers shown is kept.
+    await db.update(schema.matchRuns).set({ explanation: explanation(shownCodes) });
+    expect((await latestMatchRun(db, userId))!.explanation).toEqual(explanation(shownCodes));
   });
 });

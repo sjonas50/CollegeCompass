@@ -38,6 +38,7 @@ import {
   parseOccupationInterest,
   parseOccupationValue,
   parseWorkStyle,
+  withLeadInterests,
 } from "../src/lib/reference/parsers";
 
 const DIR = ".data/reference";
@@ -103,8 +104,9 @@ async function main() {
     jobZone: zones.get(o.code) ?? null,
   }));
   const codes = new Set(occupationRows.map((o) => o.code));
-  const interestRows = (await collect(createReadStream(files.interests), parseOccupationInterest)).filter((r) =>
-    codes.has(r.occupationCode),
+  // With each occupation's leading areas marked, for browsing careers by interest area.
+  const interestRows = withLeadInterests(
+    (await collect(createReadStream(files.interests), parseOccupationInterest)).filter((r) => codes.has(r.occupationCode)),
   );
 
   const valueRows = (await collect(createReadStream(files.workValues), parseOccupationValue, "\t")).filter((r) =>

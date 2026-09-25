@@ -1,10 +1,18 @@
 import { type BigFive, RIASEC, type Riasec, WORK_VALUES, type WorkValue } from "../assessments/instruments";
 import { isFlatProfile } from "../assessments/interest-pattern";
 import { MAPPED_TRAITS, type MappedTrait, TRAIT_WORK_STYLES, WORK_STYLES, type WorkStyle } from "../reference/work-styles";
+import { type MatchFamily, isAllowedForMinors, matchFamily } from "./minors";
 
 /**
  * Career matching. Deterministic and explainable:
  *
+ * - Which careers can be matches (./minors, SCORING_VERSION 3): students are minors, so careers in
+ *   NOT_MATCHED_FOR_MINORS (gambling and serving alcohol) and catch-all "…, All Other" titles are
+ *   never matches, and each results group (a pathway: degree or training) shows at most one career
+ *   of each MATCH_FAMILIES kind, the best-ranked: one "… Teachers, Postsecondary" and one Models.
+ *   The next careers down fill the freed places; the ranking itself doesn't change. Search and
+ *   browse on /careers still find every career. Runs stored before version 3 get the same rules
+ *   when they're read (shownMatches).
  * - Interest fit: correlation between the student's six RIASEC scores and the occupation's O*NET
  *   interest profile ("profile similarity"), rescaled to 0–100. Shape matters more than level,
  *   so a student who likes everything a little still gets distinct matches. When a student's
@@ -215,15 +223,20 @@ export function scoreOccupation(student: StudentProfile, occ: OccupationProfile)
   return { code: occ.code, title: occ.title, jobZone: occ.jobZone, score, interestFit: iFit, valuesFit: vFit, personalityFit: pFit };
 }
 
-/** Catch-all categories ("…, All Other") are too vague to be useful suggestions. */
-export function isMatchable(occ: Pick<OccupationProfile, "title">) {
-  return !/,\s*All Other$/i.test(occ.title);
+/**
+ * Whether a career can be a match: not a catch-all category ("…, All Other"), too vague to be a
+ * useful suggestion, and not one of the careers left out for minors (NOT_MATCHED_FOR_MINORS).
+ */
+export function isMatchable(occ: Pick<OccupationProfile, "code" | "title">) {
+  return !/,\s*All Other$/i.test(occ.title) && isAllowedForMinors(occ.code);
 }
 
 /**
- * Ranks occupations and keeps the list varied: at most `perGroup` from any SOC minor group
- * (e.g. 27-1 art and design, 27-2 entertainers and performers), so one narrow field can't crowd
- * out the rest. Major groups are too coarse: nearly all artistic careers share group 27.
+ * Ranks occupations for one results group and keeps the list varied: at most `perGroup` from any
+ * SOC minor group (e.g. 27-1 art and design, 27-2 entertainers and performers), so one narrow field
+ * can't crowd out the rest, and at most one career of each MATCH_FAMILIES kind (one college
+ * teaching job, one modeling job), the best-ranked. Major groups are too coarse: nearly all
+ * artistic careers share group 27.
  */
 export function rankOccupations(
   student: StudentProfile,
@@ -236,16 +249,41 @@ export function rankOccupations(
     .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
 
   const perGroupCount = new Map<string, number>();
+  const families = new Set<MatchFamily>();
   const out: ScoredOccupation[] = [];
   for (const occ of ranked) {
     const group = occ.code.slice(0, 4);
     const n = perGroupCount.get(group) ?? 0;
     if (n >= perGroup) continue;
+    const family = matchFamily(occ);
+    if (family && families.has(family)) continue;
+    if (family) families.add(family);
     perGroupCount.set(group, n + 1);
     out.push(occ);
     if (out.length >= limit) break;
   }
   return out;
+}
+
+/**
+ * The stored matches to show, in their stored order: each group's matches as rankOccupations
+ * would keep them. Runs made before SCORING_VERSION 3 can hold careers that are no longer matched
+ * for minors, or several of one MATCH_FAMILIES kind; those are left out, keeping the best-ranked of
+ * each kind in each pathway. Newer runs come back unchanged. The places freed aren't refilled: the
+ * run only stored its top careers.
+ */
+export function shownMatches<M extends { occupationCode: string; title: string; jobZone: number | null }>(matches: M[]): M[] {
+  const seen = new Set<string>();
+  return matches.filter((m) => {
+    const career = { code: m.occupationCode, title: m.title };
+    if (!isMatchable(career)) return false;
+    const family = matchFamily(career);
+    if (!family) return true;
+    const key = `${pathwayFor(m.jobZone)} ${family}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export type Pathway = "degree" | "training";

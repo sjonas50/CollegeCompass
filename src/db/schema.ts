@@ -270,8 +270,14 @@ export const occupationInterests = pgTable(
     interest: riasecEnum("interest").notNull(),
     // O*NET occupational interest score, 1–7.
     score: real("score").notNull(),
+    // The occupation's highest-scored area (each of them when tied), for occupations with all six
+    // scores. Set by `npm run data:load` (withLeadInterests); /careers?area= browses by it.
+    leads: boolean("leads").notNull().default(false),
   },
-  (t) => [primaryKey({ columns: [t.occupationCode, t.interest] })],
+  (t) => [
+    primaryKey({ columns: [t.occupationCode, t.interest] }),
+    index("occupation_interests_leads_idx").on(t.interest).where(sql`${t.leads}`),
+  ],
 );
 
 /** CIP 2020 instructional programs (majors), e.g. "11.0701" Computer Science. */

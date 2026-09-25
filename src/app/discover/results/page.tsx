@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { OnetDataAttribution, OnetToolsAttribution } from "@/components/attribution";
+import { BrowseMoreCareers } from "@/app/careers/browse-more";
 import { ButtonLink, Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
 import { WORK_VALUE_INFO } from "@/lib/assessments/instruments";
-import { interestPattern, noAreaStandsOut } from "@/lib/assessments/interest-pattern";
+import { interestPattern, noAreaStandsOut, strongAreas } from "@/lib/assessments/interest-pattern";
 import { latestResult, nextRetakeDate } from "@/lib/assessments/service";
 import { requireUser } from "@/lib/auth/dal";
 import { explainLatestMatches, storedExplanation } from "@/lib/matching/explain";
@@ -87,6 +88,8 @@ export default async function ResultsPage() {
           </section>
         ))}
       </ExplanationProvider>
+
+      <BrowseMoreCareers areas={strongAreas(pattern)} />
 
       <Card>
         <h2 className="font-medium">What matters to you</h2>

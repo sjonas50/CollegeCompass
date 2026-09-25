@@ -125,7 +125,8 @@ error-monitoring service for anything older.
   1. Update the file URLs in `scripts/load-reference.ts`, and `SCORECARD_RELEASE` in
      `src/lib/colleges/describe.ts`.
   2. Locally: `npm run data:load`, `npm test`, `npm run check:matching`,
-     `npm run data:check-scorecard`.
+     `npm run data:check-scorecard`. If `check:matching` says a listed career changed or a new
+     gambling or bar job needs review, update `src/lib/matching/minors.ts`.
   3. Deploy, then load production: `DATABASE_URL="..." npm run data:load` and
      `DATABASE_URL="..." npm run data:check-scorecard`. Student data isn't touched.
 - **Financial aid guide, before each FAFSA season** (the FAFSA opens around October 1):

@@ -53,3 +53,29 @@ describe("migration 0004", () => {
     expect(last[0].content).toBe("A8");
   });
 });
+
+describe("migration 0014", () => {
+  it("marks each loaded occupation's leading interest areas as `npm run data:load` does", async () => {
+    const db = drizzle({ client: new PGlite() });
+    await migrate(db, { migrationsFolder: migrationsUpTo(14) });
+
+    // O*NET 31.0 scores: Chief Executives lead with Enterprising, Veterinarians are tied.
+    const careers: [string, string, number[]][] = [
+      ["11-1011.00", "Chief Executives", [1.26, 3.05, 2.16, 3.54, 6.96, 4.97]],
+      ["29-1131.00", "Veterinarians", [5.98, 5.98, 1, 3.45, 1.7, 3.47]],
+      ["99-9999.00", "Missing Scores", [7, 1]],
+    ];
+    const areas = ["R", "I", "A", "S", "E", "C"];
+    for (const [code, title, scores] of careers) {
+      await db.execute(sql`insert into occupations (code, title, description) values (${code}, ${title}, '')`);
+      for (const [i, score] of scores.entries()) {
+        await db.execute(sql`insert into occupation_interests (occupation_code, interest, score) values (${code}, ${areas[i]}, ${score})`);
+      }
+    }
+
+    await migrate(db, { migrationsFolder: MIGRATIONS });
+    const rows = (await db.execute(sql`select occupation_code, interest from occupation_interests where leads order by occupation_code, interest`))
+      .rows as { occupation_code: string; interest: string }[];
+    expect(rows.map((r) => `${r.occupation_code} ${r.interest}`)).toEqual(["11-1011.00 E", "29-1131.00 R", "29-1131.00 I"]);
+  });
+});

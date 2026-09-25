@@ -3,9 +3,9 @@ import type { Db } from "@/db";
 import { careerMatches, matchRuns, occupationInterests, occupationValues, occupationWorkStyles, occupations } from "@/db/schema";
 import type { BigFive, Riasec, WorkValue } from "../assessments/instruments";
 import { latestResult } from "../assessments/service";
-import { SCORING_VERSION } from "../assessments/scoring";
+import { PERSONALITY_COUNTS_SINCE, SCORING_VERSION } from "../assessments/scoring";
 import type { MappedTrait, WorkStyle } from "../reference/work-styles";
-import { type OccupationProfile, rankForStudent, strengthsThatCount, withTraitDemands } from "./match";
+import { type OccupationProfile, rankForStudent, shownMatches, strengthsThatCount, withTraitDemands } from "./match";
 import { forgetSavedContexts } from "../counselor/saved-context";
 
 let profileCache: { at: number; profiles: OccupationProfile[] } | undefined;
@@ -64,8 +64,8 @@ export async function personalityCanCount(db: Db) {
  * - "none": no matches yet (interests aren't done).
  * - "boosted": the latest matches give a small boost to careers that call for `counted`.
  * - "stale": the latest matches don't count this result yet, because they were made before
- *   personality counted (an older SCORING_VERSION) or before this result. updateMatchesForStrengths
- *   would boost careers that call for `counted`.
+ *   personality counted (a SCORING_VERSION before PERSONALITY_COUNTS_SINCE) or before this result.
+ *   updateMatchesForStrengths would boost careers that call for `counted`.
  * - "unchanged": the result doesn't change the matches: no trait is above the middle of the scale,
  *   or no work styles are loaded.
  *
@@ -80,7 +80,8 @@ export async function strengthsInMatches(
   personality: { attemptId: string; scores: { traits: Record<BigFive, number> } },
 ): Promise<StrengthsInMatches> {
   // Since scoring version 2 a run records the personality attempt only when it counted (see computeMatches).
-  const current = run !== null && run.scoringVersion === SCORING_VERSION && run.personalityAttemptId === personality.attemptId;
+  const current =
+    run !== null && Number(run.scoringVersion) >= PERSONALITY_COUNTS_SINCE && run.personalityAttemptId === personality.attemptId;
   const counted = current || (await personalityCanCount(db)) ? strengthsThatCount(personality.scores.traits) : [];
   if (!run) return { state: "none", counted };
   if (counted.length === 0) return { state: "unchanged", counted };
@@ -149,6 +150,12 @@ export async function computeMatches(db: Db, userId: string) {
   return runId;
 }
 
+/**
+ * The student's latest matches, as pages and the counselor may show them: runs stored before
+ * SCORING_VERSION 3 get today's rules for which careers can be matches (see shownMatches). An
+ * explanation written for a career no longer shown could name it, so it's dropped and written
+ * again for the careers shown (see explainLatestMatches). The data export reads the stored rows.
+ */
 export async function latestMatchRun(db: Db, userId: string) {
   const [run] = await db
     .select()
@@ -157,10 +164,13 @@ export async function latestMatchRun(db: Db, userId: string) {
     .orderBy(desc(matchRuns.createdAt))
     .limit(1);
   if (!run) return null;
-  const matches = await db
+  const stored = await db
     .select()
     .from(careerMatches)
     .where(eq(careerMatches.runId, run.id))
     .orderBy(careerMatches.rank);
-  return { ...run, matches };
+  const matches = shownMatches(stored);
+  const shown = new Set(matches.map((m) => m.occupationCode));
+  const explanation = run.explanation?.careers.some((c) => !shown.has(c.code)) ? null : run.explanation;
+  return { ...run, explanation, matches };
 }

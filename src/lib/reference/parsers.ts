@@ -43,6 +43,24 @@ export function parseOccupationInterest(row: Row) {
   return { occupationCode, interest, score };
 }
 
+/**
+ * The interest rows with `leads` set on each occupation's highest-scored area, and on each of them
+ * when tied (Veterinarians are as Realistic as Investigative). An occupation missing any of the six
+ * scores leads with none: matching skips it too. Browsing careers by interest area reads this.
+ * Migration 0014 marks already-loaded data the same way.
+ */
+export function withLeadInterests<R extends { occupationCode: string; score: number }>(rows: R[]): (R & { leads: boolean })[] {
+  const byCode = new Map<string, { count: number; top: number }>();
+  for (const r of rows) {
+    const seen = byCode.get(r.occupationCode) ?? { count: 0, top: -Infinity };
+    byCode.set(r.occupationCode, { count: seen.count + 1, top: Math.max(seen.top, r.score) });
+  }
+  return rows.map((r) => {
+    const occupation = byCode.get(r.occupationCode)!;
+    return { ...r, leads: occupation.count === 6 && r.score === occupation.top };
+  });
+}
+
 const WORK_VALUE_BY_NAME = {
   Achievement: "achievement",
   Independence: "independence",
