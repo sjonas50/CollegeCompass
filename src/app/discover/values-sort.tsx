@@ -47,6 +47,7 @@ export function ValuesSort({ attemptId, values }: { attemptId: string; values: V
   }
 
   function submit() {
+    if (pending) return;
     const ranks = Object.fromEntries(order.map((id, i) => [id, i + 1]));
     startTransition(async () => {
       const res = await finishAssessmentAction(attemptId, ranks);
@@ -101,7 +102,13 @@ export function ValuesSort({ attemptId, values }: { attemptId: string; values: V
       <div className="mt-6 space-y-3">
         <FormMessage message={error} />
         <div className="flex gap-2">
-          <Button onClick={submit} disabled={order.length !== values.length || pending}>
+          {/* Focusable while saving, like the questionnaire's Next (see PageButtons). */}
+          <Button
+            onClick={submit}
+            disabled={order.length !== values.length}
+            aria-disabled={pending || undefined}
+            className="aria-disabled:cursor-wait aria-disabled:opacity-60"
+          >
             {pending ? "Saving…" : "See my results"}
           </Button>
           {order.length > 0 && (

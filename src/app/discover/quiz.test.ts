@@ -9,7 +9,7 @@ import { completeAttempt, saveResponses, startOrResumeAttempt } from "@/lib/asse
 import type { SessionUser } from "@/lib/auth/sessions";
 import InstrumentPage from "./[instrument]/page";
 import { questionRange, showFirstQuestion, showQuestion, unansweredText } from "./question-list";
-import { Questionnaire } from "./questionnaire";
+import { PageButtons, Questionnaire } from "./questionnaire";
 import { ValuesSort, rankChange, rankedName } from "./values-sort";
 
 // The activities for keyboard and screen reader users: where focus goes when a page turns, what
@@ -93,6 +93,28 @@ describe("why Next is off", () => {
     const html = questionnaire(answered(60));
     expect(text(html)).not.toContain("still need");
     expect(html).not.toContain("aria-describedby");
+  });
+
+  it("keeps Next focusable while the page saves, so focus is still there if saving fails", () => {
+    const buttons = (props: { pending: boolean; unanswered?: number; back?: () => void }) =>
+      renderToStaticMarkup(
+        createElement(PageButtons, { back: () => {}, next: () => {}, nextLabel: "Next", unanswered: 0, hintId: "hint", ...props }),
+      );
+    const button = (html: string, label: string) => new RegExp(`<button[^>]*>${label}</button>`).exec(html)?.[0] ?? "";
+
+    const saving = buttons({ pending: true });
+    expect(button(saving, "Saving…")).toContain('aria-disabled="true"');
+    // A disabled button would drop keyboard focus to the start of the page.
+    expect(button(saving, "Saving…")).not.toContain('disabled=""');
+    expect(button(saving, "Saving…")).toContain("aria-disabled:opacity-60");
+    expect(button(saving, "Back")).toContain('disabled=""');
+
+    const ready = buttons({ pending: false });
+    expect(button(ready, "Next")).not.toMatch(/disabled="/);
+    expect(button(ready, "Back")).not.toMatch(/disabled="/);
+    // Unanswered questions still turn Next off, and say why.
+    expect(button(buttons({ pending: false, unanswered: 2 }), "Next")).toMatch(/disabled=""[^>]*aria-describedby="hint"/);
+    expect(buttons({ pending: false, back: undefined })).not.toContain("Back");
   });
 
   it("waits for the free quiz's saved answers before counting", () => {

@@ -148,11 +148,13 @@ export function rankForStudent(
 }
 
 /**
- * A flat profile (see isFlatProfile) has no shape for a career to fit: its scores say only how close
- * a career's interest levels are to the student's, so no career is called a great or good fit.
+ * When no interest area stands out (see noAreaStandsOut), no career is called a great or good fit. A
+ * flat profile has no shape for a career to fit: its scores say only how close a career's interest
+ * levels are to the student's. A profile where no area was liked still has a shape, but a career
+ * that fits it is one the student disliked least, not one they would enjoy.
  */
-export function fitLabel(score: number, { flat = false } = {}): "Great fit" | "Good fit" | "Worth exploring" {
-  if (flat) return "Worth exploring";
+export function fitLabel(score: number, { noLead = false } = {}): "Great fit" | "Good fit" | "Worth exploring" {
+  if (noLead) return "Worth exploring";
   if (score >= 85) return "Great fit";
   if (score >= 70) return "Good fit";
   return "Worth exploring";

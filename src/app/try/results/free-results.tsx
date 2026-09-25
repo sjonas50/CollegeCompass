@@ -80,7 +80,7 @@ export function Results({ answers, viewer }: { answers: Responses; viewer: Resul
 
       <InterestAreasCard
         areas={areas}
-        whenFlat={
+        whenNoLead={
           <>
             <p>Explore careers from different areas to see what clicks, or take the quiz again and go with your gut on each activity.</p>
             <div className="flex flex-wrap gap-2">

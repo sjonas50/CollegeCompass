@@ -40,6 +40,8 @@ export default async function CareerPage({ params, searchParams }: PageProps<"/c
       {user?.role === "student" && (
         <form action={isStar ? removeNorthStarAction : addNorthStarAction}>
           <input type="hidden" name="code" value={code} />
+          {/* Kept through the redirect back here, for the way back to the free results. */}
+          {from === "quiz" && <input type="hidden" name="from" value="quiz" />}
           <Button type="submit" variant={isStar ? "secondary" : "primary"}>
             {isStar ? "Remove from my north stars" : "Make this a north star"}
           </Button>

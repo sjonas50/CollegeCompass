@@ -6,7 +6,15 @@ import type { Db } from "@/db";
 import { type MatchExplanation, matchRuns, users } from "@/db/schema";
 import { BIG_FIVE, RIASEC_INFO, type Riasec, WORK_VALUE_INFO } from "../assessments/instruments";
 import { displayTrait } from "../assessments/descriptions";
-import { type InterestPattern, areaNames, interestPattern, strongAreas, tiedAreasText } from "../assessments/interest-pattern";
+import {
+  type InterestPattern,
+  areaNames,
+  interestPattern,
+  noAreaStandsOut,
+  noLeadReason,
+  strongAreas,
+  tiedAreasText,
+} from "../assessments/interest-pattern";
 import { latestResult } from "../assessments/service";
 import { getAnthropic } from "../ai/client";
 import { modelFor, supportsEffort } from "../ai/models";
@@ -38,18 +46,15 @@ Rules:
 
 type Options = { client?: Pick<Anthropic, "beta">; now?: Date };
 
+/** What the model is told about the student besides their interests. */
 async function buildContext(db: Db, userId: string) {
   const [student] = await db
     .select({ grade: users.grade, gradeSchoolYear: users.gradeSchoolYear })
     .from(users)
     .where(eq(users.id, userId));
-  const [interests, personality, values] = await Promise.all([
-    latestResult(db, userId, "interests"),
-    latestResult(db, userId, "personality"),
-    latestResult(db, userId, "values"),
-  ]);
+  const [personality, values] = await Promise.all([latestResult(db, userId, "personality"), latestResult(db, userId, "values")]);
   const grade = student ? currentGrade(student) : null;
-  return { ctx: toAiContext({ grade: grade === null ? null : Math.min(grade, 12) }), interests, personality, values };
+  return { ctx: toAiContext({ grade: grade === null ? null : Math.min(grade, 12) }), personality, values };
 }
 
 const AREA_PHRASE: Record<Riasec, string> = {
@@ -69,8 +74,8 @@ const EXPLORE = "Explore a few that catch your eye — you're not choosing forev
 
 /** The template's first sentences: only what the scores support, so a tie is never called a lead. */
 function templateOverview(pattern: InterestPattern): string {
-  if (pattern.kind === "flat") {
-    return "You rated all six interest areas about the same, so no area stands out yet. That's okay. The careers below are a starting point, so explore widely — you're not choosing forever, just finding a direction for now.";
+  if (noAreaStandsOut(pattern)) {
+    return `You ${noLeadReason(pattern)}, so no area stands out yet. That's okay. The careers below are a starting point, so explore widely — you're not choosing forever, just finding a direction for now.`;
   }
   if (pattern.kind === "tied") return `${tiedAreasText(pattern)} The careers below share that mix. ${EXPLORE}`;
   const top = pattern.code.split("") as Riasec[];
@@ -82,8 +87,8 @@ function templateOverview(pattern: InterestPattern): string {
 
 /**
  * A specific, non-AI reason for every match, from the interest areas the career and student share.
- * With a flat profile no area is the student's more than another, so reasons only say what the
- * career involves.
+ * When no area stands out (see noAreaStandsOut) no area is the student's more than another, so
+ * reasons only say what the career involves.
  */
 export function templateExplanation(
   areas: Record<Riasec, number>,
@@ -102,7 +107,7 @@ export function templateExplanation(
         return { code: c.occupationCode, why };
       }
       const [a1, a2] = topAreas(c.interests);
-      if (pattern.kind === "flat") return { code: c.occupationCode, why: `Combines ${AREA_PHRASE[a1]} and ${AREA_PHRASE[a2]}.` };
+      if (noAreaStandsOut(pattern)) return { code: c.occupationCode, why: `Combines ${AREA_PHRASE[a1]} and ${AREA_PHRASE[a2]}.` };
       const shared = [a1, a2].filter((a) => studentTop.includes(a)).map((a) => RIASEC_INFO[a].name.toLowerCase());
       const why = shared.length
         ? `Combines ${AREA_PHRASE[a1]} and ${AREA_PHRASE[a2]}, which lines up with your ${shared.join(" and ")} interests.`
@@ -113,25 +118,46 @@ export function templateExplanation(
 }
 
 /**
+ * What the model is told about the student's interests: only what the scores support (see
+ * interestPattern). The code only when there is a clear one, the areas above a tie as the top
+ * interests (never areas picked from a tie in RIASEC order), and any tie as a plain fact.
+ */
+export function interestFacts(pattern: Extract<InterestPattern, { kind: "code" | "tied" }>) {
+  const topInterests = strongAreas(pattern).map((a) => ({ area: RIASEC_INFO[a].name, meaning: RIASEC_INFO[a].description }));
+  if (pattern.kind === "code") {
+    const tie = pattern.ties.at(0);
+    const tiedAreas = tie && `${areaNames(tie)} are tied, so their order doesn't matter.`;
+    return { interestCode: pattern.code, topInterests, ...(tiedAreas && { tiedAreas }) };
+  }
+  const { standOut, tied } = pattern;
+  const tiedAreas = standOut.length
+    ? `${areaNames(tied)} are tied below the top interests.`
+    : `${areaNames(tied)} are tied for the top interest.`;
+  return { topInterests, tiedAreas };
+}
+
+/**
  * Returns the explanation for the student's latest matches, writing it with the model the first
- * time. Falls back to a template (not stored) if AI is unavailable, over budget, or declines. A flat
- * profile always gets the template: the model is given the interest code as the student's top
- * areas, which a flat profile doesn't have.
+ * time. Falls back to a template (not stored) if AI is unavailable, over budget, or declines. When
+ * no interest area stands out the student always gets the template, even over an explanation stored
+ * before this rule: there are no top interests to explain the matches with.
  */
 export async function explainLatestMatches(db: Db, userId: string, opts: Options = {}): Promise<MatchExplanation | null> {
   const run = await latestMatchRun(db, userId);
   if (!run) return null;
-  if (run.explanation) return run.explanation;
+  const interests = await latestResult(db, userId, "interests");
+  if (!interests) return run.explanation;
+  const pattern = interestPattern(interests.scores.areas);
+  if (run.explanation && !noAreaStandsOut(pattern)) return run.explanation;
 
-  const { ctx, interests, personality, values } = await buildContext(db, userId);
-  if (!interests) return null;
   const careers = run.matches;
   const profiles = new Map((await loadOccupationProfiles(db)).map((p) => [p.code, p.interests]));
   const fallback = templateExplanation(
     interests.scores.areas,
     run.matches.map((m) => ({ occupationCode: m.occupationCode, interests: profiles.get(m.occupationCode) })),
   );
-  if (interestPattern(interests.scores.areas).kind === "flat") return fallback;
+  if (noAreaStandsOut(pattern)) return fallback;
+  const { ctx, personality, values } = await buildContext(db, userId);
 
   try {
     await assertWithinBudget(db, userId, opts.now);
@@ -140,11 +166,7 @@ export async function explainLatestMatches(db: Db, userId: string, opts: Options
 
     const facts = {
       grade: ctx.grade,
-      interestCode: interests.scores.code,
-      topInterests: interests.scores.code.split("").map((l) => ({
-        area: RIASEC_INFO[l as Riasec].name,
-        meaning: RIASEC_INFO[l as Riasec].description,
-      })),
+      ...interestFacts(pattern),
       strengths: personality
         ? BIG_FIVE.map((t) => displayTrait(t, personality.scores.traits[t])).map((t) => `${t.name}: ${t.text}`)
         : undefined,

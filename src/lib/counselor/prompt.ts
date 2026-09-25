@@ -2,7 +2,8 @@ import { and, eq } from "drizzle-orm";
 import type { Db } from "@/db";
 import { counselorMemory, weeklySteps } from "@/db/schema";
 import { displayTrait } from "../assessments/descriptions";
-import { BIG_FIVE, RIASEC_INFO, type Riasec, WORK_VALUE_INFO } from "../assessments/instruments";
+import { BIG_FIVE, RIASEC_INFO, WORK_VALUE_INFO } from "../assessments/instruments";
+import { interestPattern, noLeadReason, strongAreas } from "../assessments/interest-pattern";
 import { latestResult } from "../assessments/service";
 import { gradeBand } from "../auth/age";
 import { listNorthStars } from "../goals";
@@ -54,6 +55,11 @@ export type StudentContextData = {
   graduated?: boolean;
   month: number; // 0-11
   interests?: string[];
+  /**
+   * With interest results where no area stands out, why (see noLeadReason): "rated all six interest
+   * areas about the same". Said instead of strongest interests the scores don't have.
+   */
+  interestsNoLead?: string;
   strengths?: string[];
   values?: string[];
   northStars?: string[];
@@ -76,7 +82,9 @@ export function formatStudentContext(d: StudentContextData): string {
   lines.push(
     d.interests?.length
       ? `- Strongest interests: ${d.interests.join("; ")}.`
-      : "- Hasn't taken the interests assessment yet (it's on their dashboard and unlocks career matches).",
+      : d.interestsNoLead
+        ? `- ${d.interestsNoLead[0].toUpperCase()}${d.interestsNoLead.slice(1)} (no clear lead yet).`
+        : "- Hasn't taken the interests assessment yet (it's on their dashboard and unlocks career matches).",
   );
   if (d.strengths?.length) lines.push(`- Strengths: ${d.strengths.join(" ")}`);
   if (d.values?.length) lines.push(`- What matters most in a job: ${d.values.join(", ")}.`);
@@ -113,11 +121,14 @@ export async function buildStudentContext(
       .where(and(eq(weeklySteps.userId, student.id), eq(weeklySteps.weekStart, weekStartOf(now)))),
     db.select({ notes: counselorMemory.notes }).from(counselorMemory).where(eq(counselorMemory.userId, student.id)),
   ]);
+  // Only the areas the scores support: never the code's picks from a tie, and none when no area stands out.
+  const pattern = interests && interestPattern(interests.scores.areas);
   return formatStudentContext({
     grade: student.grade === null ? null : Math.min(student.grade, 12),
     graduated: student.grade !== null && student.grade > 12,
     month: now.getUTCMonth(),
-    interests: interests?.scores.code.split("").map((l) => RIASEC_INFO[l as Riasec].description.split(":")[0].toLowerCase()),
+    interests: pattern ? strongAreas(pattern).map((a) => RIASEC_INFO[a].description.split(":")[0].toLowerCase()) : undefined,
+    interestsNoLead: (pattern && noLeadReason(pattern)) ?? undefined,
     strengths: personality ? BIG_FIVE.map((t) => displayTrait(t, personality.scores.traits[t])).map((t) => `${t.name}: ${t.text}`) : undefined,
     values: values?.scores.ranking.slice(0, 3).map((v) => WORK_VALUE_INFO[v].name.toLowerCase()),
     northStars: stars.map((s) => s.title),

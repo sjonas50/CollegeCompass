@@ -39,6 +39,7 @@ export function Questionnaire({
   const isLast = page === pages - 1;
 
   function next() {
+    if (pending) return;
     const pageAnswers = Object.fromEntries(pageItems.map((i) => [i.id, answers[i.id]]));
     setError(undefined);
     startTransition(async () => {
@@ -86,16 +87,14 @@ export function Questionnaire({
 
       <div className="mt-6 space-y-3">
         <FormMessage message={error} />
-        <div className="flex gap-2">
-          {page > 0 && (
-            <Button variant="secondary" onClick={back} disabled={pending}>
-              Back
-            </Button>
-          )}
-          <Button onClick={next} disabled={unanswered > 0 || pending} aria-describedby={unanswered > 0 ? hintId : undefined}>
-            {pending ? "Saving…" : isLast ? "See my results" : "Next"}
-          </Button>
-        </div>
+        <PageButtons
+          back={page > 0 ? back : undefined}
+          next={next}
+          nextLabel={isLast ? "See my results" : "Next"}
+          unanswered={unanswered}
+          hintId={hintId}
+          pending={pending}
+        />
         <UnansweredHint
           id={hintId}
           count={unanswered}
@@ -103,6 +102,47 @@ export function Questionnaire({
         />
         <p className="text-sm text-muted">Your answers save as you go, so you can stop and come back anytime.</p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Back and Next. While a page saves, Next stays focusable (aria-disabled, and `next` ignores it)
+ * rather than disabled: a disabled button drops keyboard focus to the start of the page, and if the
+ * save fails focus is still on Next, under the error, to try again. On success the page turn moves
+ * focus to the first new question (see usePageTurns).
+ */
+export function PageButtons({
+  back,
+  next,
+  nextLabel,
+  unanswered,
+  hintId,
+  pending,
+}: {
+  back?: () => void;
+  next: () => void;
+  nextLabel: string;
+  unanswered: number;
+  hintId: string;
+  pending: boolean;
+}) {
+  return (
+    <div className="flex gap-2">
+      {back && (
+        <Button variant="secondary" onClick={back} disabled={pending}>
+          Back
+        </Button>
+      )}
+      <Button
+        onClick={next}
+        disabled={unanswered > 0}
+        aria-disabled={pending || undefined}
+        aria-describedby={unanswered > 0 ? hintId : undefined}
+        className="aria-disabled:cursor-wait aria-disabled:opacity-60"
+      >
+        {pending ? "Saving…" : nextLabel}
+      </Button>
     </div>
   );
 }

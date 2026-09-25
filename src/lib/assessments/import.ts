@@ -13,7 +13,7 @@ import { computeMatches, loadOccupationProfiles } from "../matching/service";
 import { consumeRateLimit } from "../rate-limit";
 import { type SavedAssessmentError, validateAreaScores, validateSavedAssessment } from "./anonymous";
 import { INSTRUMENTS, RIASEC, type Riasec } from "./instruments";
-import { interestPattern } from "./interest-pattern";
+import { interestPattern, noAreaStandsOut } from "./interest-pattern";
 import { type InterestScores, SCORING_VERSION, score } from "./scoring";
 
 /**
@@ -99,7 +99,7 @@ export async function matchFreeAssessment(
     ranked.map((r) => ({ occupationCode: r.code, interests: interestsByCode.get(r.code) })),
   );
   const why = new Map(explanation.careers.map((c) => [c.code, c.why]));
-  const flat = interestPattern(areas).kind === "flat";
+  const noLead = noAreaStandsOut(interestPattern(areas));
   return {
     ok: true,
     code: interestCode(areas),
@@ -108,7 +108,7 @@ export async function matchFreeAssessment(
       code: r.code,
       title: r.title,
       pathway: pathwayFor(r.jobZone),
-      fit: fitLabel(r.score, { flat }),
+      fit: fitLabel(r.score, { noLead }),
       why: why.get(r.code) ?? "",
     })),
   };

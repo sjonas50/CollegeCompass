@@ -1,5 +1,5 @@
 import { INSTRUMENTS, INTEREST_ITEMS, RIASEC, type Riasec, isValidResponse } from "./instruments";
-import { strongAreasText } from "./interest-pattern";
+import { interestPattern, noLeadReason, strongAreasText } from "./interest-pattern";
 import { type Responses, missingItems, scoreInterests } from "./scoring";
 
 /**
@@ -202,7 +202,7 @@ export function describeSavedQuiz(saved: SavedAssessment, now = new Date()): str
   const when = savedWhen(saved.savedAt, now);
   const top = topInterestsText(saved.answers);
   return `Someone finished the free interest quiz on this device${when ? ` ${when}` : ""}. ${
-    top ? `Their top interests were ${top}.` : "They rated all six interest areas about the same."
+    top ? `Their top interests were ${top}.` : `They ${noLeadReason(interestPattern(scoreInterests(saved.answers).areas))}.`
   }`;
 }
 

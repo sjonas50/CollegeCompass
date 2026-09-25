@@ -1,8 +1,10 @@
 import { type ReactNode, createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { addNorthStarAction, removeNorthStarAction } from "@/app/actions/discover";
 import CareerPage from "@/app/careers/[code]/page";
 import { type Db, createTestDb, schema } from "@/db";
+import { registerStudent } from "@/lib/accounts";
 import { emptySavedAssessment } from "@/lib/assessments/anonymous";
 import { INTEREST_ITEMS, type Riasec } from "@/lib/assessments/instruments";
 import type { SessionUser } from "@/lib/auth/sessions";
@@ -10,10 +12,17 @@ import { CareerList, Results, resultsHeading } from "./free-results";
 
 // The free results page in the browser, and the way back to it from a career.
 
-const state = vi.hoisted(() => ({ db: null as Db | null, user: null as SessionUser | null }));
+const state = vi.hoisted(() => ({ db: null as Db | null, user: null as SessionUser | null, redirects: [] as string[] }));
 vi.mock("@/db", async (original) => ({ ...(await original<typeof import("@/db")>()), getDb: async () => state.db }));
 vi.mock("@/lib/auth/dal", () => ({ requireUser: async () => state.user, getCurrentUser: async () => state.user }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {} }), redirect: () => {}, notFound: () => {} }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: () => {} }),
+  // The north star actions end with a redirect, so recording it is enough.
+  redirect: (url: string) => {
+    state.redirects.push(url);
+  },
+  notFound: () => {},
+}));
 
 const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/&#x27;|&#39;/g, "'").replace(/\s+/g, " ");
 const hrefs = (html: string) => [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
@@ -22,6 +31,7 @@ const answersWith = (answer: Partial<Record<Riasec, number>>) => Object.fromEntr
 afterEach(() => {
   state.db = null;
   state.user = null;
+  state.redirects = [];
 });
 
 describe("free results", () => {
@@ -42,6 +52,13 @@ describe("free results", () => {
     expect(t).toContain("take the quiz again and go with your gut on each activity");
     expect(t.match(/Take it again/g)?.length).toBeGreaterThanOrEqual(2);
     expect(hrefs(html)).toContain("/careers");
+  });
+
+  it("says no area stands out when every area leaned toward 'Dislike'", () => {
+    const t = text(renderToStaticMarkup(createElement(Results, { answers: answersWith({ C: 2 }), viewer: "visitor" })));
+    expect(t).toContain("No area stands out. Overall you leaned toward disliking all six");
+    expect(t).not.toMatch(/Your code is|Conventional stands out/);
+    expect(t).toContain("take the quiz again and go with your gut on each activity");
   });
 
   it("keeps the code for a clear profile", () => {
@@ -72,10 +89,30 @@ describe("a career page's way back", () => {
     ]);
   });
 
-  const careerLinks = async (search: Record<string, string>) => {
+  const careerPage = async (search: Record<string, string>) => {
     const page = CareerPage({ params: Promise.resolve({ code: "27-1024.00" }), searchParams: Promise.resolve(search) } as PageProps<"/careers/[code]">);
-    const html = renderToStaticMarkup((await page) as ReactNode);
-    return [...html.matchAll(/<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map((m) => [m[1], m[2]]);
+    return renderToStaticMarkup((await page) as ReactNode);
+  };
+  const careerLinks = async (search: Record<string, string>) =>
+    [...(await careerPage(search)).matchAll(/<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map((m) => [m[1], m[2]]);
+
+  async function signInStudent() {
+    const res = await registerStudent(state.db!, {
+      displayName: "Sam",
+      email: "sam@example.com",
+      password: "correct horse battery",
+      birthDate: "2010-05-01",
+      grade: 10,
+    });
+    if (!res.ok) throw new Error(res.error);
+    state.user = { id: res.value.userId, role: "student", displayName: "Sam", username: null, householdId: null, parentManaged: false, grade: 10 };
+    return res.value.userId;
+  }
+
+  const form = (fields: Record<string, string>) => {
+    const fd = new FormData();
+    for (const [k, v] of Object.entries(fields)) fd.set(k, v);
+    return fd;
   };
 
   it("goes back to the free results when opened from them, and still offers the search", async () => {
@@ -88,6 +125,42 @@ describe("a career page's way back", () => {
     const links = await careerLinks({});
     expect(links.map(([href]) => href)).not.toContain("/try/results");
     expect(links).toContainEqual(["/careers", "Search more careers"]);
+  });
+
+  it("makes both links 44px tall", async () => {
+    const html = await careerPage({ from: "quiz" });
+    for (const label of ["Back to my results", "Search more careers"]) {
+      const link = new RegExp(`<a[^>]*>${label}</a>`).exec(html)?.[0];
+      expect(link, label).toMatch(/class="[^"]*\binline-flex\b[^"]*\bmin-h-11\b/);
+    }
+  });
+
+  it("keeps the way back to the free results after a student stars or unstars the career", async () => {
+    const userId = await signInStudent();
+    expect(await careerPage({ from: "quiz" })).toContain('<input type="hidden" name="from" value="quiz"/>');
+    expect(await careerPage({})).not.toContain('name="from"');
+
+    await addNorthStarAction(form({ code: "27-1024.00", from: "quiz" }));
+    await removeNorthStarAction(form({ code: "27-1024.00", from: "quiz" }));
+    await addNorthStarAction(form({ code: "27-1024.00" }));
+    await removeNorthStarAction(form({ code: "27-1024.00", from: "https://example.com" }));
+    await removeNorthStarAction(form({ code: "27-1024.00", from: "quiz", back: "dashboard" }));
+    expect(state.redirects).toEqual([
+      "/careers/27-1024.00?starred=1&from=quiz",
+      "/careers/27-1024.00?from=quiz",
+      "/careers/27-1024.00?starred=1",
+      "/careers/27-1024.00",
+      "/dashboard",
+    ]);
+
+    // At the limit, the notice and the way back both survive.
+    await state.db!.insert(schema.northStarGoals).values([
+      { userId, occupationCode: "11-1011.00", title: "Chief Executives" },
+      { userId, occupationCode: "15-1252.00", title: "Software Developers" },
+    ]);
+    state.redirects = [];
+    await addNorthStarAction(form({ code: "27-1024.00", from: "quiz" }));
+    expect(state.redirects).toEqual(["/careers/27-1024.00?limit=1&from=quiz"]);
   });
 
   it("sends a student back to their own results, with the search too", async () => {

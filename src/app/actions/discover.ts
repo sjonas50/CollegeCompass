@@ -48,11 +48,23 @@ export async function explainMatchesAction() {
   return explainLatestMatches(await getDb(), student.id);
 }
 
+/**
+ * The career page again after a north star change, with its notice. Keeps ?from=quiz (sent by the
+ * page's form), so "Back to my results" still leads to the free results.
+ */
+function careerPageAfter(code: string, formData: FormData, notice?: "starred" | "limit"): string {
+  const query = new URLSearchParams();
+  if (notice) query.set(notice, "1");
+  if (formData.get("from") === "quiz") query.set("from", "quiz");
+  const search = query.toString();
+  return `/careers/${encodeURIComponent(code)}${search ? `?${search}` : ""}`;
+}
+
 export async function addNorthStarAction(formData: FormData) {
   const student = await requireUser(["student"]);
   const code = String(formData.get("code") ?? "");
   const res = await addNorthStar(await getDb(), student.id, code);
-  redirect(`/careers/${encodeURIComponent(code)}${res.ok ? "?starred=1" : res.error === "limit" ? "?limit=1" : ""}`);
+  redirect(careerPageAfter(code, formData, res.ok ? "starred" : res.error === "limit" ? "limit" : undefined));
 }
 
 export async function removeNorthStarAction(formData: FormData) {
@@ -60,5 +72,5 @@ export async function removeNorthStarAction(formData: FormData) {
   const code = String(formData.get("code") ?? "");
   await removeNorthStar(await getDb(), student.id, code);
   const back = formData.get("back");
-  redirect(back === "dashboard" ? "/dashboard" : `/careers/${encodeURIComponent(code)}`);
+  redirect(back === "dashboard" ? "/dashboard" : careerPageAfter(code, formData));
 }

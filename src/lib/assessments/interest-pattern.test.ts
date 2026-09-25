@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import { describeSavedQuiz, emptySavedAssessment, topInterestsText } from "./anonymous";
 import { INTEREST_ITEMS, type Riasec } from "./instruments";
 import {
+  NOT_SURE_AREA_SCORE,
   areaNames,
   codeTieText,
   interestPattern,
   isFlatProfile,
+  noAreaStandsOut,
+  noLeadReason,
   strongAreas,
   strongAreasText,
   tiedAreasText,
@@ -38,6 +41,33 @@ describe("interest patterns", () => {
     expect(isFlatProfile([0, 0, 0, 0, 0, 5])).toBe(true);
     expect(isFlatProfile([0, 0, 0, 0, 0, 6])).toBe(false);
     expect(isFlatProfile([20, 40, 10, 8, 4, 14])).toBe(false);
+  });
+
+  it("finds no area standing out when no area reaches 'Not sure' on average", () => {
+    // "Dislike" on every Conventional activity and "Strongly dislike" on the rest: not flat (the
+    // standard deviation is 3.7), but Conventional is only the least disliked area.
+    const scores = scoreInterests(allAnswers((area) => (area === "C" ? 2 : 1)));
+    expect(scores.areas).toEqual(areas({ C: 10 }));
+    expect(isFlatProfile(Object.values(scores.areas))).toBe(false);
+    const pattern = interestPattern(scores.areas);
+    expect(pattern).toEqual({ kind: "low" });
+    expect(noAreaStandsOut(pattern)).toBe(true);
+    expect(strongAreas(pattern)).toEqual([]);
+    expect(strongAreasText(scores.areas)).toBeNull();
+    expect(noLeadReason(pattern)).toBe("leaned toward disliking all six interest areas");
+
+    // Just below "Not sure" everywhere, with a clear shape: still no lead.
+    expect(NOT_SURE_AREA_SCORE).toBe(20);
+    expect(interestPattern(areas({ A: 19, S: 15, E: 10 }))).toEqual({ kind: "low" });
+    // One area at "Not sure" on average is enough to stand out.
+    expect(interestPattern(areas({ C: 20 }))).toEqual({ kind: "tied", standOut: ["C"], tied: ["R", "I", "A", "S", "E"] });
+    expect(interestPattern(areas({ A: 20, S: 15, E: 10 }))).toEqual({ kind: "code", code: "ASE", ties: [] });
+    // Every answer "Strongly dislike" is about the same, and says so.
+    expect(interestPattern(areas({}))).toEqual({ kind: "flat" });
+    expect(noLeadReason({ kind: "flat" })).toBe("rated all six interest areas about the same");
+    expect(noAreaStandsOut({ kind: "flat" })).toBe(true);
+    expect(noLeadReason(interestPattern(areas({ A: 40 })))).toBeNull();
+    expect(noAreaStandsOut(interestPattern(areas({ A: 40 })))).toBe(false);
   });
 
   it("gives the code when the top three are clear", () => {
@@ -105,6 +135,11 @@ describe("interest patterns", () => {
     expect(topInterestsText(answers)).toBeNull();
     expect(describeSavedQuiz({ ...emptySavedAssessment(), answers })).toBe(
       "Someone finished the free interest quiz on this device. They rated all six interest areas about the same.",
+    );
+    const disliked = allAnswers((area) => (area === "C" ? 2 : 1));
+    expect(topInterestsText(disliked)).toBeNull();
+    expect(describeSavedQuiz({ ...emptySavedAssessment(), answers: disliked })).toBe(
+      "Someone finished the free interest quiz on this device. They leaned toward disliking all six interest areas.",
     );
   });
 });

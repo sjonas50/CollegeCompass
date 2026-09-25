@@ -6,9 +6,10 @@ import { ButtonLink, Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
 import { displayTrait } from "@/lib/assessments/descriptions";
 import { BIG_FIVE, WORK_VALUE_INFO } from "@/lib/assessments/instruments";
-import { interestPattern } from "@/lib/assessments/interest-pattern";
+import { interestPattern, noAreaStandsOut } from "@/lib/assessments/interest-pattern";
 import { latestResult, nextRetakeDate } from "@/lib/assessments/service";
 import { requireUser } from "@/lib/auth/dal";
+import { explainLatestMatches } from "@/lib/matching/explain";
 import { PATHWAY_INFO, type Pathway, fitLabel, pathwayFor } from "@/lib/matching/match";
 import { latestMatchRun } from "@/lib/matching/service";
 import { CareerReasons, ExplanationOverview, ExplanationProvider } from "./explanation";
@@ -31,23 +32,26 @@ export default async function ResultsPage() {
   ]);
   if (!interests || !run) redirect("/discover/interests");
 
-  const flat = interestPattern(interests.scores.areas).kind === "flat";
+  const noLead = noAreaStandsOut(interestPattern(interests.scores.areas));
+  // With no area ahead it's always the template (written here, no AI), even over an explanation
+  // stored before that rule; otherwise the stored one, or the client asks for one to be written.
+  const explanation = noLead ? await explainLatestMatches(db, student.id) : run.explanation;
   const retakeAfter = nextRetakeDate(interests.completedAt);
   const careersFor = (pathway: Pathway) =>
     run.matches
       .filter((m) => pathwayFor(m.jobZone) === pathway)
-      .map((m) => ({ code: m.occupationCode, title: m.title, href: `/careers/${m.occupationCode}`, label: fitLabel(m.score, { flat }) }));
+      .map((m) => ({ code: m.occupationCode, title: m.title, href: `/careers/${m.occupationCode}`, label: fitLabel(m.score, { noLead }) }));
 
   return (
     <div className="space-y-8">
       <PageHeading title="Your direction, for now" />
       {/* Keyed by run, so new matches start from their own stored explanation. */}
-      <ExplanationProvider key={run.id} runId={run.id} initial={run.explanation}>
+      <ExplanationProvider key={run.id} runId={run.id} initial={explanation}>
         <ExplanationOverview />
 
         <InterestAreasCard
           areas={interests.scores.areas}
-          whenFlat={
+          whenNoLead={
             <>
               <p>
                 Explore careers from different areas to see what clicks.{" "}

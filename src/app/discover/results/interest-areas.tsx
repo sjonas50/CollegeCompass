@@ -1,24 +1,28 @@
 import type { ReactNode } from "react";
 import { Card } from "@/components/ui";
 import { RIASEC, RIASEC_INFO, type Riasec } from "@/lib/assessments/instruments";
-import { codeTieText, interestPattern, strongAreas, tiedAreasText } from "@/lib/assessments/interest-pattern";
+import { codeTieText, interestPattern, noAreaStandsOut, strongAreas, tiedAreasText } from "@/lib/assessments/interest-pattern";
 
 /**
  * The six interest area scores and what they say, on both results pages. Tied areas are shown as
- * tied rather than in the code's RIASEC order, and when the scores are about the same the card
- * says no area stands out, followed by `whenFlat` (what the student can do next).
+ * tied rather than in the code's RIASEC order. When the scores are about the same, or no area was
+ * liked, the card says no area stands out, followed by `whenNoLead` (what the student can do next).
  */
-export function InterestAreasCard({ areas, whenFlat }: { areas: Record<Riasec, number>; whenFlat: ReactNode }) {
+export function InterestAreasCard({ areas, whenNoLead }: { areas: Record<Riasec, number>; whenNoLead: ReactNode }) {
   const pattern = interestPattern(areas);
   const strong = strongAreas(pattern);
-  const flat = pattern.kind === "flat";
+  const noLead = noAreaStandsOut(pattern);
   return (
     <Card>
       <h2 className="font-medium">Your interest areas</h2>
-      {pattern.kind === "flat" ? (
+      {noLead ? (
         <div className="mt-1 space-y-3 text-sm text-muted">
-          <p>No area stands out. You rated all six about the same, which can happen when you&apos;re not sure yet.</p>
-          {whenFlat}
+          <p>
+            {pattern.kind === "flat"
+              ? "No area stands out. You rated all six about the same, which can happen when you're not sure yet."
+              : "No area stands out. Overall you leaned toward disliking all six, which can happen when you haven't tried many of these activities yet."}
+          </p>
+          {whenNoLead}
         </div>
       ) : pattern.kind === "tied" ? (
         <p className="mt-1 text-sm text-muted">{tiedAreasText(pattern)}</p>
@@ -43,7 +47,7 @@ export function InterestAreasCard({ areas, whenFlat }: { areas: Record<Riasec, n
               />
             </div>
             {/* With no area ahead, each one is worth reading about. */}
-            {(flat || strong.includes(area)) && <p className="mt-1 text-sm text-muted">{RIASEC_INFO[area].description}</p>}
+            {(noLead || strong.includes(area)) && <p className="mt-1 text-sm text-muted">{RIASEC_INFO[area].description}</p>}
           </li>
         ))}
       </ul>

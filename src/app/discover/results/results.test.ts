@@ -95,6 +95,36 @@ describe("/discover/results", () => {
     expect(t).toContain("Keeping things in order:");
   });
 
+  it("says no area stands out when no area reached 'Not sure', though File Clerks match the shape", async () => {
+    // "Dislike" on the Conventional activities and "Strongly dislike" on the rest.
+    await takeInterests({ C: 2 });
+    const run = await latestMatchRun(state.db!, state.user!.id);
+    expect(run?.matches.find((m) => m.title === "File Clerks")?.score).toBe(100);
+    const t = text(await render());
+    expect(t).toContain("No area stands out. Overall you leaned toward disliking all six");
+    expect(t).not.toMatch(/Your code is|Conventional stands out/);
+    expect(t).not.toMatch(/Great fit|Good fit/);
+    expect(t).toContain("Worth exploring");
+    expect(t).toContain("Hands-on work:");
+  });
+
+  it("shows the template for a flat profile right away, even over an explanation stored before that rule", async () => {
+    await takeInterests({ R: 3, I: 3, A: 3, S: 3, E: 3, C: 3 });
+    const run = await latestMatchRun(state.db!, state.user!.id);
+    const stale: MatchExplanation = {
+      source: "ai",
+      overview: "Your strongest interest areas are hands-on work and figuring things out.",
+      careers: [{ code: "19-2031.00", why: "Chemists get to do hands-on work you love." }],
+    };
+    await state.db!.update(schema.matchRuns).set({ explanation: stale }).where(eq(schema.matchRuns.id, run!.id));
+    const t = text(await render());
+    expect(t).toContain("You rated all six interest areas about the same, so no area stands out yet.");
+    expect(t).not.toContain("Your strongest interest areas");
+    expect(t).not.toContain("hands-on work you love");
+    // Written on the server, so there's nothing to wait for.
+    expect(t).not.toContain("Writing a summary");
+  });
+
   it("links to the interests activity when a flat profile can be retaken", async () => {
     await takeInterests({}, 100);
     const html = await render();

@@ -7,18 +7,27 @@ import { RIASEC, RIASEC_INFO, type Riasec } from "./instruments";
  *
  * - "flat": the six scores are about the same (every answer "Not sure", say), so no area stands
  *   out. Matching compares levels instead of shape for these profiles (see match.ts).
+ * - "low": no area reaches "Not sure" on average: the student leaned toward disliking all six, so
+ *   the least disliked area isn't a lead either ("Dislike" on one area and "Strongly dislike" on
+ *   the rest). Only the words change: matching still ranks these profiles by shape.
  * - "code": the top three areas are clear. `ties` holds areas among them with the same score,
  *   whose order in the code means nothing.
  * - "tied": areas with the same score compete for the last places in the top three, so there is no
  *   one code. `standOut` are the areas above the tie (none when the tie is for first place).
+ *
+ * For "flat" and "low" no area stands out (see noAreaStandsOut).
  */
 export type InterestPattern =
   | { kind: "flat" }
+  | { kind: "low" }
   | { kind: "code"; code: string; ties: Riasec[][] }
   | { kind: "tied"; standOut: Riasec[]; tied: Riasec[] };
 
 /** Out of 0–40 per area. Below this spread the scores are too even to rank areas (or careers by shape). */
 export const FLAT_PROFILE_SD = 2;
+
+/** An area's score when all ten of its activities are answered "Not sure" (2 of 0–4 each). */
+export const NOT_SURE_AREA_SCORE = 20;
 
 export function isFlatProfile(scores: number[]): boolean {
   const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
@@ -28,6 +37,7 @@ export function isFlatProfile(scores: number[]): boolean {
 
 export function interestPattern(areas: Record<Riasec, number>): InterestPattern {
   if (isFlatProfile(RIASEC.map((a) => areas[a]))) return { kind: "flat" };
+  if (RIASEC.every((a) => areas[a] < NOT_SURE_AREA_SCORE)) return { kind: "low" };
   // Areas with the same score share a group, highest first (RIASEC order inside a group).
   const groups: Riasec[][] = [];
   for (const area of [...RIASEC].sort((a, b) => areas[b] - areas[a])) {
@@ -45,12 +55,27 @@ export function interestPattern(areas: Record<Riasec, number>): InterestPattern 
   return { kind: "code", code: top.flat().join(""), ties: top.filter((g) => g.length > 1) };
 }
 
+/** True when the scores point to no area: they're about the same, or no area was liked. */
+export function noAreaStandsOut(pattern: InterestPattern): pattern is { kind: "flat" } | { kind: "low" } {
+  return pattern.kind === "flat" || pattern.kind === "low";
+}
+
+/**
+ * Why no area stands out, to follow "You" or "They": "rated all six interest areas about the same".
+ * Null when areas do stand out.
+ */
+export function noLeadReason(pattern: InterestPattern): string | null {
+  if (pattern.kind === "flat") return "rated all six interest areas about the same";
+  if (pattern.kind === "low") return "leaned toward disliking all six interest areas";
+  return null;
+}
+
 /**
  * The areas the results point to: the code's, or those above a tie (the tied areas when the tie is
- * for first place). None when flat.
+ * for first place). None when no area stands out.
  */
 export function strongAreas(pattern: InterestPattern): Riasec[] {
-  if (pattern.kind === "flat") return [];
+  if (noAreaStandsOut(pattern)) return [];
   if (pattern.kind === "tied") return pattern.standOut.length ? pattern.standOut : pattern.tied;
   return pattern.code.split("") as Riasec[];
 }
