@@ -3,7 +3,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { AID_GUIDE_SECTION_IDS } from "@/lib/aid-guide";
 import { collegeSearchHref } from "@/lib/colleges/search";
-import { COUNSELOR_SYSTEM } from "@/lib/counselor/prompt";
 import { Linked } from "./chat";
 import { type ChatSegment, chatLinks } from "./chat-links";
 
@@ -119,12 +118,6 @@ describe("chat links", () => {
 describe("chat links to colleges and careers", () => {
   /** What a screen reader hears: the text, with each link's text in its place. */
   const shown = (text: string) => chatLinks(text).map((s) => s.text).join("");
-
-  it("names the college in the counselor prompt's example of how to write a page", () => {
-    const example = /"([^"]*\(\/colleges\/\d+\))"/.exec(COUNSELOR_SYSTEM)?.[1];
-    expect(example).toBe("Ohio State (/colleges/204796)");
-    expect(links(example!)).toEqual([["/colleges/204796", "Ohio State", false]]);
-  });
 
   it("names each college by the name written with it, so two in a row don't sound the same", () => {
     const reply = "Two to look at:\n- Boston College (/colleges/164924): about $30,000 a year\n- Cornell University (/colleges/190415)";

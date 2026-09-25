@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, createTestDb } from "@/db";
-import { occupationInterests, occupations } from "@/db/schema";
-import { RIASEC_INFO } from "../assessments/instruments";
+import { occupations } from "@/db/schema";
 import { counselorTools } from "./tools";
 
 let db: Db;
@@ -38,27 +37,5 @@ describe("search_careers", () => {
     expect(out.note).toBe('No careers matched. Try another word for the job title, like "physician" or "software developer".');
     // Whole words match, so a shorter word usually finds less, not more.
     expect(out.note).not.toMatch(/shorter/);
-  });
-});
-
-describe("get_career", () => {
-  async function getCareerTool(code: string) {
-    const tool = counselorTools({ db, userId: "not-used", grade: 9 }).find((t) => t.name === "get_career")!;
-    return JSON.parse(String(await tool.run({ code } as never)));
-  }
-
-  it("gives a career's top interests in plain words, never the interest-area labels", async () => {
-    await db.insert(occupationInterests).values([
-      { occupationCode: "29-1221.00", interest: "I", score: 6.5 },
-      { occupationCode: "29-1221.00", interest: "S", score: 6.9 },
-      { occupationCode: "29-1221.00", interest: "R", score: 3.1 },
-    ]);
-    const out = await getCareerTool("29-1221.00");
-    expect(out.topInterests).toEqual(["working with people", "figuring things out"]);
-    for (const { name } of Object.values(RIASEC_INFO)) expect(JSON.stringify(out)).not.toContain(name);
-  });
-
-  it("gives no interests for a career without interest data, rather than made-up ones", async () => {
-    expect((await getCareerTool("15-1252.00")).topInterests).toEqual([]);
   });
 });

@@ -46,13 +46,6 @@ const GRADUATE_NOTE =
 const COMPLETION_NOTE =
   "completionRatePercent counts students who transfer to another college before finishing as not completing, so community college rates look low.";
 
-/**
- * 765 of the 5,787 colleges we load (175 of them mainly bachelor's colleges) have no Scorecard net
- * price. The counselor says so rather than giving tuition or cost of attendance as if it were one.
- */
-export const NO_NET_PRICE_NOTE =
-  "netPriceAverage is null when the College Scorecard doesn't report a net price for a college. Say it doesn't report one, and never give tuition or cost of attendance in its place.";
-
 export function collegeTools(db: Db): BetaRunnableTool[] {
   const search = betaZodTool({
     name: "search_colleges",
@@ -115,7 +108,6 @@ export function collegeTools(db: Db): BetaRunnableTool[] {
         notes: [
           "Net prices are averages. For a personal estimate, tell the student to open the college's page (page), which links that college's own net price calculator.",
           COMPLETION_NOTE,
-          ...(results.some((c) => c.avgNetPrice === null) ? [NO_NET_PRICE_NOTE] : []),
           ...(results.some((c) => c.control === 1) ? [`Public colleges: ${PUBLIC_IN_STATE_NOTE}`] : []),
         ],
         results: results.map((c) => ({
@@ -202,7 +194,6 @@ export function collegeTools(db: Db): BetaRunnableTool[] {
         netPriceCalculator: c.netPriceCalculatorUrl ? "Linked on this college's page (see page)" : null,
         page: `/colleges/${c.unitId}`,
         notes: [
-          ...(c.avgNetPrice === null ? [NO_NET_PRICE_NOTE] : []),
           ...(inState ? [PUBLIC_IN_STATE_NOTE] : []),
           ...(c.predominantDegree === 2 ? [TRANSFER_NOTE] : []),
           `Debt: ${MEANINGS.debt}`,
