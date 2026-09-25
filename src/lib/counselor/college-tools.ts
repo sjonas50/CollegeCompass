@@ -50,7 +50,7 @@ export function collegeTools(db: Db): BetaRunnableTool[] {
   const search = betaZodTool({
     name: "search_colleges",
     description:
-      "Search U.S. colleges and training schools in the Department of Education's College Scorecard by major, state, city, type and size. Returns net price (what students paid after grants), completion rate and earnings, plus a link to our College explorer page for each. Use it before naming specific schools. If the major words match several programs, it returns choices: search again with the chosen cip4.",
+      "Search U.S. colleges and training schools in the Department of Education's College Scorecard by name, major, state, city, type and size. A search by name lists the best name matches first. Returns net price (what students paid after grants), completion rate and earnings, plus a link to our College explorer page for each. Use it before naming specific schools. If the major words match several programs, it returns choices: search again with the chosen cip4.",
     inputSchema: z.object({
       major: z
         .string()
@@ -59,14 +59,17 @@ export function collegeTools(db: Db): BetaRunnableTool[] {
         .optional()
         .describe("A major, program or job in plain words ('nursing', 'welding', 'electrician', 'dental hygiene'), or a CIP code like '51.38' or '48.0508'"),
       state: z.string().min(2).max(30).optional().describe("Two-letter state code or state name"),
-      name: z.string().min(2).max(80).optional().describe("Words in the school's name or its city, e.g. 'Austin'"),
+      name: z.string().min(2).max(80).optional().describe("Words in the school's name or its city, or its initials, e.g. 'Ohio State', 'MIT' or 'Austin'"),
       credential: z.enum(["certificate", "associate", "bachelor"]).optional(),
       type: z.enum(["public", "private_nonprofit", "for_profit"]).optional(),
       size: z.enum(["small", "medium", "large"]).optional().describe("small: under 5,000 undergrads; medium: 5,000-15,000; large: over 15,000"),
-      sort: z.enum(["net_price", "completion", "earnings", "name"]).optional().describe("Default: lowest net price"),
+      sort: z
+        .enum(["relevance", "net_price", "completion", "earnings", "name"])
+        .optional()
+        .describe("'relevance': best name matches first (the default when name is given). Otherwise the default is lowest net price"),
     }),
     run: async (input) => {
-      const filters: CollegeSearchFilters = { sort: input.sort ?? "net_price" };
+      const filters: CollegeSearchFilters = { sort: input.sort ?? (input.name ? "relevance" : "net_price") };
       if (input.name) filters.q = input.name;
       if (input.state) {
         const state = stateFromCodeOrName(input.state);

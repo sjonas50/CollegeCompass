@@ -1,7 +1,8 @@
-import { and, asc, eq, ilike, not, notLike } from "drizzle-orm";
+import { and, eq, notLike } from "drizzle-orm";
 import type { Db } from "@/db";
 import { cipSocLinks, majors, occupationInterests, occupations } from "@/db/schema";
 import { RIASEC, type Riasec } from "./assessments/instruments";
+import { type CareerHit, findCareers } from "./careers-search";
 import { isGraduateProgram } from "./colleges/graduate";
 import { majorsForCip6, offeredFamilies } from "./colleges/search";
 import { type Pathway, pathwayFor } from "./matching/match";
@@ -95,14 +96,7 @@ export async function getCareer(db: Db, code: string): Promise<CareerDetail | nu
   };
 }
 
-export async function searchCareers(db: Db, query: string, limit = 30) {
-  const q = query.trim().slice(0, 60);
-  if (q.length < 2) return [];
-  const escaped = q.replace(/[\\%_]/g, (c) => `\\${c}`);
-  return db
-    .select({ code: occupations.code, title: occupations.title, jobZone: occupations.jobZone })
-    .from(occupations)
-    .where(and(ilike(occupations.title, `%${escaped}%`), not(ilike(occupations.title, "%, All Other"))))
-    .orderBy(asc(occupations.title))
-    .limit(limit);
+/** The best-matching careers for the words typed (see findCareers), at most `limit`. */
+export async function searchCareers(db: Db, query: string, limit = 30): Promise<CareerHit[]> {
+  return (await findCareers(db, query, { pageSize: limit })).results;
 }

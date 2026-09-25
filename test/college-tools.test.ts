@@ -105,6 +105,28 @@ describe("college tools with real major names", () => {
     expect(nursing.choices.map((c: { cip4: string }) => c.cip4)).toEqual(["51.38", "51.39"]);
   });
 
+  it("looks a college up by name, best match first unless asked to sort", async () => {
+    // Real College Scorecard names (June 2026); the beauty and barber schools cost less.
+    await insertColleges(db, [
+      { unitId: 2001, name: "Ohio State Beauty Academy", city: "Lima", state: "OH", control: 3, enrollment: 91, avgNetPrice: 9_000 },
+      { unitId: 2002, name: "Ohio State College of Barber Styling", city: "Columbus", state: "OH", control: 3, enrollment: 406, avgNetPrice: 12_000 },
+      { unitId: 2003, name: "Ohio State University-Main Campus", city: "Columbus", state: "OH", enrollment: 45_638, avgNetPrice: 20_000 },
+      { unitId: 2004, name: "Paul Mitchell the School-Costa Mesa", city: "Costa Mesa", state: "CA", control: 3, enrollment: 395, avgNetPrice: 8_000 },
+      { unitId: 2005, name: "Massachusetts Institute of Technology", city: "Cambridge", state: "MA", control: 2, enrollment: 4_535, avgNetPrice: 21_000 },
+    ]);
+    const names = (out: { results: { name: string }[] }) => out.results.map((r) => r.name);
+
+    // Before: Ohio State Beauty Academy first, sorted by net price.
+    const ohioState = await run("search_colleges", { name: "Ohio State" });
+    expect(names(ohioState)).toEqual(["Ohio State University-Main Campus", "Ohio State College of Barber Styling", "Ohio State Beauty Academy"]);
+    expect(ohioState.moreResults).toBe("/colleges?q=Ohio+State");
+    expect(names(await run("search_colleges", { name: "MIT" }))[0]).toBe("Massachusetts Institute of Technology");
+
+    const cheapest = await run("search_colleges", { name: "Ohio State", sort: "net_price" });
+    expect(names(cheapest)[0]).toBe("Ohio State Beauty Academy");
+    expect(cheapest.moreResults).toBe("/colleges?q=Ohio+State&sort=net_price");
+  });
+
   it("searches by city", async () => {
     await insertColleges(db, [{ unitId: 1004, name: "Huston-Tillotson University", city: "Austin", state: "TX" }]);
     const out = await run("search_colleges", { name: "Austin" });

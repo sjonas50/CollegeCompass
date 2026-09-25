@@ -54,12 +54,14 @@ describe("searchColleges filters", () => {
     expect(res.results.map((r) => r.unitId)).toEqual([9, 4, 2, 1, 5, 6, 3]);
   });
 
-  it("matches the name case-insensitively, by every word typed, with wildcards escaped", async () => {
+  it("matches the name case-insensitively, by every word typed, ignoring punctuation", async () => {
     expect(await names({ q: "UNIVERSITY" })).toEqual(["Lakeside State University", "Riverbend University"]);
     expect(await names({ q: "  state   lakeside " })).toEqual(["Lakeside State University"]);
     expect(await names({ q: "100%" })).toEqual(["100% Real_College"]);
+    expect(await names({ q: "real college" })).toEqual(["100% Real_College"]);
     expect(await names({ q: "l_ke" })).toEqual([]);
-    expect(await names({ q: "%" })).toEqual(["100% Real_College"]);
+    // Nothing to search for, like an empty box.
+    expect((await searchColleges(db, { q: "%" })).total).toBe(7);
   });
 
   it("matches each word in the name box against the college's name or its city", async () => {
@@ -176,6 +178,230 @@ describe("searchColleges sorting", () => {
 
   it("sorts by highest earnings with missing earnings last and ties by name", async () => {
     expect(await names({ sort: "earnings" })).toEqual(["Delta College", "Gamma College", "Alpha College", "beta college"]);
+  });
+});
+
+describe("searchColleges by name", () => {
+  beforeEach(async () => {
+    // Real College Scorecard names (June 2026), spelled as the Scorecard spells them.
+    await insertColleges(db, [
+      { unitId: 1, name: "Massachusetts Institute of Technology", city: "Cambridge", enrollment: 4_535 },
+      { unitId: 2, name: "Smith College", city: "Northampton", enrollment: 2_544 },
+      { unitId: 3, name: "Summit Academy", city: "Dayton", enrollment: 300 },
+      { unitId: 4, name: "Mitchell College", city: "New London", enrollment: 377 },
+      { unitId: 5, name: "Ohio State Beauty Academy", city: "Lima", enrollment: 91 },
+      { unitId: 6, name: "Ohio State College of Barber Styling", city: "Columbus", enrollment: 406 },
+      { unitId: 7, name: "Ohio State University-Main Campus", city: "Columbus", enrollment: 45_638 },
+      { unitId: 8, name: "Ohio State University-Lima Campus", city: "Lima", enrollment: 621 },
+      { unitId: 9, name: "Wright State University-Main Campus", city: "Dayton", enrollment: 8_000 },
+      { unitId: 10, name: "St Olaf College", city: "Northfield", enrollment: 3_093 },
+      { unitId: 11, name: "St. John's College", city: "Annapolis", enrollment: 471 },
+      { unitId: 12, name: "Saint Johns University", city: "Collegeville", enrollment: 1_395 },
+      { unitId: 13, name: "Texas A&M University-College Station", city: "College Station", enrollment: 59_615 },
+      { unitId: 14, name: "West Texas A & M University", city: "Canyon", enrollment: 6_917 },
+      { unitId: 15, name: "University of California-Los Angeles", city: "Los Angeles", enrollment: 33_475 },
+      { unitId: 16, name: "Mount Holyoke College", city: "South Hadley", enrollment: 2_169 },
+      { unitId: 17, name: "Austin College", city: "Sherman", enrollment: 1_165 },
+      { unitId: 18, name: "Huston-Tillotson University", city: "Austin", enrollment: 1_200 },
+      { unitId: 19, name: "Universidad Central de Bayamon", city: "Bayamón", enrollment: 539 },
+    ]);
+  });
+
+  it("ignores punctuation and spells Saint, Mount and & the same way in names and searches", async () => {
+    for (const q of ["St. Olaf", "Saint Olaf", "st olaf", "ST.OLAF"]) expect(await names({ q }), q).toEqual(["St Olaf College"]);
+    for (const q of ["St. John's", "Saint Johns", "st johns", "St John’s"]) {
+      expect(await names({ q }), q).toEqual(["Saint Johns University", "St. John's College"]);
+    }
+    for (const q of ["Texas A&M", "texas a & m", "Texas A and M"]) {
+      expect(await names({ q }), q).toEqual(["Texas A&M University-College Station", "West Texas A & M University"]);
+    }
+    expect(await names({ q: "Mt Holyoke" })).toEqual(["Mount Holyoke College"]);
+    expect(await names({ q: "huston tillotson" })).toEqual(["Huston-Tillotson University"]);
+    expect(await names({ q: "bayamon" })).toEqual(["Universidad Central de Bayamon"]);
+  });
+
+  it("matches the start of words, and inside words only for 4 or more letters, ranked after word starts", async () => {
+    await insertColleges(db, [
+      { unitId: 30, name: "Virginia Polytechnic Institute and State University", city: "Blacksburg", enrollment: 30_923 },
+      { unitId: 31, name: "West Virginia University Institute of Technology", city: "Beckley", enrollment: 981 },
+      { unitId: 32, name: "Northwestern University", city: "Evanston", enrollment: 9_201 },
+    ]);
+    // Before: "mit" found Smith and Summit.
+    expect(await names({ q: "mit" })).toEqual(["Massachusetts Institute of Technology", "Mitchell College"]);
+    // "Virginia Tech" is Virginia Polytechnic, after the name where "tech" starts a word.
+    expect(await names({ q: "Virginia Tech" })).toEqual([
+      "West Virginia University Institute of Technology",
+      "Virginia Polytechnic Institute and State University",
+    ]);
+    expect(await names({ q: "tech" })).toEqual([
+      "Massachusetts Institute of Technology",
+      "West Virginia University Institute of Technology",
+      "Virginia Polytechnic Institute and State University",
+    ]);
+    expect(await names({ q: "north western" })).toEqual(["Northwestern University"]);
+  });
+
+  it("puts University of … and College of … with the names that start with the words, larger colleges first", async () => {
+    await insertColleges(db, [
+      { unitId: 30, name: "University of Kentucky", city: "Lexington", enrollment: 24_763 },
+      { unitId: 31, name: "Kentucky Horseshoeing School", city: "Richmond", enrollment: 31 },
+      { unitId: 32, name: "Kentucky Welding Institute", city: "Flemingsburg", enrollment: 143 },
+      { unitId: 33, name: "Eastern Kentucky University", city: "Richmond", enrollment: 12_318 },
+      { unitId: 34, name: "University of Notre Dame", city: "Notre Dame", enrollment: 8_818 },
+      { unitId: 35, name: "Notre Dame of Maryland University", city: "Baltimore", enrollment: 709 },
+      { unitId: 36, name: "Saint Mary's College", city: "Notre Dame", enrollment: 1_458 },
+      { unitId: 37, name: "The University of Alabama", city: "Tuscaloosa", enrollment: 33_227 },
+      { unitId: 38, name: "Alabama School of Nail Technology & Cosmetology", city: "Jackson", enrollment: 97 },
+      { unitId: 39, name: "College of Charleston", city: "Charleston", enrollment: 10_500 },
+      { unitId: 40, name: "Charleston School of Beauty Culture", city: "Charleston", enrollment: 60 },
+    ]);
+    // Before: University of Kentucky after the welding and horseshoeing schools.
+    expect(await names({ q: "Kentucky" })).toEqual([
+      "University of Kentucky",
+      "Kentucky Welding Institute",
+      "Kentucky Horseshoeing School",
+      "Eastern Kentucky University",
+    ]);
+    expect(await names({ q: "notre dame" })).toEqual(["University of Notre Dame", "Notre Dame of Maryland University", "Saint Mary's College"]);
+    expect(await names({ q: "alabama" })).toEqual(["The University of Alabama", "Alabama School of Nail Technology & Cosmetology"]);
+    expect(await names({ q: "charleston" })).toEqual(["College of Charleston", "Charleston School of Beauty Culture"]);
+  });
+
+  it("takes Saint, Mount and Fort (St, Mt, Ft) as whole words, never as initials", async () => {
+    await insertColleges(db, [
+      { unitId: 30, name: "Saint Louis University", city: "Saint Louis", enrollment: 7_267 },
+      { unitId: 31, name: "Washington University in St Louis", city: "St. Louis", enrollment: 7_857 },
+      { unitId: 32, name: "Louisiana State University and Agricultural & Mechanical College", city: "Baton Rouge", enrollment: 30_594 },
+      { unitId: 33, name: "University of St Thomas", city: "Saint Paul", enrollment: 6_245 },
+      { unitId: 34, name: "Thomas Edison State University", city: "Trenton", enrollment: 6_707 },
+      { unitId: 35, name: "Monty Tech", city: "Fitchburg", enrollment: 48 },
+      { unitId: 36, name: "Middle Tennessee State University", city: "Murfreesboro", enrollment: 16_301 },
+      { unitId: 37, name: "Fort Lewis College", city: "Durango", enrollment: 3_079 },
+      { unitId: 38, name: "Forsyth Technical Community College", city: "Winston-Salem", enrollment: 7_113 },
+    ]);
+    // Before: Louisiana State ("st" as in State, "louis" as in Louisiana) above Washington University.
+    // One name starts with St Louis and the other ends with it, so the larger college comes first.
+    expect(await names({ q: "Saint Louis" })).toEqual(["Washington University in St Louis", "Saint Louis University"]);
+    // Before: Thomas Edison State University.
+    expect(await names({ q: "St Thomas" })).toEqual(["University of St Thomas"]);
+    // Before: Monty Tech first ("mt" as initials) and Middle Tennessee State University.
+    expect(await names({ q: "Mount" })).toEqual(["Mount Holyoke College"]);
+    expect(await names({ q: "Mt" })).toEqual(["Mount Holyoke College"]);
+    // Before: Forsyth Technical Community College ("ft" as initials).
+    expect(await names({ q: "Fort" })).toEqual(["Fort Lewis College"]);
+  });
+
+  it("reads a trailing St as State, and a leading or middle St as Saint", async () => {
+    await insertColleges(db, [
+      { unitId: 30, name: "Pennsylvania State University-Main Campus", city: "University Park", enrollment: 42_284 },
+      { unitId: 31, name: "Pennsylvania State University-Penn State Harrisburg", city: "Middletown", enrollment: 4_031 },
+      { unitId: 32, name: "University of Pennsylvania", city: "Philadelphia", enrollment: 10_650 },
+      { unitId: 33, name: "Michigan State University", city: "East Lansing", enrollment: 40_922 },
+      { unitId: 34, name: "University of Michigan-Ann Arbor", city: "Ann Arbor", enrollment: 34_177 },
+      { unitId: 35, name: "San Diego State University", city: "San Diego", enrollment: 35_377 },
+      { unitId: 36, name: "University of San Diego", city: "San Diego", enrollment: 5_671 },
+      { unitId: 37, name: "Kent State University at Kent", city: "Kent", enrollment: 19_320 },
+      { unitId: 38, name: "Ohio University-Eastern Campus", city: "Saint Clairsville", enrollment: 298 },
+      { unitId: 39, name: "Mount St. Mary's University", city: "Emmitsburg", enrollment: 1_768 },
+    ]);
+    // Before: nothing for "Penn St", "Michigan St", "San Diego St" and "Kent St".
+    for (const q of ["Penn St", "penn st.", "PENN ST"]) {
+      expect(await names({ q }), q).toEqual(["Pennsylvania State University-Main Campus", "Pennsylvania State University-Penn State Harrisburg"]);
+    }
+    expect(await names({ q: "Michigan St" })).toEqual(["Michigan State University"]);
+    expect(await names({ q: "San Diego St." })).toEqual(["San Diego State University"]);
+    expect(await names({ q: "Kent St" })).toEqual(["Kent State University at Kent"]);
+    // Before: only Ohio University-Eastern Campus, in St. Clairsville.
+    expect(await names({ q: "Ohio St" })).toEqual([
+      "Ohio State University-Main Campus",
+      "Ohio State University-Lima Campus",
+      "Ohio State College of Barber Styling",
+      "Ohio State Beauty Academy",
+    ]);
+    expect(await names({ q: "St Olaf" })).toEqual(["St Olaf College"]);
+    expect(await names({ q: "Mount St. Mary's" })).toEqual(["Mount St. Mary's University"]);
+  });
+
+  it("puts a campus named for the place typed with the names starting with it, larger colleges first", async () => {
+    await insertColleges(db, [
+      { unitId: 30, name: "University of California-Davis", city: "Davis", enrollment: 32_253 },
+      { unitId: 31, name: "Davis Technical College", city: "Kaysville", enrollment: 3_027 },
+      { unitId: 32, name: "Davis & Elkins College", city: "Elkins", enrollment: 661 },
+      { unitId: 33, name: "Davis College", city: "Pottersville", enrollment: 106 },
+      { unitId: 34, name: "University of Wisconsin-Madison", city: "Madison", enrollment: 36_902 },
+      { unitId: 35, name: "Madison Area Technical College", city: "Madison", enrollment: 10_073 },
+      { unitId: 36, name: "Herzing University-Madison", city: "Madison", enrollment: 2_494 },
+      { unitId: 37, name: "Madison Adult Career Center", city: "Mansfield", enrollment: 81 },
+    ]);
+    // Before: University of California-Davis after Davis College, and University of
+    // Wisconsin-Madison after Madison Adult Career Center.
+    expect(await names({ q: "davis" })).toEqual([
+      "University of California-Davis",
+      "Davis Technical College",
+      "Davis & Elkins College",
+      "Davis College",
+    ]);
+    expect(await names({ q: "madison" })).toEqual([
+      "University of Wisconsin-Madison",
+      "Madison Area Technical College",
+      "Herzing University-Madison",
+      "Madison Adult Career Center",
+    ]);
+  });
+
+  it("reads words that are also JavaScript object properties as ordinary words", async () => {
+    // A made-up name. Before: "constructor" was read as the built-in Object function and found nothing.
+    await insertColleges(db, [{ unitId: 30, name: "Constructor Trades Academy", city: "Toledo", enrollment: 50 }]);
+    expect(await names({ q: "constructor" })).toEqual(["Constructor Trades Academy"]);
+    expect(await names({ q: "toString" })).toEqual([]);
+    expect(await names({ q: "__proto__" })).toEqual([]);
+  });
+
+  it("puts names starting with the words first, larger colleges first", async () => {
+    // Before: Ohio State Beauty Academy first, A to Z.
+    expect(await names({ q: "Ohio State" })).toEqual([
+      "Ohio State University-Main Campus",
+      "Ohio State University-Lima Campus",
+      "Ohio State College of Barber Styling",
+      "Ohio State Beauty Academy",
+    ]);
+    expect(await names({ q: "state university" })).toEqual([
+      "Ohio State University-Main Campus",
+      "Wright State University-Main Campus",
+      "Ohio State University-Lima Campus",
+    ]);
+  });
+
+  it("puts an exact name first, then names starting with it, then other name matches, then city matches", async () => {
+    await insertColleges(db, [
+      { unitId: 30, name: "Smith College of Nursing", city: "Springfield", enrollment: 9_000 },
+      { unitId: 31, name: "Hobart William Smith Colleges", city: "Geneva", enrollment: 1_786 },
+    ]);
+    expect(await names({ q: "smith college" })).toEqual(["Smith College", "Smith College of Nursing", "Hobart William Smith Colleges"]);
+    // Austin College is named for Austin; Huston-Tillotson is only in the city.
+    expect(await names({ q: "austin" })).toEqual(["Austin College", "Huston-Tillotson University"]);
+  });
+
+  it("finds a college by its initials", async () => {
+    expect((await names({ q: "MIT" }))[0]).toBe("Massachusetts Institute of Technology");
+    expect(await names({ q: "UCLA" })).toEqual(["University of California-Los Angeles"]);
+    // Initials and other words together.
+    expect(await names({ q: "ucla los angeles" })).toEqual(["University of California-Los Angeles"]);
+  });
+
+  it("sorts by name when asked, and ranks the same with other filters", async () => {
+    expect(await names({ q: "Ohio State", sort: "name" })).toEqual([
+      "Ohio State Beauty Academy",
+      "Ohio State College of Barber Styling",
+      "Ohio State University-Lima Campus",
+      "Ohio State University-Main Campus",
+    ]);
+    expect(await names({ q: "Ohio State", sort: "relevance" })).toEqual(await names({ q: "Ohio State" }));
+    expect(await names({ q: "ohio state", size: "small" })).toEqual([
+      "Ohio State University-Lima Campus",
+      "Ohio State College of Barber Styling",
+      "Ohio State Beauty Academy",
+    ]);
   });
 });
 
@@ -438,7 +664,9 @@ describe("search params", () => {
         mq: ["nursing", "welding"],
       }),
     ).toEqual({ filters: {}, majorQuery: "nursing" });
-    expect(parseCollegeSearchParams({ page: "abc", sort: "name", q: "   " })).toEqual({ filters: {}, majorQuery: null });
+    expect(parseCollegeSearchParams({ page: "abc", sort: "relevance", q: "   " })).toEqual({ filters: {}, majorQuery: null });
+    // "Best match" is the default; A to Z is a choice.
+    expect(parseCollegeSearchParams({ sort: "name", q: "ohio state" })).toEqual({ filters: { sort: "name", q: "ohio state" }, majorQuery: null });
   });
 
   it("never reads income from the URL", () => {
@@ -448,7 +676,8 @@ describe("search params", () => {
 
   it("builds links that leave out defaults and round-trip", () => {
     expect(collegeSearchHref({})).toBe("/colleges");
-    expect(collegeSearchHref({ sort: "name", page: 1 })).toBe("/colleges");
+    expect(collegeSearchHref({ sort: "relevance", page: 1 })).toBe("/colleges");
+    expect(collegeSearchHref({ sort: "name" })).toBe("/colleges?sort=name");
     const filters = {
       q: "state university",
       state: "TX",
