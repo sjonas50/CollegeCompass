@@ -15,6 +15,7 @@ import {
   households,
   matchRuns,
   northStarGoals,
+  parentInvites,
   parentStudentLinks,
   reminderSends,
   safetyEvents,
@@ -147,7 +148,8 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
   const shared = {
     profile,
     consentRecords: consents,
-    parentInvites: await exportParentInvites(db, studentId),
+    // The addresses the student typed are only in their own copy (see exportParentInvites).
+    parentInvites: await exportParentInvites(db, studentId, undefined, { withAddresses: requesterId === studentId }),
     assessments: attempts.map((a) => ({
       ...a,
       responses: Object.fromEntries(responses.filter((r) => r.attemptId === a.id).map((r) => [r.itemId, r.value])),
@@ -258,7 +260,8 @@ export async function deleteOwnStudentAccount(
  * Deletes a parent account. Children the parent created under COPPA consent go with it;
  * teens who own their own accounts are only unlinked. A household with teens left in it keeps its
  * access, and a plan the parent paid for runs to the end of its paid period without renewing (see
- * endPlanWithoutParent); an empty household is deleted.
+ * endPlanWithoutParent); an empty household is deleted. The teens keep the invitations this parent
+ * accepted, without the addresses they were sent to.
  */
 export async function deleteParentAccount(db: Db, parentId: string, deps: DeletionDeps = {}) {
   const children = await db
@@ -270,6 +273,8 @@ export async function deleteParentAccount(db: Db, parentId: string, deps: Deleti
   const unreviewed = await unreviewedSafetyEvents(db, managedIds);
 
   const removed = await db.transaction(async (tx) => {
+    // Invitations this parent accepted stay in the teens' records, but not the addresses they went to.
+    await tx.update(parentInvites).set({ sentTo: null }).where(eq(parentInvites.acceptedByUserId, parentId));
     const kids =
       managedIds.length > 0
         ? await tx.delete(users).where(inArray(users.id, managedIds)).returning({ householdId: users.householdId })

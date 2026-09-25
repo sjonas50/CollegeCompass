@@ -235,11 +235,46 @@ export async function endPlanWithoutParent(db: Db, stripe: Stripe | null, househ
   if (!subscriptionGrantsAccess(billing.status)) {
     return (await closeBillingWithoutParent(db, stripe, householdId, now)) ? "closed" : "none";
   }
-  if (!billing.stripeSubscriptionId || billing.cancelAtPeriodEnd) return "ending";
+  await endAtPeriodEnd(db, stripe, billing, now);
+  return "ending";
+}
+
+/**
+ * When the last student leaves a household that keeps its parent (a teen removed the parent linked
+ * to them), its plan covers nobody. Like a plan left without a parent, one that still gives access
+ * is set to end with the period it's paid through instead of renewing: the parent keeps the time
+ * they paid for, and the parent who pays can keep it going from Manage billing. A plan that no
+ * longer gives access is left alone: its Stripe customer is still that parent's to use. If Stripe
+ * fails, the change is queued for the daily sweep. Never throws.
+ */
+export async function endPlanWithoutStudents(
+  db: Db,
+  stripe: Stripe | null,
+  householdId: string,
+  now = new Date(),
+): Promise<Exclude<EndPlanResult, "closed">> {
+  const [student] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.householdId, householdId), eq(users.role, "student")))
+    .limit(1);
+  if (student) return "none";
+  const billing = await billingAccountFor(db, householdId);
+  if (!billing || !subscriptionGrantsAccess(billing.status)) return "none";
+  await endAtPeriodEnd(db, stripe, billing, now);
+  return "ending";
+}
+
+/**
+ * Sets a plan to end with the period it's paid through (Stripe's cancel_at_period_end), unless it
+ * already is. If Stripe can't be reached, the change waits in the clean-up queue, and the sweep
+ * marks the billing account once it's done.
+ */
+async function endAtPeriodEnd(db: Db, stripe: Stripe | null, billing: BillingAccount, now: Date): Promise<void> {
+  if (!billing.stripeSubscriptionId || billing.cancelAtPeriodEnd) return;
   const ended = await runOrQueueCleanup(db, stripe, { action: "cancel_at_period_end", stripeSubscriptionId: billing.stripeSubscriptionId }, now);
   if (ended) {
-    await db.update(billingAccounts).set({ cancelAtPeriodEnd: true, updatedAt: now }).where(eq(billingAccounts.householdId, householdId));
+    await db.update(billingAccounts).set({ cancelAtPeriodEnd: true, updatedAt: now }).where(eq(billingAccounts.householdId, billing.householdId));
     await audit(db, "billing.subscription_changed", { metadata: { status: billing.status ?? "unknown", cancelAtPeriodEnd: true } });
   }
-  return "ending";
 }

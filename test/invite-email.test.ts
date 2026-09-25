@@ -62,6 +62,13 @@ describe("the invitation email", () => {
     expect(email.text).toContain(LINK);
   });
 
+  it("says why the address is kept and when it's deleted", () => {
+    expect(inviteEmail("rosa@example.com", "Ana", LINK).text).toContain(
+      "We keep your email address only to show Ana where this invitation went. If nobody accepts it, we delete your address after the link expires. We won't write to you again about this.",
+    );
+    expect(inviteEmail("rosa@example.com", "https://evil.example", LINK).text).toContain("only to show the student where this invitation went");
+  });
+
   it("says 'A student' instead of a name that could be a link or spam", () => {
     for (const name of ["https://evil.example/claim-gift", "Ana\r\nBcc: x@example.com", "x".repeat(40)]) {
       const email = inviteEmail("rosa@example.com", name, LINK);

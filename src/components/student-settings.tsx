@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { setMyGradeAction, setMyRemindersAction } from "@/app/actions/settings";
+import { RemoveParent } from "@/components/remove-parent";
 import { Button, ButtonLink, gradeOptionLabel } from "@/components/ui";
+import { formatDate, usToday } from "@/lib/applications/dates";
 import { MAX_GRADE, gradeQuestion, schoolYearOf } from "@/lib/auth/age";
+import { type LinkOrigin, type LinkedParent, removalAccessNote } from "@/lib/parent-links";
 import type { ReminderSetting } from "@/lib/reminders";
 
 function keepLabel(grade: number | null) {
@@ -43,20 +46,76 @@ export function GradeSettingSelect({ id, grade }: { id: string; grade: number | 
   );
 }
 
+/** How the student's parent came to be linked, in their words. */
+function originText(origin: LinkOrigin): string | null {
+  if (origin.kind === "set_up") return "Set up your account";
+  if (origin.kind === "invite") return origin.sentTo ? "Accepted the invitation you sent to" : "Accepted an invitation you sent";
+  return null;
+}
+
 /**
- * Small settings panel for the student dashboard: grade correction, reminder emails, a copy of
- * their data, and deleting the account (a child a parent set up under 13 is sent to that parent).
+ * The parents or guardians linked to the student (from listLinkedParents, for this student only):
+ * each one's name, how they were linked (for an invitation, the address the student typed) and,
+ * for a teen who owns their account, Remove. A child a parent set up under 13 is told that parent
+ * manages the account.
+ */
+function LinkedParents({ parents, parentManaged }: { parents: LinkedParent[]; parentManaged: boolean }) {
+  if (!parents.length) return null;
+  return (
+    <div>
+      <h3 id="linked-parents" className="text-sm font-medium">
+        {parents.length === 1 ? "Your parent or guardian" : "Your parents or guardians"}
+      </h3>
+      <p className="text-sm text-muted">
+        {parentManaged
+          ? "Your parent or guardian set up your account and manages it, so they stay linked."
+          : "They can see your progress, but not your chats with the counselor. If someone here isn't your parent or guardian, remove them."}
+      </p>
+      <ul aria-labelledby="linked-parents" className="mt-2 space-y-2">
+        {parents.map((p) => {
+          const origin = originText(p.origin);
+          return (
+            <li key={p.id} className="rounded-lg border border-border px-3 py-2 text-sm">
+              <p className="font-medium break-words">{p.displayName}</p>
+              {origin && (
+                <p className="text-muted">
+                  {origin}
+                  {p.origin.kind === "invite" && p.origin.sentTo && (
+                    <>
+                      {" "}
+                      <span className="break-all text-foreground">{p.origin.sentTo}</span>
+                    </>
+                  )}
+                </p>
+              )}
+              <p className="text-muted">Linked since {formatDate(usToday(p.linkedAt))}</p>
+              {p.removal && <RemoveParent parentId={p.id} name={p.displayName} accessNote={removalAccessNote(p.displayName, p.removal)} />}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * Small settings panel for the student dashboard: grade correction, reminder emails, linked parents,
+ * a copy of their data, and deleting the account (a child a parent set up under 13 is sent to that
+ * parent).
  */
 export function StudentSettings({
   studentId,
   parentManaged,
   grade,
   reminders,
+  parents = [],
 }: {
   studentId: string;
   parentManaged: boolean;
   grade: number | null;
   reminders: ReminderSetting;
+  /** From listLinkedParents, for this student. */
+  parents?: LinkedParent[];
 }) {
   const q = gradeQuestion();
   return (
@@ -92,6 +151,7 @@ export function StudentSettings({
                 : "Your parent or guardian has turned off weekly reminder emails about your steps. They can turn them back on from their parent page."}
           </p>
         )}
+        <LinkedParents parents={parents} parentManaged={parentManaged} />
         <div>
           <h3 className="text-sm font-medium">Your data</h3>
           <p className="text-sm text-muted">

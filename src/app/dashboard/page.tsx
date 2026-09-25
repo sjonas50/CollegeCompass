@@ -26,6 +26,7 @@ import { listEntries } from "@/lib/applications/service";
 import { formatDate, usToday } from "@/lib/applications/dates";
 import { deadlineName, dueText } from "@/lib/applications/display";
 import { dueWithin } from "@/lib/applications/timeline";
+import { listLinkedParents } from "@/lib/parent-links";
 import { reminderSettingFor } from "@/lib/reminders";
 
 export const metadata: Metadata = { title: "Your dashboard" };
@@ -62,10 +63,10 @@ function discoverText(statuses: Record<InstrumentId, InstrumentStatus>) {
 
 export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   const user = await requireUser(["student"]);
-  const { settings } = await searchParams;
+  const { settings, parent } = await searchParams;
   const db = await getDb();
   const grade = user.grade ?? 9;
-  const [access, statuses, stars, progress, courses, reminders, list, personality] = await Promise.all([
+  const [access, statuses, stars, progress, courses, reminders, list, personality, parents] = await Promise.all([
     accessFor(user),
     instrumentStatuses(db, user.id),
     listNorthStars(db, user.id),
@@ -74,6 +75,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     reminderSettingFor(db, user.id),
     listEntries(db, user.id),
     latestResult(db, user.id, "personality"),
+    // Only ever the signed-in student's own parents.
+    listLinkedParents(db, user.id),
   ]);
   const roadmap = buildRoadmap(MILESTONES, grade, new Date(), progress);
   const timely = [...roadmap.now, ...roadmap.catchUp].slice(0, 3);
@@ -98,6 +101,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       />
       {settings === "saved" && <Notice>Settings saved.</Notice>}
       {settings === "stale" && <Notice>The school year changed since that page loaded, so we didn&apos;t save the grade. Please pick it again.</Notice>}
+      {parent === "removed" && (
+        <Notice>Done. That parent or guardian isn&apos;t linked to your account anymore. You can invite a parent or guardian again anytime.</Notice>
+      )}
 
       {!full ? (
         <Card className="space-y-3">
@@ -294,7 +300,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </Card>
       </div>
 
-      <StudentSettings studentId={user.id} parentManaged={user.parentManaged} grade={user.grade} reminders={reminders} />
+      <StudentSettings studentId={user.id} parentManaged={user.parentManaged} grade={user.grade} reminders={reminders} parents={parents} />
 
       <form action={logoutAction}>
         <button type="submit" className="min-h-11 text-sm text-muted underline">Sign out</button>

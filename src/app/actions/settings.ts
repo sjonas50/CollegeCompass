@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import * as z from "zod";
 import { getDb } from "@/db";
@@ -7,6 +8,7 @@ import { isLinkedParent, setStudentGrade } from "@/lib/accounts";
 import { clearSessionCookie } from "@/lib/auth/cookies";
 import { requireUser } from "@/lib/auth/dal";
 import type { FormState } from "@/lib/forms";
+import { removeLinkedParent } from "@/lib/parent-links";
 import { deleteOwnStudentAccount } from "@/lib/privacy";
 import { setOwnRemindersEnabled, setRemindersEnabled } from "@/lib/reminders";
 
@@ -65,6 +67,25 @@ export async function deleteMyAccountAction(_prev: FormState, formData: FormData
   }
   await clearSessionCookie();
   redirect("/?account-deleted=1");
+}
+
+/**
+ * "Yes, remove" on a linked parent in the student's Settings (after the confirm step). Always the
+ * signed-in student's own link; see removeLinkedParent.
+ */
+export async function removeMyParentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const student = await requireUser(["student"]);
+  const parentId = formData.get("parentId");
+  const result = await removeLinkedParent(await getDb(), student.id, typeof parentId === "string" ? parentId : "");
+  if (!result.ok) {
+    if (result.error === "parent_managed") {
+      return { message: "Your parent or guardian set up your account and manages it, so they stay linked." };
+    }
+    // Removed already (from another tab, say): the refreshed Settings show who's still linked.
+    refresh();
+    return { message: "That parent or guardian isn't linked to your account anymore." };
+  }
+  redirect("/dashboard?parent=removed");
 }
 
 async function linkedChild(formData: FormData) {

@@ -93,6 +93,7 @@ error-monitoring service for anything older.
   ```sql
   select count(*) from consent_requests where expires_at < now() - interval '2 days';
   select count(*) from sessions where expires_at < now() - interval '2 days';
+  select count(*) from parent_invites where accepted_at is null and sent_to is not null and expires_at < now() - interval '2 days';
   ```
 
   Anything above 0 means the sweep hasn't run for over a day: see "A cron job didn't run", then
@@ -160,6 +161,21 @@ DATABASE_URL="postgres://..." npm run access:grant -- --by <your staff email> --
 
 The script prints the household id. Don't write the family's name or email next to it in notes or
 tickets.
+
+### A teen removes a linked parent
+
+A teen who owns their account can remove a linked parent or guardian from Settings on their
+dashboard (for example, when a forwarded invitation reached the wrong adult). A child a parent set
+up under 13 can't. What happens (`removeLinkedParent` in `src/lib/parent-links.ts`):
+
+- The teen gets a household of their own. Free access the teen turned on and the days left on a
+  running trial go with them. The plan, free access the parent turned on, and comp or sponsored
+  access stay with the parent's household. If a comp was meant for the teen, grant it again on the
+  teen's new household (`--household` takes the teen's email or username).
+- If the teen was the last student in that household, a renewing plan is set to end with the
+  period it's paid through. The parent can keep it going from Manage billing.
+- The parent isn't emailed. The teen simply stops showing on their parent page. The audit log has
+  `parent_link.removed_by_student` (ids and counts only).
 
 ## Incidents
 

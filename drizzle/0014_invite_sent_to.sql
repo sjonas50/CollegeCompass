@@ -1,0 +1,1 @@
+ALTER TABLE "parent_invites" ADD COLUMN "sent_to" text;

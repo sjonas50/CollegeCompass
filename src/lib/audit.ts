@@ -21,6 +21,7 @@ export type AuditAction =
   | "parent_invite.sent"
   | "parent_invite.accepted"
   | "parent_invite.cancelled"
+  | "parent_link.removed_by_student"
   | "assessment.imported"
   | "assessment.import_removed"
   | "safety.reviewed"
