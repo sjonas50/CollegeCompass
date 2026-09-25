@@ -86,8 +86,9 @@ describe("/discover/results", () => {
   it("links to browse more careers in each top interest area", async () => {
     await takeInterests(SCIENTIST);
     const html = await render();
+    // Each link names the area as the page does above it (Investigative, Realistic, Artistic).
     expect(text(html)).toContain(
-      "Want more ideas? Browse all the careers built around each of your top interests. Science and solving problems Building and fixing things Art, music and writing",
+      "Want more ideas? Browse all the careers built around each of your top interests. Science and solving problems (Investigative) Building and fixing things (Realistic) Art, music and writing (Artistic)",
     );
     for (const area of ["I", "R", "A"]) expect(html).toContain(`href="/careers?area=${area}#results"`);
     expect(html).not.toContain('href="/careers?area=S#results"');

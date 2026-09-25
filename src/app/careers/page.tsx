@@ -11,7 +11,7 @@ import { type CareerBrowseResult, browseCareers, careerCountsByArea } from "@/li
 import { type CareerHit, type CareerSearchResult, findCareers } from "@/lib/careers-search";
 import { resultRange } from "@/lib/colleges/describe";
 import { formatCount } from "@/lib/colleges/format";
-import { chipClass } from "./browse-more";
+import { AreaName, chipClass } from "./browse-more";
 
 /** What the page shows: search results (?q=), one interest area (?area=), or the search box and the areas. */
 async function readParams(searchParams: PageProps<"/careers">["searchParams"]) {
@@ -168,10 +168,10 @@ function AreaResults({ result }: { result: CareerBrowseResult }) {
             <li key={a}>
               <Link
                 href={browseHref(a)}
-                aria-current={a === area ? "page" : undefined}
+                aria-current={a === area ? "true" : undefined}
                 className={`${chipClass(a === area)} h-full w-full sm:w-auto`}
               >
-                {AREA_BROWSE_NAMES[a]}
+                <AreaName area={a} />
               </Link>
             </li>
           ))}
@@ -179,7 +179,7 @@ function AreaResults({ result }: { result: CareerBrowseResult }) {
       </nav>
 
       <h2 id="results-heading" className="mt-6 text-lg font-medium">
-        {AREA_BROWSE_NAMES[area]} <span className="font-normal text-muted">({RIASEC_INFO[area].name})</span>
+        <AreaName area={area} />
       </h2>
       <p className="text-sm text-muted">{RIASEC_INFO[area].description}</p>
 
@@ -199,7 +199,7 @@ function AreaResults({ result }: { result: CareerBrowseResult }) {
                 <li key={l.level ?? "all"}>
                   <Link
                     href={browseHref(area, { level: l.level, to: "levels" })}
-                    aria-current={l.level === level ? "page" : undefined}
+                    aria-current={l.level === level ? "true" : undefined}
                     className={`${chipClass(l.level === level)} h-full w-full sm:w-auto`}
                   >
                     {l.level === null ? "Any amount" : JOB_ZONE_INFO[l.level].label}{" "}

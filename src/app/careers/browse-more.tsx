@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Riasec } from "@/lib/assessments/instruments";
+import { RIASEC_INFO, type Riasec } from "@/lib/assessments/instruments";
 import { AREA_BROWSE_NAMES, browseHref } from "@/lib/career-areas";
 
 /** Classes for a link styled as a choice among several (interest areas, preparation levels), marked when `chosen`. */
@@ -10,9 +10,22 @@ export function chipClass(chosen = false) {
 }
 
 /**
+ * An interest area's plain name with its RIASEC name, "Building and fixing things (Realistic)", as
+ * one piece of text so it wraps as words in a narrow chip.
+ */
+export function AreaName({ area }: { area: Riasec }) {
+  return (
+    <span>
+      {AREA_BROWSE_NAMES[area]} <span className="font-normal text-muted">({RIASEC_INFO[area].name})</span>
+    </span>
+  );
+}
+
+/**
  * On a results page, below the matches: links to browse every career built around each of the
- * student's top interest areas (/careers?area=). Nothing when no area stands out: those pages
- * already link to /careers.
+ * student's top interest areas (/careers?area=), named as the areas above them are (by RIASEC
+ * name) and in the plain words /careers uses. Nothing when no area stands out: those pages already
+ * link to /careers.
  */
 export function BrowseMoreCareers({ areas }: { areas: Riasec[] }) {
   if (areas.length === 0) return null;
@@ -26,7 +39,7 @@ export function BrowseMoreCareers({ areas }: { areas: Riasec[] }) {
         {areas.map((a) => (
           <li key={a}>
             <Link href={browseHref(a)} className={chipClass()}>
-              {AREA_BROWSE_NAMES[a]}
+              <AreaName area={a} />
             </Link>
           </li>
         ))}

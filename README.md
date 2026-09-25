@@ -35,6 +35,7 @@ change settings.
 | `npm run data:load` | Download and load public reference data |
 | `npm run data:check-scorecard` | Checks loaded college and program data against the live College Scorecard API for 12 test schools |
 | `npm run check:matching` | Checks career matches for test students of every interest type against the real data, including that careers for adults only never appear (`src/lib/matching/minors.ts`) |
+| `npm run matches:refill` | Remakes saved career matches that a change to `src/lib/matching/minors.ts` left short (see "Refilling career matches" in [`docs/operations.md`](docs/operations.md)) |
 | `npm run eval:safety` | Live eval of the safety classifier (calls the Anthropic API; costs money) |
 | `npm run eval:counselor` | Live eval of the AI counselor (calls the Anthropic API; costs money) |
 | `npm run admin:create` | Creates a staff account for `/admin` (see [The first admin](#8-the-first-admin)) |

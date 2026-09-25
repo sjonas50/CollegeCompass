@@ -7,7 +7,8 @@
  * Kept small and conservative on purpose. A career is left out only when the work itself is
  * for adults (gambling, serving alcohol), never because it seems unusual, low-paid or hard to get
  * into. Everything else is thinned out at most (MATCH_FAMILIES). `npm run check:matching` checks the
- * rules against the real O*NET data.
+ * rules against the real O*NET data. After a change here is deployed, `npm run matches:refill`
+ * remakes stored match lists that the new rules shorten (see docs/operations.md).
  */
 
 /**

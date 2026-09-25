@@ -1,8 +1,8 @@
 import { desc, eq } from "drizzle-orm";
 import type { Db } from "@/db";
-import { careerMatches, matchRuns, occupationInterests, occupationValues, occupationWorkStyles, occupations } from "@/db/schema";
+import { careerMatches, matchRuns, occupationInterests, occupationValues, occupationWorkStyles, occupations, users } from "@/db/schema";
 import type { BigFive, Riasec, WorkValue } from "../assessments/instruments";
-import { latestResult } from "../assessments/service";
+import { type LatestResult, latestResult, resultOfAttempt } from "../assessments/service";
 import { PERSONALITY_COUNTS_SINCE, SCORING_VERSION } from "../assessments/scoring";
 import type { MappedTrait, WorkStyle } from "../reference/work-styles";
 import { type OccupationProfile, rankForStudent, shownMatches, strengthsThatCount, withTraitDemands } from "./match";
@@ -110,7 +110,27 @@ export async function computeMatches(db: Db, userId: string) {
     latestResult(db, userId, "values"),
     latestResult(db, userId, "personality"),
   ]);
+  return storeMatches(db, userId, { interests, values, personality });
+}
 
+type MatchInputs = {
+  interests: LatestResult<"interests">;
+  values: LatestResult<"values"> | null;
+  personality: LatestResult<"personality"> | null;
+};
+
+/**
+ * Ranks careers for these results and stores them as the student's latest match run. With
+ * `replacing`, only while that run is still their latest, so a run made meanwhile from newer
+ * results stays the latest; null otherwise. Runs for one student are stored one at a time (the
+ * student's row is locked), so that check holds.
+ */
+async function storeMatches(
+  db: Db,
+  userId: string,
+  { interests, values, personality }: MatchInputs,
+  { replacing }: { replacing?: string } = {},
+): Promise<string | null> {
   const profiles = await loadOccupationProfiles(db);
   if (profiles.length === 0) throw new Error("Reference data not loaded. Run `npm run data:load`.");
   // Personality counts only where work styles are loaded; the run records it only when it counted,
@@ -122,6 +142,10 @@ export async function computeMatches(db: Db, userId: string) {
   );
 
   const runId = await db.transaction(async (tx) => {
+    // "No key update" doesn't hold up rows elsewhere that point at the student.
+    const [student] = await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for("no key update");
+    if (!student) return null;
+    if (replacing && (await latestRun(tx, userId))?.id !== replacing) return null;
     const [run] = await tx
       .insert(matchRuns)
       .values({
@@ -146,8 +170,22 @@ export async function computeMatches(db: Db, userId: string) {
     );
     return run.id;
   });
-  await forgetSavedContexts(db, userId);
+  if (runId) await forgetSavedContexts(db, userId);
   return runId;
+}
+
+async function latestRun(db: Db, userId: string) {
+  const [run] = await db
+    .select()
+    .from(matchRuns)
+    .where(eq(matchRuns.userId, userId))
+    .orderBy(desc(matchRuns.createdAt))
+    .limit(1);
+  return run ?? null;
+}
+
+async function storedMatches(db: Db, runId: string) {
+  return db.select().from(careerMatches).where(eq(careerMatches.runId, runId)).orderBy(careerMatches.rank);
 }
 
 /**
@@ -157,20 +195,53 @@ export async function computeMatches(db: Db, userId: string) {
  * again for the careers shown (see explainLatestMatches). The data export reads the stored rows.
  */
 export async function latestMatchRun(db: Db, userId: string) {
-  const [run] = await db
-    .select()
-    .from(matchRuns)
-    .where(eq(matchRuns.userId, userId))
-    .orderBy(desc(matchRuns.createdAt))
-    .limit(1);
+  const run = await latestRun(db, userId);
   if (!run) return null;
-  const stored = await db
-    .select()
-    .from(careerMatches)
-    .where(eq(careerMatches.runId, run.id))
-    .orderBy(careerMatches.rank);
-  const matches = shownMatches(stored);
+  const matches = shownMatches(await storedMatches(db, run.id));
   const shown = new Set(matches.map((m) => m.occupationCode));
   const explanation = run.explanation?.careers.some((c) => !shown.has(c.code)) ? null : run.explanation;
   return { ...run, explanation, matches };
+}
+
+/**
+ * Remakes the student's latest matches when today's rules leave out some of the careers stored in
+ * them (see shownMatches): runs stored before SCORING_VERSION 3, or before a later change to
+ * ./minors. latestMatchRun hides those careers, but a run stores only its top careers, so the list
+ * would stay short until the student's next assessment.
+ *
+ * The new run is ranked from the same results as the old one, under today's rules, so the next
+ * careers down fill the freed places. Personality counts only if it counted in the old run, so a
+ * run made before it counted still offers "Update my matches" (see strengthsInMatches). The new
+ * run has no explanation yet: one is written for its careers when the student next looks (see
+ * explainLatestMatches). The old run is kept, like every earlier run. Returns whether it made a new
+ * run, or with `dryRun`, whether it would.
+ */
+export async function refillMatches(db: Db, userId: string, { dryRun = false } = {}): Promise<boolean> {
+  const run = await latestRun(db, userId);
+  if (!run) return false;
+  const stored = await storedMatches(db, run.id);
+  if (shownMatches(stored).length === stored.length) return false;
+  if (dryRun) return true;
+
+  const personalityCounted = Number(run.scoringVersion) >= PERSONALITY_COUNTS_SINCE ? run.personalityAttemptId : null;
+  const [interests, values, personality] = await Promise.all([
+    resultOfAttempt(db, userId, "interests", run.interestsAttemptId),
+    run.valuesAttemptId ? resultOfAttempt(db, userId, "values", run.valuesAttemptId) : null,
+    personalityCounted ? resultOfAttempt(db, userId, "personality", personalityCounted) : null,
+  ]);
+  if (!interests) return false;
+  return (await storeMatches(db, userId, { interests, values, personality }, { replacing: run.id })) !== null;
+}
+
+/**
+ * refillMatches for every student with matches (`npm run matches:refill`). Returns how many
+ * students' latest matches were checked and how many were remade (or, with `dryRun`, need it).
+ */
+export async function refillAllMatches(db: Db, { dryRun = false } = {}): Promise<{ checked: number; remade: number }> {
+  const students = await db.selectDistinct({ userId: matchRuns.userId }).from(matchRuns);
+  let remade = 0;
+  for (const { userId } of students) {
+    if (await refillMatches(db, userId, { dryRun })) remade++;
+  }
+  return { checked: students.length, remade };
 }

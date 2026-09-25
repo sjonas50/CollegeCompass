@@ -19,6 +19,8 @@ const text = (html: string) =>
     .replace(/&#x27;|&apos;/g, "'")
     .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ");
+/** Where the links marked as the current page lead. */
+const currentPageLinks = (html: string) => [...html.matchAll(/<a aria-current="page"[^>]*href="([^"]*)"/g)].map((m) => m[1]);
 const searchPage = async (params: Record<string, string> = {}) =>
   renderToStaticMarkup(await CareersPage({ searchParams: Promise.resolve(params) } as PageProps<"/careers">));
 
@@ -127,8 +129,18 @@ describe("/careers browse by interest area", () => {
     // Page links land on the list, level links on the levels.
     expect(html).toContain('href="/careers?area=S&amp;page=2#list"');
     expect(html).toContain('id="list"');
-    // The area shown and the level shown are marked for screen readers.
-    expect(html).toMatch(/<a aria-current="page"[^>]*href="\/careers\?area=S#results">Helping and teaching people<\/a>/);
+    // Each area chip names the area as the results pages do, by RIASEC name too.
+    for (const chip of ["Building and fixing things (Realistic)", "Science and solving problems (Investigative)", "Keeping things organized (Conventional)"]) {
+      expect(words).toContain(chip);
+    }
+    // The area and the level shown are marked as chosen ("true"), and only the page number as the
+    // current page, so screen readers hear one current page.
+    expect(html).toMatch(
+      /<a aria-current="true"[^>]*href="\/careers\?area=S#results"><span>Helping and teaching people <span[^>]*>\(Social\)<\/span><\/span><\/a>/,
+    );
+    expect(html).toMatch(/<a aria-current="true"[^>]*href="\/careers\?area=S#levels">Any amount/);
+    expect(html.match(/aria-current="true"/g)).toHaveLength(2);
+    expect(currentPageLinks(html)).toEqual(["/careers?area=S#list"]);
     // Screen readers hear "careers" after each count.
     expect(words).toContain("Any amount (32 careers )");
     expect(words).toContain("Medium preparation (1 career )");
@@ -143,7 +155,9 @@ describe("/careers browse by interest area", () => {
     expect(words).toContain("Extensive preparation: Usually a graduate degree");
     expect(words).toContain("Showing 26–30 of 30.");
     expect(html).toContain('href="/careers?area=S&amp;level=5#list"');
-    expect(html).toMatch(/aria-current="page"[^>]*>Extensive preparation/);
+    expect(html).toMatch(/aria-current="true"[^>]*>Extensive preparation/);
+    expect(html).toMatch(/aria-current="true"[^>]*href="\/careers\?area=S#results"/);
+    expect(currentPageLinks(html)).toEqual(["/careers?area=S&amp;level=5&amp;page=2#list"]);
     expect(words).not.toContain("Registered Nurses");
   });
 

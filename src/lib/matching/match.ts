@@ -11,7 +11,8 @@ import { type MatchFamily, isAllowedForMinors, matchFamily } from "./minors";
  *   never matches, and each results group (a pathway: degree or training) shows at most one career
  *   of each MATCH_FAMILIES kind, the best-ranked: one "… Teachers, Postsecondary" and one Models.
  *   The next careers down fill the freed places; the ranking itself doesn't change. Search and
- *   browse on /careers still find every career. Runs stored before version 3 get the same rules
+ *   browse on /careers still find every career. Runs stored before version 3 are remade under
+ *   these rules by `npm run matches:refill` (refillMatches in ./service), and until then get them
  *   when they're read (shownMatches).
  * - Interest fit: correlation between the student's six RIASEC scores and the occupation's O*NET
  *   interest profile ("profile similarity"), rescaled to 0–100. Shape matters more than level,
@@ -269,8 +270,9 @@ export function rankOccupations(
  * The stored matches to show, in their stored order: each group's matches as rankOccupations
  * would keep them. Runs made before SCORING_VERSION 3 can hold careers that are no longer matched
  * for minors, or several of one MATCH_FAMILIES kind; those are left out, keeping the best-ranked of
- * each kind in each pathway. Newer runs come back unchanged. The places freed aren't refilled: the
- * run only stored its top careers.
+ * each kind in each pathway. Newer runs come back unchanged. The places freed stay empty here, since
+ * the run stored only its top careers: refillMatches (`npm run matches:refill`) remakes such runs
+ * so the next careers fill them, and this covers any run it hasn't remade yet.
  */
 export function shownMatches<M extends { occupationCode: string; title: string; jobZone: number | null }>(matches: M[]): M[] {
   const seen = new Set<string>();
