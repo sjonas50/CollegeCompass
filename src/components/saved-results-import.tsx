@@ -98,13 +98,13 @@ export function SavedQuizChoice({
   const aboutId = `${useId()}-about`;
   return (
     <div className="rounded-lg border border-border p-4 text-sm">
-      <label className="flex items-start gap-2">
+      <label className="flex min-h-11 items-start gap-3 py-1">
         <input
           type="checkbox"
           checked={include}
           onChange={(e) => setInclude(e.target.checked)}
           aria-describedby={aboutId}
-          className="mt-1 size-4 shrink-0"
+          className="mt-0.5 size-5 shrink-0"
         />
         <span>
           {forChild
@@ -112,7 +112,7 @@ export function SavedQuizChoice({
             : "Add the free quiz results saved on this device to my account"}
         </span>
       </label>
-      <p id={aboutId} className="mt-2 pl-6 text-muted">
+      <p id={aboutId} className="mt-1 pl-8 text-muted">
         {describeSavedQuiz(saved, now)} {forChild ? "Only add them if this child took the quiz." : "Only add them if you took the quiz."}
       </p>
       {include && <input type="hidden" name={SAVED_ASSESSMENT_FIELD} value={serializeSavedAssessment(saved)} />}

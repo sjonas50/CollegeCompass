@@ -20,7 +20,7 @@ const buttonBase =
 const buttonVariants = {
   primary: "bg-accent text-accent-foreground hover:opacity-90",
   secondary: "border border-border bg-surface hover:bg-background",
-  danger: "bg-danger text-white hover:opacity-90",
+  danger: "bg-danger text-danger-foreground hover:opacity-90",
 } as const;
 
 export function Button({
@@ -39,10 +39,11 @@ export function ButtonLink({
   return <Link className={`${buttonBase} ${buttonVariants[variant]} ${className}`} {...props} />;
 }
 
-export function FieldError({ id, errors }: { id: string; errors?: string[] }) {
+/** `alert`: screen readers read it out as soon as it appears. */
+export function FieldError({ id, errors, alert = false }: { id: string; errors?: string[]; alert?: boolean }) {
   if (!errors?.length) return null;
   return (
-    <p id={id} className="mt-1 text-sm text-danger">
+    <p id={id} role={alert ? "alert" : undefined} className="mt-1 text-sm text-danger">
       {errors[0]}
     </p>
   );
@@ -98,6 +99,7 @@ export function GradeSelect({ errors, defaultValue }: { errors?: string[]; defau
         required
         defaultValue={defaultValue ?? ""}
         aria-invalid={errors?.length ? true : undefined}
+        aria-describedby={errors?.length ? "grade-error" : undefined}
         className="mt-1 block min-h-11 w-full rounded-lg border border-border bg-surface px-3"
       >
         <option value="" disabled>
@@ -129,7 +131,11 @@ export function BirthdayFields({
   errors?: string[];
   defaults?: { month?: string; day?: string; year?: string };
 }) {
-  const select = "mt-1 block min-h-11 w-full rounded-lg border border-border bg-surface px-3";
+  // text-base: the labels' small text would carry into the controls, and iOS zooms in on inputs under 16px.
+  const select = "mt-1 block min-h-11 w-full rounded-lg border border-border bg-surface px-3 text-base text-foreground";
+  const errorId = "birthDate-error";
+  // One error covers the whole date, so all three controls point to it.
+  const invalid = errors?.length ? { "aria-invalid": true, "aria-describedby": errorId } : {};
   return (
     <fieldset>
       <legend className="text-sm font-medium">{legend}</legend>
@@ -137,7 +143,7 @@ export function BirthdayFields({
         <label className="text-sm text-muted">
           Month
           {/* Keyed so React remounts it with the new default after a form reset. */}
-          <select key={defaults.month ?? ""} name="birthMonth" required defaultValue={defaults.month ?? ""} className={select}>
+          <select key={defaults.month ?? ""} name="birthMonth" required defaultValue={defaults.month ?? ""} className={select} {...invalid}>
             <option value="" disabled>
               Month
             </option>
@@ -150,14 +156,14 @@ export function BirthdayFields({
         </label>
         <label className="text-sm text-muted">
           Day
-          <input name="birthDay" inputMode="numeric" pattern="[0-9]*" maxLength={2} required defaultValue={defaults.day} className={select} />
+          <input name="birthDay" inputMode="numeric" pattern="[0-9]*" maxLength={2} required defaultValue={defaults.day} className={select} {...invalid} />
         </label>
         <label className="text-sm text-muted">
           Year
-          <input name="birthYear" inputMode="numeric" pattern="[0-9]*" maxLength={4} required defaultValue={defaults.year} className={select} />
+          <input name="birthYear" inputMode="numeric" pattern="[0-9]*" maxLength={4} required defaultValue={defaults.year} className={select} {...invalid} />
         </label>
       </div>
-      <FieldError id="birthDate-error" errors={errors} />
+      <FieldError id={errorId} errors={errors} alert />
     </fieldset>
   );
 }
