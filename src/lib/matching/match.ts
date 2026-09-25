@@ -1,6 +1,6 @@
 import { type BigFive, RIASEC, type Riasec, WORK_VALUES, type WorkValue } from "../assessments/instruments";
 import { isFlatProfile } from "../assessments/interest-pattern";
-import { MAPPED_TRAITS, type MappedTrait, TRAIT_WORK_STYLES, type WorkStyle } from "../reference/work-styles";
+import { MAPPED_TRAITS, type MappedTrait, TRAIT_WORK_STYLES, WORK_STYLES, type WorkStyle } from "../reference/work-styles";
 
 /**
  * Career matching. Deterministic and explainable:
@@ -24,13 +24,19 @@ import { MAPPED_TRAITS, type MappedTrait, TRAIT_WORK_STYLES, type WorkStyle } fr
  *     (a trait above the scale midpoint) can raise a career, and a low score never lowers one: a
  *     quiet student's teaching matches don't drop because they're quiet, and careers that need
  *     less of a trait aren't pushed on students who scored low on it.
+ *   - Personality mustn't stand in for years of school. O*NET rates jobs that need more school
+ *     higher on nearly every work style, so each career is compared only with careers at its own
+ *     Job Zone, after taking off its general level (withTraitDemands).
  *   See personalityFit and occupationTraitDemands for the method.
  */
 
 export const VALUES_WEIGHT = 0.15;
 /** Personality can add at most PERSONALITY_WEIGHT × 100 points, lighter than values (see above). */
 export const PERSONALITY_WEIGHT = 0.1;
-/** How far above the average occupation, in standard deviations, a trait counts as fully called for. */
+/**
+ * How far above the average occupation (at the same Job Zone), in standard deviations, a trait
+ * counts as fully called for.
+ */
 export const DEMAND_CAP = 2;
 /**
  * How far above the scale midpoint (50, "Neither") a trait score counts as a full strength: 25
@@ -38,7 +44,10 @@ export const DEMAND_CAP = 2;
  */
 export const STRENGTH_SPAN = 25;
 
-/** How much an occupation calls for each trait, in standard deviations from the average occupation. */
+/**
+ * How much an occupation calls for each trait, in standard deviations from the average occupation
+ * at its Job Zone (see occupationTraitDemands).
+ */
 export type TraitDemand = Record<MappedTrait, number>;
 
 export type OccupationProfile = {
@@ -111,35 +120,57 @@ function standardize(xs: number[]): number[] {
   return xs.map((x) => (sd === 0 ? 0 : (x - m) / sd));
 }
 
+const ALL_STYLES = WORK_STYLES.map((s) => s.id);
+
 /**
- * How much each occupation calls for each trait, from the O*NET Work Styles Impact (WI) scores of
- * the styles mapped to it (TRAIT_WORK_STYLES). Each style's impact is standardized across the
- * occupations first, so a style that varies little between jobs (Dependability matters nearly
- * everywhere) counts as much as one that varies a lot. A trait's demand is the average of its
- * styles, standardized again so every trait is on the same scale: 0 is the average occupation, 1
- * is one standard deviation above it. Occupations missing any mapped style get no demand, and so
- * no personality fit.
+ * How much each occupation in a group calls for each trait, from the O*NET Work Styles Impact (WI)
+ * scores:
+ *
+ * 1. Each of the 21 styles is standardized across the group, so a style that varies little between
+ *    jobs (Dependability matters nearly everywhere) counts as much as one that varies a lot.
+ * 2. Each occupation's general level, its average over all 21 standardized styles, is taken off
+ *    every style. WI rises with job level for every style at once, so without this, a job rated
+ *    high on everything would seem to call for every trait. What's left is what the occupation
+ *    especially calls for, compared with its own other styles.
+ * 3. A trait's demand is the average of its styles (TRAIT_WORK_STYLES), standardized again so every
+ *    trait is on the same scale: 0 is the average occupation in the group, 1 is one standard
+ *    deviation above it.
+ *
+ * Styles no trait is linked to (Stress Tolerance, Self-Control, Integrity, …) only count toward the
+ * general level. Occupations missing any of the 21 styles get no demand, and so no personality fit.
+ * withTraitDemands runs this within each Job Zone.
  */
 export function occupationTraitDemands(impacts: ReadonlyMap<string, Partial<Record<WorkStyle, number>>>): Map<string, TraitDemand> {
-  const styles = MAPPED_TRAITS.flatMap((t) => TRAIT_WORK_STYLES[t]);
-  const codes = [...impacts.keys()].filter((code) => styles.every((s) => Number.isFinite(impacts.get(code)![s])));
-  const z = new Map(styles.map((s) => [s, standardize(codes.map((c) => impacts.get(c)![s]!))]));
+  const codes = [...impacts.keys()].filter((code) => ALL_STYLES.every((s) => Number.isFinite(impacts.get(code)![s])));
+  const z = new Map(ALL_STYLES.map((s) => [s, standardize(codes.map((c) => impacts.get(c)![s]!))]));
+  const general = codes.map((_, i) => mean(ALL_STYLES.map((s) => z.get(s)![i])));
   const demand = new Map(
-    MAPPED_TRAITS.map((t) => [t, standardize(codes.map((_, i) => mean(TRAIT_WORK_STYLES[t].map((s) => z.get(s)![i]))))]),
+    MAPPED_TRAITS.map((t) => [t, standardize(codes.map((_, i) => mean(TRAIT_WORK_STYLES[t].map((s) => z.get(s)![i])) - general[i]))]),
   );
   return new Map(codes.map((code, i) => [code, Object.fromEntries(MAPPED_TRAITS.map((t) => [t, demand.get(t)![i]])) as TraitDemand]));
 }
 
 /**
- * The profiles with each one's trait demand from its work style impacts, standardized across
- * these profiles (see occupationTraitDemands).
+ * The profiles with each one's trait demand from its work style impacts, compared only with
+ * occupations at the same Job Zone (see occupationTraitDemands). Higher Job Zones are rated higher
+ * on nearly every style, and taking off each occupation's general level doesn't remove all of it,
+ * so comparing across Job Zones would make personality a stand-in for years of school: a student
+ * who rates themselves above the middle would get more lift toward careers that need more school.
+ * Within each Job Zone, a student's strengths lift careers at every level about equally on average
+ * (`npm run check:matching` checks this on the real data).
  */
 export function withTraitDemands<P extends OccupationProfile>(
   profiles: P[],
   impacts: ReadonlyMap<string, Partial<Record<WorkStyle, number>>>,
 ): P[] {
-  const codes = new Set(profiles.map((p) => p.code));
-  const demands = occupationTraitDemands(new Map([...impacts].filter(([code]) => codes.has(code))));
+  const byZone = new Map<number | null, Map<string, Partial<Record<WorkStyle, number>>>>();
+  for (const p of profiles) {
+    const impact = impacts.get(p.code);
+    if (!impact) continue;
+    const group = byZone.get(p.jobZone) ?? byZone.set(p.jobZone, new Map()).get(p.jobZone)!;
+    group.set(p.code, impact);
+  }
+  const demands = new Map([...byZone.values()].flatMap((group) => [...occupationTraitDemands(group)]));
   return profiles.map((p) => ({ ...p, traitDemand: demands.get(p.code) }));
 }
 
@@ -147,8 +178,8 @@ export function withTraitDemands<P extends OccupationProfile>(
  * 0–100: how much an occupation calls for the strengths a student reports. For each of the four
  * mapped traits: the student's strength (how far above the scale midpoint of 50 they scored, 0–1,
  * and 0 at or below the midpoint) times how much the occupation calls for the trait (its demand
- * above the average occupation, 0 at or below average, capped at DEMAND_CAP standard deviations
- * and scaled to 0–1). The fit is the average over the four traits.
+ * above the average occupation at its Job Zone, 0 at or below average, capped at DEMAND_CAP
+ * standard deviations and scaled to 0–1). The fit is the average over the four traits.
  *
  * Why not a correlation, as interests use: with only four numbers, a correlation can swing from +1
  * to −1 when one trait moves a little; it ignores how far from the midpoint the student is (52 on
@@ -161,6 +192,15 @@ export function personalityFit(traits: Record<BigFive, number>, demand: TraitDem
   const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
   const sum = MAPPED_TRAITS.reduce((acc, t) => acc + clamp01((traits[t] - 50) / STRENGTH_SPAN) * clamp01(demand[t] / DEMAND_CAP), 0);
   return Math.round((sum / MAPPED_TRAITS.length) * 100);
+}
+
+/**
+ * The traits that can raise a student's careers: the mapped traits they rated above the scale
+ * midpoint (see personalityFit), highest first. Pages name these, so they never say a strength
+ * counts when it doesn't.
+ */
+export function strengthsThatCount(traits: Record<BigFive, number>): MappedTrait[] {
+  return MAPPED_TRAITS.filter((t) => traits[t] > 50).sort((a, b) => traits[b] - traits[a]);
 }
 
 export function scoreOccupation(student: StudentProfile, occ: OccupationProfile): ScoredOccupation {

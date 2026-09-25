@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { createTestDb, schema } from "@/db";
 import { BIG_FIVE } from "../assessments/instruments";
@@ -8,11 +10,11 @@ import {
   WORK_STYLES,
   WORK_STYLE_INFO,
   distinctiveStyles,
-  getOccupationWorkStyles,
   strengthsForCareer,
   traitForStyle,
   workStyleForElement,
 } from "./work-styles";
+import { getOccupationWorkStyles } from "./work-styles-db";
 
 describe("O*NET work styles", () => {
   it("knows all 21 styles of O*NET 31.0 in four groups", () => {
@@ -65,26 +67,78 @@ describe("mapping Mini-IPIP traits to work styles", () => {
 describe("where a student's strengths help", () => {
   const traits = { extraversion: 20, agreeableness: 90, conscientiousness: 55, neuroticism: 95, intellect: 80 };
 
-  it("links styles to strengths the student scored high on, and the rest are skills to build", () => {
-    // Registered Nurses' most distinctive styles in O*NET 31.0.
-    const { helps, building } = strengthsForCareer(
-      ["integrity", "cautiousness", "cooperation", "social_orientation", "self_control", "stress_tolerance", "empathy"],
+  it("splits a career's styles into strengths that fit, skills to build, and the rest", () => {
+    // Registered Nurses' most distinctive styles in O*NET 31.0, and two more.
+    const { helps, building, other } = strengthsForCareer(
+      ["integrity", "cautiousness", "cooperation", "social_orientation", "self_control", "stress_tolerance", "empathy", "dependability", "innovation"],
       traits,
     );
-    expect(helps.map((h) => [h.style, h.strength.name])).toEqual([
-      ["cooperation", "Warmth"],
-      ["empathy", "Warmth"],
+    // High and middle levels are both strengths on the strengths page ("Caring", "Organized when it counts").
+    expect(helps.map((h) => [h.style, h.strength.label])).toEqual([
+      ["cooperation", "Caring"],
+      ["empathy", "Caring"],
+      ["dependability", "Organized when it counts"],
+      ["innovation", "Curious"],
     ]);
-    // Quiet (extraversion 20) and middling organization aren't called weaknesses: those styles are
-    // simply skills to build, like the ones no trait is linked to.
-    expect(building).toEqual(["integrity", "cautiousness", "social_orientation", "self_control", "stress_tolerance"]);
+    // Only styles linked to a trait where the student is low are skills to build: quiet isn't a weakness,
+    // and connecting with people is something anyone can practice.
+    expect(building).toEqual(["social_orientation"]);
+    // Styles no trait is linked to say nothing about the student.
+    expect(other).toEqual(["integrity", "cautiousness", "self_control", "stress_tolerance"]);
+  });
+
+  it("never calls a style no trait is linked to something the student is still building", () => {
+    const unmapped = WORK_STYLES.map((s) => s.id).filter((s) => !traitForStyle(s));
+    expect(unmapped).toEqual(["initiative", "self_confidence", "humility", "sincerity", "optimism", "cautiousness", "integrity", "stress_tolerance", "self_control"]);
+    for (const score of [0, 50, 100]) {
+      const all = { extraversion: score, agreeableness: score, conscientiousness: score, neuroticism: score, intellect: score };
+      const { helps, building, other } = strengthsForCareer(unmapped, all);
+      expect([helps, building, other]).toEqual([[], [], unmapped]);
+    }
   });
 
   it("never links stress tolerance or self-control to how calm a student is", () => {
     for (const neuroticism of [0, 50, 100]) {
-      const { helps } = strengthsForCareer(["stress_tolerance", "self_control"], { ...traits, neuroticism });
-      expect(helps).toEqual([]);
+      const { helps, building } = strengthsForCareer(["stress_tolerance", "self_control"], { ...traits, neuroticism });
+      expect([...helps, ...building]).toEqual([]);
     }
+  });
+
+  it("describes connecting with people as something you do, not who you are", () => {
+    expect(WORK_STYLE_INFO.social_orientation).toMatchObject({ name: "Connecting with people", description: "Working with others and building connections." });
+    expect(WORK_STYLES.map((s) => s.description).join(" ")).not.toMatch(/energy/i);
+  });
+});
+
+describe("modules client code imports", () => {
+  /** The source files a module imports for values (not `import type`), and each of their imports, in src. */
+  function importGraph(file: string, seen = new Set<string>()): Set<string> {
+    if (seen.has(file)) return seen;
+    seen.add(file);
+    const source = readFileSync(file, "utf8");
+    for (const [, spec] of source.matchAll(/^(?:import|export)(?!\s+type\b)[^;]*?from\s+"([^"]+)"|^import\s+"([^"]+)"/gm)) {
+      if (!spec) continue;
+      const base = spec.startsWith("@/") ? path.join("src", spec.slice(2)) : spec.startsWith(".") ? path.join(path.dirname(file), spec) : null;
+      if (!base) {
+        seen.add(spec);
+        continue;
+      }
+      const resolved = [`${base}.ts`, `${base}.tsx`, path.join(base, "index.ts")].find((f) => {
+        try {
+          return readFileSync(f) && true;
+        } catch {
+          return false;
+        }
+      });
+      if (resolved) importGraph(resolved, seen);
+    }
+    return seen;
+  }
+
+  it("keep the database out of matching, which the free quiz's results page runs in the browser", () => {
+    const graph = [...importGraph("src/lib/matching/match.ts")];
+    expect(graph).toContain("src/lib/reference/work-styles.ts");
+    expect(graph.filter((f) => f.startsWith("src/db") || /^(drizzle-orm|postgres|@electric-sql|server-only)/.test(f))).toEqual([]);
   });
 });
 

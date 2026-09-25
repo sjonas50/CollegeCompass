@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TRAIT_COPY, TRAIT_GUIDE, displayTrait, strengthFor, strengthsFor, strengthsSummary } from "./descriptions";
+import { TRAIT_COPY, TRAIT_GUIDE, displayTrait, strengthFor, strengthsFor, strengthsSummary, traitNames } from "./descriptions";
 import { BIG_FIVE, type BigFive } from "./instruments";
 
 const traits = (t: Partial<Record<BigFive, number>>): Record<BigFive, number> => ({
@@ -26,6 +26,13 @@ describe("strengths", () => {
     expect(quiet.text).toBe(TRAIT_COPY.extraversion.low);
     // Never that quiet people can't do people jobs.
     expect(quiet.work).toContain("including jobs with lots of people");
+  });
+
+  it("names traits in a sentence", () => {
+    expect(traitNames(["intellect"])).toBe("curiosity");
+    expect(traitNames(["intellect", "conscientiousness"])).toBe("curiosity and organization");
+    expect(traitNames(["extraversion", "agreeableness", "conscientiousness", "intellect"])).toBe("social energy, warmth, organization and curiosity");
+    expect(traitNames([])).toBe("");
   });
 
   it("sums up three strengths and never staying calm", () => {

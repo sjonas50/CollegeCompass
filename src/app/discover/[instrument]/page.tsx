@@ -18,7 +18,7 @@ import {
 import { instrumentStatuses, latestResult, startOrResumeAttempt } from "@/lib/assessments/service";
 import { undoableImport } from "@/lib/assessments/import";
 import { requireUser } from "@/lib/auth/dal";
-import { latestMatchRun, runUsedPersonality } from "@/lib/matching/service";
+import { latestMatchRun, strengthsInMatches } from "@/lib/matching/service";
 import { RemoveImportButton } from "@/app/try/saved/remove-import";
 import { Questionnaire } from "../questionnaire";
 import { ValuesSort } from "../values-sort";
@@ -34,7 +34,7 @@ const INTRO = {
   },
   personality: {
     lead: "How well does each statement describe you right now? There are no right or wrong answers.",
-    why: "This shows your strengths and how you like to work. It helps explain why certain careers might fit.",
+    why: "This shows your strengths and how you like to work. It can also give a small boost to careers that call for your strengths. Your interests still count the most.",
     change: "How you see yourself can change as you grow",
   },
   values: {
@@ -88,12 +88,13 @@ export default async function InstrumentPage({ params }: PageProps<"/discover/[i
   if (instrument === "personality" && status.state === "done") {
     const [personality, run] = await Promise.all([latestResult(db, student.id, "personality"), latestMatchRun(db, student.id)]);
     if (personality) {
+      const matches = await strengthsInMatches(db, run, personality);
       return (
         <StrengthsView
           traits={personality.scores.traits}
           completedAt={status.completedAt}
           retakeAfter={status.retakeAfter}
-          matches={!run ? "none" : runUsedPersonality(run) ? "updated" : "ready"}
+          matches={matches}
         />
       );
     }

@@ -73,21 +73,37 @@ describe("/careers/[code] strengths", () => {
     expect(t).toMatch(/Sincerity\. .* Adaptability\. .* Perseverance\. .* Empathy\. .* Handling pressure\./);
     expect(t).not.toContain("Self-control");
     expect(t).not.toContain("Attention to detail");
-    expect(t).not.toMatch(/Where your strengths help|Fits your strength|Skills you can build|Find your strengths/);
+    expect(t).not.toMatch(/Where your strengths help|Fits your strength|Skills you can build|Also important in this work|Find your strengths/);
     expect(t).toContain("O*NET made these ratings with a mix of AI and expert judgment, so treat them as a starting point.");
   });
 
-  it("links styles to a student's strengths, and calls the rest skills anyone can build", async () => {
-    // Warm and adaptable-minded, quiet, and often stressed.
+  it("links styles to a student's strengths, and shows styles no trait is linked to without anything personal", async () => {
+    // Warm and curious, in the middle on organization, quiet, and often stressed.
     await signInStudent({ extraversion: 0, agreeableness: 100, conscientiousness: 50, neuroticism: 100, intellect: 75 });
     const html = await render();
     const t = text(html);
     expect(t).toContain("Where your strengths help");
-    expect(t).toMatch(/Your strengths that fit Adaptability\. .* Fits your strength: Curiosity Empathy\. .* Fits your strength: Warmth Skills you can build/);
-    expect(t).toMatch(/Skills you can build Anyone can grow these with practice, in class, on a team, in a club or at a job\. Sincerity\. .* Perseverance\. .* Handling pressure\./);
+    // The middle of the scale is a strength too ("Organized when it counts" on the strengths page).
+    expect(t).toMatch(
+      /Your strengths that fit Adaptability\. .* Fits your strength: Curious Perseverance\. .* Fits your strength: Organized when it counts Empathy\. .* Fits your strength: Caring Also important in this work/,
+    );
+    // Honesty and handling pressure aren't linked to any trait: never framed as something to build.
+    expect(t).toMatch(/Also important in this work Sincerity\. Being genuine and honest with people\. Handling pressure\./);
+    expect(t).not.toContain("Skills you can build");
     expect(html).toContain('href="/discover/personality"');
     // Handling pressure is never tied to how calm the student says they are.
     expect(t).not.toMatch(/Staying calm|Feels things deeply/);
+  });
+
+  it("calls styles linked to a student's low traits skills anyone can build, under a neutral heading", async () => {
+    // Quiet and hands-on, direct and spontaneous: every career trait low.
+    await signInStudent({ extraversion: 0, agreeableness: 25, conscientiousness: 25, neuroticism: 50, intellect: 25 });
+    const t = text(await render());
+    expect(t).toContain("Strengths that help in this work");
+    expect(t).not.toMatch(/Where your strengths help|Your strengths that fit|Fits your strength/);
+    expect(t).toMatch(
+      /Skills you can build Anyone can grow these with practice, in class, on a team, in a club or at a job\. Adaptability\. .* Perseverance\. .* Empathy\. .* Also important in this work Sincerity\. .* Handling pressure\./,
+    );
   });
 
   it("asks a student who hasn't taken personality to find their strengths", async () => {

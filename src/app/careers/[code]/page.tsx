@@ -13,13 +13,8 @@ import { JOB_ZONE_INFO, getCareer } from "@/lib/careers";
 import { collegeSearchHref } from "@/lib/colleges/search";
 import { MAX_NORTH_STARS, listNorthStars } from "@/lib/goals";
 import { PATHWAY_INFO } from "@/lib/matching/match";
-import {
-  WORK_STYLE_INFO,
-  type WorkStyle,
-  distinctiveStyles,
-  getOccupationWorkStyles,
-  strengthsForCareer,
-} from "@/lib/reference/work-styles";
+import { WORK_STYLE_INFO, type WorkStyle, distinctiveStyles, strengthsForCareer } from "@/lib/reference/work-styles";
+import { getOccupationWorkStyles } from "@/lib/reference/work-styles-db";
 
 function StyleItem({ style, children }: { style: WorkStyle; children?: ReactNode }) {
   const info = WORK_STYLE_INFO[style];
@@ -31,18 +26,30 @@ function StyleItem({ style, children }: { style: WorkStyle; children?: ReactNode
   );
 }
 
+function StyleList({ styles }: { styles: readonly WorkStyle[] }) {
+  return (
+    <ul className="mt-2 space-y-2 text-sm">
+      {styles.map((style) => (
+        <StyleItem key={style} style={style} />
+      ))}
+    </ul>
+  );
+}
+
 /**
  * The work styles that most set this career apart (O*NET Distinctiveness Rank). For a student who
- * took the personality activity, the ones their strengths fit, and the rest as skills anyone can
- * build. Everyone else sees only the career's styles, with nothing about them.
+ * took the personality activity: the ones that fit their strengths, skills they can build (styles
+ * linked to a trait where they're low), and the rest with nothing personal, since no trait is linked
+ * to them (see strengthsForCareer). Everyone else sees only the career's styles.
  */
 function CareerStrengths({ styles, traits, askToTake }: { styles: WorkStyle[]; traits?: Record<BigFive, number>; askToTake: boolean }) {
   const mine = traits ? strengthsForCareer(styles, traits) : null;
+  const personal = mine !== null && mine.helps.length + mine.building.length > 0;
   return (
     <Card>
-      <h2 className="font-medium">{mine ? "Where your strengths help" : "Strengths that help in this work"}</h2>
+      <h2 className="font-medium">{mine && mine.helps.length > 0 ? "Where your strengths help" : "Strengths that help in this work"}</h2>
       <p className="mt-1 text-sm text-muted">The work styles that most set this career apart from others.</p>
-      {mine ? (
+      {mine && personal ? (
         <>
           {mine.helps.length > 0 && (
             <>
@@ -52,7 +59,7 @@ function CareerStrengths({ styles, traits, askToTake }: { styles: WorkStyle[]; t
                   <StyleItem key={style} style={style}>
                     {" "}
                     <Link href="/discover/personality" className="underline underline-offset-2">
-                      Fits your strength: {strength.name}
+                      Fits your strength: {strength.label}
                     </Link>
                   </StyleItem>
                 ))}
@@ -63,20 +70,20 @@ function CareerStrengths({ styles, traits, askToTake }: { styles: WorkStyle[]; t
             <>
               <h3 className="mt-4 text-sm font-medium">Skills you can build</h3>
               <p className="mt-1 text-sm text-muted">Anyone can grow these with practice, in class, on a team, in a club or at a job.</p>
-              <ul className="mt-2 space-y-2 text-sm">
-                {mine.building.map((style) => (
-                  <StyleItem key={style} style={style} />
-                ))}
-              </ul>
+              <StyleList styles={mine.building} />
+            </>
+          )}
+          {mine.other.length > 0 && (
+            <>
+              <h3 className="mt-4 text-sm font-medium">Also important in this work</h3>
+              <StyleList styles={mine.other} />
             </>
           )}
         </>
       ) : (
-        <ul className="mt-3 space-y-2 text-sm">
-          {styles.map((style) => (
-            <StyleItem key={style} style={style} />
-          ))}
-        </ul>
+        <div className="mt-1">
+          <StyleList styles={styles} />
+        </div>
       )}
       {askToTake && (
         <p className="mt-3 text-sm">

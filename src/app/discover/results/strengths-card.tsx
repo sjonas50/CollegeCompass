@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { ButtonLink, Card } from "@/components/ui";
-import { strengthsFor } from "@/lib/assessments/descriptions";
+import { strengthsFor, traitNames } from "@/lib/assessments/descriptions";
 import type { BigFive } from "@/lib/assessments/instruments";
+import type { StrengthsInMatches } from "@/lib/matching/service";
+import { UpdateMatchesButton } from "../update-matches";
 
 /**
  * The student's strengths on the results page, below their interest areas, or an invitation to
- * find them. `usedInMatches`: whether the matches on the page count them (see runUsedPersonality).
+ * find them. `matches`: what the strengths do to the matches on the page, naming only the ones
+ * that count (see strengthsInMatches).
  */
-export function StrengthsCard({ traits, usedInMatches }: { traits: Record<BigFive, number> | undefined; usedInMatches: boolean }) {
+export function StrengthsCard({ traits, matches }: { traits: Record<BigFive, number> | undefined; matches: StrengthsInMatches | null }) {
   return (
     <Card>
       <h2 className="font-medium">Your strengths</h2>
@@ -23,10 +26,22 @@ export function StrengthsCard({ traits, usedInMatches }: { traits: Record<BigFiv
               </li>
             ))}
           </ul>
-          {usedInMatches && (
+          {matches?.state === "boosted" && (
             <p className="mt-3 text-sm text-muted">
-              Your matches give a small boost to careers that especially call for these strengths. Your interests count the most.
+              Your matches give a small boost to careers that call for your {traitNames(matches.counted)}. Your interests count the most.
             </p>
+          )}
+          {matches?.state === "stale" && (
+            <div className="mt-3 space-y-3 text-sm">
+              <p className="text-muted">
+                These matches were made before your strengths counted. Update them to give a small boost to careers that call for your{" "}
+                {traitNames(matches.counted)}.
+              </p>
+              <UpdateMatchesButton variant="secondary" />
+            </div>
+          )}
+          {matches?.state === "unchanged" && (
+            <p className="mt-3 text-sm text-muted">Your answers didn&apos;t change your matches. Your interests decide them.</p>
           )}
           <p className="mt-2 text-sm">
             <Link href="/discover/personality" className="inline-flex min-h-11 items-center underline underline-offset-2">

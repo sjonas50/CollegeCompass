@@ -10,7 +10,7 @@ import { latestResult, nextRetakeDate } from "@/lib/assessments/service";
 import { requireUser } from "@/lib/auth/dal";
 import { explainLatestMatches, storedExplanation } from "@/lib/matching/explain";
 import { PATHWAY_INFO, type Pathway, fitLabel, pathwayFor } from "@/lib/matching/match";
-import { latestMatchRun, runUsedPersonality } from "@/lib/matching/service";
+import { latestMatchRun, strengthsInMatches } from "@/lib/matching/service";
 import { CareerReasons, ExplanationOverview, ExplanationProvider } from "./explanation";
 import { InterestAreasCard } from "./interest-areas";
 import { StrengthsCard } from "./strengths-card";
@@ -39,6 +39,7 @@ export default async function ResultsPage() {
   // that have changed since (see storedExplanation); without one, the client asks for one.
   const explanation = noLead ? await explainLatestMatches(db, student.id) : storedExplanation(run.explanation, pattern);
   const retakeAfter = nextRetakeDate(interests.completedAt);
+  const strengths = personality ? await strengthsInMatches(db, run, personality) : null;
   const careersFor = (pathway: Pathway) =>
     run.matches
       .filter((m) => pathwayFor(m.jobZone) === pathway)
@@ -76,7 +77,7 @@ export default async function ResultsPage() {
           }
         />
 
-        <StrengthsCard traits={personality?.scores.traits} usedInMatches={runUsedPersonality(run)} />
+        <StrengthsCard traits={personality?.scores.traits} matches={strengths} />
 
         {(["degree", "training"] as const).map((pathway) => (
           <section key={pathway}>

@@ -6,7 +6,8 @@ import { SCORING_VERSION } from "../assessments/scoring";
 import { completeAttempt, saveResponses, startOrResumeAttempt } from "../assessments/service";
 import { WORK_STYLES } from "../reference/work-styles";
 import { PERSONALITY_WEIGHT } from "./match";
-import { computeMatches, latestMatchRun, loadOccupationProfiles, runUsedPersonality } from "./service";
+import { latestResult } from "../assessments/service";
+import { computeMatches, latestMatchRun, loadOccupationProfiles, strengthsInMatches, updateMatchesForStrengths } from "./service";
 
 // computeMatches passes the student's personality through to ranking, when work styles are loaded.
 
@@ -53,13 +54,16 @@ describe("computing matches with personality", () => {
     await finish("interests", Object.fromEntries(INTEREST_ITEMS.map((i) => [i.id, i.area === "I" ? 5 : 2])));
     await computeMatches(db, userId);
     const before = await scores();
-    expect(runUsedPersonality((await latestMatchRun(db, userId))!)).toBe(false);
+    expect((await latestMatchRun(db, userId))!.personalityAttemptId).toBeNull();
 
     const attemptId = await finish("personality", personality(1));
     await computeMatches(db, userId);
     const run = (await latestMatchRun(db, userId))!;
     expect(run).toMatchObject({ personalityAttemptId: attemptId, scoringVersion: SCORING_VERSION });
-    expect(runUsedPersonality(run)).toBe(true);
+    expect(await strengthsInMatches(db, run, (await latestResult(db, userId, "personality"))!)).toEqual({
+      state: "boosted",
+      counted: ["extraversion", "agreeableness", "conscientiousness", "intellect"],
+    });
     const calm = await scores();
     for (const [code, score] of calm) {
       expect(score - before.get(code)!).toBeGreaterThanOrEqual(0);
@@ -72,5 +76,74 @@ describe("computing matches with personality", () => {
     await finish("personality", personality(5));
     await computeMatches(db, userId);
     expect(await scores()).toEqual(calm);
+  });
+});
+
+describe("updating matches made before strengths counted", () => {
+  const interests = () => finish("interests", Object.fromEntries(INTEREST_ITEMS.map((i) => [i.id, i.area === "I" ? 5 : 2])));
+  const state = async () => strengthsInMatches(db, await latestMatchRun(db, userId), (await latestResult(db, userId, "personality"))!);
+
+  it("recomputes matches from before this scoring version, once", async () => {
+    await interests();
+    await finish("personality", personality(3));
+    await computeMatches(db, userId);
+    // Made before personality counted (version 1 recorded the attempt without using it).
+    await db.update(schema.matchRuns).set({ scoringVersion: "1" });
+    const old = (await latestMatchRun(db, userId))!;
+    expect(await state()).toMatchObject({ state: "stale" });
+
+    expect(await updateMatchesForStrengths(db, userId)).toBe(true);
+    const run = (await latestMatchRun(db, userId))!;
+    expect(run.id).not.toBe(old.id);
+    expect(run.scoringVersion).toBe(SCORING_VERSION);
+    expect(await state()).toMatchObject({ state: "boosted" });
+    expect(await updateMatchesForStrengths(db, userId)).toBe(false);
+    expect((await latestMatchRun(db, userId))!.id).toBe(run.id);
+  });
+
+  it("recomputes matches made before the latest personality result", async () => {
+    await interests();
+    await computeMatches(db, userId);
+    // Finished without matches being updated (finishing an activity normally updates them).
+    await finish("personality", personality(3));
+    expect(await state()).toMatchObject({ state: "stale" });
+    expect(await updateMatchesForStrengths(db, userId)).toBe(true);
+    expect(await state()).toMatchObject({ state: "boosted" });
+  });
+
+  it("does nothing, and promises nothing, when no work styles are loaded", async () => {
+    await db.delete(schema.occupationWorkStyles);
+    await loadOccupationProfiles(db, { fresh: true });
+    await interests();
+    await finish("personality", personality(3));
+    await computeMatches(db, userId);
+    const run = (await latestMatchRun(db, userId))!;
+    expect(run).toMatchObject({ scoringVersion: SCORING_VERSION, personalityAttemptId: null });
+    expect(await state()).toEqual({ state: "unchanged", counted: [] });
+    // Even for matches from before this scoring version.
+    await db.update(schema.matchRuns).set({ scoringVersion: "1" });
+    expect(await state()).toEqual({ state: "unchanged", counted: [] });
+    expect(await updateMatchesForStrengths(db, userId)).toBe(false);
+    expect((await latestMatchRun(db, userId))!.id).toBe(run.id);
+  });
+
+  it("does nothing when no strength is above the middle, or there's nothing to update", async () => {
+    expect(await updateMatchesForStrengths(db, userId)).toBe(false);
+    await interests();
+    await computeMatches(db, userId);
+    expect(await updateMatchesForStrengths(db, userId)).toBe(false);
+    // Every statement "Neither accurate nor inaccurate": every trait at the middle.
+    await finish("personality", Object.fromEntries(PERSONALITY_ITEMS.map((i) => [i.id, 3])));
+    await db.update(schema.matchRuns).set({ scoringVersion: "1" });
+    expect(await state()).toEqual({ state: "unchanged", counted: [] });
+    expect(await updateMatchesForStrengths(db, userId)).toBe(false);
+  });
+
+  it("names what will count before there are matches", async () => {
+    await finish("personality", personality(3));
+    expect(await strengthsInMatches(db, null, (await latestResult(db, userId, "personality"))!)).toEqual({
+      state: "none",
+      counted: ["extraversion", "agreeableness", "conscientiousness", "intellect"],
+    });
   });
 });

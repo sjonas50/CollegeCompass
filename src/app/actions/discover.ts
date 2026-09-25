@@ -8,7 +8,7 @@ import { completeAttempt, saveResponses, startOrResumeAttempt } from "@/lib/asse
 import { requireUser } from "@/lib/auth/dal";
 import { addNorthStar, removeNorthStar } from "@/lib/goals";
 import { explainLatestMatches } from "@/lib/matching/explain";
-import { computeMatches } from "@/lib/matching/service";
+import { computeMatches, updateMatchesForStrengths } from "@/lib/matching/service";
 
 export async function startAssessmentAction(formData: FormData) {
   const student = await requireUser(["student"]);
@@ -43,6 +43,16 @@ export async function finishAssessmentAction(attemptId: string, answers: Record<
   // Personality has its own results view (the student's strengths), which links to the matches.
   if (result.instrument === "personality") redirect("/discover/personality");
   redirect(runId ? "/discover/results" : "/dashboard");
+}
+
+/**
+ * "Update my matches": remakes matches made before the student's strengths counted (see
+ * updateMatchesForStrengths; it does nothing when they already count), then shows them.
+ */
+export async function updateMatchesAction() {
+  const student = await requireUser(["student"]);
+  await updateMatchesForStrengths(await getDb(), student.id);
+  redirect("/discover/results");
 }
 
 export async function explainMatchesAction() {

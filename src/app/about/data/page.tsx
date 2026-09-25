@@ -20,9 +20,9 @@ export default function DataSourcesPage() {
         <p>
           <strong>Personality assessment.</strong> The 20 statements are the Mini-IPIP (Donnellan, Oswald, Baird &amp; Lucas,
           2006), from the public-domain <a className="underline" href="https://ipip.ori.org/">International Personality Item Pool</a>.
-          Four of its five traits give a small boost to careers that especially call for a student&apos;s strengths: at most 10
-          points out of 100, and a low score never pushes a career down. Emotional stability (&ldquo;Staying calm&rdquo;) never
-          changes which careers are suggested.
+          Four of its five traits give a small boost to careers that especially call for them, but only traits a student rates
+          above the middle of the scale: at most 10 points out of 100. A trait at or below the middle never pushes a career
+          down. Emotional stability (&ldquo;Staying calm&rdquo;) never changes which careers are suggested.
         </p>
         <p>
           <strong>Work styles.</strong> The strengths that help in each career, like attention to detail or empathy, come from
@@ -33,7 +33,8 @@ export default function DataSourcesPage() {
           ratings with a hybrid AI and expert method (its source is marked &ldquo;AI/Expert&rdquo;) rather than by surveying
           workers, so we treat them as estimates: we show them as a starting point and use them only lightly in career matches.
           College Compass connects them to personality traits in its own way; USDOL/ETA has not approved, endorsed, or tested
-          this use.
+          this use. In matches, each career is compared only with careers that need about the same amount of preparation, so
+          personality doesn&apos;t favor careers that take more school.
         </p>
         <p>
           <strong>Careers.</strong> Career descriptions, interest profiles and preparation levels come from the{" "}

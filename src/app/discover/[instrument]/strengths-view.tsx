@@ -1,16 +1,30 @@
 import Link from "next/link";
 import { startAssessmentAction } from "@/app/actions/discover";
 import { Button, ButtonLink, Card, PageHeading } from "@/components/ui";
-import { strengthsFor } from "@/lib/assessments/descriptions";
+import { strengthsFor, traitNames } from "@/lib/assessments/descriptions";
 import type { BigFive } from "@/lib/assessments/instruments";
+import type { StrengthsInMatches } from "@/lib/matching/service";
+import { UpdateMatchesButton } from "../update-matches";
 
 /**
- * What the student's matches say about personality:
- * - "updated": their latest matches count their strengths (see runUsedPersonality);
- * - "ready": they have matches, made before strengths counted (finishing any activity updates them);
- * - "none": no matches yet, since interests aren't done.
+ * What the student's strengths do to their matches, naming only the strengths that count (see
+ * strengthsInMatches). Never promises a boost the code won't give.
  */
-export type MatchesState = "updated" | "ready" | "none";
+function matchesText({ state, counted }: StrengthsInMatches): string {
+  const boost = `careers that call for your ${traitNames(counted)}`;
+  switch (state) {
+    case "boosted":
+      return `Your matches now give a small boost to ${boost}. Your interests still count the most, and a lower score never pushes a career down.`;
+    case "stale":
+      return `Your matches were made before your strengths counted. Update them to give a small boost to ${boost}. Your interests still count the most, and a lower score never pushes a career down.`;
+    case "unchanged":
+      return "Your answers didn't change your matches. Your interests decide them.";
+    case "none":
+      return counted.length
+        ? `Finish the interests activity to get career matches. They'll give a small boost to ${boost}, but your interests count the most.`
+        : "Finish the interests activity to get career matches. Your interests will decide them.";
+  }
+}
 
 function formatDate(d: Date) {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
@@ -30,7 +44,7 @@ export function StrengthsView({
   traits: Record<BigFive, number>;
   completedAt: Date;
   retakeAfter: Date;
-  matches: MatchesState;
+  matches: StrengthsInMatches;
 }) {
   const strengths = strengthsFor(traits);
   const canRetake = retakeAfter <= new Date();
@@ -66,19 +80,20 @@ export function StrengthsView({
 
       <Card className="mt-6 space-y-3">
         <h2 className="font-medium">Your strengths and your career matches</h2>
-        <p className="text-sm">
-          {matches === "updated"
-            ? "Your matches now give a small boost to careers that especially call for your strengths. Your interests still count the most, and a lower score never pushes a career down."
-            : matches === "ready"
-              ? "The next time your matches are updated, careers that especially call for your strengths will get a small boost. Your interests count the most, and a lower score never pushes a career down."
-              : "Finish the interests activity to get career matches. Careers that especially call for your strengths will get a small boost, but your interests count the most."}
-        </p>
+        <p className="text-sm">{matchesText(matches)}</p>
         <p className="text-sm text-muted">Staying calm never changes which careers we suggest to you.</p>
         <div className="flex flex-wrap gap-2">
-          {matches === "none" ? (
+          {matches.state === "none" ? (
             <ButtonLink href="/discover/interests">Go to interests</ButtonLink>
+          ) : matches.state === "stale" ? (
+            <>
+              <UpdateMatchesButton />
+              <ButtonLink href="/discover/results" variant="secondary">
+                See my career matches
+              </ButtonLink>
+            </>
           ) : (
-            <ButtonLink href="/discover/results">{matches === "updated" ? "See my updated matches" : "See my career matches"}</ButtonLink>
+            <ButtonLink href="/discover/results">{matches.state === "boosted" ? "See my updated matches" : "See my career matches"}</ButtonLink>
           )}
         </div>
       </Card>

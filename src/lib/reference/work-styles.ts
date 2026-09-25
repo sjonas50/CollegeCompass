@@ -1,6 +1,3 @@
-import { asc, eq } from "drizzle-orm";
-import type { Db } from "@/db";
-import { occupationWorkStyles } from "@/db/schema";
 import { type Strength, strengthFor } from "../assessments/descriptions";
 import type { BigFive } from "../assessments/instruments";
 
@@ -13,9 +10,9 @@ import type { BigFive } from "../assessments/instruments";
  *
  * Two scales per occupation: WI, Work Styles Impact (−3 to +3, how much the style helps or gets in
  * the way of the work), and DR, Distinctiveness Rank (up to 10 styles that set the occupation apart
- * from others; 0 means not ranked). Rank 1 is the most distinctive: O*NET OnLine lists an
- * occupation's work styles in DR order, and rank-1 styles sit furthest above the all-occupation
- * average (checked against the 31.0 file).
+ * from others; 0 means not ranked). Rank 1 is the most distinctive (O*NET's definition; O*NET
+ * OnLine lists an occupation's work styles in DR order). Lower ranks tend to sit further above the
+ * all-occupation average.
  *
  * Caution: the file's Domain Source is "AI/Expert". O*NET produced these ratings with a hybrid AI
  * and expert method rather than by surveying workers, so they're estimates. We use them lightly in
@@ -73,7 +70,7 @@ export const WORK_STYLES: readonly WorkStyleInfo[] = [
   { id: "empathy", elementId: "1.D.2.c", onetName: "Empathy", group: "interpersonal", name: "Empathy", description: "Caring about others and noticing what they need and how they feel." },
   { id: "cooperation", elementId: "1.D.2.d", onetName: "Cooperation", group: "interpersonal", name: "Cooperation", description: "Being friendly, helpful and ready to pitch in." },
   { id: "optimism", elementId: "1.D.2.e", onetName: "Optimism", group: "interpersonal", name: "Optimism", description: "Staying positive, even when things are hard." },
-  { id: "social_orientation", elementId: "1.D.2.f", onetName: "Social Orientation", group: "interpersonal", name: "Enjoying people", description: "Liking to work with people and getting energy from it." },
+  { id: "social_orientation", elementId: "1.D.2.f", onetName: "Social Orientation", group: "interpersonal", name: "Connecting with people", description: "Working with others and building connections." },
   { id: "cautiousness", elementId: "1.D.3.a", onetName: "Cautiousness", group: "conscientiousness", name: "Carefulness", description: "Thinking things through and avoiding risks before deciding." },
   { id: "attention_to_detail", elementId: "1.D.3.b", onetName: "Attention to Detail", group: "conscientiousness", name: "Attention to detail", description: "Being careful, organized and thorough." },
   { id: "dependability", elementId: "1.D.3.c", onetName: "Dependability", group: "conscientiousness", name: "Dependability", description: "Being reliable and doing what you said you would." },
@@ -141,20 +138,14 @@ export function traitForStyle(style: WorkStyle): MappedTrait | null {
 export const MAPPED_STYLES: readonly WorkStyle[] = [...TRAIT_OF_STYLE.keys()];
 
 // ---------------------------------------------------------------------------
-// Loading
+// A career's styles
 // ---------------------------------------------------------------------------
 
+/**
+ * One of an occupation's work styles. Loaded by getOccupationWorkStyles (work-styles-db.ts): this
+ * module has no database imports, so client code that imports matching stays small.
+ */
 export type OccupationWorkStyle = { style: WorkStyle; impact: number; distinctiveRank: number | null };
-
-/** One occupation's work styles, most distinctive first. Empty when O*NET has none for it. */
-export async function getOccupationWorkStyles(db: Db, code: string): Promise<OccupationWorkStyle[]> {
-  const rows = await db
-    .select({ style: occupationWorkStyles.style, impact: occupationWorkStyles.impact, distinctiveRank: occupationWorkStyles.distinctiveRank })
-    .from(occupationWorkStyles)
-    .where(eq(occupationWorkStyles.occupationCode, code))
-    .orderBy(asc(occupationWorkStyles.distinctiveRank), asc(occupationWorkStyles.style));
-  return rows.filter((r): r is OccupationWorkStyle => r.style in WORK_STYLE_INFO);
-}
 
 /**
  * The styles that most set an occupation apart (Distinctiveness Rank 1 first), at most `limit`.
@@ -169,19 +160,31 @@ export function distinctiveStyles(styles: readonly OccupationWorkStyle[], limit 
 }
 
 /**
- * Splits a career's key styles for a student who took the personality activity: styles linked to
- * a trait they scored high on ("high" on their strengths page) help, with that strength; the rest
- * are skills anyone can build. Styles linked to no trait, including stress tolerance and
- * self-control, are always in the second group: their emotional-stability score is never used.
+ * Splits a career's key styles for a student who took the personality activity, in three groups:
+ *
+ * - `helps`: styles linked to a trait where the student is high or in the middle, with that
+ *   strength. Both levels are strengths on the student's strengths page ("Curious", "Organized when
+ *   it counts"), so pages show the strength's label with the style.
+ * - `building`: styles linked to a trait where the student is low. Low levels are strengths too
+ *   ("Thoughtful", "Hands-on"), just different ones, so these are skills anyone can build.
+ * - `other`: styles linked to no trait (Integrity, Sincerity, Initiative, Stress Tolerance, …). We
+ *   know nothing about the student for these, so pages show them without anything personal: never
+ *   as something the student is still building. Stress tolerance and self-control are always here,
+ *   because emotional stability is never used.
  */
 export function strengthsForCareer(styles: readonly WorkStyle[], traits: Record<BigFive, number>) {
   const helps: { style: WorkStyle; strength: Strength }[] = [];
   const building: WorkStyle[] = [];
+  const other: WorkStyle[] = [];
   for (const style of styles) {
     const trait = traitForStyle(style);
-    const strength = trait ? strengthFor(trait, traits[trait]) : null;
-    if (strength?.level === "high") helps.push({ style, strength });
-    else building.push(style);
+    if (!trait) {
+      other.push(style);
+      continue;
+    }
+    const strength = strengthFor(trait, traits[trait]);
+    if (strength.level === "low") building.push(style);
+    else helps.push({ style, strength });
   }
-  return { helps, building };
+  return { helps, building, other };
 }

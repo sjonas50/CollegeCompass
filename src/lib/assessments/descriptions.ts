@@ -168,6 +168,12 @@ export function strengthsFor(traits: Record<BigFive, number>): Strength[] {
   return [...ordered, "neuroticism" as const].map((t) => strengthFor(t, traits[t]));
 }
 
+/** Trait names to use in a sentence, e.g. "curiosity, organization and warmth". */
+export function traitNames(traits: readonly BigFive[]): string {
+  const names = traits.map((t) => TRAIT_COPY[t].name.toLowerCase());
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
+}
+
 /** A short summary, e.g. "Curious, organized and caring": the three that stand out most, never "Staying calm". */
 export function strengthsSummary(traits: Record<BigFive, number>): string {
   const labels = strengthsFor(traits)

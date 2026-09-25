@@ -240,30 +240,53 @@ describe("the strengths card", () => {
     for (const s of ["Social energy: Outgoing.", "Warmth: Caring.", "Organization: Organized.", "Curiosity: Curious.", "Staying calm: Feels things deeply."]) {
       expect(t).toContain(s);
     }
-    expect(t).toContain("Your matches give a small boost to careers that especially call for these strengths. Your interests count the most.");
+    // All four career traits are above the middle, so all four count, and the card names them.
+    expect(t).toContain(
+      "Your matches give a small boost to careers that call for your social energy, warmth, organization and curiosity. Your interests count the most.",
+    );
     expect(t).toContain("What your strengths mean for school and work");
     expect(t).not.toContain("Find my strengths");
   });
 
-  it("doesn't say strengths count in matches made before they did", async () => {
+  it("names only the strengths above the middle, and none when no strength is", async () => {
     await takeInterests(SCIENTIST);
-    await takePersonality(() => 4);
+    // Outgoing and curious; warmth and organization in the middle ("Very accurate" either way cancels out).
+    await takePersonality((i) => (i.factor === "extraversion" || i.factor === "intellect" ? (i.keyed === 1 ? 5 : 1) : 3));
+    expect(text(await render())).toContain("Your matches give a small boost to careers that call for your social energy and curiosity.");
+
+    await state.db!.update(schema.assessmentAttempts).set({ completedAt: new Date(Date.now() - 100 * DAY_MS) });
+    // Quiet and hands-on: every career trait below the middle.
+    await takePersonality((i) => (i.factor === "neuroticism" ? 3 : i.keyed === 1 ? 2 : 4));
+    const t = text(await render());
+    expect(t).toContain("Social energy: Thoughtful.");
+    expect(t).toContain("Your answers didn't change your matches. Your interests decide them.");
+    expect(t).not.toMatch(/small boost|call for your/);
+  });
+
+  it("offers to update matches made before strengths counted", async () => {
+    await takeInterests(SCIENTIST);
+    await takePersonality((i) => (i.keyed === 1 ? 4 : 2));
     const run = await latestMatchRun(state.db!, state.user!.id);
     await state.db!.update(schema.matchRuns).set({ scoringVersion: "1" }).where(eq(schema.matchRuns.id, run!.id));
     const t = text(await render());
     expect(t).toContain("Curiosity:");
-    expect(t).not.toContain("small boost");
+    expect(t).toContain(
+      "These matches were made before your strengths counted. Update them to give a small boost to careers that call for your social energy, warmth, organization and curiosity.",
+    );
+    expect(t).toContain("Update my matches");
+    expect(t).not.toContain("Your matches give a small boost");
   });
 
   it("doesn't say strengths count when no work styles are loaded", async () => {
     await state.db!.delete(schema.occupationWorkStyles);
     await loadOccupationProfiles(state.db!, { fresh: true });
     await takeInterests(SCIENTIST);
-    await takePersonality(() => 4);
+    await takePersonality((i) => (i.keyed === 1 ? 4 : 2));
     expect((await latestMatchRun(state.db!, state.user!.id))?.personalityAttemptId).toBeNull();
     const t = text(await render());
     expect(t).toContain("Curiosity:");
-    expect(t).not.toContain("small boost");
+    expect(t).toContain("Your answers didn't change your matches. Your interests decide them.");
+    expect(t).not.toMatch(/small boost|Update my matches/);
   });
 });
 

@@ -1,11 +1,11 @@
 import { desc, eq } from "drizzle-orm";
 import type { Db } from "@/db";
 import { careerMatches, matchRuns, occupationInterests, occupationValues, occupationWorkStyles, occupations } from "@/db/schema";
-import type { Riasec, WorkValue } from "../assessments/instruments";
+import type { BigFive, Riasec, WorkValue } from "../assessments/instruments";
 import { latestResult } from "../assessments/service";
 import { SCORING_VERSION } from "../assessments/scoring";
-import type { WorkStyle } from "../reference/work-styles";
-import { type OccupationProfile, rankForStudent, withTraitDemands } from "./match";
+import type { MappedTrait, WorkStyle } from "../reference/work-styles";
+import { type OccupationProfile, rankForStudent, strengthsThatCount, withTraitDemands } from "./match";
 import { forgetSavedContexts } from "../counselor/saved-context";
 
 let profileCache: { at: number; profiles: OccupationProfile[] } | undefined;
@@ -13,8 +13,8 @@ const CACHE_MS = 60 * 60 * 1000;
 
 /**
  * All occupations that have a complete O*NET interest profile, with how much each calls for each
- * personality trait where O*NET has work styles for it (standardized across these occupations).
- * Cached: reference data rarely changes.
+ * personality trait where O*NET has work styles for it (compared with the others at its Job Zone,
+ * see withTraitDemands). Cached: reference data rarely changes.
  */
 export async function loadOccupationProfiles(db: Db, { fresh = false } = {}): Promise<OccupationProfile[]> {
   if (!fresh && profileCache && Date.now() - profileCache.at < CACHE_MS) return profileCache.profiles;
@@ -53,13 +53,49 @@ export async function loadOccupationProfiles(db: Db, { fresh = false } = {}): Pr
   return profiles;
 }
 
+/** Whether personality can count in matches at all: some careers have work styles loaded. */
+export async function personalityCanCount(db: Db) {
+  return (await loadOccupationProfiles(db)).some((p) => p.traitDemand);
+}
+
 /**
- * Whether a match run's ranking used the student's personality. Since scoring version 2 a run
- * records the personality attempt only when it counted (see computeMatches); version 1 runs
- * recorded it without using it.
+ * What a student's personality result does to their matches, so pages say only what the code does:
+ *
+ * - "none": no matches yet (interests aren't done).
+ * - "boosted": the latest matches give a small boost to careers that call for `counted`.
+ * - "stale": the latest matches don't count this result yet, because they were made before
+ *   personality counted (an older SCORING_VERSION) or before this result. updateMatchesForStrengths
+ *   would boost careers that call for `counted`.
+ * - "unchanged": the result doesn't change the matches: no trait is above the middle of the scale,
+ *   or no work styles are loaded.
+ *
+ * `counted` is the strengths that count (see strengthsThatCount), or would once there are matches;
+ * empty when personality can't count.
  */
-export function runUsedPersonality(run: { personalityAttemptId: string | null; scoringVersion: string }) {
-  return run.personalityAttemptId !== null && run.scoringVersion !== "1";
+export type StrengthsInMatches = { state: "none" | "boosted" | "stale" | "unchanged"; counted: MappedTrait[] };
+
+export async function strengthsInMatches(
+  db: Db,
+  run: { personalityAttemptId: string | null; scoringVersion: string } | null,
+  personality: { attemptId: string; scores: { traits: Record<BigFive, number> } },
+): Promise<StrengthsInMatches> {
+  // Since scoring version 2 a run records the personality attempt only when it counted (see computeMatches).
+  const current = run !== null && run.scoringVersion === SCORING_VERSION && run.personalityAttemptId === personality.attemptId;
+  const counted = current || (await personalityCanCount(db)) ? strengthsThatCount(personality.scores.traits) : [];
+  if (!run) return { state: "none", counted };
+  if (counted.length === 0) return { state: "unchanged", counted };
+  return { state: current ? "boosted" : "stale", counted };
+}
+
+/**
+ * Recomputes a student's matches when they don't yet count their personality result but would
+ * (state "stale"), such as matches made before personality counted. Otherwise it does nothing, so
+ * pressing "Update my matches" twice makes one new set. Returns whether it made new matches.
+ */
+export async function updateMatchesForStrengths(db: Db, userId: string): Promise<boolean> {
+  const [personality, run] = await Promise.all([latestResult(db, userId, "personality"), latestMatchRun(db, userId)]);
+  if (!personality || !run || (await strengthsInMatches(db, run, personality)).state !== "stale") return false;
+  return (await computeMatches(db, userId)) !== null;
 }
 
 /**
@@ -77,7 +113,7 @@ export async function computeMatches(db: Db, userId: string) {
   const profiles = await loadOccupationProfiles(db);
   if (profiles.length === 0) throw new Error("Reference data not loaded. Run `npm run data:load`.");
   // Personality counts only where work styles are loaded; the run records it only when it counted,
-  // so pages never say strengths shaped matches they didn't (see runUsedPersonality).
+  // so pages never say strengths shaped matches they didn't (see strengthsInMatches).
   const usedPersonality = personality && profiles.some((p) => p.traitDemand) ? personality : null;
   const ranked = rankForStudent(
     { interests: interests.scores.areas, valuesRanking: values?.scores.ranking, personality: usedPersonality?.scores.traits },
