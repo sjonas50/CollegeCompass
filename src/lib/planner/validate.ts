@@ -189,6 +189,10 @@ function checkVariant(v: Variant, where: string, issues: string[]) {
     if (r.kind === "credits") {
       for (const s of r.substitutesForOneOf ?? []) if (!ids.has(s)) issues.push(`${where} ${r.id}: substitutesForOneOf names unknown requirement "${s}".`);
     }
+    if (r.kind === "same_language" && r.differentFrom !== undefined) {
+      const other = all.find((q) => q.id === r.differentFrom);
+      if (!other || other.kind !== "same_language") issues.push(`${where} ${r.id}: differentFrom names "${r.differentFrom}", which isn't a same-language requirement here.`);
+    }
   }
   if (!v.extends) {
     for (const c of v.checks ?? []) {

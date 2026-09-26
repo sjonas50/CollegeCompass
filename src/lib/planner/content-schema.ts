@@ -136,9 +136,10 @@ export const SelectorSchema = z
     cte: z.boolean().optional(),
     lab: z.literal(true).optional(),
     exclude: z.array(CourseTypeIdSchema).min(1).optional(),
+    substitute: z.literal(true).optional(),
   })
   .refine(
-    (s) => Object.keys(s).some((k) => k !== "exclude"),
+    (s) => Object.keys(s).some((k) => k !== "exclude" && k !== "substitute"),
     "A selector needs something to match on (types, capabilities, subjects, levels, grades …); an empty one would match every class.",
   );
 
@@ -174,6 +175,7 @@ export const ReqSchema: z.ZodType<Req> = z.lazy(() =>
       levels: z.number().int().min(1).max(4),
       grades: z.array(Grade).min(1).optional(),
       exclude: z.array(z.enum(LANGUAGES)).min(1).optional(),
+      differentFrom: Id.optional(),
     }),
     z.strictObject({ ...leaf, kind: z.literal("total_credits"), units: Units, source: z.enum(["state", "school_guide"]) }),
     z.strictObject({ ...leaf, kind: z.literal("remaining_electives"), units: Units }),
@@ -309,6 +311,7 @@ export const GenericCatalogFileSchema = z.strictObject({
         units: Units.optional(),
         grades: z.array(Grade).min(1).optional(),
         firstSchoolYear: Year.optional(),
+        prereqs: z.array(z.array(CourseTypeIdSchema).min(1)).min(1).optional(),
         cite: CiteList.optional(),
       }),
     )

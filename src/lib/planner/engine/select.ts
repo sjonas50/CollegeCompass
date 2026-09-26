@@ -42,6 +42,15 @@ export function matchesAny(item: Item, sels: readonly Selector[]): boolean {
   return sels.some((s) => matchesFields(item, s, false));
 }
 
+/**
+ * The class counts only through a substitution selector (Physics as Tennessee's 4th math): it
+ * matches one marked `substitute` and none of the requirement's own.
+ */
+export function matchesOnlyAsSubstitute(item: Item, sels: readonly Selector[]): boolean {
+  if (!sels.some((s) => s.substitute)) return false;
+  return matchesAny(item, sels.filter((s) => s.substitute)) && !matchesAny(item, sels.filter((s) => !s.substitute));
+}
+
 /** A guessed class that would count if the student confirmed its type ("Guessed class type"). */
 export function wouldMatchIfConfirmed(item: Item, sels: readonly Selector[]): boolean {
   return item.assumed && !matchesAny(item, sels) && sels.some((s) => matchesFields(item, s, true));

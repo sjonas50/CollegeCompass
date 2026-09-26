@@ -203,6 +203,11 @@ type Def = {
    * doesn't pick it first for a student without one (a student's own row never gets a warning).
    */
   usuallyAfter?: readonly string[];
+  /**
+   * An introductory class for these: the planner never suggests it once the student has one of
+   * them (Exploring Computer Science after Coding I or AP Computer Science A).
+   */
+  introTo?: readonly string[];
 };
 
 const ALL_LEVELS = COURSE_TYPE_LEVELS;
@@ -874,6 +879,7 @@ const CORE = {
     subject: "computer_science",
     grades: [9, 10],
     stateTitles: { UT: "Exploring Computer Science", TN: "Computer Science Foundations" },
+    introTo: ["cs.principles", "cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber"],
   },
   "cs.principles": {
     title: "Computer Science Principles",
@@ -1279,6 +1285,8 @@ export type CourseType = {
   overlaps: readonly CourseTypeId[];
   /** Usually taken after one of these (a soft order the planner prefers, never a prerequisite). */
   usuallyAfter: readonly CourseTypeId[];
+  /** An introduction to these: never suggested after one of them. */
+  introTo: readonly CourseTypeId[];
 };
 
 function build(): Map<CourseTypeId, CourseType> {
@@ -1292,6 +1300,7 @@ function build(): Map<CourseTypeId, CourseType> {
     }
     for (const o of def.overlaps ?? []) if (!ids.has(o)) problems.push(`${id}: unknown overlapping type ${o}`);
     for (const a of def.usuallyAfter ?? []) if (!ids.has(a)) problems.push(`${id}: unknown usually-after type ${a}`);
+    for (const a of def.introTo ?? []) if (!ids.has(a)) problems.push(`${id}: unknown type ${a} it introduces`);
     types.set(id, {
       id,
       title: def.title,
@@ -1312,6 +1321,7 @@ function build(): Map<CourseTypeId, CourseType> {
       note: def.note ?? null,
       overlaps: (def.overlaps ?? []) as readonly CourseTypeId[],
       usuallyAfter: (def.usuallyAfter ?? []) as readonly CourseTypeId[],
+      introTo: (def.introTo ?? []) as readonly CourseTypeId[],
     });
   }
   if (ids.size !== entries.length) problems.push("duplicate course type id");

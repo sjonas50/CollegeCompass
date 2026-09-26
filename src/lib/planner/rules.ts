@@ -131,6 +131,13 @@ export type Selector = {
   /** Exclude courses the school's list marks lecture-only (Utah CE science needs a lab for graduation). */
   lab?: true;
   exclude?: CourseTypeId[];
+  /**
+   * A class from another subject the state lets stand in for this requirement for the diploma
+   * (Tennessee Policy 3.103: Physics or computer science as the 4th math, a career class or
+   * computer science as the 3rd lab science). Colleges may not count it the same way, so a class
+   * counts here through this selector only when no plain route is as good (allocate.ts).
+   */
+  substitute?: true;
 };
 
 // Requirements -------------------------------------------------------------
@@ -201,6 +208,11 @@ export type SameLanguageReq = Leaf & {
   grades?: SchoolGrade[];
   /** Languages that don't count here. */
   exclude?: LanguageCode[];
+  /**
+   * A different language from the one this requirement counts (Texas Arts and Humanities: "two
+   * levels of the same language ... and two levels of a different language", §74.13(f)(4)(C)).
+   */
+  differentFrom?: ReqId;
 };
 
 export type TotalCreditsReq = Leaf & { kind: "total_credits"; units: number; source: "state" | "school_guide" };

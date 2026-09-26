@@ -120,6 +120,21 @@ export type FillResult = {
 
 const WEIGHT: Record<number, number> = { 0: 1_000_000, 1: 10_000, 2: 100, 3: 1 };
 
+/** Route preference: a missing requirement on the goal's career pathway, above any number of overlaps. */
+const PATHWAY_WEIGHT = 100;
+
+/** How many of a route's missing requirements name one of these classes. */
+function missingNaming(types: ReadonlySet<CourseTypeId>): (r: AltResult) => number {
+  return (r) => {
+    let score = 0;
+    for (const l of r.leaves) {
+      if (l.missing <= 0 || (l.leaf.req.kind !== "credits" && l.leaf.req.kind !== "count")) continue;
+      if (l.leaf.req.select.some((s) => s.types?.some((t) => types.has(t)))) score++;
+    }
+    return score;
+  };
+}
+
 /** Lab sciences whose AP, IB and college versions normally come after a first year of the class. */
 const FIRST_YEAR_SCIENCES: readonly CourseTypeId[] = ["sci.bio", "sci.chem"];
 
@@ -135,6 +150,31 @@ export function isRepeatable(typeId: CourseTypeId): boolean {
 /** The same class, or classes that teach the same content (course-types `overlaps`). */
 export function sameContent(a: CourseTypeId, b: CourseTypeId): boolean {
   return a === b || getCourseType(a).overlaps.includes(b);
+}
+
+/**
+ * An introductory class the student is already past: they have (or the plan has) a class it
+ * introduces in this grade or before (Exploring Computer Science after Coding I or AP Computer
+ * Science A). Never suggested.
+ */
+export function pastIntro(items: readonly Item[], typeId: CourseTypeId, grade: number): boolean {
+  const next = getCourseType(typeId).introTo;
+  return next.length > 0 && items.some((i) => i.grade <= grade && countsForSequence(i) && next.includes(i.typeId));
+}
+
+/**
+ * A class the student took and didn't pass (F, W or I), hasn't passed since, and that would count
+ * for these requirements: what they'd retake.
+ */
+export function failedAttempt(items: readonly Item[], sels: Need["selectors"]): Item | null {
+  return items.find((i) => i.own && i.noCredit && matchesAny(i, sels) && !items.some((j) => j.typeId === i.typeId && countsForSequence(j))) ?? null;
+}
+
+/** An English level (English I-IV) outside its own grade: only as a retake of one the student didn't pass. */
+export function lateEnglish(items: readonly Item[], typeId: CourseTypeId, grade: number): boolean {
+  const t = getCourseType(typeId);
+  if (t.ladder?.id !== "ela" || grade <= t.grades[1]) return false;
+  return !items.some((i) => i.own && i.noCredit && i.typeId === typeId);
 }
 
 export function probe(row: CatalogRow, grade: SchoolGrade, schoolYear: number, term?: CourseTerm): Item {
@@ -210,22 +250,24 @@ export class Filler {
    * a class the families want (their sciences, key courses, a career pathway's classes).
    */
   private familyFit(): (r: AltResult) => number {
-    const wanted = new Set<CourseTypeId>();
+    const wanted = new Set<CourseTypeId>(this.pathwayTypes());
     for (const f of this.config.families) for (const t of [...(f.content?.sciences ?? []), ...(f.content?.keyCourses ?? [])]) wanted.add(t);
-    // A career pathway the goals point to, or the student chose (a Texas endorsement's program of study).
+    return missingNaming(wanted);
+  }
+
+  /**
+   * The classes of the career pathway the goals point to (families.json ctePathways for this
+   * state), the one the student chose (a Texas endorsement's program of study), or the one they're
+   * taking.
+   */
+  private pathwayTypes(): Set<CourseTypeId> {
     const clusters = this.config.families.flatMap((f) => (f.content?.ctePathways ?? []).filter((p) => p.state === this.ctx.state).map((p) => p.cluster));
     if (this.ctx.choices.ctePathway) clusters.push(this.ctx.choices.ctePathway.cluster);
     const own = ownCtePathway(this.ctx);
     if (own) clusters.push(own);
-    for (const c of clusters) for (const t of ladderTypes(`cte.${c}` as LadderId)) wanted.add(t.id);
-    return (r) => {
-      let score = 0;
-      for (const l of r.leaves) {
-        if (l.missing <= 0 || (l.leaf.req.kind !== "credits" && l.leaf.req.kind !== "count")) continue;
-        if (l.leaf.req.select.some((s) => s.types?.some((t) => wanted.has(t)))) score++;
-      }
-      return score;
-    };
+    const out = new Set<CourseTypeId>();
+    for (const c of clusters) for (const t of ladderTypes(`cte.${c}` as LadderId)) out.add(t.id);
+    return out;
   }
 
   /**
@@ -254,6 +296,10 @@ export class Filler {
    */
   private prefer(rc?: RuleSetCtx): (r: AltResult) => number {
     const fit = this.familyFit();
+    // The goal's own career pathway outranks classes that only happen to overlap other targets (a
+    // Public Services endorsement's education program for a future teacher, not health science
+    // because its list also names Anatomy): §74.13(f)(8) accepts any listed program.
+    const pathway = missingNaming(this.pathwayTypes());
     const others = new Set<CourseTypeId>();
     for (const [id, alt] of this.current) {
       const other = this.config.ruleSets.find((x) => x.rs.id === id);
@@ -264,7 +310,7 @@ export class Filler {
       }
     }
     return (r) => {
-      let score = fit(r);
+      let score = fit(r) + PATHWAY_WEIGHT * pathway(r);
       for (const l of r.leaves) {
         if (l.missing <= 0 || (l.leaf.req.kind !== "credits" && l.leaf.req.kind !== "count")) continue;
         if (l.leaf.req.select.some((s) => s.types?.some((t) => others.has(t)))) score++;
@@ -679,11 +725,16 @@ export class Filler {
     // are never added for it: rigor is a level choice on classes already planned (design §5.7).
     if (advancedOnly(need.selectors)) return [];
     const senior = need.seniorMath ? this.seniorMathOrder(startRank(this.items, 13)) : null;
+    // A retake is the class itself, never its AP or college version (AP Seminar for a failed English 10).
+    const retake = failedAttempt(this.items, need.selectors) !== null;
     const out = this.staticCandidates(need).filter(({ row, grade }) => {
       if (senior && senior(row.typeId) === null) return false;
+      if (retake && row.collegeLevel) return false;
+      if (lateEnglish(this.items, row.typeId, grade)) return false;
       if (grade < from || grade > by) return false;
       if (!this.yearAllows(grade, need.priority)) return false;
       if (this.alreadyHas(row.typeId) || !this.typeAllowed(row.typeId, grade, row.units)) return false;
+      if (pastIntro(this.items, row.typeId, grade)) return false;
       if (this.dismissed(need, row)) return false;
       if (need.distinctGrades && this.items.some((i) => i.grade === grade && i.subject === row.subject)) return false;
       // A class placed for a math requirement (AP Computer Science A as Texas's 4th math credit)
@@ -1045,12 +1096,21 @@ export class Filler {
 
   // Steps ------------------------------------------------------------------------------------------
 
+  /**
+   * Math targets past a rung the family opted out of in writing (Utah Secondary Math III): the
+   * ladder can't reach them, so it plans the opt-out's own path instead (Secondary Math II, then
+   * the applied class that takes Math III's place), and they show as the family's choice.
+   */
+  private optedOutRank(rank: number): boolean {
+    return !!this.ctx.choices.utMath3OptOut && rank >= 3;
+  }
+
   private ladderConstraintsFromNeeds(): LadderConstraint[] {
     const out: LadderConstraint[] = [];
     for (const n of this.needs) {
       if (n.missing <= 0) continue;
       const rank = isLadderish(n.selectors);
-      if (rank === null) continue;
+      if (rank === null || this.optedOutRank(rank)) continue;
       out.push({
         id: n.id,
         rank,
@@ -1216,6 +1276,9 @@ export class Filler {
         ? (this.fullLadder?.slack.find((e) => e.step.grade <= 8 && !e.step.summer && e.binding !== null && e.binding.rank > e.step.rank && e.latest === e.step.grade)?.step ?? null)
         : null;
     const fallback = early ? `If you don't take ${rungName(this.ladderFamilyValue, early.rank, ctx.state)} in ${nth(early.grade)}: ` : "";
+    // Targets past the rung the family opted out of: the top step leads to the applied class that
+    // takes that rung's place (never "precalculus would come in college").
+    const optedOut = needsBefore.some((n) => n.missing > 0 && this.optedOutRank(isLadderish(n.selectors) ?? 0));
     for (const { step, placement } of placed) {
       // The rung's sources: the requirements and targets that set the ladder's goal.
       const targetNeeds = needsBefore.filter((n) => kept.some((c) => c.id === n.id && c.rank >= step.rank));
@@ -1230,7 +1293,9 @@ export class Filler {
             ? step.rank >= topStep
               ? `${stepName} in ${nth(step.grade)}: ${rungName(this.ladderFamilyValue, target, ctx.state)} would come in college.`
               : `${stepName} in ${nth(step.grade)} is a step toward ${rungName(this.ladderFamilyValue, target, ctx.state)}.`
-            : `${stepName} in ${nth(step.grade)} reaches the math your goals ask for.`;
+            : optedOut
+              ? `${stepName} in ${nth(step.grade)} comes before the applied math class that takes the place of ${rungName(this.ladderFamilyValue, 3, ctx.state)}.`
+              : `${stepName} in ${nth(step.grade)} reaches the math your goals ask for.`;
       placement.extraReasons.unshift(reason("ladder", `${fallback}${text}`, { claim: "suggestion", citations, params: { rank: step.rank, grade: step.grade } }));
     }
   }
@@ -1289,16 +1354,20 @@ export class Filler {
     }
   }
 
-  private chooseLanguage(levels: number): LanguageCode | null {
-    if (this.ctx.choices.worldLanguage) return this.ctx.choices.worldLanguage;
+  /**
+   * The language to plan a same-language requirement in. `avoid`: the language a requirement for a
+   * different language can't use (the one its partner counts).
+   */
+  private chooseLanguage(levels: number, avoid: LanguageCode | null = null): LanguageCode | null {
+    if (this.ctx.choices.worldLanguage && this.ctx.choices.worldLanguage !== avoid) return this.ctx.choices.worldLanguage;
     // The language the student already takes (guesses count for sequencing).
     const own = this.items.filter((i) => i.own && i.subject === "world_language" && !i.noCredit);
     for (const i of own.sort((a, b) => b.grade - a.grade)) {
       const l = getCourseType(i.typeId).ladder;
-      if (l?.id.startsWith("lang.") && !l.id.endsWith(".other")) return l.id.slice(5) as LanguageCode;
+      if (l?.id.startsWith("lang.") && !l.id.endsWith(".other") && l.id.slice(5) !== avoid) return l.id.slice(5) as LanguageCode;
     }
     for (const code of LANGUAGES) {
-      if (code === "other") continue;
+      if (code === "other" || code === avoid) continue;
       const offered = [1, 2].slice(0, levels).every((lv) => this.ctx.planGrades.some((g) => (this.ctx.catalogs.get(g)!.byType.get(`lang.${code}.${lv}` as CourseTypeId) ?? []).length > 0));
       if (offered) return code;
     }
@@ -1307,7 +1376,7 @@ export class Filler {
 
   private placeLanguages(maxPriority = 3): void {
     for (const need of [...this.needs].filter((n) => n.language && n.missing > 0 && n.priority <= maxPriority).sort((a, b) => a.priority - b.priority)) {
-      const code = this.chooseLanguage(need.language!.levels);
+      const code = this.chooseLanguage(need.language!.levels, this.partnerLanguage(need));
       if (!code) {
         this.blocked.set(need.id, "not_offered");
         continue;
@@ -1329,6 +1398,16 @@ export class Filler {
       if (result === "doesnt_fit") this.trySwitch(need);
       this.refreshNeeds();
     }
+  }
+
+  /** For a requirement that asks for a different language: the language its partner requirement counts. */
+  private partnerLanguage(need: Need): LanguageCode | null {
+    const req = need.leaf?.req;
+    if (!need.rc || req?.kind !== "same_language" || !req.differentFrom) return null;
+    const partner = this.current.get(need.rc.rs.id)?.leaves.find((l) => l.leaf.id === req.differentFrom);
+    const first = partner?.counted[0]?.item;
+    const ladder = first ? getCourseType(first.typeId).ladder : null;
+    return ladder?.id.startsWith("lang.") ? (ladder.id.slice(5) as LanguageCode) : null;
   }
 
   /** The levels still to take in one language, in consecutive years; a partial sequence is taken back out. */
@@ -1589,9 +1668,13 @@ export class Filler {
     return worse;
   }
 
-  /** Frees room for a need by moving out lower-priority suggestions (design §5.7 repair). */
-  private evictFor(need: Need): boolean {
-    const cands = this.candidates(need, true);
+  /**
+   * Frees room for a need by moving out lower-priority suggestions (design §5.7 repair). `later`:
+   * only in the years after the one in progress.
+   */
+  private evictFor(need: Need, later = false): boolean {
+    const current = this.ctx.inProgressGrade;
+    const cands = this.candidates(need, true).filter((c) => !later || (current !== null && c.grade > current));
     let best: { cand: (typeof cands)[number]; evict: Placement[] } | null = null;
     for (const cand of cands) {
       const y = this.years.get(cand.grade)!;
@@ -1647,6 +1730,18 @@ export class Filler {
           continue;
         }
         let best = this.pick(top.n, top.cands);
+        // A required class goes into a year in progress the student has recorded (its schedule is
+        // set) only when no later year can take it, even by giving up a recommended or major-prep
+        // suggestion there (Chemistry after a W goes in 12th, in place of an optional class).
+        if (
+          best.grade === this.ctx.inProgressGrade &&
+          top.n.priority <= 1 &&
+          !top.n.soft &&
+          this.items.some((i) => i.own && i.grade === best.grade) &&
+          !this.sequenceNeedsCurrentYear(top.n, top.cands) &&
+          this.evictFor(top.n, true)
+        )
+          continue;
         // The "Your choice" slot yields before a recommended class goes outside its usual grades or
         // makes a third lab science in one year (Biology in 12th while 10th has room).
         if (top.n.priority >= 2 && this.misplaced(best.row, best.grade)) {

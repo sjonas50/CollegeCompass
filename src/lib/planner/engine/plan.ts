@@ -24,13 +24,13 @@ import {
   suggestionKey,
 } from "../engine-io";
 import { isStale, reviewLabel, staleLabel } from "../review";
-import type { ContentHeader, Req } from "../rules";
+import type { ContentHeader, Req, Selector } from "../rules";
 import { type AltResult, evaluateAlternative, type LeafResult } from "./allocate";
 import { admissionConflicts, ruleSetAudit, waiverNotes, worst } from "./audit";
 import type { Alternative, CLeaf } from "./compile";
 import { buildContext, type Ctx, type FamilyCtx, leafPriority, rowIsOffered, type RuleSetCtx, schoolYearOfGrade } from "./context";
 import { algebra2Reason, leafNoteReason, loadReason, prepReason, reason, requirementReason, resolveCitations, retakeReason } from "./explain";
-import { type FillResult, isRepeatable, type PlanConfig, prereqsMetIn, runFill, sameContent } from "./fill";
+import { type FillResult, isRepeatable, pastIntro, type PlanConfig, prereqsMetIn, runFill, sameContent } from "./fill";
 import { addedCreditTotal, buildGaps, freeUnits } from "./gaps";
 import { mathRankOf, rungName, startRank, unresolvedFailedRank } from "./ladder";
 import { asConfirmed, type Item } from "./model";
@@ -321,13 +321,54 @@ function yoursWarnings(ctx: Ctx, fill: FillResult, fact: PlannerInput["courses"]
 }
 
 /** The final audit's routes, with the student's guessed class types taken as confirmed (as the fill planned). */
-type Routes = { items: Item[]; routes: Map<string, AltResult> };
+type Routes = {
+  items: Item[];
+  routes: Map<string, AltResult>;
+  /** What each suggestion is needed for, per rule set (computed once per slot). */
+  needed: Map<string, { rc: RuleSetCtx; route: AltResult; leaves: CLeaf[]; rest: Item[] }[]>;
+};
 
 function confirmedRoutes(fill: FillResult): Routes {
   const items = asConfirmed(fill.items);
   const routes = new Map<string, AltResult>();
   for (const e of fill.evals) if (e.best) routes.set(e.rc.rs.id, evaluateAlternative(e.best.alt, items, e.rc.allocation));
-  return { items, routes };
+  return { items, routes, needed: new Map() };
+}
+
+/** Each rule set's requirements a suggestion is needed for, on the final audit's routes. */
+function neededFor(ctx: Ctx, fill: FillResult, routes: Routes, item: Item): { rc: RuleSetCtx; route: AltResult; leaves: CLeaf[]; rest: Item[] }[] {
+  const cached = routes.needed.get(item.key);
+  if (cached) return cached;
+  const rest = withoutClass(ctx, fill, routes.items, item.key);
+  const out: { rc: RuleSetCtx; route: AltResult; leaves: CLeaf[]; rest: Item[] }[] = [];
+  for (const e of fill.evals) {
+    const route = routes.routes.get(e.rc.rs.id);
+    if (route) out.push({ rc: e.rc, route, leaves: neededLeaves(e.rc, route, item.key, rest), rest });
+  }
+  routes.needed.set(item.key, out);
+  return out;
+}
+
+/**
+ * What another class must count for to take a suggestion's place: every required (P0-P1)
+ * requirement the suggestion is needed for (U.S. History, not just "the rest of your social
+ * studies credits"), each as the whole choice when the requirement is one route through it.
+ */
+function requiredSelectorsFor(ctx: Ctx, fill: FillResult, routes: Routes, item: Item): Selector[][] {
+  const out: Selector[][] = [];
+  for (const { rc, leaves } of neededFor(ctx, fill, routes, item)) {
+    for (const leaf of leaves) {
+      const owner = leaf.own ? rc : (ctx.ruleSets.find((r) => rc.bases.some((b) => b.rs.id === r.rs.id)) ?? rc);
+      const priority = leafPriority(owner, leaf.strength);
+      if (priority === null || priority > 1) continue;
+      const own = leaf.req.kind === "credits" || leaf.req.kind === "count" ? leaf.req.select : leaf.req.kind === "same_language" ? [{ subjects: ["world_language" as const] }] : null;
+      if (!own) continue;
+      const group = leaf.choice && owner.variant ? findReq(owner.variant.requirements, leaf.choice.id) : null;
+      const whole = group ? reqLeaves([group]).flatMap((r) => (r.kind === "credits" || r.kind === "count" ? r.select : r.kind === "same_language" ? [{ subjects: ["world_language" as const] }] : [])) : [];
+      out.push([...own, ...whole]);
+    }
+  }
+  return out;
 }
 
 const namedLeaf = (l: LeafResult) => l.leaf.req.kind !== "total_credits" && l.leaf.req.kind !== "remaining_electives";
@@ -369,6 +410,12 @@ function neededLeaves(rc: RuleSetCtx, route: AltResult, key: string, rest: Item[
   return (short.length ? short : counting).map((l) => l.leaf);
 }
 
+/** An option's own requirements (not its base program's) that go short without a class. */
+function ownLeavesShortWithout(rc: RuleSetCtx, route: AltResult, rest: Item[]): CLeaf[] {
+  const without = evaluateAlternative(route.alt, rest, rc.allocation);
+  return without.leaves.filter((l, i) => l.leaf.own && namedLeaf(l) && l.missing > route.leaves[i].missing).map((l) => l.leaf);
+}
+
 /**
  * The plan's classes without a suggestion and the suggestions that build on it (Spanish II
  * without Spanish I, calculus without precalculus): what taking it out would really leave.
@@ -407,17 +454,31 @@ function slotReasons(ctx: Ctx, fill: FillResult, routes: Routes, item: Item, ext
     seen.add(k);
     out.push(r);
   };
-  const rest = withoutClass(ctx, fill, routes.items, item.key);
-  for (const e of fill.evals) {
-    const route = routes.routes.get(e.rc.rs.id);
-    if (!route) continue;
-    for (const leaf of neededLeaves(e.rc, route, item.key, rest)) {
-      const owner = leaf.own ? e.rc : (ctx.ruleSets.find((r) => e.rc.bases.some((b) => b.rs.id === r.rs.id)) ?? e.rc);
-      // Only what can ask for a class explains a suggestion (not information-only or projected aid).
-      if (leafPriority(owner, leaf.strength) === null) continue;
-      push(requirementReason(owner, leaf, leaf.choice?.kind === "choose" ? leaf.choice.text : leaf.label, true));
-      const note = leafNoteReason(owner, leaf);
-      if (note) push(note);
+  for (const { rc, route, leaves: neededList, rest } of neededFor(ctx, fill, routes, item)) {
+    for (const needed of neededList) {
+      const base = needed.own ? null : (ctx.ruleSets.find((r) => rc.bases.some((b) => b.rs.id === r.rs.id)) ?? null);
+      // A requirement of the program an option builds on (Tennessee's 4th math under an elective
+      // focus) is named only as the audit shows it: the base program's own route counts the class
+      // there. Otherwise the class is needed because the option's own requirements use a class the
+      // base counts (the focus takes Coding I, the 4th math then needs another class), and those
+      // are what it's for.
+      const baseRoute = base ? routes.routes.get(base.rs.id) : undefined;
+      const leaves =
+        !base || baseRoute?.leaves.some((l) => l.leaf.id === needed.id && l.counted.some((c) => c.item.key === item.key))
+          ? [needed]
+          : ownLeavesShortWithout(rc, route, rest);
+      for (const leaf of leaves) {
+        const owner = leaf.own ? rc : (base ?? rc);
+        // Only what can ask for a class explains a suggestion (not information-only or projected aid).
+        if (leafPriority(owner, leaf.strength) === null) continue;
+        // A class that's one way through a choice names the whole requirement: "two of the five
+        // science areas", or a graduation option's route as one of several ("A public services
+        // career and technical program of study (one way: education and training program)").
+        const whole = leaf.choice?.kind === "choose" || (leaf.choice?.kind === "any" && owner.rs.kind === "graduation_option");
+        push(requirementReason(owner, leaf, whole ? leaf.choice!.text : leaf.label, true));
+        const note = leafNoteReason(owner, leaf);
+        if (note) push(note);
+      }
     }
   }
   for (const n of [...fill.baselineNeeds, ...fill.needs]) {
@@ -429,9 +490,39 @@ function slotReasons(ctx: Ctx, fill: FillResult, routes: Routes, item: Item, ext
   for (const r of extra) push(r);
   // Nothing requires it any more: an idea for an open slot, never "Required".
   if (out.length === 0) push(reason("choice", "An idea for an open slot. It's your choice.", { claim: "suggestion" }));
-  if (ctx.items.some((i) => i.own && i.noCredit && i.typeId === item.typeId)) push(retakeReason());
+  if (ctx.items.some((i) => i.own && i.noCredit && i.typeId === item.typeId)) {
+    push(retakeReason());
+    // Where the state has it, credit recovery is another way to retake it.
+    const recovery = ctx.facts.options.find((o) => o.kind === "credit_recovery");
+    if (recovery) push(reason("state_note", `Credit recovery is another way to retake it. ${recovery.note}`, { citations: recovery.cite }));
+  }
   if (ctx.state === "TX" && item.typeId === "math.alg2") push(algebra2Reason());
   return out;
+}
+
+/**
+ * What another class could count for in a suggestion's place: the need's own requirement, and for
+ * a graduation option's route through a choice (one of a Texas endorsement's programs, §74.13(f)),
+ * the other routes it lists.
+ */
+function routeSelectors(need: Need): Selector[] {
+  const leaf = need.leaf;
+  const rc = need.rc;
+  if (!leaf || !rc?.variant || leaf.choice?.kind !== "any" || rc.rs.kind !== "graduation_option") return need.selectors;
+  const group = findReq(rc.variant.requirements, leaf.choice.id);
+  if (!group) return need.selectors;
+  const others = reqLeaves([group]).flatMap((r) => (r.kind === "credits" || r.kind === "count" ? r.select : []));
+  return [...need.selectors, ...others];
+}
+
+function findReq(reqs: readonly Req[], id: string): Req | null {
+  for (const r of reqs) {
+    if (r.id === id) return r;
+    const kids = r.kind === "all" || r.kind === "any" || r.kind === "choose" ? r.of : r.kind === "option" ? [r.on, r.off] : [];
+    const found = findReq(kids, id);
+    if (found) return found;
+  }
+  return null;
 }
 
 function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles: boolean, routes: Routes = confirmedRoutes(fill)): PlanYear {
@@ -463,14 +554,24 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
       // The highest math rung reached before this year (passed or planned): never offer one at or
       // below it (Secondary Math I after Secondary Math III).
       const reached = startRank(others, grade);
+      const altSelectors = routeSelectors(primary);
+      const required = requiredSelectorsFor(ctx, fill, routes, p.item);
       const seen = new Set<string>([`${p.item.typeId}:${p.item.level}`]);
       for (const row of cat.rows) {
         if (alternatives.length >= 4) break;
         const k = `${row.typeId}:${row.level}`;
         if (seen.has(k) || !rowIsOffered(row, grade, y.schoolYear) || row.defaultTerm === "summer") continue;
         const probeItem: Item = { ...p.item, typeId: row.typeId, level: row.level, subject: row.subject, units: row.units, cte: row.cte, lectureOnly: row.lectureOnly };
-        if (!matchesAny(probeItem, primary.selectors)) continue;
+        if (!matchesAny(probeItem, primary.selectors)) {
+          // Another route's class stands in only at the same step (Health Science 1 for Education
+          // and Training 1, never for its level 2).
+          const rung = getCourseType(row.typeId).ladder?.rank ?? null;
+          if (!matchesAny(probeItem, altSelectors) || rung !== (getCourseType(p.item.typeId).ladder?.rank ?? null)) continue;
+        }
+        // Never a class that drops a required class (Creative Writing for a required U.S. History).
+        if (!required.every((sels) => matchesAny(probeItem, sels))) continue;
         if (!isRepeatable(row.typeId) && fill.items.some((i) => sameContent(i.typeId, row.typeId) && !i.noCredit && i.key !== p.item.key)) continue;
+        if (pastIntro(others, row.typeId, grade)) continue;
         const rank = mathRankOf(row.typeId);
         if (rank !== null && rank >= 1 && rank <= reached) continue;
         // Never a class the family opted out of in writing (Utah Secondary Math III).
@@ -549,7 +650,8 @@ function middleSchool(ctx: Ctx, fill: FillResult): MiddleSchoolView {
   const grades = ctx.planGrades.filter((g) => g <= 9);
   const rows = grades.flatMap((g) => ctx.catalogs.get(g)?.rows.filter((r) => rowIsOffered(r, g, schoolYearOfGrade(ctx, g))) ?? []);
   const explore = (t: string) => wanted.has(t) || t === "cte.ms" || t === "cs.ms" || t === "cs.intro" || /^cte\.[a-z_]+\.1$/.test(t) || t === "cte.health_principles";
-  for (const row of [...rows].sort((a, b) => Number(!wanted.has(b.typeId)) - Number(!wanted.has(a.typeId)) || a.order - b.order)) {
+  // The goals' own classes and pathways first.
+  for (const row of [...rows].sort((a, b) => Number(!wanted.has(a.typeId)) - Number(!wanted.has(b.typeId)) || a.order - b.order)) {
     if (exploration.length >= 5) break;
     if (!explore(row.typeId) || exploration.some((e) => e.typeId === row.typeId)) continue;
     exploration.push({ typeId: row.typeId, title: row.title });

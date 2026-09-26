@@ -66,7 +66,7 @@ type Inherited = {
 
 /** "Two of the five…" → "two of the five…"; names and acronyms keep their capitals. */
 function lowerLabel(label: string): string {
-  const first = label.split(" ")[0];
+  const first = label.split(" ")[0].replace(/[,;:]$/, "");
   if (!/^[A-Z][a-z]+$/.test(first) || /^(English|Spanish|French|Algebra|Geometry|Secondary|Integrated|American|Personal|Texas|Utah|Tennessee)$/.test(first)) return label;
   return label.charAt(0).toLowerCase() + label.slice(1);
 }
@@ -78,7 +78,9 @@ function choiceText(group: Req, top: Req, branch: Req | undefined): string {
     const parts = top.of.map((r) => lowerLabel(r.label));
     return `${top.label} (${parts.slice(0, -1).join(", ")}${parts.length > 1 ? " and " : ""}${parts[parts.length - 1]})`;
   }
-  return branch ? `${group.label} (here: ${lowerLabel(branch.label)})` : group.label;
+  // One route among several (a Texas endorsement's programs): "A public services career and
+  // technical program of study (one way: education and training program)".
+  return branch ? `${group.label} (one way: ${lowerLabel(branch.label.replace(/\s*\([^()]*\)$/, ""))})` : group.label;
 }
 
 const CAP = MAX_ALTERNATIVES_PER_VARIANT;
@@ -164,7 +166,9 @@ function compileReq(req: Req, inh: Inherited, own: boolean, choices: PlannerChoi
     }
     case "option": {
       const on = choices[req.pref] === true;
-      return compileReq(on ? req.on : req.off, { ...child, optionPref: on ? req.pref : null }, own, choices);
+      // A branch inside another family-chosen branch keeps the outer choice (a Tennessee focus sized
+      // by a world language waiver, then by a fine arts waiver).
+      return compileReq(on ? req.on : req.off, { ...child, optionPref: on ? req.pref : inh.optionPref }, own, choices);
     }
     case "credits": {
       const leaf = leafOf(req, inh, own);

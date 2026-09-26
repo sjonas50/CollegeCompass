@@ -47,6 +47,8 @@ const CASES: [name: string, subject: CourseSubject, expected: CourseTypeId, stat
   ["AP Physics 1", "science", "sci.phys"],
   ["AP Physics C: Mechanics", "science", "sci.phys2"],
   ["IPC", "science", "sci.ipc"],
+  ["Integrated Physics and Chemistry", "science", "sci.ipc"],
+  ["Integrated Physics & Chemistry (IPC)", "science", "sci.ipc"],
   ["APES", "science", "sci.env"],
   ["Anatomy & Physiology", "science", "sci.anat"],
   ["Anatomy and Physiology", "career_technical", "sci.anat"],

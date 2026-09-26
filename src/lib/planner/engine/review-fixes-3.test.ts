@@ -539,9 +539,14 @@ describe("Tennessee's AP or IB focus counts an AP class that stands in for a req
     expect(focus).toHaveLength(2);
     for (const rs of focus) {
       for (const v of rs.variants) {
-        const leaf = v.requirements.find((r) => r.id === "focus")!;
-        expect(leaf.kind === "credits" && leaf.shareable).toBe(true);
-        expect(leaf.kind === "credits" && leaf.cite).toContain("tn-3103-i-4b");
+        // The focus is sized by the family's waivers (round 4): every size counts the same way.
+        const walk = (reqs: readonly Req[]): Req[] => reqs.flatMap((r) => (r.kind === "all" || r.kind === "any" || r.kind === "choose" ? walk(r.of) : r.kind === "option" ? walk([r.on, r.off]) : [r]));
+        const leaves = walk(v.requirements).filter((r) => r.id === "focus" || r.id.startsWith("focus."));
+        expect(leaves.map((l) => l.id)).toContain("focus");
+        for (const leaf of leaves) {
+          expect(leaf.kind === "credits" && leaf.shareable).toBe(true);
+          expect(leaf.kind === "credits" && leaf.cite).toContain("tn-3103-i-4b");
+        }
       }
       expect(rs.plainSummary).not.toMatch(/on top of your other requirements/);
     }

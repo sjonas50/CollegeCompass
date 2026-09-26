@@ -391,6 +391,12 @@
       "quote": "Social Studies – 3.0 Credits applies to 11th & 12th graders of 2026-2027 (3.5 credits required for 9th & 10th grade cohorts of 2026-2027 and all cohorts afterward)"
     },
     {
+      "id": "ut-usbe-2627-ss-half",
+      "source": "UT-S3",
+      "pinpoint": "p. 5",
+      "quote": "2.5 from the foundational required course list (or their equivalent) and .5 elective from any course from the Applied/Advanced social studies area, which could include an additional half credit added to any of the required half-credit courses."
+    },
+    {
       "id": "ut-usbe-2627-wl34",
       "source": "UT-S3",
       "pinpoint": "p. 2",
@@ -637,16 +643,18 @@
                   "label": "World geography",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.world_geo"] }],
-                  "cite": ["ut-r277-700-6-12a"]
+                  "cite": ["ut-r277-700-6-12a", "ut-usbe-2627-ss-half"]
                 },
                 {
                   "id": "ss.world_hist",
                   "label": "World history",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.world_hist"] }],
-                  "cite": ["ut-r277-700-6-12a"]
+                  "cite": ["ut-r277-700-6-12a", "ut-usbe-2627-ss-half"]
                 },
                 {
                   "id": "ss.us_hist",
@@ -661,8 +669,9 @@
                   "label": "U.S. Government and Citizenship",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.us_gov"] }, { "types": ["ss.ut_acgc"], "schoolYears": { "from": 2027 } }],
-                  "cite": ["ut-r277-700-6-12a", "ut-ssfaq-seniors"],
+                  "cite": ["ut-r277-700-6-12a", "ut-ssfaq-seniors", "ut-usbe-2627-ss-half"],
                   "note": "U.S. Government and Citizenship is retired in 2027-28; seniors that year take the new American Constitutional Government and Citizenship class instead."
                 },
                 {
@@ -670,8 +679,9 @@
                   "label": "Social studies elective",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
-                  "cite": ["ut-r277-700-6-12b"]
+                  "cite": ["ut-r277-700-6-12b", "ut-usbe-2627-ss-half"]
                 }
               ],
               "area": "social_studies",
@@ -1047,16 +1057,18 @@
                   "label": "World geography",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.world_geo"] }],
-                  "cite": ["ut-r277-700-6-12a"]
+                  "cite": ["ut-r277-700-6-12a", "ut-usbe-2627-ss-half"]
                 },
                 {
                   "id": "ss.world_hist",
                   "label": "World history",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "types": ["ss.world_hist"] }],
-                  "cite": ["ut-r277-700-6-12a"]
+                  "cite": ["ut-r277-700-6-12a", "ut-usbe-2627-ss-half"]
                 },
                 {
                   "id": "ss.us_hist",
@@ -1080,8 +1092,9 @@
                   "label": "Social studies elective",
                   "kind": "credits",
                   "units": 2,
+                  "allowSplit": true,
                   "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
-                  "cite": ["ut-r277-700-6-12b"]
+                  "cite": ["ut-r277-700-6-12b", "ut-usbe-2627-ss-half"]
                 }
               ],
               "area": "social_studies",

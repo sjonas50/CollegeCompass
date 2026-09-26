@@ -106,7 +106,8 @@ const PATTERNS: Pattern[] = [
   { type: "math.college_prep", re: /\b(college prep(aratory)? math(ematics)?|math\s*1010)\b/i },
   { type: "math.stats", re: /\b(statistics|stats?|math\s*1040)\b/i },
 
-  // Science
+  // Science. Integrated Physics and Chemistry (the TEKS course name) before physics and chemistry.
+  { type: "sci.ipc", re: /\b(ipc|integrated physics|physical science|physical world)\b/i },
   { type: "sci.phys_eng", re: /\bphysics for engineering\b/i },
   { type: "sci.phys2", re: /\b(ap\s*physics\s*(2|ii|c)|physics\s*(ii|2)|physics c)\b/i },
   { type: "sci.phys", re: /\bphysics\b/i },
@@ -117,7 +118,6 @@ const PATTERNS: Pattern[] = [
   { type: "sci.biotech", re: /\b(biotech(nology)?|biostem)\b/i },
   { type: "sci.bio2", re: /\bbio(logy)?\s*(ii|2)\b/i },
   { type: "sci.bio", re: /\bbio(logy)?\b/i },
-  { type: "sci.ipc", re: /\b(ipc|integrated physics|physical science|physical world)\b/i },
   { type: "sci.astronomy", re: /\bastronomy\b/i },
   { type: "sci.earth", re: /\b(earth|geology|space science)\b/i },
   { type: "sci.env", re: /\b(environmental|ecology|apes)\b/i },

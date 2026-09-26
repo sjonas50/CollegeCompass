@@ -33,6 +33,11 @@ export type GenericCatalogCourse = {
   grades?: SchoolGrade[];
   /** First school year the class exists (Utah ACGC: 2027). */
   firstSchoolYear?: SchoolYear;
+  /**
+   * Prerequisites the state sets on top of the type's own, each group met by any one type (Utah:
+   * the applied math classes that take Secondary Math III's place come after Secondary Math II).
+   */
+  prereqs?: CourseTypeId[][];
   cite?: CitationId[];
 };
 
@@ -42,6 +47,8 @@ export type GenericCatalogCourse = {
 export const GAP_OPTION_KINDS = [
   "test_score",
   "summer",
+  // For a class the student took and didn't pass (Tennessee Policy 2.103 VI).
+  "credit_recovery",
   "double_up",
   "state_online",
   "college_credit",

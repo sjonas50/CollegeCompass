@@ -68,8 +68,9 @@ type), and optionally a ladder rank, capabilities and state display names.
   precalculus, 5 calculus, 6 beyond), `ela`, one per language, one per CTE cluster.
 - **Same content and usual order**: `overlaps` lists classes that teach the same content (Personal
   Financial Literacy and Economics with Economics and with Personal Financial Literacy; the
-  relation goes both ways), and `usuallyAfter` a soft order the planner prefers but never
-  enforces (music theory after band, choir or a music class).
+  relation goes both ways), `usuallyAfter` a soft order the planner prefers but never
+  enforces (music theory after band, choir or a music class), and `introTo` the classes an
+  introductory class leads into (Exploring Computer Science is never suggested after Coding I).
 - **Capabilities**: `alg2_or_beyond`, `advanced_math_after_alg2` and `lab_science`. Rules match types
   or capabilities, so Secondary Math III, Integrated Math III and Algebra II are equal only where a
   rule says so.

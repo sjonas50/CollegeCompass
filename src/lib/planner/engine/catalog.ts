@@ -2,7 +2,7 @@ import type { CourseSubject, CourseTerm } from "@/db/schema";
 import type { LetterGrade } from "@/lib/courses/catalog";
 import { type PlannerState, type SchoolGrade, schoolYearLabel } from "../common";
 import type { GenericCatalogFile } from "../content-types";
-import { COURSE_TYPE_IDS, courseTypeTitle, type CourseTypeId, getCourseType, isCollegeLevel } from "../course-types";
+import { COURSE_TYPE_IDS, courseTypeTitle, type CourseTypeId, type CourseTypeLevel, getCourseType, isCollegeLevel } from "../course-types";
 import type { CatalogCourse, CatalogRef, CatalogView } from "../engine-io";
 import { gradeRange } from "./util";
 
@@ -64,9 +64,10 @@ export function defaultGrades(typeId: CourseTypeId): SchoolGrade[] {
   if (ladder && ((ladder.id === "math" && ladder.rank >= 1) || ladder.id.startsWith("lang.") || ladder.id.startsWith("cte."))) {
     return gradeRange(Math.min(type.grades[0], 9), 12);
   }
-  // English I-IV follow the grade; other classes can come later than usual (a student catching up),
-  // never earlier. A school's printed grades always win.
-  if (ladder && ladder.id === "ela") return gradeRange(type.grades[0], type.grades[1]);
+  // English I-IV follow the grade, except that a level the student didn't pass can be retaken
+  // later (the fill places a later-grade English level only as a retake). Other classes can come
+  // later than usual (a student catching up), never earlier. A school's printed grades always win.
+  if (ladder && ladder.id === "ela") return gradeRange(type.grades[0], 12);
   return gradeRange(type.grades[0], Math.max(type.grades[1], type.grades[0] >= 9 ? 12 : type.grades[1]));
 }
 
@@ -78,12 +79,20 @@ function termFor(course: Pick<CatalogCourse, "terms" | "units" | "delivery">): C
   return course.units <= 2 ? "fall" : "full_year";
 }
 
+/** A type's own prerequisite groups for a level (the college levels add theirs; AP and IB set their own order). */
+function typePrereqGroups(typeId: CourseTypeId, level: CourseTypeLevel): (readonly CourseTypeId[])[] {
+  const type = getCourseType(typeId);
+  return [...type.prereqs, ...(isCollegeLevel(level) ? type.collegePrereqs : []), ...(level === "ap" || level === "ib" ? [] : type.sequencePrereqs)].map((p) => p.anyOf);
+}
+
 /** "Classes most Texas high schools offer", as a class list. */
 export function genericCatalogView(file: GenericCatalogFile): CatalogView {
   const courses: CatalogCourse[] = file.courses.flatMap((c) =>
     c.levels.map((level) => {
       const type = getCourseType(c.typeId);
       const units = c.units ?? type.units;
+      // The state's own prerequisites join the type's (a printed list replaces them).
+      const prereqs = c.prereqs?.length ? [...typePrereqGroups(c.typeId, level), ...c.prereqs].map((group) => ({ anyOf: group.map((typeId) => ({ typeId })) })) : [];
       return {
         id: `generic:${c.typeId}:${level}`,
         typeId: c.typeId,
@@ -93,7 +102,7 @@ export function genericCatalogView(file: GenericCatalogFile): CatalogView {
         units,
         grades: c.grades ?? null,
         terms: units <= 2 ? ["fall", "spring"] : ["full_year"],
-        prereqs: [],
+        prereqs,
         approvals: [],
         cte: type.cte === "always",
         lectureOnly: false,
@@ -229,9 +238,7 @@ export function resolveCatalog(view: CatalogView, generic: CatalogView, genericT
         if (types.length || catalogIds.length) groups.push({ types, catalogIds, minLetter: p.minLetter ?? null, concurrentOk: p.concurrentOk ?? false });
       }
     } else {
-      const type = getCourseType(c.typeId);
-      const typeGroups = [...type.prereqs, ...(isCollegeLevel(c.level) ? type.collegePrereqs : []), ...(c.level === "ap" || c.level === "ib" ? [] : type.sequencePrereqs)];
-      groups = typeGroups.map((p) => ({ types: [...p.anyOf], catalogIds: [], minLetter: null, concurrentOk: false }));
+      groups = typePrereqGroups(c.typeId, c.level).map((anyOf) => ({ types: [...anyOf], catalogIds: [], minLetter: null, concurrentOk: false }));
     }
     return {
       ...c,

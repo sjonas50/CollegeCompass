@@ -7,7 +7,7 @@ import { earlyWithoutCredit, type RuleSetEval } from "./audit";
 import type { CLeaf } from "./compile";
 import { type Ctx, leafPriority, rowIsOffered, schoolYearOfGrade } from "./context";
 import { algebra2Reason, reason } from "./explain";
-import { type BlockReason, type FillResult, isRepeatable, prereqsMetIn, probe, sameContent } from "./fill";
+import { type BlockReason, failedAttempt, type FillResult, isRepeatable, lateEnglish, pastIntro, prereqsMetIn, probe, sameContent } from "./fill";
 import { type LadderMoves, type LadderSolution, mathRankOf, rungName, rungTypes, solveLadder, startRank } from "./ladder";
 import { countsForSequence, type Item } from "./model";
 import { isLadderish, type Need } from "./needs";
@@ -32,7 +32,10 @@ const ASK: GapOption = {
 };
 
 /** Options that actually add a way to meet the need (as opposed to lowering it). */
-const SOLVING: GapOptionKind[] = ["test_score", "summer", "double_up", "state_online", "college_credit", "credit_by_exam"];
+const SOLVING: GapOptionKind[] = ["test_score", "summer", "credit_recovery", "double_up", "state_online", "college_credit", "credit_by_exam"];
+
+/** A summer class for a class the student didn't pass: a retake, not a first attempt. */
+const RETAKE_SUMMER_NOTE = "A retake of a class you didn't pass, not a first attempt. Ask your counselor whether your school offers it in summer.";
 
 function fact(ctx: Ctx, kind: OptionFact["kind"], grade: number | null): OptionFact | null {
   return ctx.facts.options.find((o) => o.kind === kind && (grade === null || !o.grades || o.grades.includes(grade as SchoolGrade))) ?? null;
@@ -53,16 +56,20 @@ function lastMathBOrBetter(fill: FillResult): boolean {
 function typeForNeed(ctx: Ctx, fill: FillResult, need: Need): CourseTypeId | null {
   const items = fill.items.filter((i) => countsForSequence(i));
   const reached = startRank(items, 13);
+  const retake = failedAttempt(fill.items, need.selectors) !== null;
   const found: { typeId: CourseTypeId; rank: number; order: number }[] = [];
   for (const grade of ctx.planGrades) {
     if (grade < 9) continue;
     const sy = schoolYearOfGrade(ctx, grade);
     for (const r of ctx.catalogs.get(grade)?.rows ?? []) {
-      if (!rowIsOffered(r, grade, sy)) continue;
+      if (!rowIsOffered(r, grade, sy) || (retake && r.collegeLevel) || lateEnglish(fill.items, r.typeId, grade)) continue;
       if (!matchesAny(probe(r, grade, sy), need.selectors)) continue;
       if (!isRepeatable(r.typeId) && items.some((i) => sameContent(i.typeId, r.typeId))) continue;
+      if (pastIntro(items, r.typeId, grade)) continue;
       const rank = mathRankOf(r.typeId);
       if (rank !== null && rank >= 1 && rank <= reached) continue;
+      // Never a class the family opted out of in writing (Utah Secondary Math III).
+      if (ctx.choices.utMath3OptOut && rank === 3) continue;
       if (!prereqsMetIn(items, r, grade, () => null, true)) continue;
       found.push({ typeId: r.typeId, rank: rank ?? 0, order: r.order });
     }
@@ -107,13 +114,17 @@ export function optionsFor(ctx: Ctx, fill: FillResult, need: Need, ladder: boole
   // ("four years of high school math") gets none, since a summer class or a second class in a year
   // adds no year.
   const accelerate = lim.accelerateMath && lastMathBOrBetter(fill);
+  // A class the student took and didn't pass: summer school or credit recovery retakes it (never
+  // its AP version), whatever else the year holds.
+  const failed = failedAttempt(fill.items, need.selectors);
+  const retake = failed && type && !need.distinctGrades && sameContent(failed.typeId, type) ? failed : null;
   const yearsLeft = ctx.planGrades.filter((g) => g >= 9 && g !== ctx.inProgressGrade);
   const extraMath =
     type !== null &&
     getCourseType(type).subject === "math" &&
     yearsLeft.every((g) => fill.items.some((i) => i.grade === g && i.subject === "math" && i.term !== "summer" && countsForSequence(i))) &&
     !(ctx.inProgressGrade === 12 && need.priority === 0);
-  const withLoad = loadOptionsAllowed(need) && !need.distinctGrades && (ladder ? accelerate : type !== null && (!extraMath || accelerate));
+  const withLoad = loadOptionsAllowed(need) && !need.distinctGrades && (ladder ? accelerate : type !== null && (!extraMath || accelerate || retake !== null));
 
   for (const route of need.testRoutes) {
     out.push({ kind: "test_score", text: route.text, note: "A test score instead of a class. Scores and dates are the source's own.", closes: null, adds: [], citations: route.cite });
@@ -127,9 +138,15 @@ export function optionsFor(ctx: Ctx, fill: FillResult, need: Need, ladder: boole
       if (sol) adds = sol.steps.filter((s) => s.summer).map((s) => ({ grade: s.grade, typeId: rungTypes(fill.ladder.family, s.rank)[0], level: "regular", term: "summer" }));
       if (adds.length === 0) adds = [];
     } else if (type) adds = [{ grade: Math.max(9, Math.min(byGrade, 12) - (need.byGrade >= 12 ? 1 : 0)) as SchoolGrade, typeId: type, level: "regular", term: "summer" }];
-    if (!ladder || adds.length) {
+    if (retake && !ladder) {
+      out.push({ kind: "summer", text: `Retake ${typeTitle} in summer.`, note: RETAKE_SUMMER_NOTE, closes: null, adds, citations: summer.cite });
+    } else if (!ladder || adds.length) {
       out.push({ kind: "summer", text: `Take ${adds.length ? courseTypeTitle(adds[0].typeId, ctx.state) : typeTitle} in summer${summer.programName ? ` (${summer.programName})` : ""}.`, note: summer.note, closes: null, adds, citations: summer.cite });
     }
+  }
+  const recovery = retake && loadOptionsAllowed(need) ? fact(ctx, "credit_recovery", null) : null;
+  if (recovery) {
+    out.push({ kind: "credit_recovery", text: `Retake ${typeTitle} through credit recovery${recovery.programName ? ` (${recovery.programName})` : ""}.`, note: recovery.note, closes: null, adds: [], citations: recovery.cite });
   }
   if (ladder && lim.accelerateMath && lastMathBOrBetter(fill)) {
     const sol = ladderAdds(fill, { double: true, summer: false });
@@ -295,6 +312,16 @@ function earlyCreditNotes(ctx: Ctx): Reason[] {
   return ctx.facts.middleSchoolMath.filter((n) => /credit/i.test(n.text)).map((n) => reason("state_note", n.text, { citations: n.cite }));
 }
 
+/** The math rungs (1-3) a requirement names by type (Algebra I is rung 1). */
+function equivalentRanks(need: Need): number[] {
+  const ranks = new Set<number>();
+  for (const sel of need.selectors) for (const t of sel.types ?? []) {
+    const rank = mathRankOf(t);
+    if (rank !== null && rank >= 1 && rank <= 3) ranks.add(rank);
+  }
+  return [...ranks].sort((a, b) => a - b);
+}
+
 /** Gaps for Plan A (design §5.8). */
 export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
   const gaps: Gap[] = [];
@@ -309,6 +336,13 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
       const early = earlyWithoutCredit(ctx.items, need.selectors);
       if (early && earlyAsked.has(early.key)) continue;
       if (early) earlyAsked.add(early.key);
+    }
+    // So is "you've taken a class that may count the same way" (Secondary Math I for Texas's and
+    // Texas A&M's Algebra I): once per class.
+    if (block === "equivalent") {
+      const key = `equivalent:${equivalentRanks(need).join(",")}`;
+      if (earlyAsked.has(key)) continue;
+      earlyAsked.add(key);
     }
     if (ctx.choices.utMath3OptOut && (isLadderish(need.selectors) ?? 0) >= 3) block = "choice";
     if (block === "guessed") continue;

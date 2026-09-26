@@ -42,6 +42,11 @@ export function unverifiedQuestion(text: string): string {
   return `${facts || text} Can you check this for me?`;
 }
 
+/** "A 4th math credit" → "a 4th math credit" (inside a sentence). */
+function lowerArticle(text: string): string {
+  return /^(A|An|The|One|Two|Three|Four) /.test(text) ? text.charAt(0).toLowerCase() + text.slice(1) : text;
+}
+
 function listWords(names: string[]): string {
   return names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
@@ -90,7 +95,11 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
     const test = g.options.find((o) => o.kind === "test_score");
     if (test && g.priority <= 1) {
       const rs = ctx.ruleSets.find((r) => g.demandId?.startsWith(`${r.rs.id}/`));
-      add(`test:${g.id}`, `Should I plan to show ${rs?.rs.title ?? "this"} with a test score or with a class, and when do scores need to be in?`, test.citations, rs?.rs.id ?? null);
+      // The need itself, not the rule set's title ("Utah high school graduation requirements" can't
+      // be shown with a test score; college-ready math can).
+      const need = fill.needs.find((n) => n.id === g.demandId);
+      const what = need?.seniorMath ? `college-ready math (${rs?.rs.issuer.name ?? "the state"}'s senior-year math)` : need ? lowerArticle(need.label) : (rs?.rs.title ?? "this");
+      add(`test:${g.id}`, `Should I plan to show ${what} with a test score or with a class, and when do scores need to be in?`, test.citations, rs?.rs.id ?? null);
     }
   }
   // Dated test-score routes whose class route isn't planned (UT Austin calculus readiness).

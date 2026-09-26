@@ -115,6 +115,21 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   higher-priority need placed, and core classes move only within their usual grades. A language
   level goes in the year right after the last one: an elective-type class moves out, then the
   "Your choice" slot yields, before a year is skipped (and a skipped year says so).
+- **Retakes**: a class the student didn't pass (F, W or I) is planned again in a later grade,
+  English I-IV included (a second English class that year), never as its AP or college version;
+  where the state has credit recovery (Tennessee Policy 2.103 VI), the slot and the gap name it,
+  and a summer retake isn't held to the first-attempt note. A required class goes into a year in
+  progress the student has recorded only when no later year can take it, even in place of a
+  recommended or major-prep suggestion.
+- **Routes through a choice**: among a graduation option's program routes, the goal's own career
+  pathway wins over routes that only overlap other targets (Education and Training for a future
+  teacher's Public Services endorsement); the slot names the whole requirement ("one way: …") and
+  offers the other programs' first classes as Other choices. Other choices never drop a required
+  class the suggestion is needed for. A requirement of the program an option builds on is named
+  only when the base program's own route counts the class there.
+- **Opt-outs**: after Utah's Secondary Math III opt-out, targets past that rung leave the ladder,
+  which plans Secondary Math II by 10th and then the applied class (the generic list gives Utah's
+  applied statistics and financial math Secondary Math II as a prerequisite).
 - **Same content**: classes that teach the same content (`overlaps` in course-types: Personal
   Financial Literacy and Economics with Economics or Personal Financial Literacy) aren't
   suggested next to each other, and the fill picks the one that leaves room for a class another

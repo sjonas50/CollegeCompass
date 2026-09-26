@@ -199,7 +199,16 @@ export function evaluateCheck(
       const verb = results.length > 1 ? "are" : "is";
       const past = ctx.grade > check.grade || (ctx.grade === check.grade && ctx.inProgressGrade === null);
       if (results.every((r) => r.missing === 0)) {
-        return { ...base, status: "ok", text: `${label} ${verb} on your plan, so you're on schedule by the end of ${nth(check.grade)} grade.` };
+        if (!past) return { ...base, status: "ok", text: `${label} ${verb} on your plan, so you're on schedule by the end of ${nth(check.grade)} grade.` };
+        // After that grade the question is what the transcript showed then (§51.803(d)), which a
+        // plan can't know unless every class was finished by then. Classes added this year don't count.
+        const finished = results.every((r) => r.counted.every((c) => c.item.completed && c.item.grade <= check.grade));
+        if (finished) return { ...base, status: "ok", text: `${label} ${verb} on your transcript by the end of ${nth(check.grade)} grade, so you were on schedule.` };
+        return {
+          ...base,
+          status: "ask_counselor",
+          text: `${label}: ask your counselor whether your transcript showed you on schedule at the end of ${nth(check.grade)} grade.`,
+        };
       }
       // Only what's still missing: a planned Algebra II isn't listed as something to add.
       const missing = results.filter((r) => r.missing > 0);
@@ -268,6 +277,11 @@ export function evaluateCheck(
       if (statuses.some((s) => s === "done" || s === "planned")) return { ...base, status: "ok", text: "The other part this needs is on your plan too." };
       const names = check.anyOf.map((id) => ctx.allRuleSets.get(id)?.rs.title ?? id);
       if (statuses.length === 0) return { ...base, status: "room_to_add", text: `This also needs one of: ${names.join(", ")}. Choose one to count it.` };
+      // The one on the plan isn't all planned yet (an endorsement's 26 credits).
+      const onPlan = check.anyOf.filter((id) => statusOf(id) !== null);
+      if (onPlan.length === 1 && statuses[0] === "room_to_add") {
+        return { ...base, status: "room_to_add", text: `Room to add: this also needs the ${ctx.allRuleSets.get(onPlan[0])?.rs.title ?? onPlan[0]}, which isn't all on your plan yet.` };
+      }
       return { ...base, status: statuses.includes("ask_counselor") ? "ask_counselor" : "room_to_add", text: `This also needs one of: ${names.join(", ")}, finished or planned.` };
     }
   }
@@ -440,12 +454,16 @@ function sameRef(a: Item["ref"], b: Item["ref"]): boolean {
 
 // Output ----------------------------------------------------------------------------------------
 
-export function requirementAudit(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, conflicts: AdmissionConflict[], needsPlanNowKeys: Set<string>): RequirementAudit {
+/**
+ * `guessOnly`: the requirement is unmet only because some of the student's classes have a guessed
+ * kind (confirmed, they'd meet it). That's a "confirm the class type" prompt, never "Needs a plan now".
+ */
+export function requirementAudit(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, conflicts: AdmissionConflict[], needsPlanNowKeys: Set<string>, guessOnly = false): RequirementAudit {
   const priority = leafPriority(rc, r.leaf.strength);
   const npn =
     ctx.inProgressGrade === 12 &&
     priority === 0 &&
-    (r.missing > 0 || r.counted.some((c) => c.item.ref.kind === "suggestion" && needsPlanNowKeys.has(c.item.ref.key)));
+    ((r.missing > 0 && !guessOnly) || r.counted.some((c) => c.item.ref.kind === "suggestion" && needsPlanNowKeys.has(c.item.ref.key)));
   const { status, modifiers } = leafStatus(ctx, rc, r, npn);
   return {
     reqId: r.leaf.id,
@@ -479,9 +497,23 @@ export function ruleSetAudit(
 ): RuleSetAudit {
   const { rc, best } = e;
   const variant = rc.variant;
-  const requirements = best ? best.leaves.filter((l) => l.leaf.own).map((l) => requirementAudit(ctx, rc, l, conflicts.get(`${rc.rs.id}/${l.leaf.id}`) ?? [], needsPlanNowKeys)) : [];
+  // The same route with the student's guessed class kinds taken as confirmed (as the plan was built).
+  const confirmed = best && best.leaves.some((l) => l.guessed && l.missing > 0) ? evaluateAlternative(best.alt, asConfirmed(items), rc.allocation) : null;
+  const requirements = best
+    ? best.leaves
+        .map((l, i) => ({ l, guessOnly: l.guessed && l.missing > 0 && confirmed !== null && confirmed.leaves[i].missing === 0 }))
+        .filter(({ l }) => l.leaf.own)
+        .map(({ l, guessOnly }) => requirementAudit(ctx, rc, l, conflicts.get(`${rc.rs.id}/${l.leaf.id}`) ?? [], needsPlanNowKeys, guessOnly))
+    : [];
   const checks = best && variant ? (variant.checks ?? []).flatMap((c) => evaluateCheck(ctx, rc, c, best.leaves, items, statusOf) ?? []) : [];
-  const checkStatuses: AuditStatus[] = checks.map((c) => (c.status === "ok" ? "done" : c.status));
+  // A check that needs another rule set that's only planned (the Foundation program with classes
+  // still to take this year) leaves this one planned, never done.
+  const checkStatuses: AuditStatus[] = checks.map((c) => {
+    if (c.status !== "ok") return c.status;
+    const def = variant?.checks?.find((x) => x.id === c.checkId);
+    if (def?.kind === "requires_rule_set" && !def.anyOf.some((id) => statusOf(id) === "done")) return "planned";
+    return "done";
+  });
   let status = variant ? worst([...requirements.map((r) => r.status), ...checkStatuses]) : "ask_counselor";
   if (rc.rs.strength === "info" && status === "room_to_add") status = "not_tracked";
   return {

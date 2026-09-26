@@ -61,6 +61,24 @@
       "quote": "A course schedule that presents students with the option of taking course work for the first time (i.e., first-attempt courses) during the summer should be reserved for students on an advanced or accelerated learning path."
     },
     {
+      "id": "tn-2103-vi-1",
+      "source": "TN-S1",
+      "pinpoint": "VI(1)",
+      "quote": "Credit recovery is a course-specific, standards-based extended learning opportunity for students who have previously been unsuccessful in mastering the standards required to receive course credit or earn promotion."
+    },
+    {
+      "id": "tn-2103-vi-3a1",
+      "source": "TN-S1",
+      "pinpoint": "VI(3)(a)1",
+      "quote": "The student’s parent or legal guardian gives written consent for the student to enroll in the proposed credit recovery course."
+    },
+    {
+      "id": "tn-2103-vi-3a1-accept",
+      "source": "TN-S1",
+      "pinpoint": "VI(3)(a)1",
+      "quote": "Parents/guardians should be informed that not all postsecondary institutions will accept credit recovery courses for credit and that the NCAA Clearinghouse will not accept credit recovery courses for credit."
+    },
+    {
       "id": "tn-2103-i-20-eoc",
       "source": "TN-S1",
       "pinpoint": "I(20)",
@@ -129,6 +147,11 @@
       "kind": "summer",
       "note": "A first-time class in summer is meant for students on an accelerated path. If it has an end-of-course exam, the credit waits until you take the exam in the fall.",
       "cite": ["tn-2103-i-20", "tn-2103-i-20-eoc"]
+    },
+    {
+      "kind": "credit_recovery",
+      "note": "For a class you took and didn't pass. It needs your parent's written consent, and not every college (or the NCAA) accepts credit recovery credit.",
+      "cite": ["tn-2103-vi-1", "tn-2103-vi-3a1", "tn-2103-vi-3a1-accept"]
     },
     {
       "kind": "credit_by_exam",

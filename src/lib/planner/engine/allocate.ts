@@ -3,7 +3,7 @@ import type { Selector } from "../rules";
 import type { Alternative, CLeaf } from "./compile";
 import { MinCostFlow } from "./flow";
 import type { Item } from "./model";
-import { matchesAny, selectorSpecificity, wouldMatchIfConfirmed } from "./select";
+import { matchesAny, matchesOnlyAsSubstitute, selectorSpecificity, wouldMatchIfConfirmed } from "./select";
 import { UNITS_PER_CREDIT } from "../common";
 
 // ---------------------------------------------------------------------------
@@ -50,6 +50,13 @@ export type AltResult = {
 };
 
 const ELECTIVE_COST = 5;
+/**
+ * A class counted through a substitution (Physics as Tennessee's 4th math, computer science as its
+ * 3rd lab science) costs more than any requirement it's named for (above the 0-3 spread of named
+ * requirements), so when both routes leave one class to add, the plain one wins: Physics is the
+ * 3rd lab science and the 4th math is what's missing. It still beats leaving the class unused.
+ */
+const SUBSTITUTE_COST = 4;
 const MAX_SPLIT_REPAIRS = 24;
 
 function selectOf(leaf: CLeaf): Selector[] | null {
@@ -64,6 +71,10 @@ export function leafAccepts(leaf: CLeaf, item: Item): boolean {
   if (req.kind === "credits" && req.deadlineGrade !== undefined && grade > req.deadlineGrade) return false;
   const sels = selectOf(leaf);
   return sels ? matchesAny(item, sels) : true;
+}
+
+function isDifferent(leaf: CLeaf): boolean {
+  return leaf.req.kind === "same_language" && leaf.req.differentFrom !== undefined;
 }
 
 function isFlowLeaf(leaf: CLeaf): boolean {
@@ -116,15 +127,18 @@ function languageOf(item: Item): { code: LanguageCode; rank: number } | null {
   return { code: ladder.id.slice(5) as LanguageCode, rank: ladder.rank };
 }
 
-/** The language that gets furthest toward `levels`, and the classes that make up its levels. */
-export function languageProgress(items: Item[], leaf: CLeaf): { code: LanguageCode | null; counted: { item: Item; amount: number }[] } {
+/**
+ * The language that gets furthest toward `levels`, and the classes that make up its levels.
+ * `notCode`: a language another requirement already counts (one that asks for a different language).
+ */
+export function languageProgress(items: Item[], leaf: CLeaf, notCode: LanguageCode | null = null): { code: LanguageCode | null; counted: { item: Item; amount: number }[] } {
   if (leaf.req.kind !== "same_language") return { code: null, counted: [] };
   const req = leaf.req;
   const byCode = new Map<LanguageCode, Item[]>();
   for (const item of items) {
     if (!item.creditable) continue;
     const lang = languageOf(item);
-    if (!lang || req.exclude?.includes(lang.code)) continue;
+    if (!lang || req.exclude?.includes(lang.code) || lang.code === notCode) continue;
     if (req.grades && !req.grades.includes(item.grade)) continue;
     byCode.set(lang.code, [...(byCode.get(lang.code) ?? []), item]);
   }
@@ -151,8 +165,22 @@ export function languageProgress(items: Item[], leaf: CLeaf): { code: LanguageCo
   return { code: best.code, counted };
 }
 
-function languageResult(items: Item[], leaf: CLeaf): LeafResult {
-  const { counted } = languageProgress(items, leaf);
+/** The language a same-language requirement's result counts. */
+function languageCodeOf(r: LeafResult | undefined): LanguageCode | null {
+  const first = r?.counted[0];
+  return first ? (languageOf(first.item)?.code ?? null) : null;
+}
+
+/** The language a "different language" requirement must avoid: the one its partner counts. */
+function partnerCode(leaf: CLeaf, alt: Alternative, results: Map<CLeaf, LeafResult>): LanguageCode | null {
+  if (leaf.req.kind !== "same_language" || !leaf.req.differentFrom) return null;
+  const partnerId = leaf.req.differentFrom;
+  const partner = alt.leaves.find((l) => l.id === partnerId);
+  return partner ? languageCodeOf(results.get(partner)) : null;
+}
+
+function languageResult(items: Item[], leaf: CLeaf, notCode: LanguageCode | null = null): LeafResult {
+  const { counted } = languageProgress(items, leaf, notCode);
   // Levels reached: firm counts only up to the highest firm level.
   const firmLevel = Math.max(0, ...counted.filter((c) => c.item.firm).map((c) => languageOf(c.item)!.rank));
   const allLevel = Math.max(0, ...counted.map((c) => languageOf(c.item)!.rank));
@@ -185,7 +213,8 @@ function solveFlow(pool: { item: Item; units: number }[], leaves: { leaf: CLeaf;
     leaves.forEach(({ leaf, cap }, j) => {
       if (cap <= 0 || !allowed(i, j)) return;
       if (!leafAccepts(leaf, p.item)) return;
-      const cost = (p.item.firm ? 1 : 10) + spec[j];
+      const sels = selectOf(leaf);
+      const cost = (p.item.firm ? 1 : 10) + spec[j] + (sels && matchesOnlyAsSubstitute(p.item, sels) ? SUBSTITUTE_COST : 0);
       edges.push({ i, l: j, e: g.addEdge(i, P + j, p.units, cost) });
     });
   });
@@ -254,10 +283,11 @@ export function evaluateAlternative(alt: Alternative, items: Item[], allocation:
     // §74.13(g): an endorsement's language levels also count for the foundation's), so they share
     // their language classes; those classes count toward nothing else.
     const languageUsed = new Set<string>();
-    for (const leaf of alt.leaves) {
-      if (leaf.req.kind !== "same_language") continue;
+    // A requirement for a different language goes after the one it differs from.
+    const languageLeaves = alt.leaves.filter((l) => l.req.kind === "same_language").sort((a, b) => Number(isDifferent(a)) - Number(isDifferent(b)));
+    for (const leaf of languageLeaves) {
       const available = creditable.filter((i) => (remaining.get(i.key) ?? 0) > 0 || languageUsed.has(i.key));
-      const r = languageResult(available, leaf);
+      const r = languageResult(available, leaf, partnerCode(leaf, alt, results));
       for (const c of r.counted) {
         remaining.set(c.item.key, 0);
         languageUsed.add(c.item.key);
@@ -280,8 +310,8 @@ export function evaluateAlternative(alt: Alternative, items: Item[], allocation:
       results.set(leaf, result(leaf, counted, sels ? guessedFor(items, sels, counted, counted.reduce((n, c) => n + c.amount, 0) < leaf.required) : false));
     });
   } else {
-    for (const leaf of alt.leaves) {
-      if (leaf.req.kind === "same_language") results.set(leaf, languageResult(creditable, leaf));
+    for (const leaf of [...alt.leaves].sort((a, b) => Number(isDifferent(a)) - Number(isDifferent(b)))) {
+      if (leaf.req.kind === "same_language") results.set(leaf, languageResult(creditable, leaf, partnerCode(leaf, alt, results)));
       else if (leaf.req.kind === "credits") {
         const sels = leaf.req.select;
         const counted = takeGreedy(creditable.filter((i) => leafAccepts(leaf, i)), leaf.required, (i) => i.units);
@@ -310,7 +340,7 @@ export function evaluateAlternative(alt: Alternative, items: Item[], allocation:
       const counted = creditable.map((item) => ({ item, amount: item.units }));
       results.set(leaf, result(leaf, counted, false));
     } else if (req.kind === "same_language") {
-      results.set(leaf, languageResult(creditable, leaf));
+      results.set(leaf, languageResult(creditable, leaf, partnerCode(leaf, alt, results)));
     } else {
       results.set(leaf, result(leaf, [], false));
     }

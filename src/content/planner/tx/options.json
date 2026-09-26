@@ -158,6 +158,12 @@
       "quote": "(A) five social studies credits by selecting courses from Chapter 113 of this title; or (B) four levels of the same language in a language other than English"
     },
     {
+      "id": "tx-74-13-f4c",
+      "source": "TX-S1",
+      "pinpoint": "§74.13(f)(4)(C)",
+      "quote": "(C) two levels of the same language in a language other than English and two levels of a different language in a language other than English by selecting courses in accordance with Chapter 114 of this title; or"
+    },
+    {
       "id": "tx-74-13-f4e",
       "source": "TX-S1",
       "pinpoint": "§74.13(f)(4)(E)",
@@ -1591,6 +1597,29 @@
                   "cite": ["tx-74-13-f4ab"]
                 },
                 {
+                  "id": "ah.two-languages",
+                  "label": "Two levels each of two different languages",
+                  "kind": "all",
+                  "of": [
+                    {
+                      "id": "ah.two-languages.first",
+                      "label": "Two levels of one language",
+                      "kind": "same_language",
+                      "levels": 2,
+                      "cite": ["tx-74-13-f4c"]
+                    },
+                    {
+                      "id": "ah.two-languages.second",
+                      "label": "Two levels of a different language",
+                      "kind": "same_language",
+                      "levels": 2,
+                      "differentFrom": "ah.two-languages.first",
+                      "cite": ["tx-74-13-f4c"]
+                    }
+                  ],
+                  "cite": ["tx-74-13-f4c"]
+                },
+                {
                   "id": "ah.arts",
                   "label": "Four fine arts credits in one or two art forms",
                   "kind": "credits",
@@ -1612,10 +1641,6 @@
             { "id": "endorse.26", "text": "An endorsement takes at least 26 credits.", "cite": ["tx-74-13-c"] }
           ],
           "unverified": [
-            {
-              "id": "ah.two-languages",
-              "text": "Two levels each of two different languages also completes this endorsement. Ask your counselor to check that route."
-            },
             {
               "id": "ah.english",
               "text": "Texas also allows an advanced English route (four English credits from a list), but whether English I-III count toward it isn't clear. Ask your counselor."
@@ -1710,6 +1735,29 @@
                   "cite": ["tx-74-13-f4ab"]
                 },
                 {
+                  "id": "ah.two-languages",
+                  "label": "Two levels each of two different languages",
+                  "kind": "all",
+                  "of": [
+                    {
+                      "id": "ah.two-languages.first",
+                      "label": "Two levels of one language",
+                      "kind": "same_language",
+                      "levels": 2,
+                      "cite": ["tx-74-13-f4c"]
+                    },
+                    {
+                      "id": "ah.two-languages.second",
+                      "label": "Two levels of a different language",
+                      "kind": "same_language",
+                      "levels": 2,
+                      "differentFrom": "ah.two-languages.first",
+                      "cite": ["tx-74-13-f4c"]
+                    }
+                  ],
+                  "cite": ["tx-74-13-f4c"]
+                },
+                {
                   "id": "ah.arts",
                   "label": "Four fine arts credits in one or two art forms",
                   "kind": "credits",
@@ -1731,10 +1779,6 @@
             { "id": "endorse.26", "text": "An endorsement takes at least 26 credits.", "cite": ["tx-74-13-c"] }
           ],
           "unverified": [
-            {
-              "id": "ah.two-languages",
-              "text": "Two levels each of two different languages also completes this endorsement. Ask your counselor to check that route."
-            },
             {
               "id": "ah.english",
               "text": "Texas also allows an advanced English route (four English credits from a list), but whether English I-III count toward it isn't clear. Ask your counselor."

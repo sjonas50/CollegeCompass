@@ -487,8 +487,8 @@
                       "levels": ["ap", "ib", "cambridge", "dual_enrollment"],
                       "exclude": ["math.ms", "math.alg1", "math.geom", "math.alg2", "math.int1", "math.int2", "math.int3"]
                     },
-                    { "types": ["sci.phys", "sci.phys2"] },
-                    { "types": ["cs.intro", "cs.principles", "cs.prog1", "cs.prog2", "cs.cyber", "cs.data_science"] }
+                    { "types": ["sci.phys", "sci.phys2"], "substitute": true },
+                    { "types": ["cs.intro", "cs.principles", "cs.prog1", "cs.prog2", "cs.cyber", "cs.data_science"], "substitute": true }
                   ],
                   "cite": ["tn-2103-i-10", "tn-3103-ii-1", "tn-3103-ii-1-programs", "tn-3103-ii-1-math", "tn-3103-ii-1-science", "tn-3103-ii-1-cs"],
                   "note": "Physics and computer science classes can count as your 4th math for the diploma, but some universities may not count them for admission."
@@ -534,8 +534,8 @@
                       "levels": ["ap", "ib", "cambridge", "dual_enrollment"],
                       "exclude": ["sci.ms"]
                     },
-                    { "types": ["cte.agriscience", "sci.biotech", "cte.engineering_design", "cte.animal_science"] },
-                    { "types": ["cs.intro", "cs.principles", "cs.prog1", "cs.prog2", "cs.cyber"] }
+                    { "types": ["cte.agriscience", "sci.biotech", "cte.engineering_design", "cte.animal_science"], "substitute": true },
+                    { "types": ["cs.intro", "cs.principles", "cs.prog1", "cs.prog2", "cs.cyber"], "substitute": true }
                   ],
                   "cite": ["tn-2103-i-11", "tn-3103-ii-2", "tn-3103-ii-2-programs", "tn-3103-ii-2-science", "tn-3103-ii-2-cte", "tn-3103-ii-2-cs"],
                   "note": "Some career and technical classes and computer science can be your 3rd lab science for the diploma, but some universities may not count them for admission."
@@ -869,8 +869,8 @@
                       "levels": ["ap", "ib", "cambridge", "dual_enrollment"],
                       "exclude": ["math.ms", "math.alg1", "math.geom", "math.alg2", "math.int1", "math.int2", "math.int3"]
                     },
-                    { "types": ["sci.phys", "sci.phys2"] },
-                    { "types": ["cs.intro", "cs.principles", "cs.prog1", "cs.prog2", "cs.cyber", "cs.data_science"] }
+                    { "types": ["sci.phys", "sci.phys2"], "substitute": true },
+                    { "types": ["cs.intro", "cs.principles", "cs.prog1", "cs.prog2", "cs.cyber", "cs.data_science"], "substitute": true }
                   ],
                   "cite": ["tn-2103-i-10", "tn-3103-ii-1", "tn-3103-ii-1-programs", "tn-3103-ii-1-math", "tn-3103-ii-1-science", "tn-3103-ii-1-cs"],
                   "note": "Physics and computer science classes can count as your 4th math for the diploma, but some universities may not count them for admission."
@@ -916,8 +916,8 @@
                       "levels": ["ap", "ib", "cambridge", "dual_enrollment"],
                       "exclude": ["sci.ms"]
                     },
-                    { "types": ["cte.agriscience", "sci.biotech", "cte.engineering_design", "cte.animal_science"] },
-                    { "types": ["cs.intro", "cs.principles", "cs.prog1", "cs.prog2", "cs.cyber"] }
+                    { "types": ["cte.agriscience", "sci.biotech", "cte.engineering_design", "cte.animal_science"], "substitute": true },
+                    { "types": ["cs.intro", "cs.principles", "cs.prog1", "cs.prog2", "cs.cyber"], "substitute": true }
                   ],
                   "cite": ["tn-2103-i-11", "tn-3103-ii-2", "tn-3103-ii-2-programs", "tn-3103-ii-2-science", "tn-3103-ii-2-cte", "tn-3103-ii-2-cs"],
                   "note": "Some career and technical classes and computer science can be your 3rd lab science for the diploma, but some universities may not count them for admission."

@@ -62,6 +62,18 @@ the folder, the manifest and the loader agree).
   set's whole class route (UT Austin calculus readiness); with `reqIds` only for those requirements
   or checks (Utah's math competency replaces the senior-year math class, not the CTE credit). A
   dated route (`by`) is the default in the plan when the class route isn't planned.
+- **Substitutions cost more than the plain route.** A selector marked `substitute` (Tennessee
+  Policy 3.103: Physics or computer science as the 4th math, a career class or computer science as
+  the 3rd lab science) counts a class only when no plain route is as good: a senior with Biology,
+  Chemistry and Physics is missing a 4th math, not a 3rd lab science.
+- **Half credits and electives.** Where a full-credit class may cover a half-credit requirement and
+  the elective (Utah's World Geography, World History and U.S. Government, and USBE's "additional
+  half credit added to any of the required half-credit courses"), the leaves set `allowSplit`.
+- **Two different languages.** A `same_language` leaf with `differentFrom` counts a language other
+  than the one its partner counts (Texas Arts and Humanities, §74.13(f)(4)(C)).
+- **Waivers size the focus.** Tennessee's world language and fine arts waivers "expand and enhance
+  the elective focus" (Policy 2.103 I(16)-(17)), so each focus is an `option` on the waivers: 3, 4,
+  5 or 6 credits in the focus area.
 - **"On schedule" isn't "done by".** The DLA's Algebra II can be planned for 12th: by the end of
   11th the plan must show it (TEC §51.803(d)), so it has no `deadlineGrade`; the `on_schedule_by`
   check lists what must be on the plan (`req` and `with`).

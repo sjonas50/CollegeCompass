@@ -19,6 +19,13 @@
       "kind": "agency_policy",
       "checkedOn": "2026-09-25"
     },
+    "MP-USBE-CTE": {
+      "title": "Utah CTE Career Pathway Chart, 2025-2026",
+      "url": "https://schools.utah.gov/cte/_cte/pathways/AllCareerPathways2025.pdf",
+      "publisher": "Utah State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
     "UT-S4": {
       "title": "Social Studies Graduation Requirement FAQ 2026-2027",
       "url": "https://www.schools.utah.gov/curr/_curr_/_earlycollege_/SocialStudiesGraduationRequirementFAQ.pdf",
@@ -28,6 +35,13 @@
     }
   },
   "citations": [
+    { "id": "ut-cte-pathway-graphic", "source": "MP-USBE-CTE", "quote": "Career Pathway: Graphic Design & Communication" },
+    { "id": "ut-cte-pathway-broadcasting", "source": "MP-USBE-CTE", "quote": "Career Pathway: Broadcasting & Digital Media" },
+    { "id": "ut-cte-pathway-teaching", "source": "MP-USBE-CTE", "quote": "Career Pathway: K-12: Teaching as a Profession" },
+    { "id": "ut-cte-pathway-pre-k", "source": "MP-USBE-CTE", "quote": "Career Pathway: Pre-K: Early Childhood Education" },
+    { "id": "ut-cte-pathway-protective", "source": "MP-USBE-CTE", "quote": "Career Pathway: Protective Services" },
+    { "id": "ut-cte-pathway-family", "source": "MP-USBE-CTE", "quote": "Career Pathway: Family & Human Services" },
+    { "id": "ut-cte-pathway-personal-care", "source": "MP-USBE-CTE", "quote": "Career Pathway: Personal Care Services" },
     {
       "id": "ut-r277-700-6-12-acgc",
       "source": "UT-S1",
@@ -93,6 +107,12 @@
       "source": "UT-S3",
       "pinpoint": "p. 2",
       "quote": "Language Arts Level 12 (1.0 Credit) English 12 English Concurrent Enrollment* International Baccalaureate AP Literature & Composition AP Language & Composition"
+    },
+    {
+      "id": "ut-usbe-2627-math-applied",
+      "source": "UT-S3",
+      "pinpoint": "p. 3",
+      "quote": "Applied Courses (Secondary II Prerequisite) Alternative Selections for Secondary III must total 1.0 credit"
     },
     {
       "id": "ut-usbe-2627-math-advanced",
@@ -183,9 +203,19 @@
       "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"]
     },
     { "typeId": "math.calc", "levels": ["regular", "ap"], "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"] },
-    { "typeId": "math.stats", "levels": ["regular", "ap"], "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"] },
+    {
+      "typeId": "math.stats",
+      "levels": ["regular", "ap"],
+      "prereqs": [["math.ut_sec2", "math.int2", "math.geom"]],
+      "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced", "ut-usbe-2627-math-applied"]
+    },
     { "typeId": "math.college_prep", "levels": ["regular"], "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"] },
-    { "typeId": "math.applied.finance", "levels": ["regular"] },
+    {
+      "typeId": "math.applied.finance",
+      "levels": ["regular"],
+      "prereqs": [["math.ut_sec2", "math.int2", "math.geom"]],
+      "cite": ["ut-usbe-2627-math-applied"]
+    },
     { "typeId": "sci.earth", "levels": ["regular"], "cite": ["ut-usbe-2627-sci"] },
     { "typeId": "sci.bio", "levels": ["regular", "ap", "dual_enrollment"], "cite": ["ut-usbe-2627-sci"] },
     { "typeId": "sci.chem", "levels": ["regular"], "cite": ["ut-usbe-2627-sci"] },
@@ -258,6 +288,18 @@
     { "typeId": "cte.transportation.1", "levels": ["regular"] },
     { "typeId": "cte.transportation.2", "levels": ["regular"] },
     { "typeId": "cte.transportation.3", "levels": ["regular"] },
+    { "typeId": "cte.arts_av.1", "levels": ["regular"], "cite": ["ut-cte-pathway-graphic", "ut-cte-pathway-broadcasting"] },
+    { "typeId": "cte.arts_av.2", "levels": ["regular"], "cite": ["ut-cte-pathway-graphic", "ut-cte-pathway-broadcasting"] },
+    { "typeId": "cte.arts_av.3", "levels": ["regular"], "cite": ["ut-cte-pathway-graphic", "ut-cte-pathway-broadcasting"] },
+    { "typeId": "cte.education.1", "levels": ["regular"], "cite": ["ut-cte-pathway-teaching", "ut-cte-pathway-pre-k"] },
+    { "typeId": "cte.education.2", "levels": ["regular"], "cite": ["ut-cte-pathway-teaching", "ut-cte-pathway-pre-k"] },
+    { "typeId": "cte.education.3", "levels": ["regular"], "cite": ["ut-cte-pathway-teaching", "ut-cte-pathway-pre-k"] },
+    { "typeId": "cte.law.1", "levels": ["regular"], "cite": ["ut-cte-pathway-protective"] },
+    { "typeId": "cte.law.2", "levels": ["regular"], "cite": ["ut-cte-pathway-protective"] },
+    { "typeId": "cte.law.3", "levels": ["regular"], "cite": ["ut-cte-pathway-protective"] },
+    { "typeId": "cte.human_services.1", "levels": ["regular"], "cite": ["ut-cte-pathway-family", "ut-cte-pathway-personal-care"] },
+    { "typeId": "cte.human_services.2", "levels": ["regular"], "cite": ["ut-cte-pathway-family", "ut-cte-pathway-personal-care"] },
+    { "typeId": "cte.human_services.3", "levels": ["regular"], "cite": ["ut-cte-pathway-family", "ut-cte-pathway-personal-care"] },
     { "typeId": "other.driver_ed", "levels": ["regular"] }
   ]
 }
