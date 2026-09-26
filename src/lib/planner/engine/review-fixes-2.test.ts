@@ -461,9 +461,12 @@ describe("UT Austin's calculus by 11th for a student who opted in with a B (math
 
 describe("\"Required by\" only when the class is needed, and choices named as the whole requirement (plan.ts slotReasons)", () => {
   it("U10: a Utah transfer with Biology and Chemistry sees Earth science as part of Utah's science, not as \"Earth science\"", () => {
+    // With the University of Utah (no Physics recommendation): with no college listed, Utah State's
+    // recommended Physics is the class instead (review-fixes-3.test.ts).
     const path = real({
       state: "UT",
       grade: 10,
+      colleges: [UOFU],
       courses: [{ type: "ela.9", grade: 9 }, { type: "math.alg1", grade: 9 }, { type: "sci.bio", grade: 9 }, { type: "ss.world_geo", grade: 9 }, { type: "ela.10", grade: 10 }, { type: "math.geom", grade: 10 }, { type: "sci.chem", grade: 10 }],
     });
     const earth = suggestions(path).find((s) => s.typeId === "sci.earth")!;

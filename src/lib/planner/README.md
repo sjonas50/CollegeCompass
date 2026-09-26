@@ -53,7 +53,7 @@ proof-of-concept decisions override the design where they differ; see the end of
 
 ## Course types (`course-types.ts`)
 
-235 ids: 127 written out, plus `lang.<code>.<1-4>` for 13 languages and `cte.<cluster>.<1-4>` for 14
+237 ids: 129 written out, plus `lang.<code>.<1-4>` for 13 languages and `cte.<cluster>.<1-4>` for 14
 career clusters. Each type has a generic title, one of the app's 10 subjects (plus `altSubjects`
 students often use), default units, a usual grade window, prerequisites (each met by any one listed
 type), and optionally a ladder rank, capabilities and state display names.
@@ -66,6 +66,10 @@ type), and optionally a ladder rank, capabilities and state display names.
   AP, IB, Cambridge and college credit are college-level and count toward the load cap.
 - **Ladders**: `math` (0 middle school, 1 Algebra I / Integrated I / Utah Secondary I, 2, 3, 4
   precalculus, 5 calculus, 6 beyond), `ela`, one per language, one per CTE cluster.
+- **Same content and usual order**: `overlaps` lists classes that teach the same content (Personal
+  Financial Literacy and Economics with Economics and with Personal Financial Literacy; the
+  relation goes both ways), and `usuallyAfter` a soft order the planner prefers but never
+  enforces (music theory after band, choir or a music class).
 - **Capabilities**: `alg2_or_beyond`, `advanced_math_after_alg2` and `lab_science`. Rules match types
   or capabilities, so Secondary Math III, Integrated Math III and Algebra II are equal only where a
   rule says so.

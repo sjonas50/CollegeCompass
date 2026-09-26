@@ -30,8 +30,8 @@ import { admissionConflicts, ruleSetAudit, waiverNotes, worst } from "./audit";
 import type { Alternative, CLeaf } from "./compile";
 import { buildContext, type Ctx, type FamilyCtx, leafPriority, rowIsOffered, type RuleSetCtx, schoolYearOfGrade } from "./context";
 import { algebra2Reason, leafNoteReason, loadReason, prepReason, reason, requirementReason, resolveCitations, retakeReason } from "./explain";
-import { type FillResult, isRepeatable, type PlanConfig, prereqsMetIn, runFill } from "./fill";
-import { buildGaps } from "./gaps";
+import { type FillResult, isRepeatable, type PlanConfig, prereqsMetIn, runFill, sameContent } from "./fill";
+import { addedCreditTotal, buildGaps, freeUnits } from "./gaps";
 import { mathRankOf, rungName, startRank, unresolvedFailedRank } from "./ladder";
 import { asConfirmed, type Item } from "./model";
 import { type Need, needUnits } from "./needs";
@@ -241,16 +241,25 @@ function endorsementSplit(ctx: Ctx, base: PlanConfig): Decision | null {
   if (!first) return null;
   const second = trials.slice(1).find((t) => realChoice(first.fill, t.fill));
   if (!second) return null;
-  const fits = preferred.length > 0;
+  // "Two that fit your goals" only when both come from the goals: Multidisciplinary Studies as the
+  // fallback next to a computer science goal's STEM is "two you could plan for", naming the one
+  // that fits.
+  const valueOf = (t: (typeof trials)[number]) => t.rs.appliesWhen.choice!.value as EndorsementValue;
+  const fitsA = preferred.includes(valueOf(first));
+  const fitsB = preferred.includes(valueOf(second));
+  const text =
+    fitsA && fitsB
+      ? "You haven't named a Texas endorsement yet. Here are two that fit your goals; you can pick any endorsement and change it later."
+      : fitsA || fitsB
+        ? `You haven't named a Texas endorsement yet. Here are two you could plan for, and Plan ${fitsA ? "A" : "B"}'s endorsement fits your goals. You can pick any endorsement and change it later.`
+        : "You haven't named a Texas endorsement yet. Here are two you could plan for; you can pick any endorsement and change it later.";
   return {
     a: first.fill,
     b: { ...second.fill, config: { ...second.fill.config, id: "B" } },
     labels: [`Plan A: with the ${first.rs.title}.`, `Plan B: with the ${second.rs.title}.`],
     choice: {
       kind: "endorsement",
-      text: fits
-        ? "You haven't named a Texas endorsement yet. Here are two that fit your goals; you can pick any endorsement and change it later."
-        : "You haven't named a Texas endorsement yet. Here are two you could plan for; you can pick any endorsement and change it later.",
+      text,
       reasons: [reason("choice", "Texas students name an endorsement when they start high school, and can switch later.", { ruleSetId: first.rs.id, citations: [first.rs.strengthCite] })],
     },
   };
@@ -461,9 +470,11 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
         if (seen.has(k) || !rowIsOffered(row, grade, y.schoolYear) || row.defaultTerm === "summer") continue;
         const probeItem: Item = { ...p.item, typeId: row.typeId, level: row.level, subject: row.subject, units: row.units, cte: row.cte, lectureOnly: row.lectureOnly };
         if (!matchesAny(probeItem, primary.selectors)) continue;
-        if (!isRepeatable(row.typeId) && fill.items.some((i) => i.typeId === row.typeId && !i.noCredit && i.key !== p.item.key)) continue;
+        if (!isRepeatable(row.typeId) && fill.items.some((i) => sameContent(i.typeId, row.typeId) && !i.noCredit && i.key !== p.item.key)) continue;
         const rank = mathRankOf(row.typeId);
         if (rank !== null && rank >= 1 && rank <= reached) continue;
+        // Never a class the family opted out of in writing (Utah Secondary Math III).
+        if (ctx.choices.utMath3OptOut && rank === 3) continue;
         if (!prereqsMetIn(others, row, grade, () => null, false, p.item.term === "spring")) continue;
         seen.add(k);
         alternatives.push({
@@ -616,6 +627,7 @@ function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
   const conflicts = admissionConflicts(fill.evals);
   const waivers = waiverNotes(fill.evals);
   const npn = new Set(fill.placements.filter((p) => p.needsPlanNow).map((p) => p.key));
+  const free = freeUnits(fill);
   const first = new Map(
     fill.evals.map((e) => {
       const a = ruleSetAudit(ctx, e, fill.items, conflicts, npn, () => null);
@@ -623,7 +635,13 @@ function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
         const leaf = e.best?.leaves.find((l) => l.leaf.id === r.reqId)?.leaf;
         return leaf && leaf.req.kind !== "total_credits" && leaf.req.kind !== "remaining_electives";
       });
-      return [e.rc.rs.id, worst(courses.map((r) => r.status))] as const;
+      // Credit totals and electives are met by any class ("Your choice" slots), so they count
+      // against a rule set here only when the years left can't hold them: an endorsement's 26
+      // credits (§74.13(c)) out of a senior's reach leaves the DLA without an endorsement.
+      const totals = (e.best?.leaves ?? []).filter((l) => l.leaf.own && l.leaf.req.kind === "total_credits").map((l) => l.missing);
+      const added = addedCreditTotal(e, fill.items);
+      const short = [...totals, added?.missing ?? 0].some((m) => m > free);
+      return [e.rc.rs.id, worst([...courses.map((r) => r.status), ...(short ? (["room_to_add"] as const) : [])])] as const;
     }),
   );
   return fill.evals.map((e) => {

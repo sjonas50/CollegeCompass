@@ -383,7 +383,7 @@
       "kind": "graduation_option",
       "title": "Elective focus: AP or IB",
       "issuer": { "kind": "state", "name": "Tennessee" },
-      "plainSummary": "Your elective focus is 3 credits on top of your other requirements. This one is AP or IB. Choose your focus by the end of 10th grade; you can change it with your counselor.",
+      "plainSummary": "Your elective focus is 3 credits. This one is AP or IB: an AP or IB class that also counts for another requirement counts toward your focus too. Choose your focus by the end of 10th grade; you can change it with your counselor.",
       "strength": "required",
       "strengthCite": "tn-2103-i-18",
       "confidence": "verified",
@@ -403,7 +403,9 @@
               "kind": "credits",
               "units": 12,
               "select": [{ "levels": ["ap", "ib"] }],
-              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b"],
+              "shareable": true,
+              "note": "A class that stands in for another requirement (AP U.S. History for U.S. History) also counts here.",
               "area": "electives"
             }
           ],
@@ -432,7 +434,9 @@
               "kind": "credits",
               "units": 12,
               "select": [{ "levels": ["ap", "ib"] }],
-              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b"],
+              "shareable": true,
+              "note": "A class that stands in for another requirement (AP U.S. History for U.S. History) also counts here.",
               "area": "electives"
             }
           ],
@@ -457,7 +461,7 @@
       "kind": "graduation_option",
       "title": "Elective focus: Cambridge",
       "issuer": { "kind": "state", "name": "Tennessee" },
-      "plainSummary": "Your elective focus is 3 credits on top of your other requirements. This one is Cambridge. Choose your focus by the end of 10th grade; you can change it with your counselor.",
+      "plainSummary": "Your elective focus is 3 credits. This one is Cambridge: a Cambridge class that also counts for another requirement counts toward your focus too. Choose your focus by the end of 10th grade; you can change it with your counselor.",
       "strength": "required",
       "strengthCite": "tn-2103-i-18",
       "confidence": "verified",
@@ -477,7 +481,9 @@
               "kind": "credits",
               "units": 12,
               "select": [{ "levels": ["cambridge"] }],
-              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b"],
+              "shareable": true,
+              "note": "A class that stands in for another requirement (a Cambridge English class for English III) also counts here.",
               "area": "electives"
             }
           ],
@@ -506,7 +512,9 @@
               "kind": "credits",
               "units": 12,
               "select": [{ "levels": ["cambridge"] }],
-              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b"],
+              "shareable": true,
+              "note": "A class that stands in for another requirement (a Cambridge English class for English III) also counts here.",
               "area": "electives"
             }
           ],

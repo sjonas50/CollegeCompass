@@ -196,6 +196,13 @@ type Def = {
   stateTitles?: Partial<Record<PlannerState, string>>;
   fallback?: true;
   note?: string;
+  /** Classes that teach the same content (listed on one side; the relation goes both ways). */
+  overlaps?: readonly string[];
+  /**
+   * A soft order, not a prerequisite: the class usually follows one of these, so the planner
+   * doesn't pick it first for a student without one (a student's own row never gets a warning).
+   */
+  usuallyAfter?: readonly string[];
 };
 
 const ALL_LEVELS = COURSE_TYPE_LEVELS;
@@ -779,6 +786,8 @@ const CORE = {
     grades: [11, 12],
     units: 2,
     stateTitles: { TX: "Personal Financial Literacy and Economics" },
+    // One half-credit class that covers both (Texas lists it as the alternative to either one).
+    overlaps: ["ss.econ", "ss.pfl"],
   },
   "ss.psych": {
     title: "Psychology",
@@ -827,6 +836,8 @@ const CORE = {
     subject: "arts",
     grades: [10, 12],
     levels: ["regular", "ap", "ib", "dual_enrollment"],
+    // It assumes the student reads music: after band, choir, orchestra or a music class.
+    usuallyAfter: ["arts.ensemble", "arts.music", "arts.ms"],
   },
   "arts.music": {
     title: "Music (guitar, piano, music history or appreciation)",
@@ -992,13 +1003,25 @@ const CORE = {
     cte: "always",
   },
   "cte.accounting": {
-    title: "Accounting",
+    title: "Accounting I",
     subject: "career_technical",
     grades: [10, 12],
     levels: ["regular", "dual_enrollment"],
     cte: "always",
     cluster: "business",
     ladder: ["cte.business", 2],
+    alt: ["math"],
+    note: "A first accounting class (Texas and Utah Accounting I). Texas counts only Accounting II (cte.accounting2) as a 3rd math credit [TX S1 §74.12(b)(2)(A)]; Utah's applied math list has both [UT S3].",
+  },
+  "cte.accounting2": {
+    title: "Accounting II",
+    subject: "career_technical",
+    grades: [11, 12],
+    levels: ["regular", "dual_enrollment"],
+    cte: "always",
+    cluster: "business",
+    prereqs: [["cte.accounting"]],
+    ladder: ["cte.business", 3],
     alt: ["math"],
   },
   "cte.business_office": {
@@ -1076,13 +1099,24 @@ const CORE = {
     alt: ["arts", "computer_science"],
   },
   "cte.robotics": {
-    title: "Robotics",
+    title: "Robotics I",
     subject: "career_technical",
     grades: [9, 12],
     cte: "always",
     cluster: "engineering",
     ladder: ["cte.engineering", 2],
     alt: ["computer_science"],
+    note: "A first robotics class. Texas counts only Robotics II (cte.robotics2) as a 3rd math credit [TX S1 §74.12(b)(2)(A)]; Utah's applied science list has Robotics 1 and 2 [UT S3].",
+  },
+  "cte.robotics2": {
+    title: "Robotics II",
+    subject: "career_technical",
+    grades: [10, 12],
+    cte: "always",
+    cluster: "engineering",
+    prereqs: [["cte.robotics"]],
+    ladder: ["cte.engineering", 3],
+    alt: ["computer_science", "math"],
   },
   "cte.digital_electronics": {
     title: "Digital electronics",
@@ -1241,6 +1275,10 @@ export type CourseType = {
   fallback: boolean;
   /** Mapping guidance for people and the extraction review. */
   note: string | null;
+  /** Classes that teach the same content: a student with one isn't suggested another. */
+  overlaps: readonly CourseTypeId[];
+  /** Usually taken after one of these (a soft order the planner prefers, never a prerequisite). */
+  usuallyAfter: readonly CourseTypeId[];
 };
 
 function build(): Map<CourseTypeId, CourseType> {
@@ -1252,6 +1290,8 @@ function build(): Map<CourseTypeId, CourseType> {
     for (const group of [...(def.prereqs ?? []), ...(def.collegePrereqs ?? []), ...(def.sequencePrereqs ?? [])]) {
       for (const p of group) if (!ids.has(p)) problems.push(`${id}: unknown prerequisite ${p}`);
     }
+    for (const o of def.overlaps ?? []) if (!ids.has(o)) problems.push(`${id}: unknown overlapping type ${o}`);
+    for (const a of def.usuallyAfter ?? []) if (!ids.has(a)) problems.push(`${id}: unknown usually-after type ${a}`);
     types.set(id, {
       id,
       title: def.title,
@@ -1270,10 +1310,19 @@ function build(): Map<CourseTypeId, CourseType> {
       stateTitles: def.stateTitles ?? {},
       fallback: def.fallback ?? false,
       note: def.note ?? null,
+      overlaps: (def.overlaps ?? []) as readonly CourseTypeId[],
+      usuallyAfter: (def.usuallyAfter ?? []) as readonly CourseTypeId[],
     });
   }
   if (ids.size !== entries.length) problems.push("duplicate course type id");
   if (problems.length) throw new Error(`Course type vocabulary is inconsistent:\n${problems.join("\n")}`);
+  // Overlaps go both ways (Personal Financial Literacy and Economics overlaps Economics, and back).
+  for (const type of types.values()) {
+    for (const o of type.overlaps) {
+      const other = types.get(o)!;
+      if (!other.overlaps.includes(type.id)) other.overlaps = [...other.overlaps, type.id];
+    }
+  }
   // CTE prerequisites follow the ladder: a level-n class needs any level n-1 class in its cluster.
   for (const type of types.values()) {
     if (!type.ladder?.id.startsWith("cte.") || type.ladder.rank <= 1) continue;

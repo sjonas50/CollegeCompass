@@ -373,6 +373,12 @@
       "quote": "Computer Science AP Computer Science+ Computer Science Principles+"
     },
     {
+      "id": "ut-usbe-2627-sci-robotics",
+      "source": "UT-S3",
+      "pinpoint": "p. 4",
+      "quote": "Robotics+ 1, 2 Veterinary Assistant+ 1, 2"
+    },
+    {
       "id": "ut-usbe-2627-sec3-optout",
       "source": "UT-S3",
       "pinpoint": "p. 3",
@@ -508,7 +514,7 @@
                         "units": 4,
                         "select": [
                           {
-                            "types": ["cte.accounting", "cs.prog1", "cs.prog2", "math.stats", "cs.data_science", "math.applied.decision", "math.applied.finance", "math.applied.medical", "math.applied.business"]
+                            "types": ["cte.accounting", "cte.accounting2", "cs.prog1", "cs.prog2", "math.stats", "cs.data_science", "math.applied.decision", "math.applied.finance", "math.applied.medical", "math.applied.business"]
                           }
                         ],
                         "cite": ["ut-r277-700-6-7", "ut-usbe-2627-math-applied", "ut-usbe-2627-math-applied-list", "ut-usbe-2627-math-applied-list2"],
@@ -613,10 +619,10 @@
                     { "subjects": ["science"], "exclude": ["sci.ms"] },
                     { "types": ["cs.principles", "cs.prog2", "cs.advanced"] },
                     {
-                      "types": ["cte.agriscience", "cte.animal_science", "cte.engineering_design", "cte.robotics", "cte.digital_electronics"]
+                      "types": ["cte.agriscience", "cte.animal_science", "cte.engineering_design", "cte.robotics", "cte.robotics2", "cte.digital_electronics"]
                     }
                   ],
-                  "cite": ["ut-r277-700-6-11b", "ut-usbe-2627-sci", "ut-r277-700-6-11-cs"]
+                  "cite": ["ut-r277-700-6-11b", "ut-usbe-2627-sci", "ut-r277-700-6-11-cs", "ut-usbe-2627-sci-robotics"]
                 }
               ],
               "area": "science"
@@ -918,7 +924,7 @@
                         "units": 4,
                         "select": [
                           {
-                            "types": ["cte.accounting", "cs.prog1", "cs.prog2", "math.stats", "cs.data_science", "math.applied.decision", "math.applied.finance", "math.applied.medical", "math.applied.business"]
+                            "types": ["cte.accounting", "cte.accounting2", "cs.prog1", "cs.prog2", "math.stats", "cs.data_science", "math.applied.decision", "math.applied.finance", "math.applied.medical", "math.applied.business"]
                           }
                         ],
                         "cite": ["ut-r277-700-6-7", "ut-usbe-2627-math-applied", "ut-usbe-2627-math-applied-list", "ut-usbe-2627-math-applied-list2"],
@@ -1023,10 +1029,10 @@
                     { "subjects": ["science"], "exclude": ["sci.ms"] },
                     { "types": ["cs.principles", "cs.prog2", "cs.advanced"] },
                     {
-                      "types": ["cte.agriscience", "cte.animal_science", "cte.engineering_design", "cte.robotics", "cte.digital_electronics"]
+                      "types": ["cte.agriscience", "cte.animal_science", "cte.engineering_design", "cte.robotics", "cte.robotics2", "cte.digital_electronics"]
                     }
                   ],
-                  "cite": ["ut-r277-700-6-11b", "ut-usbe-2627-sci", "ut-r277-700-6-11-cs"]
+                  "cite": ["ut-r277-700-6-11b", "ut-usbe-2627-sci", "ut-r277-700-6-11-cs", "ut-usbe-2627-sci-robotics"]
                 }
               ],
               "area": "science"

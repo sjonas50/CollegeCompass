@@ -24,7 +24,24 @@ function future(ctx: Ctx, by: ByWhen): boolean {
 function ladderDeadlines(ctx: Ctx, fill: FillResult, sol: LadderSolution | null, idPrefix: string): Deadline[] {
   if (!sol) return [];
   const out: Deadline[] = [];
-  for (const { step, latest, binding } of sol.slack) {
+  const unmet = new Set(sol.unmet.map((c) => c.id));
+  for (const entry of sol.slack) {
+    const { step } = entry;
+    let { latest, binding } = entry;
+    // A target whose top rung the plan left to another class (a recommendation College Prep Math
+    // meets) isn't kept open by this rung: the next target in line sets its "by when", if any.
+    if (binding && fill.ladder.skipped.has(binding.id)) {
+      latest = 13;
+      binding = null;
+      for (const k of fill.ladder.constraints) {
+        if (unmet.has(k.id) || fill.ladder.skipped.has(k.id) || k.rank < step.rank) continue;
+        const l = k.byGrade - (k.rank - step.rank);
+        if (l < latest) {
+          latest = l;
+          binding = k;
+        }
+      }
+    }
     if (!binding || binding.rank <= step.rank || step.summer) continue;
     const slack = latest - step.grade;
     if (slack !== 0) continue;

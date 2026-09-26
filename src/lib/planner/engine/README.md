@@ -65,9 +65,13 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   the years left from the student's own classes, never from suggestions; language levels offered
   with enough years left); fewest unmet requirements only an advanced level can meet (so an
   "AP-only" or "four advanced courses" route is never the default); fewest off-track requirements
-  that name classes, then their missing units (totals and "the rest in electives" only break
-  ties); merge potential with other targets, and in the final audit the route that leans least on
-  suggestions nothing else counts; fewest not yet done; author order. A base with extensions
+  that name classes; for a graduation option's routes at most one class apart, the one whose
+  missing requirement is a whole subject the goal is about (four fine arts credits for a graphic
+  design goal, not four language levels); then their missing units (totals and "the rest in
+  electives" only break ties); merge potential with the goals' classes and with what the other
+  rule sets still ask for (Utah's "one more science" as the Physics Utah State recommends; every
+  rule set picks its route a second time once all have one), and in the final audit the route
+  that leans least on suggestions nothing else counts; fewest not yet done; author order. A base with extensions
   breaks ties by what its extensions still miss on each route (Tennessee's CS credit as the 4th
   math leaves Statistics for the elective focus). An extension (a Texas endorsement joining the
   Foundation program) follows its base's chosen alternative, including which requirement a
@@ -97,13 +101,26 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   to show college-ready math or take a full year of math in 12th grade". A senior who passed
   calculus or hasn't said whether they met the competency is asked, not given a class flagged
   "Needs a plan now". The class chosen is the next rung or the goal's math (Statistics for
-  nursing), never college-preparatory math after precalculus.
+  nursing), never college-preparatory math after precalculus or for a goal of precalculus or
+  calculus; for such a goal the next rung may be its AP or concurrent enrollment version (Utah's
+  generic list has precalculus only as AP or CE 1050/1060). The ladder's top rung is left to a
+  regular class from the fill (College Prep Math for Utah State's "one class beyond Secondary
+  Math III") only when nothing but a recommendation needs it; then no rung's reason or "by when"
+  line says it keeps that recommendation open.
 - **Spread across years**: inside a class's usual grades, a year without a class in the same core
   subject (science, math, social studies) comes first, so junior year isn't stacked. A
   recommended class that would land outside its usual grades or make a third lab science in a
   year may use the "Your choice" slot, or move an elective-type class (the arts, PE, a career
   class) to another year. Moving classes to make room for a language never moves a core class a
-  higher-priority need placed, and core classes move only within their usual grades.
+  higher-priority need placed, and core classes move only within their usual grades. A language
+  level goes in the year right after the last one: an elective-type class moves out, then the
+  "Your choice" slot yields, before a year is skipped (and a skipped year says so).
+- **Same content**: classes that teach the same content (`overlaps` in course-types: Personal
+  Financial Literacy and Economics with Economics or Personal Financial Literacy) aren't
+  suggested next to each other, and the fill picks the one that leaves room for a class another
+  need names (Personal Financial Literacy when a business goal also wants Economics). A class
+  that usually follows another (`usuallyAfter`: music theory after band, choir or a music class)
+  comes after the others for a student without one.
 - **Gap options** add load (summer, online, college credit, an exam) only for required needs and
   targets the student picked; a labeled default target's recommendation, a scholarship's course
   part or a career pathway's next level reads "Ask your counselor". For a math sequence, and for
@@ -114,7 +131,11 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   "Ask your counselor". A need that counts years (four years of math) gets no load options.
   College credit is offered only for a class that has a college-credit version, and for math only
   when two college classes in a year would actually close the gap. A total-credit shortfall lists
-  the state's verified summer, online or exam options.
+  the state's verified summer, online or exam options, and so does a program's own total on top
+  of its base (a Texas endorsement's 26 credits, §74.13(c)) that the years left can't hold,
+  "Needs a plan now" for a senior. Such a total also counts against the rule set when another
+  one requires it (the DLA's endorsement). A class taken before 9th grade without high school
+  credit (Algebra I in 8th) is one "ask your counselor whether it counts" gap, not a class to add.
 - **Texas endorsement plans**: the goal's endorsement first (families.json, or the endorsement whose
   programs include the goal's or the student's current pathway), else the fewest added classes
   (Multidisciplinary Studies when there's no goal); STEM only for a STEM goal. A trial whose
@@ -122,7 +143,8 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   math and science are met) isn't offered. Where the two-plan choice doesn't apply (the training
   path, 11th grade, transfers) and no endorsement is named, the plan uses a default: the one the
   student's own career classes belong to, else Multidisciplinary Studies; the audit says so and
-  the decision stays open. Seniors keep the Foundation plan, and the audit says that too.
+  the decision stays open. Seniors keep the Foundation plan, and the audit says that too. The
+  choice reads "two that fit your goals" only when both endorsements come from the goals.
 - **Utah Secondary Math III opt-out**: nothing from that rung is suggested; needs that depend on
   it become "your family opted out" gaps that only the counselor can settle.
 - **A class on the same math rung** (Integrated Math I for a Texas "Algebra I" requirement) isn't
@@ -131,9 +153,15 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   fill still prefers the usual grades. School lists' printed grades always win.
 - **Career pathway levels** (`cte.<cluster>.<level>`) are never suggested twice, and a requirement
   met by CTE classes (a Texas endorsement's program of study) continues a pathway already in the
-  plan before starting another, preferring clusters whose later levels the class list offers. A
-  student who hasn't picked a pathway is planned in the one their own classes are in (two levels,
-  or one on the training path).
+  plan before starting another, preferring the goal's own pathway and then clusters whose later
+  levels the class list offers. A student who hasn't picked a pathway is planned in the one their
+  own classes are in (two levels, or one on the training path).
+- **Prerequisites of a cheaper level**: a college-level class isn't added when a regular or honors
+  version of it could go in that grade, with its own prerequisites met (AP Computer Science A
+  is suggested when Computer Science II would still need Computer Science I). A need with no
+  class to place is tried once more after the next placement, which may add its prerequisite.
+- **Middle school**: when the "by when" strip starts a rung in 8th, the 9th-grade sketch's math
+  reads as the path without it ("If you don't take Algebra I in 8th: ...").
 - **"Not for me"** holds everywhere a class can be placed, including English each year and the math
   ladder: another level of the same class is suggested instead, or the need becomes a gap.
 

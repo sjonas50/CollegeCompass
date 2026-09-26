@@ -246,6 +246,7 @@ describe("Texas endorsement not chosen yet", () => {
     );
     expect(path.planChoice?.kind).toBe("endorsement");
     expect(path.plans[0]!.label).toBe("Plan A: with the STEM endorsement.");
-    expect(path.planChoice?.text).toMatch(/two that fit your goals/);
+    // Plan B (Multidisciplinary Studies, the fallback) isn't from the goal: only Plan A is said to fit it.
+    expect(path.planChoice?.text).toMatch(/two you could plan for, and Plan A's endorsement fits your goals/);
   });
 });

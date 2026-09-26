@@ -132,7 +132,8 @@ const PATTERNS: Pattern[] = [
   { type: "ss.pfl", re: /\b(personal financ(e|ial)|financial literacy|money management|pfl)\b/i },
   { type: "ss.ms", re: /\b(texas|utah|tennessee|state) history\b|\b(social studies|history)\s*(7|8)\b/i },
   { type: "ss.us_hist", re: /\b((us|u\.s\.|united states|american)\s*hist(ory)?|apush)\b/i },
-  { type: "ss.world_geo", re: /\b(world|human)\s*geo(graphy)?\b/i },
+  // Utah's World Geography classes include Geography for Life and World/Cultural Geography CE [UT S3].
+  { type: "ss.world_geo", re: /\b((world|human|cultural)\s*geo(graphy)?|geography for life)\b/i },
   { type: "ss.world_hist", re: /\b(world|european|ancient)\s*(hist(ory)?|civ(ilizations?)?)\b/i },
   { type: "ss.us_gov", re: /\b(government|civics|gov)\b/i },
   { type: "ss.econ", re: /\b(economics|econ|microeconomics|macroeconomics)\b/i },
@@ -176,6 +177,8 @@ const PATTERNS: Pattern[] = [
   { type: "other.study_support", re: /\b(avid|study skills|advisory|homeroom|study hall|tutorial)\b/i },
 
   // Career and technical education: named classes, then a cluster's level 1
+  // A second-year class is its own type (Texas counts only Accounting II and Robotics II as math).
+  { type: "cte.accounting2", re: /\baccounting\s*(ii|2)\b/i },
   { type: "cte.accounting", re: /\baccounting\b/i },
   { type: "cte.business_office", re: /\b(business office|microsoft office|digital business)\b/i },
   { type: "cte.floral_design", re: /\bfloral\b/i },
@@ -186,6 +189,7 @@ const PATTERNS: Pattern[] = [
   { type: "cte.engineering_design", re: /\b(engineering design|principles of (applied )?engineering|intro(duction)? to engineering)\b/i },
   { type: "cte.cad", re: /\b(cad|drafting)\b/i },
   { type: "cte.digital_electronics", re: /\bdigital electronics\b/i },
+  { type: "cte.robotics2", re: /\brobotics?\s*(ii|2)\b/i },
   { type: "cte.robotics", re: /\brobotics?\b/i },
   { type: "cte.biomed", re: /\b(biomedical|human body systems|medical interventions)\b/i },
   { type: "cte.medical_terminology", re: /\bmedical terminology\b/i },

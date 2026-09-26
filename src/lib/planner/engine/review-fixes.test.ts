@@ -249,7 +249,7 @@ describe("Texas endorsement plans (endorsementSplit)", () => {
     });
     expect(path.planChoice?.kind).toBe("endorsement");
     expect(path.plans[0]!.label).toBe("Plan A: with the Public Services endorsement.");
-    expect(path.planChoice?.text).toMatch(/fit your goals/);
+    expect(path.planChoice?.text).toMatch(/Plan A's endorsement fits your goals/);
     for (const p of path.plans) {
       const clusters = new Set(suggestions(path, p.id).flatMap((s) => (getCourseType(s.typeId).ladder?.id.startsWith("cte.") ? [getCourseType(s.typeId).ladder!.id] : [])));
       expect(clusters.size, p.label).toBeLessThanOrEqual(1);

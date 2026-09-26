@@ -1,13 +1,15 @@
 import type { SchoolGrade } from "../common";
 import { GAP_OPTION_KINDS, type GapOptionKind, type OptionFact } from "../content-types";
 import { courseTypeTitle, type CourseTypeId, getCourseType, levelLabel } from "../course-types";
-import type { ByWhen, Gap, GapOption, UpToThree } from "../engine-io";
+import type { ByWhen, Gap, GapOption, Reason, UpToThree } from "../engine-io";
 import { MATH_TARGET_DEFS } from "../families";
-import { type Ctx, rowIsOffered, schoolYearOfGrade } from "./context";
+import { earlyWithoutCredit, type RuleSetEval } from "./audit";
+import type { CLeaf } from "./compile";
+import { type Ctx, leafPriority, rowIsOffered, schoolYearOfGrade } from "./context";
 import { algebra2Reason, reason } from "./explain";
-import { type BlockReason, type FillResult, isRepeatable, prereqsMetIn, probe } from "./fill";
+import { type BlockReason, type FillResult, isRepeatable, prereqsMetIn, probe, sameContent } from "./fill";
 import { type LadderMoves, type LadderSolution, mathRankOf, rungName, rungTypes, solveLadder, startRank } from "./ladder";
-import { countsForSequence } from "./model";
+import { countsForSequence, type Item } from "./model";
 import { isLadderish, type Need } from "./needs";
 import { matchesAny } from "./select";
 import { atLeast, creditNoun, nth } from "./util";
@@ -58,7 +60,7 @@ function typeForNeed(ctx: Ctx, fill: FillResult, need: Need): CourseTypeId | nul
     for (const r of ctx.catalogs.get(grade)?.rows ?? []) {
       if (!rowIsOffered(r, grade, sy)) continue;
       if (!matchesAny(probe(r, grade, sy), need.selectors)) continue;
-      if (!isRepeatable(r.typeId) && items.some((i) => i.typeId === r.typeId)) continue;
+      if (!isRepeatable(r.typeId) && items.some((i) => sameContent(i.typeId, r.typeId))) continue;
       const rank = mathRankOf(r.typeId);
       if (rank !== null && rank >= 1 && rank <= reached) continue;
       if (!prereqsMetIn(items, r, grade, () => null, true)) continue;
@@ -227,6 +229,10 @@ function gapText(ctx: Ctx, need: Need, kind: Gap["kind"], block: BlockReason | n
   if (needsPlanNow) return `Needs a plan now: ${label}${amount}.`;
   if (block === "choice") return `${label}: your family opted out of the class this needs. Ask your counselor what that means for you.`;
   if (block === "equivalent") return `${label}: you've taken a class that may count the same way. Ask your counselor whether it does here.`;
+  if (block === "hs_credit") {
+    const early = earlyWithoutCredit(ctx.items, need.selectors);
+    if (early) return `Your ${nth(early.grade)}-grade ${courseTypeTitle(early.typeId, ctx.state)} isn't marked for high school credit. Ask your counselor whether it counts.`;
+  }
   switch (kind) {
     case "ladder_infeasible":
       return need.byGrade > ctx.grade || (need.byGrade === ctx.grade && ctx.inProgressGrade === null)
@@ -243,13 +249,67 @@ function gapText(ctx: Ctx, need: Need, kind: Gap["kind"], block: BlockReason | n
   }
 }
 
+/**
+ * Room left in the plan's school years, in units. The year in progress counts too: classes being
+ * taken now may not be recorded yet.
+ */
+export function freeUnits(fill: FillResult): number {
+  return [...fill.years.values()].reduce((n, y) => n + Math.max(0, y.capHalves - y.used) * 2, 0);
+}
+
+/**
+ * A program that adds credits on top of the one it extends (a Texas endorsement: "at least 26
+ * credits", 19 TAC §74.13(c)): the base program's total plus the option's own added credits and
+ * electives, against every class on the plan that earns credit. Null for a rule set that doesn't
+ * extend a program with a credit total.
+ */
+export function addedCreditTotal(e: RuleSetEval, items: readonly Item[]): { required: number; missing: number; leaf: CLeaf } | null {
+  if (!e.best || e.rc.bases.length === 0) return null;
+  const total = e.best.leaves.find((l) => !l.leaf.own && l.leaf.req.kind === "total_credits");
+  const electives = e.best.leaves.find((l) => l.leaf.own && l.leaf.req.kind === "remaining_electives");
+  if (!total || !electives) return null;
+  const added = e.best.leaves
+    .filter((l) => l.leaf.own && ((l.leaf.req.kind === "credits" && !l.leaf.req.shareable) || l.leaf.req.kind === "remaining_electives"))
+    .reduce((n, l) => n + l.required, 0);
+  const required = total.required + added;
+  const have = items.filter((i) => i.creditable).reduce((n, i) => n + i.units, 0);
+  return { required, missing: Math.max(0, required - have), leaf: electives.leaf };
+}
+
+/** The state's verified ways to add credit outside the school day, at most two, the counselor last. */
+function creditOptions(ctx: Ctx): UpToThree<GapOption> {
+  // Tennessee summer school, Utah's online program, Texas credit by exam, each with its own note.
+  const summer = ctx.limits.allowSummer ? fact(ctx, "summer", null) : null;
+  const online = ctx.limits.allowOnline ? fact(ctx, "state_online", ctx.grade) : null;
+  const exam = fact(ctx, "credit_by_exam", null);
+  const options: GapOption[] = [
+    ...(summer ? [{ kind: "summer" as const, text: `Take a class in summer${summer.programName ? ` (${summer.programName})` : ""}.`, note: summer.note, closes: null, adds: [], citations: summer.cite }] : []),
+    ...(online ? [{ kind: "state_online" as const, text: `Take a class online${online.programName ? ` through ${online.programName}` : ""}.`, note: online.note, closes: null, adds: [], citations: online.cite }] : []),
+    ...(exam ? [{ kind: "credit_by_exam" as const, text: `Earn credit by exam${exam.programName ? ` (${exam.programName})` : ""}.`, note: exam.note, closes: null, adds: [], citations: exam.cite }] : []),
+  ].slice(0, 2);
+  return [...options, ASK] as UpToThree<GapOption>;
+}
+
+/** The state's reviewed notes on high school credit earned before 9th grade. */
+function earlyCreditNotes(ctx: Ctx): Reason[] {
+  return ctx.facts.middleSchoolMath.filter((n) => /credit/i.test(n.text)).map((n) => reason("state_note", n.text, { citations: n.cite }));
+}
+
 /** Gaps for Plan A (design §5.8). */
 export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
   const gaps: Gap[] = [];
   const ladderUnmet = new Map((fill.ladder.solution?.unmet ?? []).map((c) => [c.id, c]));
-  for (const need of fill.needs) {
+  // A class from before 9th grade without high school credit is one question, asked once (for
+  // the highest-priority requirement it would meet), not a gap for every college too.
+  const earlyAsked = new Set<string>();
+  for (const need of [...fill.needs].sort((a, b) => a.priority - b.priority)) {
     if (need.missing <= 0 || need.soft || need.priority > 3) continue;
     let block = fill.unmet.get(need.id) ?? null;
+    if (block === "hs_credit") {
+      const early = earlyWithoutCredit(ctx.items, need.selectors);
+      if (early && earlyAsked.has(early.key)) continue;
+      if (early) earlyAsked.add(early.key);
+    }
     if (ctx.choices.utMath3OptOut && (isLadderish(need.selectors) ?? 0) >= 3) block = "choice";
     if (block === "guessed") continue;
     // A dated test-score route (UT Austin calculus readiness) is the plan when the class route
@@ -283,39 +343,50 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
       demandId: need.id,
       text: pathway ? `Room to add: ${need.label}. Ask your counselor about the next class in this pathway.` : gapText(ctx, need, kind, block, needsPlanNow),
       decideBy: byWhenFor(ctx, need.byGrade),
-      options: block === "choice" || block === "equivalent" || pathway ? [ASK] : block === "ask" ? askOptions(need) : optionsFor(ctx, fill, need, ladder),
-      reasons,
+      options: block === "choice" || block === "equivalent" || block === "hs_credit" || pathway ? [ASK] : block === "ask" ? askOptions(need) : optionsFor(ctx, fill, need, ladder),
+      reasons: block === "hs_credit" ? [...reasons, ...earlyCreditNotes(ctx)] : reasons,
     });
   }
   // Graduation totals the remaining years can't hold.
+  const free = freeUnits(fill);
+  const room = `Your plan has room for about ${toCredits(free)} more ${creditNoun(toCredits(free))}`;
   for (const e of fill.evals) {
-    if (!e.best || (e.rc.rs.kind !== "state_graduation" && e.rc.rs.kind !== "local_graduation")) continue;
-    for (const l of e.best.leaves) {
-      if (l.leaf.req.kind !== "total_credits" || l.missing <= 0) continue;
-      // Free room counts the year in progress too: classes being taken now may not be recorded yet.
-      const free = [...fill.years.values()].reduce((n, y) => n + Math.max(0, y.capHalves - y.used) * 2, 0);
-      if (free >= l.missing || ctx.firstGrade <= 8) continue;
-      // The state's verified ways to add credit outside the school day (Tennessee summer school,
-      // Utah's online program, Texas credit by exam), each with its own note; the counselor last.
-      const summer = ctx.limits.allowSummer ? fact(ctx, "summer", null) : null;
-      const online = ctx.limits.allowOnline ? fact(ctx, "state_online", ctx.grade) : null;
-      const exam = fact(ctx, "credit_by_exam", null);
-      const options: GapOption[] = [
-        ...(summer ? [{ kind: "summer" as const, text: `Take a class in summer${summer.programName ? ` (${summer.programName})` : ""}.`, note: summer.note, closes: null, adds: [], citations: summer.cite }] : []),
-        ...(online ? [{ kind: "state_online" as const, text: `Take a class online${online.programName ? ` through ${online.programName}` : ""}.`, note: online.note, closes: null, adds: [], citations: online.cite }] : []),
-        ...(exam ? [{ kind: "credit_by_exam" as const, text: `Earn credit by exam${exam.programName ? ` (${exam.programName})` : ""}.`, note: exam.note, closes: null, adds: [], citations: exam.cite }] : []),
-      ].slice(0, 2);
-      gaps.push({
-        id: `gap:${e.rc.rs.id}/${l.leaf.id}`,
-        kind: "doesnt_fit",
-        priority: 0,
-        demandId: null,
-        text: `Your plan has room for about ${toCredits(free)} more ${creditNoun(toCredits(free))}, and ${l.leaf.label.toLowerCase()} needs ${toCredits(l.missing)} more.`,
-        decideBy: byWhenFor(ctx, 12),
-        options: [...options, ASK] as UpToThree<GapOption>,
-        reasons: [reason("requirement", `${l.leaf.label}: ${toCredits(l.required)} credits.`, { ruleSetId: e.rc.rs.id, reqId: l.leaf.id, citations: l.leaf.cite })],
-      });
+    if (!e.best || ctx.firstGrade <= 8) continue;
+    if (e.rc.rs.kind === "state_graduation" || e.rc.rs.kind === "local_graduation") {
+      for (const l of e.best.leaves) {
+        if (l.leaf.req.kind !== "total_credits" || l.missing <= 0 || free >= l.missing) continue;
+        gaps.push({
+          id: `gap:${e.rc.rs.id}/${l.leaf.id}`,
+          kind: "doesnt_fit",
+          priority: 0,
+          demandId: null,
+          text: `${room}, and ${l.leaf.label.toLowerCase()} needs ${toCredits(l.missing)} more.`,
+          decideBy: byWhenFor(ctx, 12),
+          options: creditOptions(ctx),
+          reasons: [reason("requirement", `${l.leaf.label}: ${toCredits(l.required)} credits.`, { ruleSetId: e.rc.rs.id, reqId: l.leaf.id, citations: l.leaf.cite })],
+        });
+      }
     }
+    // A program's own credit total on top of its base (a Texas endorsement's 26 credits): the
+    // electives it adds create no class to place, so a shortfall the years left can't hold is a
+    // gap of its own, with the same options as the graduation total.
+    const added = addedCreditTotal(e, fill.items);
+    const priority = added ? leafPriority(e.rc, added.leaf.strength) : null;
+    if (!added || priority === null || free >= added.missing) continue;
+    const planNow = ctx.inProgressGrade === 12 && priority === 0;
+    gaps.push({
+      id: `gap:${e.rc.rs.id}/${added.leaf.id}`,
+      kind: "doesnt_fit",
+      priority,
+      demandId: null,
+      text: `${planNow ? "Needs a plan now: " : ""}${room}, and the ${e.rc.rs.title} needs at least ${toCredits(added.required)} credits in all (${toCredits(added.missing)} more).`,
+      decideBy: byWhenFor(ctx, 12),
+      options: creditOptions(ctx),
+      reasons: [
+        reason("requirement", `${e.rc.rs.title}: at least ${toCredits(added.required)} credits.`, { ruleSetId: e.rc.rs.id, reqId: added.leaf.id, strength: added.leaf.strength, citations: added.leaf.cite }),
+        ...(planNow ? [reason("gap", "This is a required credit. Summer school or credit recovery may work; ask your counselor soon.", { ruleSetId: e.rc.rs.id })] : []),
+      ],
+    });
   }
   return gaps.sort((a, b) => a.priority - b.priority || (a.decideBy?.grade ?? 13) - (b.decideBy?.grade ?? 13) || (a.id < b.id ? -1 : 1));
 }

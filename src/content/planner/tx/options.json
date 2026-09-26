@@ -496,7 +496,7 @@
                       "label": "Engineering program (3 credits in one program)",
                       "kind": "credits",
                       "units": 12,
-                      "select": [{ "cte": true, "types": ["math.applied.engineering", "sci.phys_eng", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4"] }],
+                      "select": [{ "cte": true, "types": ["math.applied.engineering", "sci.phys_eng", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.robotics2", "cte.digital_electronics", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4"] }],
                       "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
                       "shareable": true,
                       "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
@@ -712,7 +712,7 @@
                       "label": "Engineering program (3 credits in one program)",
                       "kind": "credits",
                       "units": 12,
-                      "select": [{ "cte": true, "types": ["math.applied.engineering", "sci.phys_eng", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4"] }],
+                      "select": [{ "cte": true, "types": ["math.applied.engineering", "sci.phys_eng", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.robotics2", "cte.digital_electronics", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4"] }],
                       "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
                       "shareable": true,
                       "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
@@ -846,7 +846,7 @@
                       "label": "Business, marketing and finance program (3 credits in one program)",
                       "kind": "credits",
                       "units": 12,
-                      "select": [{ "cte": true, "types": ["ela.professional_comm", "math.stats", "math.applied.finance", "math.applied.business", "cte.accounting", "cte.business_office", "cte.business.1", "cte.business.2", "cte.business.3", "cte.business.4"] }],
+                      "select": [{ "cte": true, "types": ["ela.professional_comm", "math.stats", "math.applied.finance", "math.applied.business", "cte.accounting", "cte.accounting2", "cte.business_office", "cte.business.1", "cte.business.2", "cte.business.3", "cte.business.4"] }],
                       "cite": ["tx-74-13-f7a"],
                       "shareable": true,
                       "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
@@ -936,7 +936,7 @@
                       "label": "Engineering program (3 credits in one program)",
                       "kind": "credits",
                       "units": 12,
-                      "select": [{ "cte": true, "types": ["math.applied.engineering", "sci.phys_eng", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4"] }],
+                      "select": [{ "cte": true, "types": ["math.applied.engineering", "sci.phys_eng", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.robotics2", "cte.digital_electronics", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4"] }],
                       "cite": ["tx-74-13-f7b"],
                       "shareable": true,
                       "note": "An engineering program counts here only if you don't meet the STEM endorsement's math and science requirements."
@@ -1062,7 +1062,7 @@
                       "label": "Business, marketing and finance program (3 credits in one program)",
                       "kind": "credits",
                       "units": 12,
-                      "select": [{ "cte": true, "types": ["ela.professional_comm", "math.stats", "math.applied.finance", "math.applied.business", "cte.accounting", "cte.business_office", "cte.business.1", "cte.business.2", "cte.business.3", "cte.business.4"] }],
+                      "select": [{ "cte": true, "types": ["ela.professional_comm", "math.stats", "math.applied.finance", "math.applied.business", "cte.accounting", "cte.accounting2", "cte.business_office", "cte.business.1", "cte.business.2", "cte.business.3", "cte.business.4"] }],
                       "cite": ["tx-74-13-f7a"],
                       "shareable": true,
                       "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
@@ -1152,7 +1152,7 @@
                       "label": "Engineering program (3 credits in one program)",
                       "kind": "credits",
                       "units": 12,
-                      "select": [{ "cte": true, "types": ["math.applied.engineering", "sci.phys_eng", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4"] }],
+                      "select": [{ "cte": true, "types": ["math.applied.engineering", "sci.phys_eng", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.robotics2", "cte.digital_electronics", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4"] }],
                       "cite": ["tx-74-13-f7b"],
                       "shareable": true,
                       "note": "An engineering program counts here only if you don't meet the STEM endorsement's math and science requirements."

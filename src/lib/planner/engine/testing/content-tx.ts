@@ -13,7 +13,7 @@ const LIST_B_MATH: Selector[] = [
   { capabilities: ["alg2_or_beyond"] },
   { types: ["math.stats", "math.adv_quant", "math.alg_reasoning", "math.discrete", "math.applied.engineering", "math.applied.medical"] },
 ];
-const LIST_A_MATH: CourseTypeId[] = ["math.applied.models", "math.applied.technical", "math.applied.finance", "cte.digital_electronics", "cte.accounting", "cte.robotics"];
+const LIST_A_MATH: CourseTypeId[] = ["math.applied.models", "math.applied.technical", "math.applied.finance", "cte.digital_electronics", "cte.accounting2", "cte.robotics2"];
 const CS_PROGRAMMING: CourseTypeId[] = ["cs.principles", "cs.prog1", "cs.prog2", "cs.advanced"];
 
 function fhspRequirements(cohort: "2022" | "2026"): Req[] {

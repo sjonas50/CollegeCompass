@@ -15,7 +15,7 @@ import type { CLeaf } from "./compile";
 import type { Ctx, RuleSetCtx } from "./context";
 import { leafPriority, rowIsOffered, schoolYearOfGrade, variantFor } from "./context";
 import { leafNoteReason, reason, requirementReason, ruleSetNotes } from "./explain";
-import type { Item } from "./model";
+import { asConfirmed, type Item } from "./model";
 import { matchesAny } from "./select";
 import { nth } from "./util";
 
@@ -110,6 +110,16 @@ function equivalentMath(ctx: Ctx, sels: readonly Selector[]): boolean {
   });
 }
 
+/**
+ * A high school class the student took before 9th grade that isn't marked for high school credit
+ * and would count here if it were (Algebra I in 8th): whether it earned credit is the school's
+ * call (Texas 19 TAC §74.26(b), Tennessee Policy 3.103 I(3)). Middle school classes (8th-grade
+ * English) never are.
+ */
+export function earlyWithoutCredit(items: readonly Item[], sels: readonly Selector[]): Item | null {
+  return items.find((i) => i.own && i.grade < 9 && !i.hsCredit && !i.noCredit && i.units > 0 && getCourseType(i.typeId).grades[1] >= 9 && matchesAny(i, sels)) ?? null;
+}
+
 export function leafStatus(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, needsPlanNow: boolean): LeafStatus {
   const modifiers: AuditModifier[] = [];
   let status: AuditStatus;
@@ -127,6 +137,8 @@ export function leafStatus(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, needsPlanNow
     }
     // A class on the same math rung (Integrated Math I for "Algebra I") may count: the counselor decides.
     if (req.kind === "credits" && equivalentMath(ctx, req.select)) status = "ask_counselor";
+    // So may a class from before 9th grade that isn't marked for high school credit.
+    if (req.kind === "credits" && earlyWithoutCredit(ctx.items, req.select)) status = "ask_counselor";
   }
   if (rc.projected) {
     modifiers.push("projected");
@@ -189,8 +201,11 @@ export function evaluateCheck(
       if (results.every((r) => r.missing === 0)) {
         return { ...base, status: "ok", text: `${label} ${verb} on your plan, so you're on schedule by the end of ${nth(check.grade)} grade.` };
       }
-      if (past) return { ...base, status: "ask_counselor", text: `${label} ${results.length > 1 ? "weren't" : "wasn't"} on your plan by the end of ${nth(check.grade)} grade. Ask your counselor what this means for you.` };
-      return { ...base, status: "room_to_add", text: `Room to add ${label} to your plan by the end of ${nth(check.grade)} grade (${results.length > 1 ? "they" : "it"} can come as late as 12th).` };
+      // Only what's still missing: a planned Algebra II isn't listed as something to add.
+      const missing = results.filter((r) => r.missing > 0);
+      const missingLabel = listLabels(missing.map((r) => r.leaf.label));
+      if (past) return { ...base, status: "ask_counselor", text: `${missingLabel} ${missing.length > 1 ? "weren't" : "wasn't"} on your plan by the end of ${nth(check.grade)} grade. Ask your counselor what this means for you.` };
+      return { ...base, status: "room_to_add", text: `Room to add ${lowerArticle(missingLabel)} to your plan by the end of ${nth(check.grade)} grade (${missing.length > 1 ? "they" : "it"} can come as late as 12th).` };
     }
     case "counts_unless": {
       // Only while the requirement is what this rule set counts on.
@@ -200,9 +215,12 @@ export function evaluateCheck(
       const variant = other ? variantFor(other.rs, cohortValue(ctx.cohort, other.rs.cohortKey)).variant : null;
       const reqs = new Map<string, Req>();
       for (const q of walkLeaves(variant?.requirements ?? [])) reqs.set(q.id, q);
+      // The student's guessed class types taken as confirmed, as the plan is built (a typed
+      // "Chemistry" with no kind picked is still Chemistry for STEM's science).
+      const confirmed = asConfirmed(items);
       const met = check.unless.groups.some((group) => group.every((id) => {
         const q = reqs.get(id);
-        return q ? reqMetBy(q, items) : false;
+        return q ? reqMetBy(q, confirmed) : false;
       }));
       if (met) return { ...base, status: "ask_counselor", text: `${check.text} Your plan meets those too, so this program may count for ${other?.rs.title ?? "that"} instead. Ask your counselor.` };
       return { ...base, status: "ok", text: check.text };
@@ -253,6 +271,11 @@ export function evaluateCheck(
       return { ...base, status: statuses.includes("ask_counselor") ? "ask_counselor" : "room_to_add", text: `This also needs one of: ${names.join(", ")}, finished or planned.` };
     }
   }
+}
+
+/** "A 4th math credit" → "a 4th math credit" (after "Room to add"). */
+function lowerArticle(text: string): string {
+  return /^(A|An|The|One|Two|Three|Four) /.test(text) ? text.charAt(0).toLowerCase() + text.slice(1) : text;
 }
 
 /** "Algebra II, a 4th math credit and a 4th science credit". */

@@ -393,6 +393,12 @@ export type PickOptions = {
   feasible?: (r: AltResult) => boolean;
   /** Higher first: merge potential with other targets. */
   prefer?: (r: AltResult) => number;
+  /**
+   * Higher first: whether the missing classes are a subject the student's goals are about. It
+   * decides between routes at most a single class apart (four fine arts credits over four
+   * language levels for a graphic design goal), before the fewest missing units.
+   */
+  fit?: (r: AltResult) => number;
 };
 
 export function pickAlternative(results: AltResult[], opts: PickOptions = {}): AltResult {
@@ -410,11 +416,14 @@ export function pickAlternative(results: AltResult[], opts: PickOptions = {}): A
   for (let i = 1; i < results.length; i++) {
     const r = results[i];
     const best = results[bestIndex];
+    // Routes at most a single class apart: the one that fits the goals, even if it's the longer one.
+    const close = Math.abs(best.missingNamed - r.missingNamed) <= UNITS_PER_CREDIT;
     const d =
       Number(r.notDone === 0) - Number(best.notDone === 0) ||
       Number(feasible[i]) - Number(feasible[bestIndex]) ||
       best.collegeOnlyUnmet - r.collegeOnlyUnmet ||
       best.offTrackNamed - r.offTrackNamed ||
+      (close && opts.fit ? opts.fit(r) - opts.fit(best) : 0) ||
       best.missingNamed - r.missingNamed ||
       offTrack(best) - offTrack(r) ||
       best.missingUnits - r.missingUnits ||

@@ -439,7 +439,7 @@
                   "units": 4,
                   "select": [
                     {
-                      "types": ["math.applied.models", "math.applied.technical", "cte.digital_electronics", "math.applied.finance", "cte.accounting", "cte.robotics"]
+                      "types": ["math.applied.models", "math.applied.technical", "cte.digital_electronics", "math.applied.finance", "cte.accounting2", "cte.robotics2"]
                     },
                     {
                       "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
@@ -783,7 +783,7 @@
                   "units": 4,
                   "select": [
                     {
-                      "types": ["math.applied.models", "math.applied.technical", "cte.digital_electronics", "math.applied.finance", "cte.accounting", "cte.robotics"]
+                      "types": ["math.applied.models", "math.applied.technical", "cte.digital_electronics", "math.applied.finance", "cte.accounting2", "cte.robotics2"]
                     },
                     {
                       "types": ["math.alg2", "math.precalc", "math.adv_quant", "math.discrete", "math.alg_reasoning", "math.stats", "math.applied.engineering", "math.applied.medical", "math.college_prep"]
