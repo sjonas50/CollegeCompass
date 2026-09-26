@@ -75,10 +75,24 @@ the folder, the manifest and the loader agree).
   waivers are granted "to expand and enhance the elective focus" (Policy 2.103 I(16)-(17)), which
   doesn't say which classes count. The waived credits are the graduation rules' own lines ("2 more
   credits that expand your elective focus (world language waived; ask your counselor which classes
-  count)"), counted by any class; each focus stays its 3 credits (a CTE focus: "three (3) credits in
-  the same CTE career cluster", I(18)(a)) with a warning that names the waivers. (Round 4 sized the
-  focus 3-6 credits in one program, which double-counted the waived credits and filled them with an
-  unrelated cluster.)
+  count)"), `remaining_electives` with `expands: "focus"`; each focus stays its 3 credits (a CTE
+  focus: "three (3) credits in the same CTE career cluster", I(18)(a)) with a warning that names the
+  waivers. Where a focus is chosen, the waived lines count only the focus's kind of class beyond
+  the classes the focus counts (never the same class twice); with no focus yet they read "Ask your
+  counselor". The planner never adds a class for them: a shortfall is a gap with the counselor as
+  the option. `expands` must name a credits requirement of every option that extends the variant
+  (a content check). (Round 4 sized the focus 3-6 credits in one program, which double-counted the
+  waived credits and filled them with an unrelated cluster; round 5's lines counted any class,
+  including the focus's own.)
+- **First-time summer classes.** Tennessee's summer fact is `firstAttemptAccelerated`: "A course
+  schedule that presents students with the option of taking course work for the first time ...
+  during the summer should be reserved for students on an advanced or accelerated learning path"
+  (Policy 2.103 I(20), tn-2103-i-20). A first attempt in summer is offered only to a student who
+  opted into acceleration; a retake in summer is offered to anyone.
+- **Notes about college credit.** A family gate or caution about college credit is marked
+  `collegeCredit` (UT Knoxville nursing's "more than 45 dual enrollment hours",
+  mp-utk-nursing-45-hours). Only those become a counselor question when the plan has a
+  college-credit class, and a gate scoped to colleges only when one of them is on the list.
 - **One computer science substitution.** Tennessee's 2024 computer science credit is
   `substituteOnce`: computer science stands in for "one (1) credit in mathematics, or one (1)
   credit in science" (Policy 2.103 I(4)(b)1), so each compiled route keeps the computer science

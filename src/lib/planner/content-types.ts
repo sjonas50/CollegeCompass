@@ -96,6 +96,12 @@ export type OptionFact = {
   grades?: SchoolGrade[];
   /** Only for these subjects' gaps (credit by exam lists specific courses). */
   types?: CourseTypeId[];
+  /**
+   * A first attempt this way is only for students on an accelerated path (Tennessee's summer
+   * courses, Policy 2.103 I(20)): offered only to a student who opted into acceleration, and
+   * otherwise only to retake a class they didn't pass.
+   */
+  firstAttemptAccelerated?: true;
   /** The note shown with the option, plain words, no promises ("One summer; may cost money"). */
   note: string;
   cite: CitationId[];
@@ -145,9 +151,15 @@ export type MajorFamilyContent = {
     colleges?: number[];
     /** The rule set that encodes this gate for the engine, if any. */
     ruleSetId?: RuleSetId;
+    /**
+     * About college credit (dual or concurrent enrollment hours, UT Knoxville nursing's 45-hour
+     * note): a counselor question once the plan has a college-credit class, for its colleges only.
+     */
+    collegeCredit?: true;
     cite: CitationId[];
   }[];
-  cautions: { id: string; text: string; cite: CitationId[] }[];
+  /** `collegeCredit`: as for gates (a counselor question once the plan has a college-credit class). */
+  cautions: { id: string; text: string; collegeCredit?: true; cite: CitationId[] }[];
 };
 
 /** src/content/planner/major-prep/cip-routing.json: ordered, first match wins. */

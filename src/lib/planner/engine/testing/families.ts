@@ -39,8 +39,17 @@ const DETAILED: Partial<Record<FamilyId, Omit<MajorFamilyContent, "id">>> = {
     rigorFirst: ["sci.chem", "sci.anat", "math.stats"],
     ctePathways: [{ state: "TX", cluster: "health", name: "Nursing science", cite: ["mp-cte"] }],
     txEndorsement: { value: "public_services", cite: ["mp-cte"] },
-    gates: [],
-    cautions: [{ id: "utk-dual-hours", text: "UT Knoxville nursing notes that students with 45 or more dual enrollment hours apply differently.", cite: ["mp-caution"] }],
+    gates: [
+      {
+        id: "utk-dual-hours",
+        text: "UT Knoxville nursing notes that students with 45 or more dual enrollment hours apply differently.",
+        evidence: "A",
+        colleges: [221759],
+        collegeCredit: true,
+        cite: ["mp-caution"],
+      },
+    ],
+    cautions: [],
   },
   construction_trades: {
     summary: "Construction and building trades.",

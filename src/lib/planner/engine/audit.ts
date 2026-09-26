@@ -51,6 +51,32 @@ export function confirmedEval(e: RuleSetEval, items: readonly Item[]): RuleSetEv
   return { rc: e.rc, best: evaluateAlternative(e.best.alt, asConfirmed(items), e.rc.allocation) };
 }
 
+function containsReqId(req: Req, id: string): boolean {
+  if (req.id === id) return true;
+  if (req.kind === "all" || req.kind === "any" || req.kind === "choose") return req.of.some((r) => containsReqId(r, id));
+  return req.kind === "option" && (containsReqId(req.on, id) || containsReqId(req.off, id));
+}
+
+/**
+ * A base's credits that expand an extension's requirement (Tennessee's waived credits and the
+ * elective focus), as the extension's joined allocation counts them, keyed "<base rule set>/<req>":
+ * the base's own audit shows them from there, since on its own it can't tell the focus's classes
+ * from the ones beyond it.
+ */
+export function expandedResults(evals: RuleSetEval[], items: readonly Item[]): Map<string, LeafResult> {
+  const out = new Map<string, LeafResult>();
+  for (const raw of evals) {
+    if (!raw.best || raw.rc.bases.length === 0) continue;
+    const best = confirmedEval(raw, items).best!;
+    for (const l of best.leaves) {
+      if (!l.leaf.expands) continue;
+      const base = raw.rc.bases.find((b) => b.variant.requirements.some((q) => containsReqId(q, l.leaf.id)));
+      if (base && !out.has(`${base.rs.id}/${l.leaf.id}`)) out.set(`${base.rs.id}/${l.leaf.id}`, l);
+    }
+  }
+  return out;
+}
+
 /** The student's classes whose kind is a guess, by key. */
 function guessedKeys(items: readonly Item[]): Set<string> {
   return new Set(items.filter((i) => i.own && i.assumed).map((i) => i.key));
@@ -143,6 +169,10 @@ export function leafStatus(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, needsPlanNow
   if (req.kind === "total_credits" && req.source === "state" && !localTotalKnown(ctx)) {
     // The state minimum; the district may require more (design §3.1). Never Done.
     status = r.missing > 0 ? "room_to_add" : "ask_counselor";
+  } else if (req.kind === "remaining_electives" && req.expands !== undefined) {
+    // Credits that expand a program the student hasn't chosen (a waived credit with no elective
+    // focus yet): nothing can count for them until it's chosen. Never Done.
+    status = "ask_counselor";
   } else if (r.missing === 0) {
     status = r.planned > 0 ? "planned" : "done";
   } else {
@@ -546,9 +576,15 @@ export function ruleSetAudit(
   conflicts: Map<string, AdmissionConflict[]>,
   needsPlanNowKeys: Set<string>,
   statusOf: (id: string) => AuditStatus | null,
+  expanded: ReadonlyMap<string, LeafResult> = new Map(),
 ): RuleSetAudit {
   const { rc } = e;
   const variant = rc.variant;
+  // Credits that expand an extension's requirement: as the extension counts them, or nothing yet.
+  const ownResult = (l: LeafResult): LeafResult => {
+    if (l.leaf.req.kind !== "remaining_electives" || l.leaf.req.expands === undefined) return l;
+    return expanded.get(`${rc.rs.id}/${l.leaf.id}`) ?? { ...l, counted: [], firm: 0, planned: 0, missing: l.required, guessed: false };
+  };
   // The route as the plan was built: the student's guessed class kinds taken as confirmed, so each
   // class shows under the requirement the plan counts it for (a Physics added for the 3rd lab
   // science isn't shown under "IPC, chemistry or physics" while a typed IPC waits for its kind).
@@ -558,7 +594,7 @@ export function ruleSetAudit(
     ? best.leaves
         .filter((l) => l.leaf.own)
         .map((l) => {
-          const { result, guessOnly } = withGuesses(l, items, guessed);
+          const { result, guessOnly } = withGuesses(ownResult(l), items, guessed);
           return requirementAudit(ctx, rc, result, conflicts.get(`${rc.rs.id}/${l.leaf.id}`) ?? [], needsPlanNowKeys, guessOnly);
         })
     : [];

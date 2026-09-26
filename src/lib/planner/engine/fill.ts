@@ -20,7 +20,7 @@ import { earlyWithoutCredit, evaluateCheck, evaluateRuleSet, type RuleSetEval } 
 import type { CatalogRow } from "./catalog";
 import { type Alternative, type CLeaf, leafSignature } from "./compile";
 import { type Ctx, type FamilyCtx, leafPriority, levelOrder, rowIsOffered, type RuleSetCtx, schoolYearOfGrade } from "./context";
-import { reason } from "./explain";
+import { reason, seniorMathReason } from "./explain";
 import { MinCostFlow } from "./flow";
 import {
   ladderFamily,
@@ -201,7 +201,15 @@ export class Filler {
   readonly blocked = new Map<string, BlockReason>();
   private readonly chosen = new Map<string, number>();
   private readonly current = new Map<string, AltResult>();
+  /** Requirements whose routes the plan doesn't take: the reroute's programs and those no class can meet (trySwitch). */
   private readonly excluded = new Map<string, Set<string>>();
+  /**
+   * Only the reroute's programs (a program that counts only on a condition the plan doesn't meet).
+   * The final audit applies these and no others: a requirement trySwitch gave up on (Utah's
+   * Secondary Math I for a student past that rung) is still the student's requirement, so its
+   * route stays in the audit with its "ask your counselor" line.
+   */
+  private readonly programExcluded = new Map<string, ReadonlySet<string>>();
   private readonly candidateCache = new Map<string, { row: CatalogRow; grade: SchoolGrade }[]>();
   private n = 0;
   private ladderFamilyValue: LadderFamily;
@@ -226,7 +234,10 @@ export class Filler {
     /** Requirements (by rule set) whose routes the plan doesn't take (a program that wouldn't count). */
     exclude: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
   ) {
-    for (const [id, leaves] of exclude) this.excluded.set(id, new Set(leaves));
+    for (const [id, leaves] of exclude) {
+      this.excluded.set(id, new Set(leaves));
+      this.programExcluded.set(id, new Set(leaves));
+    }
     this.items = [...ctx.items];
     this.ladderFamilyValue = ladderFamily(ctx.state, ctx.items);
     for (const grade of ctx.planGrades) {
@@ -468,7 +479,11 @@ export class Filler {
     const familyPathway = this.ctx.input.targets.path === "training" ? f?.content?.ctePathways.find((p) => p.state === this.ctx.state) : undefined;
     const cluster = chosen ?? own ?? familyPathway?.cluster;
     if (cluster) {
+      // Levels go in order (design §5.7): a student who reached a higher level of this ladder (Accounting
+      // II, level 3 in business) has the levels below it, and only the levels above it are planned.
+      const reached = Math.max(0, ...this.ctx.items.filter((i) => i.own && countsForSequence(i)).map((i) => getCourseType(i.typeId).ladder).map((l) => (l?.id === `cte.${cluster}` ? l.rank : 0)));
       for (const level of [1, 2, 3]) {
+        if (level <= reached) continue;
         const types = rungTypesForCte(cluster, level);
         out.push({
           id: `cte:${cluster}/${level}`,
@@ -547,15 +562,9 @@ export class Filler {
    */
   private seniorMathNeed(rc: RuleSetCtx, id: string, units: number, cite: string[]): Need {
     const need = this.checkNeed(rc, id, "A full year of math in 12th grade, unless you show college-ready math", [{ subjects: ["math"], grades: [12] }], units, 12, 12, false, cite);
-    const issuer = rc.rs.issuer.name;
     const route = need.testRoutes[0];
     need.reasons = [
-      reason("requirement", `${issuer} asks college-bound students to show college-ready math or take a full year of math in 12th grade.`, {
-        ruleSetId: rc.rs.id,
-        reqId: id,
-        strength: rc.rs.strength,
-        citations: cite,
-      }),
+      seniorMathReason(rc, id, cite),
       ...(route ? [reason("state_note", route.text, { ruleSetId: rc.rs.id, reqId: id, citations: route.cite })] : []),
     ];
     const passedCalculus = this.items.some((i) => i.own && i.completed && countsForSequence(i) && (mathRankOf(i.typeId) ?? 0) >= 5);
@@ -2037,12 +2046,17 @@ export class Filler {
 
   // Pruning -------------------------------------------------------------------------------------
 
-  /** `allowed`, without routes through an excluded requirement (unless that leaves none). */
+  /** `allowed`, without routes through a rerouted program's requirement (unless that leaves none). */
   private notExcluded(rc: RuleSetCtx, allowed: ((alt: Alternative) => boolean) | undefined): ((alt: Alternative) => boolean) | undefined {
-    const excluded = this.excluded.get(rc.rs.id);
+    const excluded = this.programExcluded.get(rc.rs.id);
     if (!excluded?.size) return allowed;
     const both = (alt: Alternative) => (!allowed || allowed(alt)) && !alt.leaves.some((l) => excluded.has(l.id));
-    return rc.alternatives.some(both) ? both : allowed;
+    const left = rc.alternatives.filter(both);
+    // Never narrow the audit to routes that count only a finished class (Utah's "calculus with a
+    // C or better") when another route is open: the pick would have to report one of them.
+    const whenDone = (alt: Alternative) => alt.leaves.some((l) => l.req.kind === "credits" && l.req.onlyWhenDone);
+    if (left.length === 0 || (left.every(whenDone) && rc.alternatives.some((a) => (!allowed || allowed(a)) && !whenDone(a)))) return allowed;
+    return both;
   }
 
   /**

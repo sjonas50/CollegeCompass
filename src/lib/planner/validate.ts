@@ -259,6 +259,17 @@ function checkRuleFiles(files: { file: RuleFile; label: string }[], issues: stri
   const cards = files.flatMap(({ file }) => file.infoCards ?? []);
   for (const d of duplicates(cards.map((c) => c.id))) issues.push(`information card id "${d}" is used twice.`);
 
+  // Credits that expand an option's requirement (`expands`) name a credits requirement of an option
+  // that extends the variant they're in.
+  for (const v of variants) {
+    for (const r of walkReqs(v.requirements)) {
+      if (r.kind !== "remaining_electives" || r.expands === undefined) continue;
+      const options = variants.filter((x) => x.extends === v.id);
+      const ok = options.length > 0 && options.every((x) => walkReqs(x.requirements).some((q) => q.id === r.expands && q.kind === "credits"));
+      if (!ok) issues.push(`${v.id} ${r.id}: expands names "${r.expands}", which isn't a credits requirement of every option that extends ${v.id}.`);
+    }
+  }
+
   for (const { file, label } of files) {
     const cardCites = (file.infoCards ?? []).flatMap((c) => c.cite);
     checkHeader(file, label, [...file.ruleSets.flatMap(citedIds), ...cardCites], issues, warnings);

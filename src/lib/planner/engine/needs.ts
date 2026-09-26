@@ -111,9 +111,10 @@ export function needFromLeaf(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, baseRc?: R
 
 /**
  * Needs from one rule set's evaluated alternative (base leaves joined through `extends` use the
- * base's id). A requirement that only counts once finished is never a need. When a class that may
- * stand in for another requirement (Tennessee's computer science credit for the 4th math) is still
- * missing, the requirement it stands in for needs only what that class won't cover.
+ * base's id). A requirement that only counts once finished is never a need, and neither are
+ * credits that expand another requirement (`expands`). When a class that may stand in for another
+ * requirement (Tennessee's computer science credit for the 4th math) is still missing, the
+ * requirement it stands in for needs only what that class won't cover.
  */
 export function needsFromEval(ctx: Ctx, rc: RuleSetCtx, alt: AltResult): Need[] {
   const out: Need[] = [];
@@ -122,6 +123,9 @@ export function needsFromEval(ctx: Ctx, rc: RuleSetCtx, alt: AltResult): Need[] 
   for (const raw of alt.leaves) {
     if (raw.missing <= 0) continue;
     if (raw.leaf.req.kind === "credits" && raw.leaf.req.onlyWhenDone) continue;
+    // Credits that expand the elective focus are the counselor's call ("ask your counselor which
+    // classes count"): a gap, never a class the plan adds (buildGaps).
+    if (raw.leaf.expands) continue;
     const cover = covered.get(raw.leaf.id) ?? 0;
     if (cover >= raw.missing) continue;
     const r = cover > 0 ? { ...raw, missing: raw.missing - cover } : raw;

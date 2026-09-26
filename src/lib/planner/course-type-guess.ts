@@ -176,7 +176,31 @@ const PATTERNS: Pattern[] = [
   { type: "other.driver_ed", re: /\bdriver'?s?\s*ed(ucation)?\b/i },
   { type: "other.study_support", re: /\b(avid|study skills|advisory|homeroom|study hall|tutorial)\b/i },
 
-  // Career and technical education: named classes, then a cluster's level 1
+  // Career and technical education: named classes, then a cluster (its level from the name's cues,
+  // cteLevelFromName). Programs of study name their later classes without the cluster's words, so
+  // those are listed by level first (TEA statewide programs of study, 2025, checked 2026-09-26
+  // against the saved copies in .data/course-rules-verified/major-prep):
+  // - Teaching and Training (MP-TEA-POS-ET-TEACHING-AND-TRAINING): "Level 1• Principles of
+  //   Education and Training", "Level 2• Communication and Technology in Education • Human Growth
+  //   and Development", "Level 3• Instructional Practices", "Level 4• ... Practicum in Education
+  //   and Training".
+  // - Nursing Science (MP-TEA-POS-HS-NURSING-SCIENCE): "Level 1• Principles of Health Science
+  //   • Principles of Nursing Science", "Level 2• Science of Nursing", "Level 3• Health Science
+  //   Theory • Health Science Theory + Health Science Clinical", "Level 4• ... Practicum in Nursing
+  //   • Practicum in Health Science". Health Science Theory is Level 3 in Diagnostic and
+  //   Therapeutic Services too (MP-TEA-POS-HS-DIAGNOSTIC-AND-THERAPEUTIC-SERVICES).
+  // - Welding (MP-TEA-POS-M-WELDING): "Level 1• Principles of Manufacturing • Introduction to
+  //   Welding", "Level 2• ... Welding I", "Level 3• Welding II", "Level 4• Practicum in
+  //   Manufacturing".
+  { type: "cte.education.4", re: /\bpracticum in education\b/i },
+  { type: "cte.education.3", re: /\binstructional practices\b/i },
+  { type: "cte.education.2", re: /\b(human growth (and|&) development|communication (and|&) technology in education)\b/i },
+  { type: "cte.health.4", re: /\bpracticum in (health science|nursing)\b/i },
+  { type: "cte.health.3", re: /\bhealth science theory\b/i },
+  { type: "cte.health.2", re: /\bscience of nursing\b/i },
+  { type: "cte.manufacturing.4", re: /\bpracticum in manufacturing\b/i },
+  { type: "cte.manufacturing.3", re: /\bwelding\s*(ii|2)\b/i },
+  { type: "cte.manufacturing.2", re: /\bwelding\s*(i|1)\b/i },
   // A second-year class is its own type (Texas counts only Accounting II and Robotics II as math).
   { type: "cte.accounting2", re: /\baccounting\s*(ii|2)\b/i },
   { type: "cte.accounting", re: /\baccounting\b/i },
@@ -195,6 +219,9 @@ const PATTERNS: Pattern[] = [
   { type: "cte.medical_terminology", re: /\bmedical terminology\b/i },
   { type: "cte.nurse_aide", re: /\b(cna|nurse aide|nursing assistant|patient care)\b/i },
   { type: "cte.emt", re: /\b(emt|emergency medical)\b/i },
+  // A health science class with a later-level cue ("Health Science II", "Advanced Health Science")
+  // is the cluster's level, not Principles of Health Science.
+  { type: "cte.health.1", re: /\bhealth science\b.*\b(ii|iii|iv|2|3|4|advanced|practicum|clinicals?|internship|capstone)\b|\b(advanced|practicum in)\b.*\bhealth science\b/i },
   { type: "cte.health_principles", re: /\bhealth science\b/i },
   { type: "cte.manufacturing.1", re: /\b(welding|machining|manufacturing|cnc)\b/i },
   { type: "cte.hospitality.1", re: /\b(culinary|cooking|baking|hospitality|food science)\b/i },
@@ -245,6 +272,27 @@ function guessLanguage(name: string): CourseTypeId {
 }
 
 /**
+ * A career cluster class's level from its name (design §5.2 `cte.{cluster}.{level}`: 1 introduction
+ * or principles, 2 concentrator, 3 advanced, 4 practicum or capstone): "Culinary Arts II" is level
+ * 2, "Advanced Welding" level 3, "Practicum in Law Enforcement" level 4. A clinical is level 3,
+ * next to Health Science Theory (MP-TEA-POS-HS-NURSING-SCIENCE). No cue: level 1.
+ */
+const CTE_LEVEL_CUES: [2 | 3 | 4, RegExp][] = [
+  [4, /\b(practicum|capstone|internship|work-based learning|iv|4)\b/i],
+  [3, /\b(advanced|clinicals?|iii|3)\b/i],
+  [2, /\b(ii|2|intermediate)\b/i],
+];
+
+function cteLevelFromName(type: CourseTypeId, name: string): CourseTypeId {
+  const m = /^cte\.([a-z_]+)\.1$/.exec(type);
+  if (!m) return type;
+  const level = CTE_LEVEL_CUES.find(([, re]) => re.test(name))?.[0];
+  if (!level) return type;
+  const next = `cte.${m[1]}.${level}`;
+  return isCourseTypeId(next) ? next : type;
+}
+
+/**
  * The course type a typed class name most likely is, within the row's subject. Always returns a
  * type: the subject's "Other … class" when nothing matches. `state` only disambiguates names like
  * "Math 2" (Utah's Secondary Math II there).
@@ -253,7 +301,7 @@ export function guessCourseTypeId(name: string, subject: CourseSubject, state: P
   if (subject === "world_language") return guessLanguage(name);
   for (const p of PATTERNS) {
     if (p.states && (!state || !p.states.includes(state))) continue;
-    if (fitsSubject(p.type, subject) && p.re.test(name)) return p.type;
+    if (fitsSubject(p.type, subject) && p.re.test(name)) return cteLevelFromName(p.type, name);
   }
   return SUBJECT_FALLBACK_TYPE[subject];
 }

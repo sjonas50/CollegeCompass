@@ -1406,6 +1406,7 @@
           "text": "UT Knoxville's freshman direct admission to nursing is highly competitive. Students expecting more than 45 dual enrollment hours, or an associate degree, by graduation should contact the College of Nursing before applying.",
           "evidence": "A",
           "colleges": [221759],
+          "collegeCredit": true,
           "cite": ["mp-utk-nursing-competitive", "mp-utk-nursing-45-hours"]
         },
         {

@@ -8,7 +8,7 @@ import type { FillResult } from "./fill";
 // ---------------------------------------------------------------------------
 // 3 to 8 questions for the counselor meeting (design §2.8), from what the plan can't settle:
 // diploma-vs-admission conflicts, projected rules, test routes, classes the list may not offer,
-// guessed class types, catalog problems, moves between schools.
+// catalog problems, moves between schools, and last the guessed class types that decide a requirement.
 // ---------------------------------------------------------------------------
 
 const MIN = 3;
@@ -124,14 +124,6 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
   for (const p of fill.placements) {
     if (p.row.everyOtherYear) add(`every-other:${p.row.id}`, `Does our school offer ${getCourseType(p.row.typeId).title} every year?`);
   }
-  // Guessed class types.
-  for (const f of ctx.input.courses) {
-    if (!f.assumed) continue;
-    const involved = audit.some((rs) => rs.requirements.some((r) => r.modifiers.includes("guessed_type")));
-    // Generic titles only: the student's typed names stay out of anything that could be shared.
-    if (involved) add(`guess:${f.typeId}`, `One of my classes looks like ${getCourseType(f.typeId).title}. Does it count as that for graduation?`);
-    if (out.length >= MAX) break;
-  }
   // Lecture-only college science.
   for (const f of ctx.input.courses) {
     if (f.lectureOnly && f.subject === "science") add(`lab:${f.typeId}`, `My ${getCourseType(f.typeId).title} class is listed without a lab. Will it count as a lab science?`);
@@ -153,15 +145,44 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
   // Moves.
   const moved = Object.values(ctx.cohort.overrides).includes("transferred");
   if (moved) add("transfer", "I changed schools. Will the classes I finished count the same way here?");
-  // Family cautions about college credit.
+  // Family notes about college credit (UT Knoxville nursing's dual enrollment hours), for a plan with
+  // a college-credit class: only those tagged as about college credit, and a college's own note only
+  // when that college is on the list.
   if (fill.items.some((i) => i.level === "dual_enrollment")) {
-    for (const f of ctx.families) for (const c of f.content?.cautions ?? []) add(`caution:${c.id}`, `${c.text} How does that apply to me?`, c.cite);
+    const listed = new Set(ctx.input.targets.colleges.map((c) => c.unitId));
+    for (const f of ctx.families) {
+      const notes: { id: string; text: string; colleges?: number[]; collegeCredit?: boolean; cite: string[] }[] = [...(f.content?.gates ?? []), ...(f.content?.cautions ?? [])];
+      for (const c of notes) {
+        if (!c.collegeCredit || (c.colleges && !c.colleges.some((u) => listed.has(u)))) continue;
+        add(`caution:${c.id}`, `${c.text} How does that apply to me?`, c.cite);
+      }
+    }
   }
   // The state minimum isn't the district's total.
   const total = audit.flatMap((rs) => (rs.kind === "state_graduation" ? rs.requirements : [])).find((r) => r.reqId && r.measure === "units" && r.label.toLowerCase().includes("total"));
   if (total && !ctx.ruleSets.some((r) => r.rs.kind === "local_graduation")) add("district-total", `Does our district require more than the state's ${toCredits(total.required)} credits?`);
   // Unverified items, shown once.
   for (const rs of audit) for (const u of rs.unverified.slice(0, 1)) add(`unverified:${rs.ruleSetId}:${u.id}`, unverifiedQuestion(u.text), [], rs.ruleSetId);
+  // Guessed class types, last and as one question: only the guessed rows a requirement counts (the
+  // student can also settle a guess in the app by picking the class's kind). Generic titles only:
+  // the student's typed names stay out of anything that could be shared.
+  const guessedIds = new Set(ctx.input.courses.filter((f) => f.assumed).map((f) => f.id));
+  const guessedTitles: string[] = [];
+  for (const rs of audit) {
+    for (const r of rs.requirements) {
+      if (!r.modifiers.includes("guessed_type")) continue;
+      for (const c of r.counted) {
+        if (c.ref.kind !== "course" || !guessedIds.has(c.ref.courseId)) continue;
+        const title = titleOf(c.ref);
+        if (!guessedTitles.includes(title)) guessedTitles.push(title);
+      }
+    }
+  }
+  if (guessedTitles.length === 1) add("guess", `One of my classes looks like ${guessedTitles[0]}, but its kind is a guess. Does it count as that for graduation?`);
+  else if (guessedTitles.length > 1) {
+    const names = guessedTitles.length > 4 ? [...guessedTitles.slice(0, 3), `${guessedTitles.length - 3} others`] : guessedTitles;
+    add("guess", `Some of my classes' kinds are guesses: they look like ${listWords(names)}. Do they count that way for graduation?`);
+  }
 
   const fillers = [
     ["general:on-track", "Are my classes on track to graduate?"],

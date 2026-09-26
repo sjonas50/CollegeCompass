@@ -218,7 +218,9 @@ function solveFlow(pool: { item: Item; units: number }[], leaves: { leaf: CLeaf;
   // A requirement that stands in for another too (Tennessee's computer science credit) comes first:
   // its classes count twice, so the student's own class goes to the requirement it's named for
   // (Computer Science Foundations to the CS credit, then also the 4th math), not to the other one.
-  const spec = leaves.map(({ leaf }) => (leaf.req.kind === "remaining_electives" ? ELECTIVE_COST : leaf.subFor ? 0 : selectorSpecificity(selectOf(leaf) ?? [])));
+  // Credits that expand another requirement (a Tennessee waived credit and the elective focus) take
+  // its kind of class only after it has its own: they cost as much as electives.
+  const spec = leaves.map(({ leaf }) => (leaf.req.kind === "remaining_electives" || leaf.expands ? ELECTIVE_COST : leaf.subFor ? 0 : selectorSpecificity(selectOf(leaf) ?? [])));
   pool.forEach((p, i) => {
     leaves.forEach(({ leaf, cap }, j) => {
       if (cap <= 0 || !allowed(i, j)) return;
@@ -341,8 +343,26 @@ export function evaluateAlternative(alt: Alternative, items: Item[], allocation:
     if (results.has(leaf)) continue;
     const req = leaf.req;
     if (req.kind === "credits") {
-      const counted = takeGreedy(creditable.filter((i) => leafAccepts(leaf, i)), leaf.required, (i) => i.units);
-      results.set(leaf, result(leaf, counted, guessedFor(items, req.select, counted, counted.reduce((n, c) => n + c.amount, 0) < leaf.required)));
+      // Credits that expand this requirement (a waived credit next to an AP/IB focus) count classes
+      // beyond its own: it doesn't count theirs, and takes them back only when it's short itself.
+      const expanders = alt.leaves.filter((l) => l.expands === leaf.id && results.has(l));
+      const theirs = new Set(expanders.flatMap((l) => results.get(l)!.counted.map((c) => c.item.key)));
+      const counted = takeGreedy(creditable.filter((i) => leafAccepts(leaf, i) && !theirs.has(i.key)), leaf.required, (i) => i.units);
+      let have = counted.reduce((n, c) => n + c.amount, 0);
+      for (const l of expanders) {
+        const r = results.get(l)!;
+        const kept: { item: Item; amount: number }[] = [];
+        for (const c of r.counted) {
+          if (have < leaf.required) {
+            const amount = Math.min(c.item.units, leaf.required - have);
+            counted.push({ item: c.item, amount });
+            have += amount;
+          } else kept.push(c);
+        }
+        if (kept.length !== r.counted.length) results.set(l, result(l, kept, r.guessed));
+      }
+      counted.sort((a, b) => itemOrder(a.item, b.item));
+      results.set(leaf, result(leaf, counted, guessedFor(items, req.select, counted, have < leaf.required)));
     } else if (req.kind === "count") {
       const counted = takeGreedy(creditable.filter((i) => matchesAny(i, req.select)), leaf.required, () => 1);
       results.set(leaf, result(leaf, counted, guessedFor(items, req.select, counted, counted.length < leaf.required)));

@@ -3,10 +3,10 @@ import { GAP_OPTION_KINDS, type GapOptionKind, type OptionFact } from "../conten
 import { courseTypeTitle, type CourseTypeId, getCourseType, levelLabel } from "../course-types";
 import type { ByWhen, Gap, GapOption, Reason, UpToThree } from "../engine-io";
 import { MATH_TARGET_DEFS } from "../families";
-import { earlyWithoutCredit, type RuleSetEval } from "./audit";
+import { earlyWithoutCredit, expandedResults, type RuleSetEval } from "./audit";
 import type { CLeaf } from "./compile";
 import { type Ctx, leafPriority, rowIsOffered, schoolYearOfGrade } from "./context";
-import { algebra2Reason, reason } from "./explain";
+import { algebra2Reason, reason, requirementReason } from "./explain";
 import { type BlockReason, failedAttempt, type FillResult, isRepeatable, lateEnglish, pastIntro, prereqsMetIn, probe, sameContent } from "./fill";
 import { type LadderMoves, type LadderSolution, mathRankOf, rungName, rungTypes, solveLadder, startRank } from "./ladder";
 import { countsForSequence, type Item } from "./model";
@@ -39,6 +39,15 @@ const RETAKE_SUMMER_NOTE = "A retake of a class you didn't pass, not a first att
 
 function fact(ctx: Ctx, kind: OptionFact["kind"], grade: number | null): OptionFact | null {
   return ctx.facts.options.find((o) => o.kind === kind && (grade === null || !o.grades || o.grades.includes(grade as SchoolGrade))) ?? null;
+}
+
+/**
+ * The state's summer option for a first attempt at a class: where it's only for students on an
+ * accelerated path (Tennessee, Policy 2.103 I(20)), only for a student who opted into acceleration.
+ */
+function firstAttemptSummer(ctx: Ctx): OptionFact | null {
+  const summer = ctx.limits.allowSummer ? fact(ctx, "summer", null) : null;
+  return summer && (!summer.firstAttemptAccelerated || ctx.limits.accelerateMath) ? summer : null;
 }
 
 function lastMathBOrBetter(fill: FillResult): boolean {
@@ -130,7 +139,8 @@ export function optionsFor(ctx: Ctx, fill: FillResult, need: Need, ladder: boole
     out.push({ kind: "test_score", text: route.text, note: "A test score instead of a class. Scores and dates are the source's own.", closes: null, adds: [], citations: route.cite });
     break;
   }
-  const summer = lim.allowSummer && withLoad ? fact(ctx, "summer", null) : null;
+  // A retake in summer is for anyone; a first attempt only where the state allows it for this student.
+  const summer = lim.allowSummer && withLoad ? (retake && !ladder ? fact(ctx, "summer", null) : firstAttemptSummer(ctx)) : null;
   if (summer) {
     let adds: GapOption["adds"] = [];
     if (ladder) {
@@ -305,8 +315,9 @@ export function addedCreditTotal(e: RuleSetEval, items: readonly Item[]): { requ
 
 /** The state's verified ways to add credit outside the school day, at most two, the counselor last. */
 function creditOptions(ctx: Ctx): UpToThree<GapOption> {
-  // Tennessee summer school, Utah's online program, Texas credit by exam, each with its own note.
-  const summer = ctx.limits.allowSummer ? fact(ctx, "summer", null) : null;
+  // Tennessee summer school (for a student on an accelerated path), Utah's online program, Texas
+  // credit by exam, each with its own note.
+  const summer = firstAttemptSummer(ctx);
   const online = ctx.limits.allowOnline ? fact(ctx, "state_online", ctx.grade) : null;
   const exam = fact(ctx, "credit_by_exam", null);
   const options: GapOption[] = [
@@ -389,6 +400,27 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
       decideBy: byWhenFor(ctx, need.byGrade),
       options: block === "choice" || block === "equivalent" || block === "hs_credit" || pathway ? [ASK] : block === "ask" ? askOptions(need) : optionsFor(ctx, fill, need, ladder),
       reasons: block === "hs_credit" ? [...reasons, ...earlyCreditNotes(ctx)] : reasons,
+    });
+  }
+  // Credits that expand an elective focus (Tennessee's waived world language and fine arts credits,
+  // Policy 2.103 I(16)-(17)) beyond the classes the focus counts: which classes count is the
+  // counselor's call, so a shortfall is a gap with the counselor as the option, never a class added.
+  for (const [key, l] of expandedResults(fill.evals, fill.items)) {
+    if (l.missing <= 0 || ctx.firstGrade <= 8) continue;
+    const rc = ctx.ruleSets.find((r) => r.rs.id === key.slice(0, key.indexOf("/")));
+    const priority = rc ? leafPriority(rc, l.leaf.strength) : null;
+    if (!rc || priority === null || priority > 3) continue;
+    const planNow = ctx.inProgressGrade === 12 && priority === 0;
+    const left = l.missing < l.required ? ` (${toCredits(l.missing)} ${creditNoun(toCredits(l.missing))} left)` : "";
+    gaps.push({
+      id: `gap:${key}`,
+      kind: "unmet",
+      priority,
+      demandId: null,
+      text: `${planNow ? "Needs a plan now" : "Room to add"}: ${l.leaf.label}${left}.`,
+      decideBy: byWhenFor(ctx, 12),
+      options: [ASK],
+      reasons: [requirementReason(rc, l.leaf)],
     });
   }
   // Graduation totals the remaining years can't hold (this year only for its spring term).

@@ -127,6 +127,19 @@ function noteApplies(leaf: CLeaf, items: readonly Item[]): boolean {
   return items.some((i) => i.own && i.grade < 9 && !i.noCredit && getCourseType(i.typeId).grades[1] >= 9 && matchesAny(i, anyGrade));
 }
 
+/**
+ * Utah's senior-year math (R277-700-9(2)), for the class that meets it and the need that asks for
+ * it: conditional, so the words say so.
+ */
+export function seniorMathReason(rc: RuleSetCtx, checkId: string, cite: CitationId[]): Reason {
+  return reason("requirement", `${rc.rs.issuer.name} asks college-bound students to show college-ready math or take a full year of math in 12th grade.`, {
+    ruleSetId: rc.rs.id,
+    reqId: checkId,
+    strength: rc.rs.strength,
+    citations: cite,
+  });
+}
+
 /** "Plans change. Here's what still fits." on a class suggested again after an F, W or I. */
 export function retakeReason(): Reason {
   return reason("state_note", "Plans change. Here's what still fits.", { claim: "suggestion" });

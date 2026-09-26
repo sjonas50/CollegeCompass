@@ -54,6 +54,12 @@ export type CLeaf = {
   /** The whole group this leaf belongs to is a family-chosen option branch. */
   optionPref: string | null;
   /**
+   * Credits that expand the extension's requirement with this id (a Tennessee waived credit and
+   * the elective focus): the leaf takes that requirement's kind of class, beyond the ones it
+   * counts. Null where the requirement isn't in the alternative (the base audited on its own).
+   */
+  expands: ReqId | null;
+  /**
    * The nearest `choose` or `any` group above the leaf: the leaf is one way to meet it, not the
    * requirement itself. `text` says what the requirement is (Utah's "Science (two of the five
    * foundation science areas and one more science credit)").
@@ -143,6 +149,7 @@ function leafOf(req: LeafReq, inh: Inherited, own: boolean): CLeaf {
     measure,
     required,
     optionPref: inh.optionPref,
+    expands: null,
     choice: inh.choice,
   };
 }
@@ -277,6 +284,25 @@ export function leafSignature(l: CLeaf): string {
   return `${l.id}>${l.subFor ?? ""}${l.noSubstitutesOf ? `!${l.noSubstitutesOf}` : ""}`;
 }
 
+/**
+ * A base's credits that expand an extension's requirement (`expands`: Tennessee's waived world
+ * language and fine arts credits "expand and enhance the elective focus", Policy 2.103 I(16)-(17))
+ * take that requirement's kind of class in the joined allocation, so the same classes never count
+ * for both: the focus counts its 3 credits and these count classes beyond them.
+ */
+function expandLeaves(leaves: CLeaf[]): CLeaf[] {
+  return leaves.map((l) => {
+    const req = l.req;
+    if (req.kind !== "remaining_electives" || req.expands === undefined) return l;
+    const target = leaves.find((t) => t.own && t.id === req.expands && t.req.kind === "credits");
+    if (!target || target.req.kind !== "credits") return l;
+    const select = target.req.select.filter((s) => !s.substitute);
+    if (select.length === 0) return l;
+    const credits: CreditsReq = { id: req.id, label: req.label, kind: "credits", units: req.units, select, cite: req.cite, ...(req.area ? { area: req.area } : {}) };
+    return { ...l, req: credits, expands: target.id };
+  });
+}
+
 export type RuleSetStrength = { strength: Strength; strengthCite: CitationId };
 
 /**
@@ -289,7 +315,7 @@ export function compileVariant(variant: Variant, rs: RuleSetStrength, bases: { v
   lists = product(lists, variantLeaves(variant, rs.strength, rs.strengthCite, true, choices));
   const out: Alternative[] = [];
   for (const leaves of lists) {
-    const resolved = resolveSubstitutions(leaves);
+    const resolved = resolveSubstitutions(bases.length ? expandLeaves(leaves) : leaves);
     if (!resolved) continue;
     for (const limited of limitSubstitutions(resolved)) {
       if (out.length >= CAP) break;

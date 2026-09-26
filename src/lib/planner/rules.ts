@@ -225,7 +225,18 @@ export type SameLanguageReq = Leaf & {
 export type TotalCreditsReq = Leaf & { kind: "total_credits"; units: number; source: "state" | "school_guide" };
 
 /** Whatever credit is left after the variant's other requirements. */
-export type RemainingElectivesReq = Leaf & { kind: "remaining_electives"; units: number };
+export type RemainingElectivesReq = Leaf & {
+  kind: "remaining_electives";
+  units: number;
+  /**
+   * Credits that expand a program a graduation option adds (Tennessee's waived world language and
+   * fine arts credits "expand and enhance the elective focus", Policy 2.103 I(16)-(17)): the id of
+   * that option's requirement. Where the option joins this rule set, these credits take classes of
+   * that requirement's kind beyond the ones it counts; without it, they can't be counted
+   * ("Ask your counselor"), never Done.
+   */
+  expands?: ReqId;
+};
 
 export type AllReq = ReqCommon & { kind: "all"; of: Req[]; cite?: CitationId[] };
 export type AnyReq = ReqCommon & { kind: "any"; of: Req[]; cite?: CitationId[] };

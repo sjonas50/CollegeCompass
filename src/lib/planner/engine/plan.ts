@@ -24,12 +24,12 @@ import {
   suggestionKey,
 } from "../engine-io";
 import { isStale, reviewLabel, staleLabel } from "../review";
-import type { ContentHeader, Req, Selector } from "../rules";
+import type { Check, ContentHeader, Req, Selector } from "../rules";
 import { type AltResult, evaluateAlternative, type LeafResult } from "./allocate";
-import { admissionConflicts, ruleSetAudit, waiverNotes, worst } from "./audit";
+import { admissionConflicts, expandedResults, ruleSetAudit, waiverNotes, worst } from "./audit";
 import { type Alternative, type CLeaf, leafSignature } from "./compile";
-import { buildContext, type Ctx, type FamilyCtx, leafPriority, rowIsOffered, type RuleSetCtx, schoolYearOfGrade } from "./context";
-import { algebra2Reason, leafNoteReason, loadReason, prepReason, reason, requirementReason, resolveCitations, retakeReason } from "./explain";
+import { aimsAt, buildContext, type Ctx, type FamilyCtx, leafPriority, rowIsOffered, type RuleSetCtx, schoolYearOfGrade } from "./context";
+import { algebra2Reason, leafNoteReason, loadReason, prepReason, reason, requirementReason, resolveCitations, retakeReason, seniorMathReason } from "./explain";
 import { type FillResult, isRepeatable, pastIntro, type PlanConfig, prereqsMetIn, runFill, sameContent } from "./fill";
 import { addedCreditTotal, buildGaps, freeUnits } from "./gaps";
 import { mathRankOf, rungName, startRank, unresolvedFailedRank } from "./ladder";
@@ -113,17 +113,41 @@ function mathRoute(ctx: Ctx, getA: () => FillResult, base: PlanConfig): Decision
   };
 }
 
+/**
+ * The rule sets a plan for one goal follows: a program gate or admission rule that names families
+ * or majors applies only if it names this goal (Texas A&M's engineering math isn't part of a
+ * nursing plan).
+ */
+function ruleSetsFor(ctx: Ctx, f: FamilyCtx): RuleSetCtx[] {
+  return ctx.ruleSets.filter((rc) => {
+    const gate = rc.rs.appliesWhen;
+    return (!gate.families && !gate.cips) || aimsAt(f.target, gate.families, gate.cips);
+  });
+}
+
+/** A goal's major-prep classes that have no room in the plan (not a class it doesn't list). */
+function misfits(fill: FillResult, familyId: FamilyCtx["target"]["familyId"] | null = null): string[] {
+  return fill.needs
+    .filter((n) => n.source === "prep" && !n.soft && n.missing > 0 && (familyId === null || n.familyId === familyId) && ["doesnt_fit", "load"].includes(fill.unmet.get(n.id) ?? ""))
+    .map((n) => n.id);
+}
+
 function targetSplit(ctx: Ctx, getA: () => FillResult, base: PlanConfig): Decision | null {
   // The student chose which family to plan around: the other is "also check" (design §2.6).
   if (ctx.families[0]?.target.source === "chosen") return null;
   const fams = ctx.families.filter((f, i) => ctx.families.findIndex((g) => g.target.familyId === f.target.familyId) === i);
   if (fams.length < 2 || !fams[0].content || !fams[1].content) return null;
   const fillA = getA();
-  const misfit = fillA.needs.some((n) => n.source === "prep" && !n.soft && n.missing > 0 && ["doesnt_fit", "load"].includes(fillA.unmet.get(n.id) ?? ""));
-  if (!misfit) return null;
-  const a = runFill(ctx, { ...base, families: [fams[0]] });
-  const b = runFill(ctx, { ...base, id: "B", families: [fams[1]] });
+  const misfit = misfits(fillA);
+  if (misfit.length === 0) return null;
+  // Each plan prepares for its own goal: the other goal's program rules aren't part of it.
+  const a = runFill(ctx, { ...base, families: [fams[0]], ruleSets: ruleSetsFor(ctx, fams[0]) });
+  const b = runFill(ctx, { ...base, id: "B", families: [fams[1]], ruleSets: ruleSetsFor(ctx, fams[1]) });
   if (!realChoice(a, b)) return null;
+  // Only a real choice: one goal's classes that didn't fit next to the other's fit in its own plan.
+  // When they don't fit there either, the goals don't compete for room and one plan shows both.
+  const resolved = [a, b].some((fill, i) => misfit.some((id) => id.startsWith(`prep:${fams[i].target.familyId}/`) && !misfits(fill, fams[i].target.familyId).includes(id)));
+  if (!resolved) return null;
   const name = (f: FamilyCtx) => lowerFirstWord(f.title);
   return {
     a,
@@ -190,14 +214,18 @@ function endorsementsForClusters(ctx: Ctx, clusters: string[]): EndorsementValue
 /**
  * A Texas student who hasn't named an endorsement and whom the two-plan endorsement choice doesn't
  * reach (the training path, 11th grade, a transfer): the plan uses a default instead of stopping
- * at the Foundation program. The endorsement the student's own career classes are in (a
- * Transportation program counts for Business and Industry), else Multidisciplinary Studies. The
- * pending decision still asks the student to name one; seniors keep the Foundation plan (with the
- * audit's "ask your counselor").
+ * at the Foundation program. The endorsement of the career pathway the plan follows: the one the
+ * student chose, the one their own career classes are in (a Transportation program counts for
+ * Business and Industry), or on the training path the goal's Texas pathway that the plan places
+ * (an electrician's construction program); else Multidisciplinary Studies. The pending decision
+ * still asks the student to name one; seniors keep the Foundation plan (with the audit's "ask your
+ * counselor").
  */
 function withDefaultEndorsement(ctx: Ctx): Ctx {
   if (ctx.state !== "TX" || ctx.choices.txEndorsements?.length || ctx.choices.txFoundationOnly || ctx.firstGrade <= 8 || ctx.grade >= 12) return ctx;
-  const value = endorsementsForClusters(ctx, ownCteClusters(ctx))[0] ?? "multidisciplinary";
+  const goalPathway = ctx.input.targets.path === "training" ? ctx.families[0]?.content?.ctePathways.find((p) => p.state === ctx.state)?.cluster : undefined;
+  const clusters = [...(ctx.choices.ctePathway ? [ctx.choices.ctePathway.cluster] : []), ...ownCteClusters(ctx), ...(goalPathway ? [goalPathway] : [])];
+  const value = endorsementsForClusters(ctx, clusters)[0] ?? "multidisciplinary";
   const rs = [...ctx.allRuleSets.values()].find(({ rs }) => rs.appliesWhen.choice?.key === "txEndorsements" && rs.appliesWhen.choice.value === value)?.rs;
   if (!rs) return ctx;
   const sub = buildContext({ ...ctx.input, state: ctx.state, content: ctx.content, prefs: { ...ctx.input.prefs, choices: { ...ctx.input.prefs.choices, txEndorsements: [value] } } });
@@ -566,6 +594,11 @@ function slotReasons(ctx: Ctx, fill: FillResult, routes: Routes, item: Item, ext
     if (n.source !== "prep" || !matchesAny(item, n.selectors)) continue;
     for (const r of n.reasons) push(r);
   }
+  // A 12th-grade math class the senior-year math check counts (Utah, R277-700-9(2)) says so, the way
+  // a requirement it's needed for does, whatever it was placed for (Precalculus placed for the
+  // math sequence is also the senior-year math): dropping it would leave the check short.
+  const senior = seniorMathCheck(ctx, fill, item);
+  if (senior) push(seniorMathReason(senior.rc, senior.check.id, senior.check.cite));
   // A check (Tennessee: math in every year) isn't an audit line of its own; its reason stands.
   if (primary?.source === "check") for (const r of primary.reasons) push(r);
   for (const r of extra) push(r);
@@ -581,6 +614,22 @@ function slotReasons(ctx: Ctx, fill: FillResult, routes: Routes, item: Item, ext
   }
   if (ctx.state === "TX" && item.typeId === "math.alg2") push(algebra2Reason());
   return out;
+}
+
+/**
+ * The senior-year math check a suggested 12th-grade math class is needed for: the check applies
+ * (college-bound, competency not recorded) and the student's other 12th-grade math wouldn't make a
+ * full year without it.
+ */
+function seniorMathCheck(ctx: Ctx, fill: FillResult, item: Item): { rc: RuleSetCtx; check: Extract<Check, { kind: "senior_year_math" }> } | null {
+  if (item.own || item.subject !== "math" || item.grade !== 12 || item.noCredit || ctx.input.targets.path === "training") return null;
+  for (const e of fill.evals) {
+    const check = e.rc.variant?.checks?.find((c): c is Extract<Check, { kind: "senior_year_math" }> => c.kind === "senior_year_math");
+    if (!check || ctx.choices[check.unlessChoice] || leafPriority(e.rc, e.rc.rs.strength) === null) continue;
+    const others = fill.items.filter((i) => i.key !== item.key && i.subject === "math" && i.grade === 12 && !i.noCredit).reduce((n, i) => n + i.units, 0);
+    if (others < 4) return { rc: e.rc, check };
+  }
+  return null;
 }
 
 /**
@@ -816,10 +865,11 @@ function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
   const conflicts = admissionConflicts(fill.evals, fill.items);
   const waivers = waiverNotes(fill.evals);
   const npn = new Set(fill.placements.filter((p) => p.needsPlanNow).map((p) => p.key));
+  const expanded = expandedResults(fill.evals, fill.items);
   const free = freeUnits(fill);
   const first = new Map(
     fill.evals.map((e) => {
-      const a = ruleSetAudit(ctx, e, fill.items, conflicts, npn, () => null);
+      const a = ruleSetAudit(ctx, e, fill.items, conflicts, npn, () => null, expanded);
       const courses = a.requirements.filter((r) => {
         const leaf = e.best?.leaves.find((l) => l.leaf.id === r.reqId)?.leaf;
         return leaf && leaf.req.kind !== "total_credits" && leaf.req.kind !== "remaining_electives";
@@ -834,7 +884,7 @@ function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
     }),
   );
   return fill.evals.map((e) => {
-    const audit = ruleSetAudit(ctx, e, fill.items, conflicts, npn, (id) => first.get(id) ?? null);
+    const audit = ruleSetAudit(ctx, e, fill.items, conflicts, npn, (id) => first.get(id) ?? null, expanded);
     for (const r of audit.requirements) r.reasons.push(...(waivers.get(`${audit.ruleSetId}/${r.reqId}`) ?? []));
     return audit;
   });

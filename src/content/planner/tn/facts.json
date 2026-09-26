@@ -145,6 +145,7 @@
   "options": [
     {
       "kind": "summer",
+      "firstAttemptAccelerated": true,
       "note": "A first-time class in summer is meant for students on an accelerated path. If it has an end-of-course exam, the credit waits until you take the exam in the fall.",
       "cite": ["tn-2103-i-20", "tn-2103-i-20-eoc"]
     },

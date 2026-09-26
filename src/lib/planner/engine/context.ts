@@ -132,7 +132,7 @@ function inStatePublic(colleges: CollegeTarget[], state: PlannerState): boolean 
  * A target the gate names: its family, or its major's CIP code under one of the prefixes (a gate
  * that names majors inside a family: UT Austin's geosciences, CIP 40.06, among the physical sciences).
  */
-function aimsAt(target: FamilyTarget, families: readonly FamilyId[] | undefined, cips: readonly string[] | undefined): boolean {
+export function aimsAt(target: FamilyTarget, families: readonly FamilyId[] | undefined, cips: readonly string[] | undefined): boolean {
   if (families?.includes(target.familyId)) return true;
   const cip = target.cip6;
   return !!cip && !!cips?.some((prefix) => cip === prefix || cip.startsWith(`${prefix}${prefix.length === 2 ? "." : ""}`));

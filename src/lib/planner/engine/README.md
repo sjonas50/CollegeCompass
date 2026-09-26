@@ -114,7 +114,13 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   generic list has precalculus only as AP or CE 1050/1060). The ladder's top rung is left to a
   regular class from the fill (College Prep Math for Utah State's "one class beyond Secondary
   Math III") only when nothing but a recommendation needs it; then no rung's reason or "by when"
-  line says it keeps that recommendation open.
+  line says it keeps that recommendation open. Any suggested 12th-grade math class the check
+  counts says so, whatever it was placed for (Precalculus for the sequence is also the senior
+  math).
+- **The audit's route** follows the reroute's program exclusions only (a `counts_unless` program
+  planned again without it), never the requirements the fill gave up on: Utah's Secondary Math I
+  for a transfer past that rung stays an "ask your counselor" line, and a route whose only open
+  line counts once calculus is passed is never the one reported when another is open.
 - **Spread across years**: inside a class's usual grades, a year without a class in the same core
   subject (science, math, social studies) comes first, so junior year isn't stacked. A
   recommended class that would land outside its usual grades or make a third lab science in a
@@ -148,6 +154,9 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   need names (Personal Financial Literacy when a business goal also wants Economics). A class
   that usually follows another (`usuallyAfter`: music theory after band, choir or a music class)
   comes after the others for a student without one.
+- **Two goals that don't fit**: each plan follows only its own goal's program gates and admission
+  rules (Texas A&M engineering's math isn't part of the nursing plan), and the split is offered
+  only when a goal's classes that didn't fit next to the other's fit in its own plan.
 - **Gap options** add load (summer, online, college credit, an exam) only for required needs and
   targets the student picked; a labeled default target's recommendation, a scholarship's course
   part or a career pathway's next level reads "Ask your counselor". For a math sequence, and for
@@ -156,6 +165,9 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   the rung that would be doubled, never the target. Options name a class the student can take
   next (not one they have, not a rung at or below theirs, prerequisites met); with none, only
   "Ask your counselor". A need that counts years (four years of math) gets no load options.
+  Where the state keeps first-time summer classes for accelerated students (Tennessee,
+  `firstAttemptAccelerated`), summer is offered for a first attempt only with the opt-in, and
+  otherwise only as a retake.
   College credit is offered only for a class that has a college-credit version, and for math only
   when two college classes in a year would actually close the gap. Credit totals count the year
   in progress only for its spring term (half a credit per open period: its schedule is mostly set,
@@ -172,8 +184,10 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   program counts only on a condition the plan doesn't meet (IT for Business and Industry while STEM's
   math and science are met) isn't offered, and for an endorsement the student named, the plan is
   built again without that program when another fits as well. Where the two-plan choice doesn't apply (the training
-  path, 11th grade, transfers) and no endorsement is named, the plan uses a default: the one the
-  student's own career classes belong to, else Multidisciplinary Studies; the audit says so and
+  path, 11th grade, transfers) and no endorsement is named, the plan uses a default: the
+  endorsement of the career pathway the student chose, or the one their own career classes are
+  in, or on the training path the goal's Texas pathway the plan places (Business and Industry for
+  an electrician's construction program), else Multidisciplinary Studies; the audit says so and
   the decision stays open. Seniors keep the Foundation plan, and the audit says that too. The
   choice reads "two that fit your goals" only when both endorsements come from the goals.
 - **Utah Secondary Math III opt-out**: nothing from that rung is suggested; needs that depend on
@@ -186,7 +200,16 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   met by CTE classes (a Texas endorsement's program of study) continues a pathway already in the
   plan before starting another, preferring the goal's own pathway and then clusters whose later
   levels the class list offers. A student who hasn't picked a pathway is planned in the one their
-  own classes are in (two levels, or one on the training path).
+  own classes are in (two levels, or one on the training path). Levels go in order: a student who
+  reached a level (Accounting II is level 3 in business) is never sent back to a lower one, and
+  typed names carry their level (TEA's programs of study: Welding I is level 2, Instructional
+  Practices level 3, Practicum in Health Science level 4).
+- **Waived credits that expand a focus** (Tennessee, `expands`) are counted in the focus's joined
+  allocation, beyond the focus's own classes, and never planned: a shortfall is a gap whose only
+  option is the counselor. With no focus chosen they read "Ask your counselor".
+- **Counselor questions**: guessed class kinds are one question, asked last, and only for guessed
+  rows a requirement counts. A college-credit class brings up only family notes marked
+  `collegeCredit`, a college's own only when it's on the list.
 - **Prerequisites of a cheaper level**: a college-level class isn't added when a regular or honors
   version of it could go in that grade, with its own prerequisites met (AP Computer Science A
   is suggested when Computer Science II would still need Computer Science I). A need with no

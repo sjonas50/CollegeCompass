@@ -636,6 +636,7 @@
                 "label": "2 more credits that expand your elective focus (world language waived; ask your counselor which classes count)",
                 "kind": "remaining_electives",
                 "units": 8,
+                "expands": "focus",
                 "cite": ["tn-2103-i-16", "tn-0520-01-03-06-waiver"]
               },
               "off": {
@@ -658,6 +659,7 @@
                 "label": "1 more credit that expands your elective focus (fine arts waived; ask your counselor which classes count)",
                 "kind": "remaining_electives",
                 "units": 4,
+                "expands": "focus",
                 "cite": ["tn-2103-i-17", "tn-0520-01-03-06-waiver"]
               },
               "off": {
@@ -1018,6 +1020,7 @@
                 "label": "2 more credits that expand your elective focus (world language waived; ask your counselor which classes count)",
                 "kind": "remaining_electives",
                 "units": 8,
+                "expands": "focus",
                 "cite": ["tn-2103-i-16", "tn-0520-01-03-06-waiver"]
               },
               "off": {
@@ -1040,6 +1043,7 @@
                 "label": "1 more credit that expands your elective focus (fine arts waived; ask your counselor which classes count)",
                 "kind": "remaining_electives",
                 "units": 4,
+                "expands": "focus",
                 "cite": ["tn-2103-i-17", "tn-0520-01-03-06-waiver"]
               },
               "off": {

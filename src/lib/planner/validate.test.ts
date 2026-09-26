@@ -108,6 +108,14 @@ describe("validateContent", () => {
     expect(found).toMatch(/requires unknown rule set "fx\.tx\.arts"/);
   });
 
+  it("checks that credits expanding an option's requirement name one that every such option has", () => {
+    const grad = copy(fixtureGraduationFile());
+    const v = grad.ruleSets[0].variants.find((x) => x.id === "fx.tx.grad.2026")!;
+    // STEM has stem.alg2; the DLA option, which extends the same variant, doesn't.
+    v.requirements.push({ id: "waived", label: "waived", kind: "remaining_electives", units: 8, expands: "stem.alg2", cite: ["fx-math"] });
+    expect(issues(raw({ graduation: grad }))).toMatch(/fx\.tx\.grad\.2026 waived: expands names "stem\.alg2", which isn't a credits requirement of every option that extends fx\.tx\.grad\.2026\./);
+  });
+
   it("checks requirement ids, choose counts and quoted strength overrides", () => {
     const grad = copy(fixtureGraduationFile());
     const reqs = grad.ruleSets[0].variants[1].requirements;
