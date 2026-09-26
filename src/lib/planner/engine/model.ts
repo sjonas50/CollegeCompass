@@ -101,6 +101,17 @@ export function itemFromSuggestion(s: SuggestionSpec): Item {
   };
 }
 
+/**
+ * The student's classes as they most likely are: a guessed type counts as if the student had
+ * confirmed it. The fill plans against this view, so it never adds a class the student probably
+ * already has (a typed "Chemistry" with no kind picked is still Chemistry); the audit keeps the
+ * guess visible ("Guessed class type") until the student confirms it. Other items keep their
+ * identity.
+ */
+export function asConfirmed(items: readonly Item[]): Item[] {
+  return items.map((i) => (i.own && i.assumed ? { ...i, assumed: false } : i));
+}
+
 /** A class taken (or planned) that can still be built on: not failed or withdrawn. */
 export function countsForSequence(item: Item): boolean {
   return !item.noCredit;

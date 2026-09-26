@@ -43,6 +43,12 @@ export type Need = {
   testRoutes: TestRoute[];
   forWhat: { ruleSetId: RuleSetId; reqId: ReqId } | { prep: FamilyId };
   reasons: Reason[];
+  /**
+   * Utah's senior-year math (R277-700-9): only for a college-bound student who hasn't shown
+   * college-ready math. `askFirst`: a senior who passed calculus or hasn't said whether they met
+   * the competency gets the question, not a class flagged "Needs a plan now".
+   */
+  seniorMath?: { askFirst: boolean };
 };
 
 export function needUnits(need: Need): number {
@@ -195,15 +201,17 @@ export function familyNeeds(ctx: Ctx, f: FamilyCtx): Need[] {
     if (def.statistics) out.push(prepNeed(ctx, f, "math.stats", [{ types: ["math.stats"] }], 4, { label: "Statistics" }, mathCite));
     if (def.fourthYear) {
       out.push(
-        prepNeed(ctx, f, "math.fourth_year", [{ subjects: ["math"], grades: [9, 10, 11, 12], exclude: ["math.ms"] }], 16, { label: "Four years of high school math" }, mathCite),
+        // Years of math, so a class in a year that already has one (or in summer) doesn't add one.
+        prepNeed(ctx, f, "math.fourth_year", [{ subjects: ["math"], grades: [9, 10, 11, 12], exclude: ["math.ms"] }], 16, { label: "Four years of high school math", distinctGrades: true }, mathCite),
       );
     }
   }
+  // One class of each: a key course that's a half credit (a speech class) is one class, not two.
   for (const sci of fc.sciences) {
-    out.push(prepNeed(ctx, f, sci, [{ types: [sci] }], 4, { label: getCourseType(sci).title }, mathCite));
+    out.push(prepNeed(ctx, f, sci, [{ types: [sci] }], getCourseType(sci).units, { label: getCourseType(sci).title }, mathCite));
   }
   for (const key of fc.keyCourses) {
-    out.push(prepNeed(ctx, f, key, [{ types: [key] }], 4, { label: getCourseType(key).title, soft: true }, mathCite));
+    out.push(prepNeed(ctx, f, key, [{ types: [key] }], getCourseType(key).units, { label: getCourseType(key).title, soft: true }, mathCite));
   }
   return out;
 }

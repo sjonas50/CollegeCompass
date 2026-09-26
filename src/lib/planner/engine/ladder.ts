@@ -117,6 +117,8 @@ export type LadderProblem = {
   locked: Map<SchoolGrade, number>;
   /** A rung can be scheduled in a grade (offered, and the load cap allows it). */
   available: (grade: SchoolGrade, rank: number) => boolean;
+  /** A college-credit version of a rung is offered in a grade (for the college move). */
+  collegeAvailable?: (grade: SchoolGrade, rank: number) => boolean;
   constraints: LadderConstraint[];
   moves: LadderMoves;
   /**
@@ -170,7 +172,13 @@ function choices(p: LadderProblem, grade: SchoolGrade, rank: number): Choice[] {
     }
     // Two college math classes in one year (a semester each), from precalculus up, where the state
     // offers college credit in that grade.
-    if (p.moves.college?.includes(grade) && rank + 1 >= MIN_COLLEGE_RANK && rank + 2 <= MAX_RANK) {
+    if (
+      p.moves.college?.includes(grade) &&
+      rank + 1 >= MIN_COLLEGE_RANK &&
+      rank + 2 <= MAX_RANK &&
+      (p.collegeAvailable?.(grade, rank + 1) ?? true) &&
+      (p.collegeAvailable?.(grade, rank + 2) ?? true)
+    ) {
       out.push({
         year: rank + 2,
         next: rank + 2,

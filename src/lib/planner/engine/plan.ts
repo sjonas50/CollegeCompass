@@ -25,18 +25,20 @@ import {
 } from "../engine-io";
 import { isStale, reviewLabel, staleLabel } from "../review";
 import type { ContentHeader, Req } from "../rules";
+import { type AltResult, evaluateAlternative, type LeafResult } from "./allocate";
 import { admissionConflicts, ruleSetAudit, waiverNotes, worst } from "./audit";
-import { buildContext, type Ctx, type FamilyCtx, leafPriority, rowIsOffered, schoolYearOfGrade } from "./context";
+import type { Alternative, CLeaf } from "./compile";
+import { buildContext, type Ctx, type FamilyCtx, leafPriority, rowIsOffered, type RuleSetCtx, schoolYearOfGrade } from "./context";
 import { algebra2Reason, leafNoteReason, loadReason, prepReason, reason, requirementReason, resolveCitations, retakeReason } from "./explain";
 import { type FillResult, isRepeatable, type PlanConfig, prereqsMetIn, runFill } from "./fill";
 import { buildGaps } from "./gaps";
-import { mathRankOf, rungName, unresolvedFailedRank } from "./ladder";
-import { type Item } from "./model";
+import { mathRankOf, rungName, startRank, unresolvedFailedRank } from "./ladder";
+import { asConfirmed, type Item } from "./model";
 import { type Need, needUnits } from "./needs";
 import { counselorQuestions } from "./questions";
 import { matchesAny } from "./select";
 import { buildDecisions, buildDeadlines } from "./timeline";
-import { atLeast, earnsNoCredit, hash16, nth, stableJson } from "./util";
+import { atLeast, earnsNoCredit, hash16, lowerFirstWord, nth, stableJson } from "./util";
 
 // ---------------------------------------------------------------------------
 // plan(input) → PathResult (design §5). Pure and deterministic: the same input gives the same
@@ -94,7 +96,8 @@ function mathRoute(ctx: Ctx, getA: () => FillResult, base: PlanConfig): Decision
   const solved = unmet.find((c) => !unmetB.some((k) => k.id === c.id))!;
   const need = fillA.needs.find((n) => n.id === solved.id);
   const summer = fillB.placements.some((p) => p.item.term === "summer" && p.kind === "ladder");
-  const extra = summer ? "adds a summer class" : "adds a second math class in one year";
+  const college = fillB.ladder.solution?.steps.some((st) => st.college) ?? false;
+  const extra = summer ? "adds a summer class" : college ? "adds two college-credit math classes in one year" : "adds a second math class in one year";
   const target = rungName(fillB.ladder.family, solved.rank, ctx.state);
   const labelA = need?.testRoutes.length ? `Plan A: show ${need.rc?.rs.title ?? target} with a test score.` : "Plan A: one math class a year.";
   const labelB = `Plan B: ${target} by the end of ${nth(solved.byGrade)} grade, ${extra}.`;
@@ -111,6 +114,8 @@ function mathRoute(ctx: Ctx, getA: () => FillResult, base: PlanConfig): Decision
 }
 
 function targetSplit(ctx: Ctx, getA: () => FillResult, base: PlanConfig): Decision | null {
+  // The student chose which family to plan around: the other is "also check" (design §2.6).
+  if (ctx.families[0]?.target.source === "chosen") return null;
   const fams = ctx.families.filter((f, i) => ctx.families.findIndex((g) => g.target.familyId === f.target.familyId) === i);
   if (fams.length < 2 || !fams[0].content || !fams[1].content) return null;
   const fillA = getA();
@@ -119,7 +124,7 @@ function targetSplit(ctx: Ctx, getA: () => FillResult, base: PlanConfig): Decisi
   const a = runFill(ctx, { ...base, families: [fams[0]] });
   const b = runFill(ctx, { ...base, id: "B", families: [fams[1]] });
   if (!realChoice(a, b)) return null;
-  const name = (f: FamilyCtx) => f.title.charAt(0).toLowerCase() + f.title.slice(1);
+  const name = (f: FamilyCtx) => lowerFirstWord(f.title);
   return {
     a,
     b,
@@ -154,23 +159,59 @@ function preferredEndorsements(ctx: Ctx): EndorsementValue[] {
   const clusters: string[] = [];
   for (const f of ctx.families) for (const p of f.content?.ctePathways ?? []) if (p.state === ctx.state) clusters.push(p.cluster);
   if (ctx.choices.ctePathway) clusters.push(ctx.choices.ctePathway.cluster);
+  for (const v of endorsementsForClusters(ctx, [...clusters, ...ownCteClusters(ctx)])) push(v);
+  return out;
+}
+
+/** Career clusters of the student's own career and technical classes (not failed). */
+function ownCteClusters(ctx: Ctx): string[] {
+  const out: string[] = [];
   for (const i of ctx.items) {
     const cluster = getCourseType(i.typeId).cteCluster;
-    if (i.own && !i.noCredit && cluster && i.cte) clusters.push(cluster);
+    if (i.own && !i.noCredit && cluster && i.cte && !out.includes(cluster)) out.push(cluster);
   }
+  return out;
+}
+
+/** Endorsements (never STEM) whose career and technical programs of study include these clusters. */
+function endorsementsForClusters(ctx: Ctx, clusters: string[]): EndorsementValue[] {
+  const out: EndorsementValue[] = [];
   for (const cluster of clusters) {
     for (const { rs } of ctx.allRuleSets.values()) {
       if (rs.appliesWhen.choice?.key !== "txEndorsements" || rs.appliesWhen.choice.value === "stem") continue;
+      const value = rs.appliesWhen.choice.value as EndorsementValue;
       const leaves = rs.variants.flatMap((v) => reqLeaves(v.requirements));
-      if (leaves.some((l) => l.kind === "credits" && l.select.some((sel) => sel.cte && sel.types?.includes(`cte.${cluster}.1` as CourseTypeId)))) push(rs.appliesWhen.choice.value as EndorsementValue);
+      if (!out.includes(value) && leaves.some((l) => l.kind === "credits" && l.select.some((sel) => sel.cte && sel.types?.includes(`cte.${cluster}.1` as CourseTypeId)))) out.push(value);
     }
   }
   return out;
 }
 
+/**
+ * A Texas student who hasn't named an endorsement and whom the two-plan endorsement choice doesn't
+ * reach (the training path, 11th grade, a transfer): the plan uses a default instead of stopping
+ * at the Foundation program. The endorsement the student's own career classes are in (a
+ * Transportation program counts for Business and Industry), else Multidisciplinary Studies. The
+ * pending decision still asks the student to name one; seniors keep the Foundation plan (with the
+ * audit's "ask your counselor").
+ */
+function withDefaultEndorsement(ctx: Ctx): Ctx {
+  if (ctx.state !== "TX" || ctx.choices.txEndorsements?.length || ctx.choices.txFoundationOnly || ctx.firstGrade <= 8 || ctx.grade >= 12) return ctx;
+  const value = endorsementsForClusters(ctx, ownCteClusters(ctx))[0] ?? "multidisciplinary";
+  const rs = [...ctx.allRuleSets.values()].find(({ rs }) => rs.appliesWhen.choice?.key === "txEndorsements" && rs.appliesWhen.choice.value === value)?.rs;
+  if (!rs) return ctx;
+  const sub = buildContext({ ...ctx.input, state: ctx.state, content: ctx.content, prefs: { ...ctx.input.prefs, choices: { ...ctx.input.prefs.choices, txEndorsements: [value] } } });
+  return { ...sub, endorsementDefault: rs.title };
+}
+
+/** The two-plan endorsement choice: Texas, none named, 9th-10th grade, not the training path. */
+function endorsementSplitApplies(ctx: Ctx): boolean {
+  if (ctx.state !== "TX" || ctx.choices.txEndorsements?.length || ctx.choices.txFoundationOnly || ctx.grade > 10 || ctx.firstGrade <= 8) return false;
+  return ctx.input.targets.path !== "training";
+}
+
 function endorsementSplit(ctx: Ctx, base: PlanConfig): Decision | null {
-  if (ctx.state !== "TX" || ctx.choices.txEndorsements?.length || ctx.choices.txFoundationOnly || ctx.grade > 10 || ctx.firstGrade <= 8) return null;
-  if (ctx.input.targets.path === "training") return null;
+  if (!endorsementSplitApplies(ctx)) return null;
   const preferred = preferredEndorsements(ctx);
   const options = [...ctx.allRuleSets.values()].filter(({ rs }) => {
     const value = rs.appliesWhen.choice?.key === "txEndorsements" ? rs.appliesWhen.choice.value : null;
@@ -178,7 +219,7 @@ function endorsementSplit(ctx: Ctx, base: PlanConfig): Decision | null {
     return value !== null && (value !== "stem" || preferred.includes("stem"));
   });
   if (options.length < 2) return null;
-  const trials = options.map(({ rs }, order) => {
+  const all = options.map(({ rs }, order) => {
     const value = rs.appliesWhen.choice!.value as EndorsementValue;
     const sub = buildContext({ ...ctx.input, state: ctx.state, content: ctx.content, prefs: { ...ctx.input.prefs, choices: { ...ctx.input.prefs.choices, txEndorsements: [value] } } });
     const fill = runFill(sub, { ...base, ruleSets: sub.ruleSets, families: sub.families });
@@ -188,10 +229,16 @@ function endorsementSplit(ctx: Ctx, base: PlanConfig): Decision | null {
     // A goal's endorsement first; with no goal, Multidisciplinary Studies (the four core subjects the
     // DLA already asks for) before endorsements that add a program.
     const fit = preferred.includes(value) ? preferred.indexOf(value) : preferred.length === 0 && value === "multidisciplinary" ? 0 : 99;
-    return { rs, fill, unmet, added, college, fit, order };
+    // A program that counts only on a condition the plan doesn't meet (an IT program for Business
+    // and Industry when the plan also meets STEM's math and science, §74.13(f)(7)(B)) isn't a real
+    // way to earn this endorsement: the student would earn STEM instead.
+    const conditional = audits(sub, fill).some((a) => a.ruleSetId === rs.id && a.checks.some((c) => c.kind === "counts_unless" && c.status === "ask_counselor"));
+    return { rs, fill, unmet, added, college, fit, order, conditional };
   });
+  const trials = all.filter((t) => !t.conditional);
   trials.sort((x, y) => x.unmet - y.unmet || x.fit - y.fit || x.added - y.added || x.college - y.college || x.order - y.order);
   const [first] = trials;
+  if (!first) return null;
   const second = trials.slice(1).find((t) => realChoice(first.fill, t.fill));
   if (!second) return null;
   const fits = preferred.length > 0;
@@ -264,12 +311,85 @@ function yoursWarnings(ctx: Ctx, fill: FillResult, fact: PlannerInput["courses"]
   return out;
 }
 
+/** The final audit's routes, with the student's guessed class types taken as confirmed (as the fill planned). */
+type Routes = { items: Item[]; routes: Map<string, AltResult> };
+
+function confirmedRoutes(fill: FillResult): Routes {
+  const items = asConfirmed(fill.items);
+  const routes = new Map<string, AltResult>();
+  for (const e of fill.evals) if (e.best) routes.set(e.rc.rs.id, evaluateAlternative(e.best.alt, items, e.rc.allocation));
+  return { items, routes };
+}
+
+const namedLeaf = (l: LeafResult) => l.leaf.req.kind !== "total_credits" && l.leaf.req.kind !== "remaining_electives";
+
 /**
- * Why a suggestion is on the plan: the requirements the final audit counts it toward, the
- * major-prep targets it meets, checks it was placed for, and its own notes. "Required by" wording
- * comes only from the final audit, never from the route the fill first planned toward.
+ * The requirements of one rule set a suggestion is needed for: the leaves on the route that count
+ * it, when taking it out would leave the rule set less met and no other combination of a "choose"
+ * ("two of the five science areas") meets it without the class. A class that only adds to a
+ * requirement other classes already meet isn't "Required" by it. (An `any` group's branch is the
+ * plan's route, chosen by the audit: Spanish II is required for the language route even when a
+ * suggested programming class could make the other route.)
  */
-function slotReasons(ctx: Ctx, fill: FillResult, item: Item, extra: Reason[], primary: Need | null): Reason[] {
+function neededLeaves(rc: RuleSetCtx, route: AltResult, key: string, rest: Item[]): CLeaf[] {
+  const counting = route.leaves.filter((l) => namedLeaf(l) && l.counted.some((c) => c.item.key === key));
+  if (counting.length === 0) return [];
+  const before = new Map(route.leaves.filter(namedLeaf).map((l) => [l.leaf.id, l.missing]));
+  const lost = (r: AltResult) => r.leaves.filter((l) => namedLeaf(l) && l.missing > (before.get(l.leaf.id) ?? 0)).map((l) => l.leaf.id);
+  const lessMet = (r: AltResult) => r.notDone > 0 || lost(r).length > 0;
+  const without = evaluateAlternative(route.alt, rest, rc.allocation);
+  const lostHere = new Set(lost(without));
+  if (lostHere.size === 0) return [];
+  const groups = new Set(counting.flatMap((l) => (l.leaf.choice?.kind === "choose" ? [l.leaf.choice.id] : [])));
+  if (groups.size > 0) {
+    const outside = (a: Alternative) =>
+      a.leaves
+        .filter((l) => !l.path.some((p) => groups.has(p)))
+        .map((l) => `${l.id}>${l.subFor ?? ""}`)
+        .sort()
+        .join("|");
+    const same = outside(route.alt);
+    for (const alt of rc.alternatives) {
+      if (alt.index === route.alt.index || outside(alt) !== same) continue;
+      if (!lessMet(evaluateAlternative(alt, rest, rc.allocation))) return [];
+    }
+  }
+  // The requirements that would go short without it; when the others shift to cover those (one
+  // pool of credit), the ones it counts toward.
+  const short = counting.filter((l) => lostHere.has(l.leaf.id));
+  return (short.length ? short : counting).map((l) => l.leaf);
+}
+
+/**
+ * The plan's classes without a suggestion and the suggestions that build on it (Spanish II
+ * without Spanish I, calculus without precalculus): what taking it out would really leave.
+ */
+function withoutClass(ctx: Ctx, fill: FillResult, items: Item[], key: string): Item[] {
+  const catalogIdOf = (i: Item) =>
+    i.own ? (ctx.input.courses.find((c) => `c:${c.id}` === i.key)?.catalogCourseId ?? null) : (fill.placements.find((p) => p.item.key === i.key)?.row.id ?? null);
+  const met = (p: FillResult["placements"][number], pool: Item[]) => prereqsMetIn(pool, p.row, p.item.grade, catalogIdOf, p.item.term === "summer", p.item.term === "spring");
+  const before = new Set(fill.placements.filter((p) => met(p, items)).map((p) => p.item.key));
+  const removed = new Set([key]);
+  for (let changed = true; changed; ) {
+    changed = false;
+    const pool = items.filter((i) => !removed.has(i.key));
+    for (const p of fill.placements) {
+      if (removed.has(p.item.key) || !before.has(p.item.key) || met(p, pool)) continue;
+      removed.add(p.item.key);
+      changed = true;
+    }
+  }
+  return items.filter((i) => !removed.has(i.key));
+}
+
+/**
+ * Why a suggestion is on the plan: the requirements it's needed for on the final audit's route,
+ * the major-prep targets it meets, checks it was placed for, and its own notes. "Required by"
+ * wording comes only from the final audit (never from the route the fill first planned toward),
+ * only when the class is needed for it, and names the whole requirement when the class is one way
+ * through a choice.
+ */
+function slotReasons(ctx: Ctx, fill: FillResult, routes: Routes, item: Item, extra: Reason[], primary: Need | null): Reason[] {
   const out: Reason[] = [];
   const seen = new Set<string>();
   const push = (r: Reason) => {
@@ -278,16 +398,16 @@ function slotReasons(ctx: Ctx, fill: FillResult, item: Item, extra: Reason[], pr
     seen.add(k);
     out.push(r);
   };
+  const rest = withoutClass(ctx, fill, routes.items, item.key);
   for (const e of fill.evals) {
-    if (!e.best) continue;
-    for (const l of e.best.leaves) {
-      if (!l.counted.some((c) => c.item.key === item.key)) continue;
-      if (l.leaf.req.kind === "total_credits" || l.leaf.req.kind === "remaining_electives") continue;
-      const owner = l.leaf.own ? e.rc : (ctx.ruleSets.find((r) => e.rc.bases.some((b) => b.rs.id === r.rs.id)) ?? e.rc);
+    const route = routes.routes.get(e.rc.rs.id);
+    if (!route) continue;
+    for (const leaf of neededLeaves(e.rc, route, item.key, rest)) {
+      const owner = leaf.own ? e.rc : (ctx.ruleSets.find((r) => e.rc.bases.some((b) => b.rs.id === r.rs.id)) ?? e.rc);
       // Only what can ask for a class explains a suggestion (not information-only or projected aid).
-      if (leafPriority(owner, l.leaf.strength) === null) continue;
-      push(requirementReason(owner, l.leaf));
-      const note = leafNoteReason(owner, l.leaf);
+      if (leafPriority(owner, leaf.strength) === null) continue;
+      push(requirementReason(owner, leaf, leaf.choice?.kind === "choose" ? leaf.choice.text : leaf.label, true));
+      const note = leafNoteReason(owner, leaf);
       if (note) push(note);
     }
   }
@@ -305,7 +425,7 @@ function slotReasons(ctx: Ctx, fill: FillResult, item: Item, extra: Reason[], pr
   return out;
 }
 
-function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles: boolean): PlanYear {
+function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles: boolean, routes: Routes = confirmedRoutes(fill)): PlanYear {
   const y = fill.years.get(grade)!;
   const cat = ctx.catalogs.get(grade)!;
   const slots: PlanSlot[] = [];
@@ -331,6 +451,9 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
     const alternatives: Extract<PlanSlot, { kind: "suggested" }>["alternatives"] = [];
     if (primary && !genericTitles) {
       const others = fill.items.filter((i) => i.key !== p.item.key);
+      // The highest math rung reached before this year (passed or planned): never offer one at or
+      // below it (Secondary Math I after Secondary Math III).
+      const reached = startRank(others, grade);
       const seen = new Set<string>([`${p.item.typeId}:${p.item.level}`]);
       for (const row of cat.rows) {
         if (alternatives.length >= 4) break;
@@ -339,7 +462,9 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
         const probeItem: Item = { ...p.item, typeId: row.typeId, level: row.level, subject: row.subject, units: row.units, cte: row.cte, lectureOnly: row.lectureOnly };
         if (!matchesAny(probeItem, primary.selectors)) continue;
         if (!isRepeatable(row.typeId) && fill.items.some((i) => i.typeId === row.typeId && !i.noCredit && i.key !== p.item.key)) continue;
-        if (!prereqsMetIn(others, row, grade, () => null)) continue;
+        const rank = mathRankOf(row.typeId);
+        if (rank !== null && rank >= 1 && rank <= reached) continue;
+        if (!prereqsMetIn(others, row, grade, () => null, false, p.item.term === "spring")) continue;
         seen.add(k);
         alternatives.push({
           key: suggestionKey(primary.forWhat as Parameters<typeof suggestionKey>[0], row.typeId, row.level),
@@ -350,7 +475,7 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
         });
       }
     }
-    const reasons = slotReasons(ctx, fill, p.item, p.extraReasons, primary);
+    const reasons = slotReasons(ctx, fill, routes, p.item, p.extraReasons, primary);
     if (p.needsPlanNow) reasons.push(reason("gap", "A required credit you still need this year. Talk to your counselor soon.", { ruleSetId: primary?.rc?.rs.id ?? null }));
     slots.push({
       kind: "suggested",
@@ -386,7 +511,8 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
 }
 
 function planYears(ctx: Ctx, fill: FillResult): PlanYear[] {
-  return ctx.planGrades.filter((g) => g >= 9).map((g) => buildYear(ctx, fill, g, false));
+  const routes = confirmedRoutes(fill);
+  return ctx.planGrades.filter((g) => g >= 9).map((g) => buildYear(ctx, fill, g, false, routes));
 }
 
 // Middle school -------------------------------------------------------------------------------------
@@ -511,7 +637,7 @@ function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
 
 /** The context a plan is audited with: an endorsement plan includes the endorsement it plans with. */
 function contextFor(ctx: Ctx, fill: FillResult, choice: PlanChoice | null): Ctx {
-  if (choice?.kind !== "endorsement") return ctx;
+  if (choice?.kind !== "endorsement" || ctx.endorsementDefault) return ctx;
   const value = fill.config.ruleSets.find((r) => r.rs.appliesWhen.choice?.key === "txEndorsements")?.rs.appliesWhen.choice?.value as EndorsementValue | undefined;
   if (!value) return ctx;
   return buildContext({ ...ctx.input, state: ctx.state, content: ctx.content, prefs: { ...ctx.input.prefs, choices: { ...ctx.input.prefs.choices, txEndorsements: [value] } } });
@@ -534,7 +660,9 @@ function planOption(id: "A" | "B", label: string, pctx: Ctx, fill: FillResult, d
 
 export function plan(input: PlannerInput): PathResult {
   if (input.state === null || input.content === null) return noState(input);
-  const ctx = buildContext(input as PlannerInput & { state: PlannerState; content: NonNullable<PlannerInput["content"]> });
+  const own = buildContext(input as PlannerInput & { state: PlannerState; content: NonNullable<PlannerInput["content"]> });
+  // Endorsement plans (Plan A and B) when the choice applies; otherwise a default endorsement.
+  const ctx = endorsementSplitApplies(own) ? own : withDefaultEndorsement(own);
   const base: PlanConfig = { id: "A", ruleSets: ctx.ruleSets, families: ctx.families, accelerate: false, cteFirst: false };
   // The single plan is built only when it's needed (an endorsement choice builds its own plans).
   let single: FillResult | null = null;
@@ -556,7 +684,8 @@ export function plan(input: PlannerInput): PathResult {
   fillA ??= getA();
   // Each plan is audited on its own: Plan B's gaps, "what counts" and questions are Plan B's.
   const auditCtx = contextFor(ctx, fillA, planChoice);
-  const decisions = buildDecisions(ctx, fillA);
+  // Pending decisions come from the student's own choices (a default endorsement is still to name).
+  const decisions = buildDecisions(own, fillA);
   const optionA = planOption("A", labels[0], auditCtx, fillA, decisions, middle);
   const optionB = fillB ? planOption("B", labels[1], contextFor(ctx, fillB, planChoice), fillB, decisions, middle) : null;
   const plans: PlannedPath["plans"] = middle || ctx.planGrades.length === 0 ? [] : optionB ? [optionA, optionB] : [optionA];
@@ -564,7 +693,7 @@ export function plan(input: PlannerInput): PathResult {
     mode: modeOf(ctx),
     state: ctx.state,
     stage: middle ? "middle_school" : "high_school",
-    inputsFingerprint: fingerprintOf(ctx),
+    inputsFingerprint: fingerprintOf(own),
     notices: { draft: DRAFT_BANNER, standing: STANDING_PLAN_NOTE, review: reviewNotices(auditCtx) },
     builtFrom: builtFrom(auditCtx),
     // Plan A's, for summaries (the parent dashboard) and the middle-school view.

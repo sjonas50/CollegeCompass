@@ -81,6 +81,12 @@ export type Ctx = {
   fingerprints: Map<string, string>;
   /** Classes-per-year the state's list suggests when neither the student nor the school says. */
   defaultClassesPerYear: number;
+  /**
+   * The Texas endorsement this plan uses was picked by the planner (the student hasn't named one
+   * and the two-plan choice doesn't apply): the audit says so instead of "You're planning with an
+   * endorsement".
+   */
+  endorsementDefault?: string;
 };
 
 const FINGERPRINTS = new WeakMap<object, string>();

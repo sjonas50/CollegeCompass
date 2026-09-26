@@ -184,6 +184,12 @@ type Def = {
   prereqs?: readonly (readonly string[])[];
   /** Extra prerequisites for the AP, IB, Cambridge and college-credit levels (AP Statistics after Algebra II). */
   collegePrereqs?: readonly (readonly string[])[];
+  /**
+   * Extra prerequisites for every level but AP and IB, whose own frameworks set theirs: a second
+   * programming class (Coding II, Computer Science II, Computer Programming 2) comes after the
+   * first, while AP Computer Science A needs only Algebra I.
+   */
+  sequencePrereqs?: readonly (readonly string[])[];
   ladder?: readonly [LadderId, number];
   caps?: readonly Capability[];
   alt?: readonly CourseSubject[];
@@ -883,6 +889,9 @@ const CORE = {
     cte: "sometimes",
     cluster: "it",
     prereqs: [RANK1],
+    // TEA's Programming and Software Development program of study: "Computer Science II …
+    // Prerequisites: Algebra I and Computer Science I or AP Computer Science Principles" (TEA statewide program of study, checked 2026-09-25).
+    sequencePrereqs: [["cs.prog1", "cs.principles"]],
     alt: ["career_technical"],
     stateTitles: { UT: "Computer Programming 2", TN: "Coding II", TX: "Computer Science II" },
     note: "AP Computer Science A maps here at the AP level and IB Computer Science HL at the IB level; Texas counts those two as a math and a language credit [TX S1 §74.11(n)].",
@@ -1222,6 +1231,8 @@ export type CourseType = {
   prereqs: readonly Prereq[];
   /** More prerequisites for the college-level versions (AP, IB, Cambridge, college credit). */
   collegePrereqs: readonly Prereq[];
+  /** More prerequisites for every level but AP and IB (a second programming class after the first). */
+  sequencePrereqs: readonly Prereq[];
   ladder: { id: LadderId; rank: number } | null;
   capabilities: readonly Capability[];
   /** The state's own name for the class, where it differs ("Secondary Mathematics III"). */
@@ -1238,7 +1249,7 @@ function build(): Map<CourseTypeId, CourseType> {
   const problems: string[] = [];
   const types = new Map<CourseTypeId, CourseType>();
   for (const [id, def] of entries) {
-    for (const group of [...(def.prereqs ?? []), ...(def.collegePrereqs ?? [])]) {
+    for (const group of [...(def.prereqs ?? []), ...(def.collegePrereqs ?? []), ...(def.sequencePrereqs ?? [])]) {
       for (const p of group) if (!ids.has(p)) problems.push(`${id}: unknown prerequisite ${p}`);
     }
     types.set(id, {
@@ -1253,6 +1264,7 @@ function build(): Map<CourseTypeId, CourseType> {
       grades: def.grades,
       prereqs: (def.prereqs ?? []).map((group) => ({ anyOf: group as readonly CourseTypeId[] })),
       collegePrereqs: (def.collegePrereqs ?? []).map((group) => ({ anyOf: group as readonly CourseTypeId[] })),
+      sequencePrereqs: (def.sequencePrereqs ?? []).map((group) => ({ anyOf: group as readonly CourseTypeId[] })),
       ladder: def.ladder ? { id: def.ladder[0], rank: def.ladder[1] } : null,
       capabilities: def.caps ?? [],
       stateTitles: def.stateTitles ?? {},

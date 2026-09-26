@@ -7,13 +7,14 @@ import { p6Ohio, p7Move, x1CalcInfeasible, x2Cap, x3SeniorMissingCredit, x4TwoGo
 // Cross-state golden scenarios (design §10.2 X-1 to X-5, P6, P7).
 
 describe("X-1: grade 10, Algebra I in 9th, a calculus target", () => {
-  it("is infeasible at one math class a year: summer, the lower target, or ask", () => {
+  it("is infeasible at one math class a year: the lower target, or ask (summer, online and college math only with the opt-in and a B)", () => {
     const path = planned(plan(x1CalcInfeasible()));
     const gap = path.gaps.find((g) => g.demandId === "prep:engineering/math.CALC")!;
     expect(gap.kind).toBe("ladder_infeasible");
     expect(gap.text).toBe("Calculus by the end of 12th grade would take more than one math class a year from here.");
-    expect(gap.options.map((o) => o.kind)).toEqual(["summer", "lower_target", "ask_counselor"]);
-    expect(gap.options[1]?.closes).toBe("calculus in your first college year instead");
+    // Acceleration is only offered after a B or better and only if the student opts in (design §1).
+    expect(gap.options.map((o) => o.kind)).toEqual(["lower_target", "ask_counselor"]);
+    expect(gap.options[0]?.closes).toBe("calculus in your first college year instead");
     expect(path.planChoice).toBeNull();
   });
 

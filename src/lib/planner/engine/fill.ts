@@ -4,6 +4,7 @@ import {
   courseTypeTitle,
   type CourseTypeId,
   type CourseTypeLevel,
+  type CteCluster,
   getCourseType,
   isCollegeLevel,
   type LadderId,
@@ -33,10 +34,10 @@ import {
   startRank,
   unresolvedFailedRank,
 } from "./ladder";
-import { countsForSequence, type Item, itemFromSuggestion, slotHalves } from "./model";
+import { asConfirmed, countsForSequence, type Item, itemFromSuggestion, slotHalves } from "./model";
 import { evaluatePrep, familyNeeds, isLadderish, type Need, needsFromEval, needUnits, testRoutesFor } from "./needs";
-import { matchesAny, wouldMatchIfConfirmed } from "./select";
-import { atLeast, nth } from "./util";
+import { matchesAny } from "./select";
+import { atLeast, lowerFirstWord, nth } from "./util";
 
 // ---------------------------------------------------------------------------
 // Fill, repair and rigor (design §5.7). From the needs, in order: the math ladder, English each
@@ -79,7 +80,7 @@ export type Placement = {
   upgradedFrom: CourseTypeLevel | null;
 };
 
-export type BlockReason = "not_offered" | "doesnt_fit" | "past" | "load" | "guessed" | "dismissed" | "choice" | "equivalent";
+export type BlockReason = "not_offered" | "doesnt_fit" | "past" | "load" | "guessed" | "dismissed" | "choice" | "equivalent" | "ask";
 
 export type YearState = {
   grade: SchoolGrade;
@@ -198,6 +199,8 @@ export class Filler {
     // A career pathway the goals point to, or the student chose (a Texas endorsement's program of study).
     const clusters = this.config.families.flatMap((f) => (f.content?.ctePathways ?? []).filter((p) => p.state === this.ctx.state).map((p) => p.cluster));
     if (this.ctx.choices.ctePathway) clusters.push(this.ctx.choices.ctePathway.cluster);
+    const own = ownCtePathway(this.ctx);
+    if (own) clusters.push(own);
     for (const c of clusters) for (const t of ladderTypes(`cte.${c}` as LadderId)) wanted.add(t.id);
     return (r) => {
       let score = 0;
@@ -209,12 +212,37 @@ export class Filler {
     };
   }
 
-  private pickOptions(rc: RuleSetCtx, baseChoice?: Map<string, Alternative>): PickOptions {
+  private pickOptions(rc: RuleSetCtx, items: Item[], baseChoice?: Map<string, Alternative>): PickOptions {
+    const merge = this.prefer();
+    const extensions = this.config.ruleSets.filter((r) => r.bases[r.bases.length - 1]?.rs.id === rc.rs.id);
+    const cache = new Map<AltResult, number>();
+    // A base with extensions (Tennessee's graduation rules under an elective focus): among its
+    // equally good routes, the one its extensions can meet best (the computer science credit as
+    // the 4th math leaves statistics free for "3 more math or science credits").
+    const prefer = extensions.length
+      ? (r: AltResult) => {
+          let missing = cache.get(r);
+          if (missing === undefined) {
+            missing = extensions.reduce((sum, ext) => sum + this.extensionMissing(ext, r.alt, items), 0);
+            cache.set(r, missing);
+          }
+          return merge(r) - missing * 1000;
+        }
+      : merge;
     return {
-      prefer: this.prefer(),
+      prefer,
       feasible: (r) => r.leaves.every((l) => l.missing === 0 || this.leafFeasible(l.leaf)),
       allowed: this.followsBase(rc, baseChoice),
     };
+  }
+
+  /** What an extension still misses (in units) on its best route that follows this base route. */
+  private extensionMissing(ext: RuleSetCtx, base: Alternative, items: Item[]): number {
+    const sig = (l: CLeaf) => `${l.id}>${l.subFor ?? ""}`;
+    const want = base.leaves.map(sig).sort().join("|");
+    const alts = ext.alternatives.filter((a) => a.leaves.filter((l) => !l.own).map(sig).sort().join("|") === want);
+    if (alts.length === 0) return 0;
+    return pickAlternative(alts.map((a) => evaluateAlternative(a, items, ext.allocation))).missingNamed;
   }
 
   /**
@@ -279,22 +307,28 @@ export class Filler {
     return startRank(own, 13) + years >= rank;
   }
 
+  /**
+   * The route each rule set plans toward, and what it still needs, as if the student's guessed
+   * class types were confirmed: a typed "Chemistry" with no kind picked is planned around, never
+   * added again (the audit flags the guess instead).
+   */
   private evaluateChosen(rc: RuleSetCtx): AltResult | null {
     if (!rc.variant || rc.alternatives.length === 0) return null;
+    const items = asConfirmed(this.items);
     const idx = this.chosen.get(rc.rs.id);
     if (idx === undefined) {
       const excluded = this.excluded.get(rc.rs.id) ?? new Set<string>();
-      const opts = this.pickOptions(rc);
+      const opts = this.pickOptions(rc, items);
       const unexcluded = rc.alternatives.filter((a) => !a.leaves.some((l) => excluded.has(l.id)));
       const followed = opts.allowed ? unexcluded.filter(opts.allowed) : unexcluded;
       const alts = followed.length ? followed : unexcluded;
       if (alts.length === 0) return null;
-      const results = alts.map((a) => evaluateAlternative(a, this.items, rc.allocation));
+      const results = alts.map((a) => evaluateAlternative(a, items, rc.allocation));
       const best = pickAlternative(results, opts);
       this.chosen.set(rc.rs.id, best.alt.index);
       return best;
     }
-    return evaluateAlternative(rc.alternatives.find((a) => a.index === idx)!, this.items, rc.allocation);
+    return evaluateAlternative(rc.alternatives.find((a) => a.index === idx)!, items, rc.allocation);
   }
 
   private familyNeedCache: Need[] | null = null;
@@ -313,11 +347,13 @@ export class Filler {
         out.push(need);
       }
     });
-    // CTE pathway: the student's choice, or the first family's pathway on the training path.
+    // CTE pathway: the student's choice, the pathway their own classes are in, or the first
+    // family's pathway on the training path.
     const chosen = this.ctx.choices.ctePathway?.cluster;
-    const f = chosen ? undefined : this.config.families[0];
+    const own = chosen ? null : ownCtePathway(this.ctx);
+    const f = chosen || own ? undefined : this.config.families[0];
     const familyPathway = this.ctx.input.targets.path === "training" ? f?.content?.ctePathways.find((p) => p.state === this.ctx.state) : undefined;
-    const cluster = chosen ?? familyPathway?.cluster;
+    const cluster = chosen ?? own ?? familyPathway?.cluster;
     if (cluster) {
       for (const level of [1, 2, 3]) {
         const types = rungTypesForCte(cluster, level);
@@ -349,11 +385,16 @@ export class Filler {
                   familyId: f.target.familyId,
                   citations: familyPathway?.cite ?? [],
                 })
-              : // The student's own choice is the source.
-                reason("choice", `You chose the ${lowerFirstWord(cteTitle(cluster))} pathway. Its classes go in order, so you finish as a completer.`, {
-                  claim: "suggestion",
-                  params: { cluster },
-                }),
+              : own
+                ? reason("choice", `You're taking ${lowerFirstWord(cteTitle(cluster))} classes. The next levels, in order, make you a completer.`, {
+                    claim: "suggestion",
+                    params: { cluster },
+                  })
+                : // The student's own choice is the source.
+                  reason("choice", `You chose the ${lowerFirstWord(cteTitle(cluster))} pathway. Its classes go in order, so you finish as a completer.`, {
+                    claim: "suggestion",
+                    params: { cluster },
+                  }),
           ],
         });
       }
@@ -371,7 +412,7 @@ export class Filler {
           if (this.ctx.choices[check.unlessChoice] || this.ctx.input.targets.path === "training") continue;
           const senior = this.items.filter((i) => i.subject === "math" && i.grade === 12 && !i.noCredit).reduce((n, i) => n + i.units, 0);
           if (senior >= 4) continue;
-          out.push(this.checkNeed(rc, check.id, "A full year of math in 12th grade", [{ subjects: ["math"], grades: [12] }], 4 - senior, 12, 12, false, check.cite));
+          out.push(this.seniorMathNeed(rc, check.id, 4 - senior, check.cite));
         } else if (check.kind === "enrolled_years") {
           const years = new Set(this.items.filter((i) => i.subject === check.subject && i.grade >= 9 && !(i.completed && i.letter === "W")).map((i) => i.grade));
           const missing = check.years - years.size;
@@ -383,6 +424,31 @@ export class Filler {
       }
     }
     return out;
+  }
+
+  /**
+   * Utah's senior-year math (R277-700-9(2)): a college-bound student shows college-ready math (a
+   * listed test score, or a C in a qualifying concurrent enrollment class) or takes a full year of
+   * math in 12th grade. It's conditional, so the words say so; a senior who passed calculus, or
+   * who hasn't said whether they met it, is asked rather than given a class to add now.
+   */
+  private seniorMathNeed(rc: RuleSetCtx, id: string, units: number, cite: string[]): Need {
+    const need = this.checkNeed(rc, id, "A full year of math in 12th grade, unless you show college-ready math", [{ subjects: ["math"], grades: [12] }], units, 12, 12, false, cite);
+    const issuer = rc.rs.issuer.name;
+    const route = need.testRoutes[0];
+    need.reasons = [
+      reason("requirement", `${issuer} asks college-bound students to show college-ready math or take a full year of math in 12th grade.`, {
+        ruleSetId: rc.rs.id,
+        reqId: id,
+        strength: rc.rs.strength,
+        citations: cite,
+      }),
+      ...(route ? [reason("state_note", route.text, { ruleSetId: rc.rs.id, reqId: id, citations: route.cite })] : []),
+    ];
+    const passedCalculus = this.items.some((i) => i.own && i.completed && countsForSequence(i) && (mathRankOf(i.typeId) ?? 0) >= 5);
+    const unanswered = this.ctx.choices.utMathCompetencyMet === undefined;
+    need.seniorMath = { askFirst: this.ctx.inProgressGrade === 12 && (passedCalculus || unanswered) };
+    return need;
   }
 
   private checkNeed(rc: RuleSetCtx, id: string, label: string, sels: Need["selectors"], units: number, from: number, by: number, distinct: boolean, cite: string[]): Need {
@@ -407,7 +473,7 @@ export class Filler {
       mathTarget: null,
       testRoutes: testRoutesFor(rc, id),
       forWhat: { ruleSetId: rc.rs.id, reqId: id },
-      reasons: [reason("requirement", `Required by ${rc.rs.issuer.name}: ${label.charAt(0).toLowerCase()}${label.slice(1)}.`, { ruleSetId: rc.rs.id, reqId: id, strength: rc.rs.strength, citations: cite })],
+      reasons: [reason("requirement", `Required by ${rc.rs.issuer.name}: ${lowerFirstWord(label)}.`, { ruleSetId: rc.rs.id, reqId: id, strength: rc.rs.strength, citations: cite })],
     };
   }
 
@@ -437,8 +503,9 @@ export class Filler {
       const alt = this.current.get(rc.rs.id);
       if (alt) for (const n of needsFromEval(this.ctx, rc, alt)) add(n);
     }
+    const confirmed = asConfirmed(this.items);
     for (const need of this.familyNeedList()) {
-      const { missing } = evaluatePrep(need, this.items);
+      const { missing } = evaluatePrep(need, confirmed);
       if (missing > 0) add({ ...need, missing });
     }
     for (const n of this.checkNeeds(this.current)) add(n);
@@ -491,8 +558,8 @@ export class Filler {
   }
 
   /** Every prerequisite is met by a class before this grade (or the same grade when printed as concurrent). */
-  prereqsMet(row: CatalogRow, grade: SchoolGrade, extra: Item[] = []): boolean {
-    return prereqsMetIn([...this.items, ...extra], row, grade, (i) => this.catalogIdOf(i));
+  prereqsMet(row: CatalogRow, grade: SchoolGrade, extra: Item[] = [], spring = false): boolean {
+    return prereqsMetIn([...this.items, ...extra], row, grade, (i) => this.catalogIdOf(i), false, spring);
   }
 
   private catalogIdOf(i: Item): string | null {
@@ -534,20 +601,25 @@ export class Filler {
     return [Math.max(need.fromGrade, 9), need.byGrade];
   }
 
-  /** Feasible (row, grade) pairs for a need right now. */
-  candidates(need: Need, ignoreCapacity = false): { row: CatalogRow; grade: SchoolGrade }[] {
+  /**
+   * Feasible (row, grade) pairs for a need right now. `noReserve`: a lower-priority class may use
+   * the "Your choice" slot too.
+   */
+  candidates(need: Need, ignoreCapacity = false, noReserve = false): { row: CatalogRow; grade: SchoolGrade }[] {
     const [from, by] = this.window(need);
     // Classes only an advanced level meets (an aid rule's "one AP class", "four advanced courses")
     // are never added for it: rigor is a level choice on classes already planned (design §5.7).
     if (advancedOnly(need.selectors)) return [];
+    const senior = need.seniorMath ? this.seniorMathOrder(startRank(this.items, 13)) : null;
     const out = this.staticCandidates(need).filter(({ row, grade }) => {
+      if (senior && senior(row.typeId) === null) return false;
       if (grade < from || grade > by) return false;
       if (!this.yearAllows(grade, need.priority)) return false;
       if (this.alreadyHas(row.typeId) || !this.typeAllowed(row.typeId, grade, row.units)) return false;
       if (this.dismissed(need, row)) return false;
       if (need.distinctGrades && this.items.some((i) => i.grade === grade && i.subject === row.subject)) return false;
       if (row.subject === "math" && !this.secondMathAllowed(need, grade)) return false;
-      if (!ignoreCapacity && !this.fits(grade, row, need.priority)) return false;
+      if (!ignoreCapacity && !this.fits(grade, row, noReserve ? Math.min(need.priority, 1) as DemandPriority : need.priority)) return false;
       if (ignoreCapacity && row.collegeLevel && this.years.get(grade)!.college >= this.cap()) return false;
       if (row.collegeLevel && this.cheaperLevelExists(row, grade)) return false;
       if (!this.prereqsMet(row, grade)) return false;
@@ -707,9 +779,12 @@ export class Filler {
           : all;
     const math = need.selectors.some((s) => s.subjects?.includes("math") || s.types?.some((t) => t.startsWith("math.")) || s.capabilities?.some((c) => c !== "lab_science"));
     const nextRank = startRank(this.items, 13) + 1;
+    const senior = need.seniorMath ? this.seniorMathOrder(nextRank - 1) : null;
     // The next rung of the math ladder only when the need names a rung, or on the way to a 4-year
-    // college. A plain "4th math" on the training or undecided path, or a required credit a senior
-    // needs now, prefers a class off the ladder (statistics, applied or decision math).
+    // college. A plain "4th math" on the training or undecided path, including a required credit
+    // a senior needs now, prefers a class off the ladder (statistics, applied or decision math). On
+    // the degree path a senior's required credit is weighed by everything it serves (Algebra II
+    // for the 4th math also counts for the DLA and a college).
     const ladderNeed = isLadderish(need.selectors) !== null;
     const degree = this.ctx.input.targets.path === "degree";
     const scored = cands.map((c) => {
@@ -717,12 +792,14 @@ export class Filler {
       const pref = planNow ? "regular" : this.preferredLevel(c.row.subject);
       const rank = mathRankOf(c.row.typeId);
       const rungKey = rank === nextRank ? 0 : rank !== null && rank > nextRank ? 2 : 1;
-      const mathKey = !math ? 0 : ladderNeed || (degree && !planNow) ? rungKey : rank !== null ? 1 : 0;
+      const mathKey = !math ? 0 : ladderNeed || degree ? rungKey : rank !== null ? 1 : 0;
       return {
         c,
         keys: [
-          // A senior's required credit this year: only what's required counts (extras aren't actionable).
-          -this.score(c.row, c.grade, planNow),
+          // Utah's senior-year math: the next rung or the goal's math first.
+          senior?.(c.row.typeId) ?? 0,
+          // A senior's required credit this year, off the degree path: only what's required counts.
+          -this.score(c.row, c.grade, planNow && !degree),
           c.row.collegeLevel ? 1 : 0,
           isRepeatable(c.row.typeId) && this.items.some((i) => i.typeId === c.row.typeId && i.subject === c.row.subject) ? 0 : 1,
           this.cteContinuity(c.row.typeId, c.grade),
@@ -739,6 +816,62 @@ export class Filler {
       return a.c.row.id < b.c.row.id ? -1 : a.c.row.id > b.c.row.id ? 1 : 0;
     });
     return scored[0].c;
+  }
+
+  /**
+   * How well a class fits Utah's senior-year math for a student who has reached rung `reached`:
+   * the next rung or the goal's own math target first (0), then any other class past the student's
+   * math (1), or null when it doesn't fit at all (a rung they've reached, or college-preparatory
+   * math after precalculus or calculus).
+   */
+  private seniorMathOrder(reached: number): (typeId: CourseTypeId) => number | null {
+    const goal = new Set<CourseTypeId>();
+    for (const f of this.config.families) {
+      for (const t of f.math) {
+        const def = MATH_TARGET_DEFS[t];
+        if (def.statistics) goal.add("math.stats");
+        if (def.rank > reached) for (const id of rungTypes(this.ladderFamilyValue, reached + 1)) goal.add(id);
+      }
+    }
+    return (typeId) => {
+      const rank = mathRankOf(typeId);
+      if (rank !== null && rank >= 1 && rank <= reached) return null;
+      if (typeId === "math.college_prep" && reached >= 4) return null;
+      return goal.has(typeId) || rank === reached + 1 ? 0 : 1;
+    };
+  }
+
+  /**
+   * Frees a slot in one of a class's usual grades by moving a class outside the core subjects (PE,
+   * health, the arts, a social studies or career class) to another of its own usual grades.
+   * Returns where the class can go then, or null (nothing moved).
+   */
+  private roomInUsualGrades(need: Need, row: CatalogRow): { row: CatalogRow; grade: SchoolGrade } | null {
+    const [from, to] = getCourseType(row.typeId).grades;
+    for (const grade of this.ctx.planGrades) {
+      if (grade < Math.max(9, from) || grade > to || grade === this.ctx.inProgressGrade || !this.yearAllows(grade, need.priority)) continue;
+      const undo: (() => void)[] = [];
+      const here = () => this.candidates(need, false, true).filter((c) => c.grade === grade && !this.misplaced(c.row, c.grade));
+      // A full-year class may need two half-credit classes moved.
+      while (undo.length < 2 && here().length === 0) {
+        const moved = this.moveOut(grade, new Set([grade]), 0, (p) => !["english", "math", "science", "world_language"].includes(p.item.subject));
+        if (!moved) break;
+        undo.push(moved);
+      }
+      const cands = here();
+      if (cands.length) return this.pick(need, cands);
+      for (const u of undo.reverse()) u();
+    }
+    return null;
+  }
+
+  /** Outside the class's usual grades, or a third lab science in the same year. */
+  private misplaced(row: CatalogRow, grade: SchoolGrade): boolean {
+    const [from, to] = getCourseType(row.typeId).grades;
+    if (grade < from || grade > to) return true;
+    if (row.subject !== "science" || !getCourseType(row.typeId).capabilities.includes("lab_science")) return false;
+    const sciences = this.items.filter((i) => i.grade === grade && i.term !== "summer" && countsForSequence(i) && getCourseType(i.typeId).capabilities.includes("lab_science"));
+    return sciences.length >= 2;
   }
 
   // Commit ----------------------------------------------------------------------------------------
@@ -881,17 +1014,28 @@ export class Filler {
     const start = startRank(this.items, grades[0] ?? 13);
     // Availability is fixed now (before the ladder's own placements), so options can re-solve it.
     const availability = new Map<string, boolean>();
-    for (const g of grades) for (let r = 1; r <= 6; r++) availability.set(`${g}:${r}`, available(g, r));
+    const college = new Map<string, boolean>();
+    for (const g of grades) {
+      for (let r = 1; r <= 6; r++) {
+        availability.set(`${g}:${r}`, available(g, r));
+        college.set(`${g}:${r}`, this.collegeRowForRung(r, g) !== null);
+      }
+    }
     this.ladderProblem = {
       grades,
       start,
       locked,
       available: (g, r) => availability.get(`${g}:${r}`) ?? false,
+      collegeAvailable: (g, r) => college.get(`${g}:${r}`) ?? false,
       constraints,
       moves: { double: false, summer: false },
       deferred,
     };
-    const solution = solveLadder({ ...this.ladderProblem, moves: { double: accelerate, summer: accelerate && summerFact && ctx.limits.allowSummer } });
+    // An opted-in Plan B may also take two college-credit math classes in one year, where the
+    // state verifies college credit and the list has both rungs' college versions.
+    const collegeFact = ctx.facts.options.find((o) => o.kind === "college_credit");
+    const collegeGrades = accelerate && ctx.limits.allowCollegeCredit && collegeFact ? (collegeFact.grades ?? grades).filter((g) => g >= 9) : undefined;
+    const solution = solveLadder({ ...this.ladderProblem, moves: { double: accelerate, summer: accelerate && summerFact && ctx.limits.allowSummer, college: collegeGrades } });
     this.ladderSolution = solution;
     // The full picture including grades 7-8 (deadlines like "Algebra I in 8th").
     if (ctx.firstGrade <= 8) {
@@ -913,12 +1057,20 @@ export class Filler {
       });
     } else this.fullLadder = solution;
     const target = Math.max(...constraints.map((c) => c.rank));
+    // What the plan reaches: a target the solution leaves unmet is never "kept open".
+    const unmetIds = new Set(solution.unmet.map((c) => c.id));
+    const met = constraints.filter((c) => !unmetIds.has(c.id));
+    const topStep = Math.max(0, ...solution.steps.map((st) => st.rank));
     for (const step of solution.steps) {
       const binding = solution.slack.find((s) => s.step === step)?.binding ?? null;
       const priority = (binding?.priority ?? minPriority) as DemandPriority;
       const need = this.needs.find((n) => n.id === binding?.id) ?? this.needs.find((n) => constraints.some((c) => c.id === n.id)) ?? null;
       // A level the student said "Not for me" to gives way to another level of the same class.
-      const row = step.summer ? this.summerRow(step.rank, step.grade) : this.rowForRung(step.rank, step.grade, priority, (r) => this.dismissed(need, r));
+      const row = step.summer
+        ? this.summerRow(step.rank, step.grade)
+        : step.college
+          ? this.collegeRowForRung(step.rank, step.grade)
+          : this.rowForRung(step.rank, step.grade, priority, (r) => this.dismissed(need, r));
       if (!row || this.dismissed(need, row)) continue;
       // The top rung for a recommendation (not a requirement or the student's goal) that only a
       // college-level class reaches here: a regular class that meets it comes from the fill instead
@@ -928,17 +1080,35 @@ export class Filler {
       const targetNeeds = this.needs.filter((n) => constraints.some((c) => c.id === n.id && c.rank >= step.rank));
       const citations = [...new Set(targetNeeds.flatMap((n) => n.reasons.flatMap((r) => r.citations)))];
       const stepName = courseTypeTitle(row.typeId, ctx.state);
-      const why =
-        step.rank < target
-          ? reason("ladder", `${stepName} in ${nth(step.grade)} keeps ${rungName(this.ladderFamilyValue, target, ctx.state)} by ${nth(Math.max(...constraints.filter((c) => c.rank === target).map((c) => c.byGrade)))} open.`, {
-              claim: "suggestion",
-              citations,
-              params: { rank: step.rank, grade: step.grade },
-            })
-          : reason("ladder", `${stepName} in ${nth(step.grade)} reaches the math your goals ask for.`, { claim: "suggestion", citations, params: { rank: step.rank, grade: step.grade } });
-      this.commit(row, step.summer ? step.grade : step.grade, "ladder", need, priority, [why], step.summer ? "summer" : undefined);
+      const above = met.filter((c) => c.rank > step.rank);
+      const reached = above.length ? Math.max(...above.map((c) => c.rank)) : null;
+      const text =
+        reached !== null
+          ? `${stepName} in ${nth(step.grade)} keeps ${rungName(this.ladderFamilyValue, reached, ctx.state)} by ${nth(Math.min(...above.filter((c) => c.rank === reached).map((c) => c.byGrade)))} open.`
+          : step.rank < target
+            ? step.rank >= topStep
+              ? `${stepName} in ${nth(step.grade)}: ${rungName(this.ladderFamilyValue, target, ctx.state)} would come in college.`
+              : `${stepName} in ${nth(step.grade)} is a step toward ${rungName(this.ladderFamilyValue, target, ctx.state)}.`
+            : `${stepName} in ${nth(step.grade)} reaches the math your goals ask for.`;
+      const why = reason("ladder", text, { claim: "suggestion", citations, params: { rank: step.rank, grade: step.grade } });
+      // Two college-credit classes in one year are a semester each: the lower rung in the fall.
+      const term = step.summer ? "summer" : step.college ? (solution.steps.some((o) => o !== step && o.college && o.grade === step.grade && o.rank < step.rank) ? "spring" : "fall") : undefined;
+      this.commit(row, step.grade, "ladder", need, priority, [why], term);
       this.refreshNeeds(this.items[this.items.length - 1]);
     }
+  }
+
+  /** A college-credit (dual or concurrent enrollment) row for a rung in a grade, for the college move. */
+  private collegeRowForRung(rank: number, grade: SchoolGrade): CatalogRow | null {
+    const cat = this.ctx.catalogs.get(grade);
+    if (!cat) return null;
+    const sy = schoolYearOfGrade(this.ctx, grade);
+    for (const typeId of rungTypes(this.ladderFamilyValue, rank)) {
+      if (this.alreadyHas(typeId)) continue;
+      const row = (cat.byType.get(typeId) ?? []).find((r) => r.level === "dual_enrollment" && rowIsOffered(r, grade, sy) && r.defaultTerm !== "summer");
+      if (row) return row;
+    }
+    return null;
   }
 
   /** A regular-level row for a rung, taken the summer after `grade` (after that year's classes). */
@@ -1097,7 +1267,9 @@ export class Filler {
         const grade = window[k];
         const typeId = `lang.${code}.${Math.min(done + k + 1, 4)}` as CourseTypeId;
         while (!this.languageRow(need, typeId, grade)) {
-          const moved = this.moveOut(grade, new Set(window));
+          // Out of this year, into a later one (or a year outside the window), never back into a
+          // year already cleared for an earlier level.
+          const moved = this.moveOut(grade, new Set(window.slice(0, k + 1)), need.priority);
           if (!moved) {
             ok = false;
             break;
@@ -1111,17 +1283,27 @@ export class Filler {
     return [];
   }
 
-  /** Moves one suggested class out of `grade` to a year outside `avoid` where it fits the same way. */
-  private moveOut(grade: SchoolGrade, avoid: Set<number>): (() => void) | null {
+  /**
+   * Moves one suggested class out of `grade` to a year outside `avoid` where it fits the same way,
+   * for a need of priority `forPriority`. A core class (English, math, science, social studies, a
+   * language) moves only to another of its usual grades (Chemistry stays in 10th-11th), and never
+   * for a lower-priority need than its own (a required Chemistry stays put for a recommended
+   * language); an elective-type class (the arts, PE, a career class) may move anywhere its need
+   * allows.
+   */
+  private moveOut(grade: SchoolGrade, avoid: Set<number>, forPriority: DemandPriority, only: (p: Placement) => boolean = () => true): (() => void) | null {
+    const core = (p: Placement) => ["english", "math", "science", "social_studies", "world_language"].includes(p.item.subject);
     const movable = this.placements
-      .filter((p) => p.item.grade === grade && p.kind === "fill" && p.item.term !== "summer" && p.upgradedFrom === null && this.removableWithoutBreaking(p))
+      .filter((p) => p.item.grade === grade && p.kind === "fill" && (p.priority >= forPriority || !core(p)) && only(p) && p.item.term !== "summer" && p.upgradedFrom === null && this.removableWithoutBreaking(p))
       .sort((a, b) => b.priority - a.priority || b.n - a.n);
     for (const p of movable) {
       const need = p.primary;
       const [from, by] = need ? this.window(need) : [9, 12];
+      const [usualFrom, usualTo] = getCourseType(p.row.typeId).grades;
       for (const g of this.ctx.planGrades) {
         // Never into the year in progress: its schedule is mostly set.
         if (avoid.has(g) || g === this.ctx.inProgressGrade || g < Math.max(9, from) || g > by || !this.yearAllows(g, p.priority)) continue;
+        if ((core(p) && (g < usualFrom || g > usualTo)) || !this.typeAllowed(p.row.typeId, g, p.row.units)) continue;
         const row = (this.ctx.catalogs.get(g)!.byType.get(p.row.typeId) ?? []).find((r) => r.level === p.row.level && r.units === p.row.units && rowIsOffered(r, g, schoolYearOfGrade(this.ctx, g)) && r.defaultTerm !== "summer");
         if (!row || !this.fits(g, row, p.priority)) continue;
         this.uncommit(p);
@@ -1187,10 +1369,7 @@ export class Filler {
   }
 
   blockReason(need: Need): BlockReason {
-    if (this.items.some((i) => i.own && wouldMatchIfConfirmed(i, need.selectors))) return "guessed";
-    // A language class of the student's with a guessed type never counts toward a same-language
-    // requirement, whose selector (any world language) it always matches: confirming the type settles it.
-    if (need.language && this.items.some((i) => i.own && i.assumed && !i.noCredit && getCourseType(i.typeId).ladder?.id.startsWith("lang."))) return "guessed";
+    if (need.seniorMath?.askFirst) return "ask";
     if (this.staticCandidates(need).some(({ row, grade }) => this.repeatsMathRung(row.typeId, grade))) return "equivalent";
     if (need.byGrade < this.ctx.firstGrade && need.byGrade < 12) return "past";
     const inWindow = this.staticCandidates(need).filter(({ row, grade }) => grade >= this.window(need)[0] && grade <= this.window(need)[1] && !this.alreadyHas(row.typeId));
@@ -1208,14 +1387,16 @@ export class Filler {
     const idx = this.items.indexOf(p.item);
     if (idx < 0) return true;
     this.items.splice(idx, 1);
-    // Later classes, including a summer class after the same school year.
-    const later = (q: Placement) => q.item.grade > p.item.grade || (q.item.grade === p.item.grade && q.item.term === "summer" && p.item.term !== "summer");
+    // Later classes, including a summer class after the same school year and a spring class after a fall one.
+    const later = (q: Placement) =>
+      q.item.grade > p.item.grade ||
+      (q.item.grade === p.item.grade && ((q.item.term === "summer" && p.item.term !== "summer") || (q.item.term === "spring" && p.item.term === "fall")));
     const ok = this.placements.every(
       (q) =>
         q === p ||
         !later(q) ||
         q.kind === "english" ||
-        (q.item.term === "summer" ? prereqsMetIn(this.items, q.row, q.item.grade, (i) => this.catalogIdOf(i), true) : this.prereqsMet(q.row, q.item.grade)),
+        (q.item.term === "summer" ? prereqsMetIn(this.items, q.row, q.item.grade, (i) => this.catalogIdOf(i), true) : this.prereqsMet(q.row, q.item.grade, [], q.item.term === "spring")),
     );
     this.items.splice(idx, 0, p.item);
     return ok;
@@ -1271,6 +1452,7 @@ export class Filler {
   private fillNeeds(maxPriority = 3): void {
     for (let p = 0; p <= maxPriority; p++) {
       for (let guard = 0; guard < 400; guard++) {
+        for (const n of this.needs) if (n.seniorMath?.askFirst) this.blocked.set(n.id, "ask");
         const open = this.needs.filter((n) => n.priority <= p && n.missing > 0 && !this.blocked.has(n.id) && !n.language && !n.id.startsWith("cte:"));
         if (open.length === 0) break;
         const withCands = open.map((n) => ({ n, cands: this.candidates(n) }));
@@ -1291,7 +1473,14 @@ export class Filler {
           this.blocked.set(top.n.id, this.blockReason(top.n));
           continue;
         }
-        const best = this.pick(top.n, top.cands);
+        let best = this.pick(top.n, top.cands);
+        // The "Your choice" slot yields before a recommended class goes outside its usual grades or
+        // makes a third lab science in one year (Biology in 12th while 10th has room).
+        if (top.n.priority >= 2 && this.misplaced(best.row, best.grade)) {
+          const better = this.candidates(top.n, false, true).filter((c) => !this.misplaced(c.row, c.grade));
+          if (better.length) best = this.pick(top.n, better);
+          else best = this.roomInUsualGrades(top.n, best.row) ?? best;
+        }
         const before = top.n.missing;
         const weightedBefore = this.weightedMissing();
         const placed = this.commit(best.row, best.grade, "fill", top.n, top.n.priority);
@@ -1543,7 +1732,7 @@ export class Filler {
     const subject = getCourseType(row.typeId).subject === "math" ? "Math" : getCourseType(row.typeId).title.replace(/ \(.*\)$/, "");
     return reason(
       "rigor",
-      `${fam ? `${subject} is one of the subjects that matter most for ${fam.title.toLowerCase()}` : "This subject matters for your goals"}, so we suggest the ${row.level === "honors" ? "honors" : "college-level"} version. The regular class is fine too.`,
+      `${fam ? `${subject} is one of the subjects that matter most for ${lowerFirstWord(fam.title)}` : "This subject matters for your goals"}, so we suggest the ${row.level === "honors" ? "honors" : "college-level"} version. The regular class is fine too.`,
       { claim: "suggestion", familyId: fam?.target.familyId ?? null, citations: fam?.content?.math.cite ?? [] },
     );
   }
@@ -1585,9 +1774,9 @@ export class Filler {
       let e: RuleSetEval;
       if (prev && (reuse || reuseSingle)) e = prev;
       else {
-        const opts = this.pickOptions(rc, finalChoice);
+        const opts = this.pickOptions(rc, asConfirmed(items), finalChoice);
         const prefer = opts.prefer!;
-        e = evaluateRuleSet(rc, items, unique ? { ...opts, prefer: (r) => prefer(r) * 1000 - unique(rc, r) } : opts);
+        e = evaluateRuleSet(rc, items, unique ? { ...opts, prefer: (r) => prefer(r) * 1000 - unique(rc, r) } : opts, asConfirmed(items));
         if (prev && e.best?.alt.index !== prev.best?.alt.index) changed.add(rc.rs.id);
       }
       if (e.best) finalChoice.set(rc.rs.id, e.best.alt);
@@ -1620,7 +1809,7 @@ export class Filler {
         for (const c of l.counted) if (!c.item.own) count(c.item.key, id);
       }
     }
-    for (const need of this.familyNeedList()) for (const i of evaluatePrep(need, items).counted) if (!i.own) count(i.key, need.id);
+    for (const need of this.familyNeedList()) for (const i of evaluatePrep(need, asConfirmed(items)).counted) if (!i.own) count(i.key, need.id);
     const unique = (rc: RuleSetCtx, r: AltResult) => {
       let units = 0;
       const seen = new Set<string>();
@@ -1650,8 +1839,9 @@ export class Filler {
       const alt = alts.get(rc.rs.id);
       if (alt) for (const n of needsFromEval(this.ctx, rc, alt)) add(n);
     }
+    const confirmed = asConfirmed(this.items);
     for (const need of this.familyNeedList()) {
-      const { missing } = evaluatePrep(need, this.items);
+      const { missing } = evaluatePrep(need, confirmed);
       if (missing > 0) add({ ...need, missing });
     }
     for (const n of this.checkNeeds(alts)) add(n);
@@ -1666,21 +1856,26 @@ export class Filler {
    * class's prerequisite.
    */
   private prune(): void {
+    // What each need still misses with the student's guessed types taken as confirmed (as the
+    // fill planned): a suggestion that only stands in for a guessed class is taken out.
     let alts = new Map<string, AltResult>();
-    for (const [id, e] of this.finalEvals(this.items)) if (e.best) alts.set(id, e.best);
+    const byRs = new Map(this.config.ruleSets.map((rc) => [rc.rs.id, rc]));
+    for (const [id, e] of this.finalEvals(this.items)) if (e.best) alts.set(id, evaluateAlternative(e.best.alt, asConfirmed(this.items), byRs.get(id)!.allocation));
     let before = this.missingByNeed(alts);
     const order = [...this.placements].sort((a, b) => b.priority - a.priority || b.item.grade - a.item.grade || b.n - a.n);
     for (const p of order) {
-      if (!this.placements.includes(p) || !this.removableWithoutBreaking(p)) continue;
+      // English each year stays: a class that also counts for the 4th English credit never takes its place.
+      if (p.kind === "english" || !this.placements.includes(p) || !this.removableWithoutBreaking(p)) continue;
       const item = p.item;
       // Quick keep: a requirement or target that counts this class and couldn't be met without it,
       // even with every other matching class.
       if (this.plainlyNeeded(item, alts)) continue;
       this.uncommit(p);
       const trial = new Map(alts);
+      const confirmed = asConfirmed(this.items);
       for (const rc of this.config.ruleSets) {
         const alt = alts.get(rc.rs.id);
-        if (alt && alt.leaves.some((l) => leafTouches(l.leaf, item))) trial.set(rc.rs.id, evaluateAlternative(alt.alt, this.items, rc.allocation));
+        if (alt && alt.leaves.some((l) => leafTouches(l.leaf, item))) trial.set(rc.rs.id, evaluateAlternative(alt.alt, confirmed, rc.allocation));
       }
       const after = this.missingByNeed(trial);
       if ([...after].some(([id, missing]) => missing > (before.get(id) ?? 0))) this.restore(p);
@@ -1697,7 +1892,7 @@ export class Filler {
    * test before the full re-evaluation; when it's false the full check decides.
    */
   private plainlyNeeded(item: Item, alts: Map<string, AltResult>): boolean {
-    const others = this.items.filter((i) => i !== item && i.creditable);
+    const others = asConfirmed(this.items).filter((i) => i !== item && i.creditable);
     for (const alt of alts.values()) {
       for (const l of alt.leaves) {
         if (l.missing > 0 || !l.counted.some((c) => c.item === item)) continue;
@@ -1791,12 +1986,14 @@ export class Filler {
  * (an F in Algebra I followed by Geometry doesn't meet Algebra II's Algebra I prerequisite). Failed
  * and withdrawn classes don't count; a finished class below a printed minimum letter doesn't.
  */
-export function prereqsMetIn(items: Item[], row: CatalogRow, grade: SchoolGrade, catalogIdOf: (i: Item) => string | null, summer = false): boolean {
+export function prereqsMetIn(items: Item[], row: CatalogRow, grade: SchoolGrade, catalogIdOf: (i: Item) => string | null, summer = false, spring = false): boolean {
   return row.prereqGroups.every((group) => {
     const ladders = group.types.map((t) => getCourseType(t).ladder);
     const sameLadder = ladders.length > 0 && ladders.every((l) => l && l.id === ladders[0]!.id) ? ladders[0]!.id : null;
     const maxRank = sameLadder ? Math.max(...ladders.map((l) => l!.rank)) : 0;
-    const before = (i: Item) => i.grade < grade || (i.grade === grade && (group.concurrentOk || (summer && i.term !== "summer")));
+    // A fall class comes before a spring class of the same year (a college semester of
+    // precalculus, then Calculus I).
+    const before = (i: Item) => i.grade < grade || (i.grade === grade && (group.concurrentOk || (summer && i.term !== "summer") || (spring && i.term === "fall")));
     // A rung at or below the named one that was failed and not passed since blocks higher rungs standing in.
     const gapBelow = sameLadder !== null && ladderGapAtOrBelow(items.filter(before), sameLadder, maxRank);
     return items.some((i) => {
@@ -1837,6 +2034,25 @@ export function ladderGapAtOrBelow(items: Item[], ladder: string, maxRank: numbe
   return [...failed].some((r) => !passed.has(r));
 }
 
+/**
+ * The career pathway the student's own classes are in, when they haven't picked one: the cluster
+ * where they have two levels, or on the training path any level (Transportation 1 and 2 make a
+ * Transportation pathway). The most recent one wins.
+ */
+export function ownCtePathway(ctx: Ctx): CteCluster | null {
+  const levels = new Map<CteCluster, { count: number; grade: number }>();
+  for (const i of ctx.items) {
+    const l = getCourseType(i.typeId).ladder;
+    if (!i.own || i.noCredit || !l?.id.startsWith("cte.")) continue;
+    const cluster = l.id.slice(4) as CteCluster;
+    const prev = levels.get(cluster) ?? { count: 0, grade: 0 };
+    levels.set(cluster, { count: prev.count + 1, grade: Math.max(prev.grade, i.grade) });
+  }
+  const min = ctx.input.targets.path === "training" ? 1 : 2;
+  const best = [...levels.entries()].filter(([, v]) => v.count >= min).sort((a, b) => b[1].count - a[1].count || b[1].grade - a[1].grade || (a[0] < b[0] ? -1 : 1))[0];
+  return best?.[0] ?? null;
+}
+
 /** Classes on a CTE cluster's ladder at a level: the generic level type and named classes there. */
 function rungTypesForCte(cluster: string, level: number): CourseTypeId[] {
   return ladderTypes(`cte.${cluster}` as LadderId)
@@ -1844,10 +2060,6 @@ function rungTypesForCte(cluster: string, level: number): CourseTypeId[] {
     .map((t) => t.id);
 }
 
-/** "Health science" → "health science"; acronyms (A/V) keep their case. */
-function lowerFirstWord(text: string): string {
-  return text.charAt(0).toLowerCase() + text.slice(1);
-}
 
 function cteTitle(cluster: string): string {
   const t = getCourseType(`cte.${cluster}.1` as CourseTypeId).title;

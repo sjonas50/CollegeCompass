@@ -27,6 +27,21 @@ export function letterRank(letter: LetterGrade | null): number | null {
   return LETTER_RANK[letter] ?? null;
 }
 
+/**
+ * A title in the middle of a sentence: "Health science" → "health science", while an acronym or
+ * abbreviation keeps its capitals ("IT, networking and cybersecurity", "A/V", "U.S. history").
+ */
+export function lowerFirstWord(text: string): string {
+  const word = text.split(/[\s,]/)[0];
+  if (/^[A-Z][A-Z./]/.test(word)) return text;
+  return text.charAt(0).toLowerCase() + text.slice(1);
+}
+
+/** "credit" for exactly 1, else "credits" ("1 more credit", "2.5 more credits"). */
+export function creditNoun(credits: number): string {
+  return credits === 1 ? "credit" : "credits";
+}
+
 /** "B or better" (B- is below B). Unknown letters (null, P) return null. */
 export function atLeast(letter: LetterGrade | null, min: LetterGrade): boolean | null {
   const have = letterRank(letter);

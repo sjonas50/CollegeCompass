@@ -90,6 +90,16 @@ the folder, the manifest and the loader agree).
   (the graduation total of 22 credits covers it before then).
 - Tennessee's list of CTE programs of study wasn't verified, so no family names Tennessee pathways.
 - Pre-nursing (CIP 51.1105) routes to nursing, ahead of the pre-health rule for 51.11.
+- A career whose majors route to several families goes to the family whose majors the most
+  colleges offer (each major weighed by the colleges offering its 4-digit family), not to the
+  family with the most majors: Software Developers has 8 narrow IT majors but routes to computer
+  science (design §5.13), because 11.01, 11.07 and 11.04 are far more widely offered.
+- Texas's 4th English credit lists Public Speaking III, Debate III and the level III journalism
+  classes, and Communication Applications only as a half credit paired with a different listed
+  class (19 TAC §74.12(b)(1)(G)-(O)). The course types can't tell level III from level I, so
+  speech, debate and journalism don't count toward it; the note sends the student to the counselor.
+- Texas's generic list offers Transportation levels 1-3 (a Business and Industry program of study),
+  like the other career clusters most high schools offer (19 TAC §74.3(b)(2)(G)).
 - Utah's "Modern Mathematics" (a Secondary Math III opt-out choice) has no course type; it's named
   in a note rather than mapped to "Other math class".
 

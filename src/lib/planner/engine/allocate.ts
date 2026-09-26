@@ -177,7 +177,10 @@ function solveFlow(pool: { item: Item; units: number }[], leaves: { leaf: CLeaf;
   const edges: { i: number; l: number; e: number }[] = [];
   pool.forEach((p, i) => g.addEdge(source, i, p.units, 0));
   leaves.forEach((l, j) => g.addEdge(P + j, sink, l.cap, 0));
-  const spec = leaves.map(({ leaf }) => (leaf.req.kind === "remaining_electives" ? ELECTIVE_COST : selectorSpecificity(selectOf(leaf) ?? [])));
+  // A requirement that stands in for another too (Tennessee's computer science credit) comes first:
+  // its classes count twice, so the student's own class goes to the requirement it's named for
+  // (Computer Science Foundations to the CS credit, then also the 4th math), not to the other one.
+  const spec = leaves.map(({ leaf }) => (leaf.req.kind === "remaining_electives" ? ELECTIVE_COST : leaf.subFor ? 0 : selectorSpecificity(selectOf(leaf) ?? [])));
   pool.forEach((p, i) => {
     leaves.forEach(({ leaf, cap }, j) => {
       if (cap <= 0 || !allowed(i, j)) return;

@@ -41,12 +41,12 @@ beforeEach(async () => {
     { code: "17-2141.00", title: "Mechanical Engineers", description: "Designs machines.", jobZone: 4 },
   ]);
   await db.insert(schema.majors).values([
-    { cipCode: "11.0701", title: "Computer Science" },
+    ...SOFTWARE_DEVELOPER_MAJORS.map(([cipCode, title]) => ({ cipCode, title })),
     { cipCode: "51.3801", title: "Registered Nursing/Registered Nurse" },
     { cipCode: "14.1901", title: "Mechanical Engineering" },
   ]);
   await db.insert(schema.cipSocLinks).values([
-    { cipCode: "11.0701", socCode: "15-1252" },
+    ...SOFTWARE_DEVELOPER_MAJORS.map(([cipCode]) => ({ cipCode, socCode: "15-1252" })),
     { cipCode: "51.3801", socCode: "29-1141" },
     { cipCode: "14.1901", socCode: "17-2141" },
   ]);
@@ -54,8 +54,36 @@ beforeEach(async () => {
     { unitId: 228778, name: "The University of Texas at Austin", state: "TX", control: 1, admissionRate: 0.29 },
     { unitId: 228723, name: "Texas A&M University-College Station", state: "TX", control: 1, admissionRate: 0.63 },
     { unitId: 221759, name: "The University of Tennessee-Knoxville", state: "TN", control: 1, admissionRate: 0.46 },
+    ...[1, 2, 3, 4, 5].map((n) => ({ unitId: 990000 + n, name: `Test College ${n}`, state: "ZZ", control: 1 })),
   ]);
+  // Which colleges offer each Software Developers major's family: the real counts (1599 colleges
+  // offer 11.01, 1032 offer 11.07, …) scaled down by about 200.
+  const offering: [string, number][] = [["11.01", 8], ["11.07", 5], ["11.04", 2], ["11.08", 4], ["11.02", 3], ["11.09", 3], ["14.09", 2], ["15.12", 1]];
+  const unitIds = [228778, 228723, 221759, 990001, 990002, 990003, 990004, 990005];
+  await db.insert(schema.collegePrograms).values(
+    offering.flatMap(([cip4, n]) => unitIds.slice(0, n).map((unitId) => ({ unitId, cip4, title: cip4, credentialLevel: 3 }))),
+  );
 });
+
+// Software Developers' 15 related majors in the NCES CIP-SOC crosswalk, as getCareer lists them:
+// 8 narrow IT majors (11.02xx, 11.0804, 11.0902, 15.1204) and 5 computer science ones.
+const SOFTWARE_DEVELOPER_MAJORS: [string, string][] = [
+  ["11.0102", "Artificial Intelligence"],
+  ["11.0103", "Information Technology"],
+  ["11.0104", "Informatics"],
+  ["11.0701", "Computer Science"],
+  ["11.0804", "Modeling, Virtual Environments and Simulation"],
+  ["11.0201", "Computer Programming/Programmer, General"],
+  ["11.0202", "Computer Programming, Specific Applications"],
+  ["11.0203", "Computer Programming, Vendor/Product Certification"],
+  ["11.0204", "Computer Game Programming"],
+  ["11.0205", "Computer Programming, Specific Platforms"],
+  ["11.0902", "Cloud Computing"],
+  ["11.0401", "Information Science/Studies"],
+  ["14.0901", "Computer Engineering, General"],
+  ["14.0903", "Computer Software Engineering"],
+  ["15.1204", "Computer Software Technology/Technician"],
+];
 
 type Row = { name: string; subject: CourseSubject; grade: number; type?: string; level?: CourseLevel; status?: CourseStatus; letter?: string; credits?: number };
 
@@ -260,6 +288,107 @@ describe("classes recorded without choosing their kind", () => {
     expect(overview.summary.counts.roomToAdd).toBe(roomLines.length - guessedLines.length);
     // No language gap for the guessed Spanish I and II.
     expect(path.result.gaps.filter((g) => /language/i.test(g.text))).toEqual([]);
+  });
+});
+
+// Classes typed with a name only (no kind picked: every row saved before the "What kind of class
+// is this?" question, and any row where it's skipped). The planner guesses the type, and a guess
+// never makes a named requirement done; the fill must still plan as if the guess were right and
+// never add a second class of a kind the student probably already has (counselor re-review, S1-S3).
+describe("classes typed with a name only are planned around, never added again", () => {
+  async function guessesAndPath(rows: Row[], opts: { grade: number; state: string; stars: string[]; colleges?: number[] }) {
+    const id = await student({ ...opts, rows });
+    const path = planned(await studentPath(db, id, NOW));
+    const guessed = new Set(path.input.courses.filter((c) => c.assumed).map((c) => c.typeId));
+    expect(path.input.courses.every((c) => c.assumed)).toBe(true);
+    return { path, guessed };
+  }
+
+  function expectNoDuplicates(result: PlannedPath, guessed: Set<string>, labels: RegExp) {
+    for (const plan of result.plans) {
+      for (const s of suggestions(result, plan.id)) {
+        expect(guessed.has(s.typeId), `${plan.id} ${s.grade}: ${s.typeId} repeats a typed class`).toBe(false);
+        for (const r of s.reasons) expect(r.text, `${plan.id} ${s.typeId}`).not.toMatch(labels);
+      }
+    }
+  }
+
+  it("S1: a Texas 10th grader's typed Spanish, Chemistry, World Geography and Athletics aren't doubled", async () => {
+    const { path, guessed } = await guessesAndPath(
+      [
+        { name: "Algebra 1", subject: "math", grade: 9, letter: "B+" },
+        { name: "English 1", subject: "english", grade: 9 },
+        { name: "Biology", subject: "science", grade: 9 },
+        { name: "World Geography", subject: "social_studies", grade: 9 },
+        { name: "Spanish 1", subject: "world_language", grade: 9 },
+        { name: "Athletics", subject: "health_pe", grade: 9 },
+        { name: "Geometry", subject: "math", grade: 10 },
+        { name: "English 2", subject: "english", grade: 10 },
+        { name: "Chemistry", subject: "science", grade: 10 },
+        { name: "Spanish 2", subject: "world_language", grade: 10 },
+        { name: "AP CSP", subject: "computer_science", grade: 10, level: "ap" },
+      ],
+      { grade: 10, state: "TX", stars: ["15-1252.00"], colleges: [228778, 228723] },
+    );
+    expect(path.ctx.cohort).toMatchObject({ classYear: 2029 });
+    expect([...guessed]).toEqual(expect.arrayContaining(["lang.es.1", "lang.es.2", "sci.chem", "ss.world_geo", "pe.athletics"]));
+    expectNoDuplicates(path.result, guessed, /computer programming credits|IPC, chemistry or physics|World history or world geography|Physical education/);
+    // No Computer Science I and II for the language credit, no second chemistry.
+    for (const plan of path.result.plans) expect(suggestions(path.result, plan.id).map((s) => s.typeId)).not.toEqual(expect.arrayContaining(["cs.prog1", "cs.prog2"]));
+    for (const plan of path.result.plans) expect(suggestions(path.result, plan.id).map((s) => s.typeId)).not.toContain("sci.chem2");
+    // The audit shows the language route the guesses meet, waiting on a confirmed type.
+    const lote = path.result.audit.find((a) => a.ruleSetId === "tx.fhsp.grad")!.requirements.find((r) => r.reqId.startsWith("lote"))!;
+    expect(lote).toMatchObject({ reqId: "lote.same", status: "room_to_add" });
+    expect(lote.modifiers).toContain("guessed_type");
+    expect(path.result.gaps.filter((g) => g.priority <= 1)).toEqual([]);
+  });
+
+  it("S2: a Utah 11th grader's typed English 10 Honors, Health and Fitness for Life aren't doubled", async () => {
+    await db.insert(schema.colleges).values({ unitId: 230764, name: "University of Utah", state: "UT", control: 1, admissionRate: 0.86 });
+    const { path, guessed } = await guessesAndPath(
+      [
+        { name: "English 9", subject: "english", grade: 9 },
+        { name: "Secondary Math I", subject: "math", grade: 9 },
+        { name: "Earth Science", subject: "science", grade: 9 },
+        { name: "World Geography", subject: "social_studies", grade: 9, credits: 0.5 },
+        { name: "Health", subject: "health_pe", grade: 9, credits: 0.5 },
+        { name: "Fitness for Life", subject: "health_pe", grade: 9, credits: 0.5 },
+        { name: "Participation Skills", subject: "health_pe", grade: 9, credits: 0.5 },
+        { name: "English 10 Honors", subject: "english", grade: 10, level: "honors" },
+        { name: "Secondary Math II", subject: "math", grade: 10 },
+        { name: "Biology", subject: "science", grade: 10 },
+        { name: "World History", subject: "social_studies", grade: 10, credits: 0.5 },
+        { name: "Spanish 1", subject: "world_language", grade: 10 },
+        { name: "English 11", subject: "english", grade: 11 },
+        { name: "Secondary Math III", subject: "math", grade: 11 },
+        { name: "Chemistry", subject: "science", grade: 11 },
+        { name: "U.S. History", subject: "social_studies", grade: 11 },
+        { name: "Spanish 2", subject: "world_language", grade: 11 },
+      ],
+      { grade: 11, state: "UT", stars: ["29-1141.00"], colleges: [230764] },
+    );
+    expect([...guessed]).toEqual(expect.arrayContaining(["ela.10", "health.health", "pe.fitness", "pe.skills", "ss.world_geo", "math.ut_sec3"]));
+    expectNoDuplicates(path.result, guessed, /Grade 10 language arts|Health\.|Fitness for Life|World geography|Participation Skills/);
+    // Nothing for Grade 10 language arts in the year in progress (no AP Seminar).
+    expect(suggestions(path.result).map((s) => s.typeId)).not.toContain("ela.seminar");
+    const gaps = path.result.gaps.map((g) => `${g.text} ${g.options.map((o) => o.text).join(" ")}`).join("\n");
+    expect(gaps).not.toMatch(/World geography|Participation Skills|Secondary Mathematics I online/);
+  });
+
+  it("S3: a Tennessee 9th grader's typed Lifetime Wellness isn't doubled", async () => {
+    const { path, guessed } = await guessesAndPath(
+      [
+        { name: "English 9", subject: "english", grade: 9 },
+        { name: "Algebra I", subject: "math", grade: 9 },
+        { name: "Biology", subject: "science", grade: 9 },
+        { name: "World History", subject: "social_studies", grade: 9 },
+        { name: "Lifetime Wellness", subject: "health_pe", grade: 9 },
+        { name: "Spanish I", subject: "world_language", grade: 9 },
+      ],
+      { grade: 9, state: "TN", stars: ["17-2141.00"] },
+    );
+    expect([...guessed]).toEqual(expect.arrayContaining(["health.wellness", "ss.world_hist", "sci.bio"]));
+    expectNoDuplicates(path.result, guessed, /Lifetime Wellness|World History and Geography|Biology\./);
   });
 });
 

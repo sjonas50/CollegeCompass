@@ -58,15 +58,28 @@ function ruleSetAside(rc: RuleSetCtx): string {
   return title.includes(issuer) || issuer.includes(title) ? "" : ` (${rc.rs.title})`;
 }
 
-export function requirementReason(rc: RuleSetCtx, leaf: CLeaf): Reason {
+/**
+ * "Required by Texas: English III." `label` replaces the leaf's own label, for a class that counts
+ * toward a requirement with a choice in it (a suggestion's "Required by Utah: Science (two of the
+ * five foundation science areas and one more science credit)"). `forSuggestion`: the line explains
+ * a suggested class, so projected rules read "Expected by …".
+ */
+export function requirementReason(rc: RuleSetCtx, leaf: CLeaf, label = leaf.label, forSuggestion = false): Reason {
   const where = ruleSetAside(rc);
-  return reason("requirement", `${strengthPhrase(leaf.strength, rc.rs.issuer.name, strengthQuote(rc, leaf))}${where}: ${leaf.label}.`, {
+  // A suggestion placed for projected rules (the latest published version, for a class the source
+  // doesn't cover yet) says so on the line itself.
+  const projected = "rules for your class aren't published yet";
+  const who =
+    forSuggestion && rc.projected
+      ? `Expected by ${rc.rs.issuer.name} ${where ? `${where.trim().slice(0, -1)}; ${projected})` : `(${projected})`}`
+      : `${strengthPhrase(leaf.strength, rc.rs.issuer.name, strengthQuote(rc, leaf))}${where}`;
+  return reason("requirement", `${who}: ${label}.`, {
     claim: "rule",
     strength: leaf.strength,
     ruleSetId: rc.rs.id,
     reqId: leaf.id,
     citations: leafCitations(rc, leaf),
-    params: { issuer: rc.rs.issuer.name, label: leaf.label },
+    params: { issuer: rc.rs.issuer.name, label },
   });
 }
 

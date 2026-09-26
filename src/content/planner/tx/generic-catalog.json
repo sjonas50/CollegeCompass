@@ -138,6 +138,9 @@
     { "typeId": "cte.education.1", "levels": ["regular"], "cite": ["tx-74-3-b2-g"] },
     { "typeId": "cte.education.2", "levels": ["regular"], "cite": ["tx-74-3-b2-g"] },
     { "typeId": "cte.education.3", "levels": ["regular"], "cite": ["tx-74-3-b2-g"] },
+    { "typeId": "cte.transportation.1", "levels": ["regular"], "cite": ["tx-74-3-b2-g"] },
+    { "typeId": "cte.transportation.2", "levels": ["regular"], "cite": ["tx-74-3-b2-g"] },
+    { "typeId": "cte.transportation.3", "levels": ["regular"], "cite": ["tx-74-3-b2-g"] },
     { "typeId": "other.driver_ed", "levels": ["regular"] },
     { "typeId": "other.jrotc", "levels": ["regular"] }
   ]

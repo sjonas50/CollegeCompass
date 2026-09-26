@@ -43,11 +43,43 @@ export type CLeaf = {
   required: number;
   /** The whole group this leaf belongs to is a family-chosen option branch. */
   optionPref: string | null;
+  /**
+   * The nearest `choose` or `any` group above the leaf: the leaf is one way to meet it, not the
+   * requirement itself. `text` says what the requirement is (Utah's "Science (two of the five
+   * foundation science areas and one more science credit)").
+   */
+  choice: { id: ReqId; kind: "choose" | "any"; text: string } | null;
 };
 
 export type Alternative = { index: number; leaves: CLeaf[] };
 
-type Inherited = { strength: Strength; strengthCite: CitationId | null; area: ReqArea | null; path: ReqId[]; optionPref: string | null };
+type Inherited = {
+  strength: Strength;
+  strengthCite: CitationId | null;
+  area: ReqArea | null;
+  path: ReqId[];
+  optionPref: string | null;
+  /** The rule set's top-level requirement the leaf is under. */
+  top: Req | null;
+  choice: CLeaf["choice"];
+};
+
+/** "Two of the five…" → "two of the five…"; names and acronyms keep their capitals. */
+function lowerLabel(label: string): string {
+  const first = label.split(" ")[0];
+  if (!/^[A-Z][a-z]+$/.test(first) || /^(English|Spanish|French|Algebra|Geometry|Secondary|Integrated|American|Personal|Texas|Utah|Tennessee)$/.test(first)) return label;
+  return label.charAt(0).toLowerCase() + label.slice(1);
+}
+
+/** What a requirement with a choice in it asks for, in one line. */
+function choiceText(group: Req, top: Req, branch: Req | undefined): string {
+  if (group.kind === "choose") {
+    if (top === group || (top.kind !== "all" && top.kind !== "any")) return group.label;
+    const parts = top.of.map((r) => lowerLabel(r.label));
+    return `${top.label} (${parts.slice(0, -1).join(", ")}${parts.length > 1 ? " and " : ""}${parts[parts.length - 1]})`;
+  }
+  return branch ? `${group.label} (here: ${lowerLabel(branch.label)})` : group.label;
+}
 
 const CAP = MAX_ALTERNATIVES_PER_VARIANT;
 
@@ -98,24 +130,31 @@ function leafOf(req: LeafReq, inh: Inherited, own: boolean): CLeaf {
     measure,
     required,
     optionPref: inh.optionPref,
+    choice: inh.choice,
   };
 }
 
 function compileReq(req: Req, inh: Inherited, own: boolean, choices: PlannerChoices): CLeaf[][] {
+  const top = inh.top ?? req;
   const child: Inherited = {
     strength: req.strength ?? inh.strength,
     strengthCite: req.strength ? (req.strengthCite ?? null) : inh.strengthCite,
     area: req.area ?? inh.area,
     path: [...inh.path, req.id],
     optionPref: inh.optionPref,
+    top,
+    choice: inh.choice,
   };
+  // The nearest choose/any group: each branch below it is one way to meet it.
+  const branchOf = (r: Req): Inherited =>
+    req.kind === "any" || req.kind === "choose" ? { ...child, choice: { id: req.id, kind: req.kind, text: choiceText(req, top, r) } } : child;
   switch (req.kind) {
     case "all":
       return req.of.reduce<CLeaf[][]>((acc, r) => product(acc, compileReq(r, child, own, choices)), [[]]);
     case "any":
-      return req.of.flatMap((r) => compileReq(r, child, own, choices)).slice(0, CAP);
+      return req.of.flatMap((r) => compileReq(r, branchOf(r), own, choices)).slice(0, CAP);
     case "choose": {
-      const lists = req.of.map((r) => compileReq(r, child, own, choices));
+      const lists = req.of.map((r) => compileReq(r, branchOf(r), own, choices));
       const out: CLeaf[][] = [];
       for (const combo of combinations(lists.length, req.n)) {
         out.push(...combo.reduce<CLeaf[][]>((acc, i) => product(acc, lists[i]), [[]]));
@@ -138,7 +177,7 @@ function compileReq(req: Req, inh: Inherited, own: boolean, choices: PlannerChoi
 
 /** The leaves of a variant's alternatives, before substitutions are resolved. */
 function variantLeaves(variant: Variant, strength: Strength, strengthCite: CitationId, own: boolean, choices: PlannerChoices): CLeaf[][] {
-  const root: Inherited = { strength, strengthCite, area: null, path: [], optionPref: null };
+  const root: Inherited = { strength, strengthCite, area: null, path: [], optionPref: null, top: null, choice: null };
   return variant.requirements.reduce<CLeaf[][]>((acc, r) => product(acc, compileReq(r, root, own, choices)), [[]]);
 }
 

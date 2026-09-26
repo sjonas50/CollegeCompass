@@ -3,9 +3,9 @@ import { courseTypeTitle, LANGUAGE_NAMES, type LanguageCode } from "../course-ty
 import type { ByWhen, Deadline, PendingDecision } from "../engine-io";
 import type { Ctx } from "./context";
 import { reason } from "./explain";
-import type { FillResult } from "./fill";
+import { type FillResult, ownCtePathway } from "./fill";
 import { mathRankOf, rungName, type LadderSolution } from "./ladder";
-import { byWhenOrder, nth } from "./util";
+import { atLeast, byWhenOrder, nth } from "./util";
 
 // ---------------------------------------------------------------------------
 // "By when" (design §2.7, §5.6): zero-slack ladder steps, rule deadlines, test-route dates and the
@@ -101,6 +101,12 @@ function listLabels(labels: string[]): string {
  * the default in Plan A): the date on the strip, and the class route as a line under it, never a
  * gap or a push to accelerate.
  */
+/** The student's last finished math class was a B or better (unknown letters don't count). */
+function lastMathBOrBetter(ctx: Ctx): boolean {
+  const last = ctx.items.filter((i) => i.own && i.subject === "math" && i.completed && i.letter).sort((a, b) => b.grade - a.grade)[0];
+  return last ? atLeast(last.letter, "B") === true : false;
+}
+
 function testDeadlines(ctx: Ctx, fill: FillResult): Deadline[] {
   const out: Deadline[] = [];
   for (const e of fill.evals) {
@@ -115,9 +121,15 @@ function testDeadlines(ctx: Ctx, fill: FillResult): Deadline[] {
       const deadlines = open.map((l) => (l.leaf.req.kind === "credits" ? l.leaf.req.deadlineGrade : undefined)).filter((g): g is SchoolGrade => g !== undefined);
       const when = deadlines.length ? ` by the end of ${nth(Math.min(...deadlines))} grade` : "";
       const unreachable = (fill.ladder.solution?.unmet ?? []).some((c) => open.some((l) => c.id === `${e.rc.rs.id}/${l.leaf.id}`));
+      // The student who opted in with a B or better has already said they want to move faster.
+      const optedIn = ctx.limits.accelerateMath && lastMathBOrBetter(ctx);
       const note =
         `Or show it with a class: ${listLabels(open.map((l) => l.leaf.label))}${when}.` +
-        (unreachable ? " From where you are, that would take a summer class or two math classes in one year. Only if you want that and your last math grade is a B or better." : "");
+        (unreachable
+          ? optedIn
+            ? " From where you are, that would take a summer class or two math classes in one year. Ask your counselor what your school offers."
+            : " From where you are, that would take a summer class or two math classes in one year. Only if you want that and your last math grade is a B or better."
+          : "");
       out.push({
         id: `test:${e.rc.rs.id}/${route.id}`,
         kind: "test",
@@ -177,7 +189,7 @@ export function buildDecisions(ctx: Ctx, fill: FillResult): PendingDecision[] {
       reasons: [reason("choice", "Two years of one language counts for graduation or college here.", { claim: "rule", citations: lang.primary?.reasons.flatMap((r) => r.citations) ?? [] })],
     });
   }
-  if (ctx.input.targets.path === "training" && !ctx.choices.ctePathway && !fill.placements.some((p) => p.kind === "cte") && ctx.firstGrade <= 11) {
+  if (ctx.input.targets.path === "training" && !ctx.choices.ctePathway && !ownCtePathway(ctx) && !fill.placements.some((p) => p.kind === "cte") && ctx.firstGrade <= 11) {
     out.push({ key: "ctePathway", by: null, text: "Pick a career pathway (CTE), and we'll plan its classes in order.", reasons: [reason("choice", "A CTE pathway taken in order prepares you for training after high school.", { claim: "suggestion" })] });
   }
   return out;

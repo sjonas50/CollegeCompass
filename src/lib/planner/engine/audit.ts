@@ -27,12 +27,17 @@ import { nth } from "./util";
 
 export type RuleSetEval = { rc: RuleSetCtx; best: AltResult | null };
 
-/** Every alternative, then the best (design §5.5). */
-export function evaluateRuleSet(rc: RuleSetCtx, items: Item[], opts: PickOptions = {}): RuleSetEval {
+/**
+ * Every alternative, then the best (design §5.5). With `rankItems` (the student's guessed types
+ * taken as confirmed), the route is chosen on those and reported on `items`, so the audit shows
+ * the route the student's own classes most likely meet, with its guesses flagged.
+ */
+export function evaluateRuleSet(rc: RuleSetCtx, items: Item[], opts: PickOptions = {}, rankItems?: Item[]): RuleSetEval {
   if (!rc.variant || rc.alternatives.length === 0) return { rc, best: null };
   const alts = opts.allowed ? rc.alternatives.filter(opts.allowed) : rc.alternatives;
-  const results = (alts.length ? alts : rc.alternatives).map((alt) => evaluateAlternative(alt, items, rc.allocation));
-  return { rc, best: pickAlternative(results, opts) };
+  const results = (alts.length ? alts : rc.alternatives).map((alt) => evaluateAlternative(alt, rankItems ?? items, rc.allocation));
+  const best = pickAlternative(results, opts);
+  return { rc, best: rankItems ? evaluateAlternative(best.alt, items, rc.allocation) : best };
 }
 
 const SEVERITY: Record<AuditStatus, number> = { not_tracked: 0, done: 1, planned: 2, ask_counselor: 3, room_to_add: 4 };
@@ -210,7 +215,23 @@ export function evaluateCheck(
       return { ...base, status: "room_to_add", text: "Room to add a full year of math in 12th grade, unless you meet the college-ready math competency." };
     }
     case "no_endorsement_after": {
-      if (!ctx.choices.txFoundationOnly) return { ...base, status: "ok", text: "You're planning with an endorsement." };
+      if (!ctx.choices.txFoundationOnly) {
+        // Only an endorsement that's actually in the plan counts: one the student named, or the one
+        // this plan was built with.
+        if (ctx.endorsementDefault) {
+          return {
+            ...base,
+            status: "ask_counselor",
+            text: `You haven't named an endorsement, so this plan uses the ${ctx.endorsementDefault} for now. You can name any endorsement; ask your counselor which one your school has on record.`,
+          };
+        }
+        if (ctx.ruleSets.some((r) => r.rs.appliesWhen.choice?.key === "txEndorsements")) return { ...base, status: "ok", text: "You're planning with an endorsement." };
+        return {
+          ...base,
+          status: "ask_counselor",
+          text: "You haven't named an endorsement, so this plan covers only the Foundation program (22 credits). Ask your counselor.",
+        };
+      }
       if (ctx.grade <= check.grade && !(ctx.grade === check.grade && ctx.inProgressGrade === null)) {
         return {
           ...base,

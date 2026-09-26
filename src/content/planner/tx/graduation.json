@@ -127,6 +127,12 @@
       "quote": "(A) English IV; (B) Independent Study in English; (C) Literary Genres; (D) Creative Writing; (E) Research and Technical Writing; (F) Humanities; (G) Public Speaking III;"
     },
     {
+      "id": "tx-74-12-b1-fourth-comm-apps",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(1)(H)",
+      "quote": "(H) Communication Applications, which must be combined with another half credit from the other courses listed in subparagraphs (A)-(G) and (I)-(S) of this paragraph;"
+    },
+    {
       "id": "tx-74-12-b1-fourth-list-2",
       "source": "TX-S1",
       "pinpoint": "§74.12(b)(1)(I)-(P)",
@@ -394,13 +400,13 @@
                   "units": 4,
                   "select": [
                     {
-                      "types": ["ela.12", "ela.creative_writing", "ela.research", "ela.humanities", "ela.debate", "ela.journalism", "ela.speech", "ela.professional_comm", "ela.college_prep"]
+                      "types": ["ela.12", "ela.creative_writing", "ela.research", "ela.humanities", "ela.professional_comm", "ela.college_prep"]
                     },
                     { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] },
                     { "subjects": ["english"], "levels": ["dual_enrollment"], "exclude": ["ela.ms", "ela.9", "ela.10"] }
                   ],
-                  "cite": ["tx-74-12-b1-fourth", "tx-74-12-b1-fourth-list", "tx-74-12-b1-fourth-list-2"],
-                  "note": "English IV, or a listed advanced English class such as creative writing, debate, journalism or AP English."
+                  "cite": ["tx-74-12-b1-fourth", "tx-74-12-b1-fourth-list", "tx-74-12-b1-fourth-list-2", "tx-74-12-b1-fourth-comm-apps"],
+                  "note": "English IV, or a listed class such as creative writing, humanities or AP English. Only the level III speech, debate and journalism classes are on the list, and Communication Applications counts only as a half credit paired with a different listed class, so ask your counselor before using one of those."
                 }
               ],
               "area": "english"
@@ -738,13 +744,13 @@
                   "units": 4,
                   "select": [
                     {
-                      "types": ["ela.12", "ela.creative_writing", "ela.research", "ela.humanities", "ela.debate", "ela.journalism", "ela.speech", "ela.professional_comm", "ela.college_prep"]
+                      "types": ["ela.12", "ela.creative_writing", "ela.research", "ela.humanities", "ela.professional_comm", "ela.college_prep"]
                     },
                     { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] },
                     { "subjects": ["english"], "levels": ["dual_enrollment"], "exclude": ["ela.ms", "ela.9", "ela.10"] }
                   ],
-                  "cite": ["tx-74-12-b1-fourth", "tx-74-12-b1-fourth-list", "tx-74-12-b1-fourth-list-2"],
-                  "note": "English IV, or a listed advanced English class such as creative writing, debate, journalism or AP English."
+                  "cite": ["tx-74-12-b1-fourth", "tx-74-12-b1-fourth-list", "tx-74-12-b1-fourth-list-2", "tx-74-12-b1-fourth-comm-apps"],
+                  "note": "English IV, or a listed class such as creative writing, humanities or AP English. Only the level III speech, debate and journalism classes are on the list, and Communication Applications counts only as a half credit paired with a different listed class, so ask your counselor before using one of those."
                 }
               ],
               "area": "english"
