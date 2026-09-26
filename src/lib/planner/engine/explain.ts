@@ -2,9 +2,12 @@ import { LOAD_WARNING, STRENGTH_PHRASES, SUGGESTION_LABEL, TX_ALGEBRA_2_NOTE, TX
 import type { PathResult, Reason, ReasonKind, ResolvedCitation } from "../engine-io";
 import type { FamilyId } from "../families";
 import { staleLabel } from "../review";
-import type { CitationId, Strength } from "../rules";
+import type { CitationId, Req, Strength } from "../rules";
+import { getCourseType } from "../course-types";
 import type { CLeaf } from "./compile";
 import type { Ctx, RuleSetCtx } from "./context";
+import type { Item } from "./model";
+import { matchesAny } from "./select";
 import { uniq } from "./util";
 
 // ---------------------------------------------------------------------------
@@ -84,10 +87,44 @@ export function requirementReason(rc: RuleSetCtx, leaf: CLeaf, label = leaf.labe
 }
 
 /** A requirement's own note ("Ask how your school records it."), as a reason. */
-export function leafNoteReason(rc: RuleSetCtx, leaf: CLeaf): Reason | null {
+export function leafNoteReason(rc: RuleSetCtx, leaf: CLeaf, items: readonly Item[]): Reason | null {
   const note = leaf.req.note;
   if (!note) return null;
-  return reason("state_note", note, { ruleSetId: rc.rs.id, reqId: leaf.id, strength: leaf.strength, citations: leaf.cite });
+  if (!noteApplies(leaf, items)) return null;
+  // The note says what may stand in here (computer science as the 3rd lab science); on a route where
+  // that kind stands in for another requirement already, say so.
+  const once = leaf.noSubstitutesOf ? labelOf(rc, leaf.noSubstitutesOf) : null;
+  const text = once ? `${note} ${once} can stand in for only one requirement, and your plan counts it for another one.` : note;
+  return reason("state_note", text, { ruleSetId: rc.rs.id, reqId: leaf.id, strength: leaf.strength, citations: leaf.cite });
+}
+
+/** A requirement's label, in the rule set's variant or one it extends. */
+function labelOf(rc: RuleSetCtx, id: string): string | null {
+  const find = (reqs: readonly Req[]): Req | null => {
+    for (const r of reqs) {
+      if (r.id === id) return r;
+      const found = find(r.kind === "all" || r.kind === "any" || r.kind === "choose" ? r.of : r.kind === "option" ? [r.on, r.off] : []);
+      if (found) return found;
+    }
+    return null;
+  };
+  for (const v of [rc.variant, ...rc.bases.map((b) => b.variant)]) {
+    const r = v ? find(v.requirements) : null;
+    if (r) return r.label;
+  }
+  return null;
+}
+
+/**
+ * A requirement that counts only classes from 9th grade on (Utah's "3 math credits in grades
+ * 9-12") has a note about classes taken before 9th grade: it's shown only to a student who has
+ * such a class (a high school class in middle school), like the middle-school state notes.
+ */
+function noteApplies(leaf: CLeaf, items: readonly Item[]): boolean {
+  const sels = leaf.req.kind === "credits" || leaf.req.kind === "count" ? leaf.req.select : null;
+  if (!sels?.length || !sels.every((s) => s.grades?.length && Math.min(...s.grades) >= 9)) return true;
+  const anyGrade = sels.map(({ grades: _grades, ...rest }) => rest);
+  return items.some((i) => i.own && i.grade < 9 && !i.noCredit && getCourseType(i.typeId).grades[1] >= 9 && matchesAny(i, anyGrade));
 }
 
 /** "Plans change. Here's what still fits." on a class suggested again after an F, W or I. */

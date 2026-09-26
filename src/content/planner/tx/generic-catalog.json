@@ -11,6 +11,27 @@
       "publisher": "Texas Education Agency",
       "kind": "rule",
       "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-M-WELDING": {
+      "title": "Texas CTE Statewide Program of Study (m-welding-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/m-welding-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-AAVTC-GRAPHIC-DESIGN-AND-INTERACTIVE-MEDIA": {
+      "title": "Texas CTE Statewide Program of Study (aavtc-graphic-design-and-interactive-media-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/aavtc-graphic-design-and-interactive-media-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-HS-COSMETOLOGY": {
+      "title": "Texas CTE Statewide Program of Study (hs-cosmetology-2025-0.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/hs-cosmetology-2025-0.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
     }
   },
   "citations": [
@@ -55,6 +76,42 @@
       "source": "TX-S2",
       "pinpoint": "§74.3(b)(2)(H)-(J)",
       "quote": "(H) languages other than English--Levels I, II, and III or higher of the same language; (I) computer science--one course selected from Fundamentals of Computer Science, Computer Science I, or another advanced computer science course; and (J) speech--Communication Applications."
+    },
+    {
+      "id": "tx-pos-welding",
+      "source": "MP-TEA-POS-M-WELDING",
+      "pinpoint": "p. 1",
+      "quote": "Manufacturing Career Cluster … Level 1• Principles of Manufacturing • Introduction to Welding Level 2• … Welding I … Level 3• Welding II"
+    },
+    {
+      "id": "tx-pos-welding-bi",
+      "source": "MP-TEA-POS-M-WELDING",
+      "pinpoint": "p. 1",
+      "quote": "Successful completion of the Welding program of study will fulfill requirements of the Business and Industry endorsement."
+    },
+    {
+      "id": "tx-pos-graphic-design",
+      "source": "MP-TEA-POS-AAVTC-GRAPHIC-DESIGN-AND-INTERACTIVE-MEDIA",
+      "pinpoint": "p. 1",
+      "quote": "Arts, Audio Visual Technology, and Communications Career Cluster … Level 1• Principles of Arts, Audio/Video Technology, and Communications … Level 2• Graphic Design and Illustration I … Level 3• Graphic Design and Illustration II"
+    },
+    {
+      "id": "tx-pos-graphic-design-bi",
+      "source": "MP-TEA-POS-AAVTC-GRAPHIC-DESIGN-AND-INTERACTIVE-MEDIA",
+      "pinpoint": "p. 1",
+      "quote": "Successful completion of the Graphic Design and Interactive Media program of study will fulfill requirements of the Business and Industry endorsement."
+    },
+    {
+      "id": "tx-pos-cosmetology",
+      "source": "MP-TEA-POS-HS-COSMETOLOGY",
+      "pinpoint": "p. 1",
+      "quote": "Human Services Career Cluster … Level 1• Principles of Cosmetology Design and Color Theory … Level 2• Introduction to Cosmetology … Level 3• Cosmetology I"
+    },
+    {
+      "id": "tx-pos-cosmetology-bi",
+      "source": "MP-TEA-POS-HS-COSMETOLOGY",
+      "pinpoint": "p. 1",
+      "quote": "Successful completion of the Cosmetology and Personal Care Services regional program of study will fulfill requirements of the Business and Industry endorsement."
     }
   ],
   "state": "TX",
@@ -141,6 +198,15 @@
     { "typeId": "cte.transportation.1", "levels": ["regular"], "cite": ["tx-74-3-b2-g"] },
     { "typeId": "cte.transportation.2", "levels": ["regular"], "cite": ["tx-74-3-b2-g"] },
     { "typeId": "cte.transportation.3", "levels": ["regular"], "cite": ["tx-74-3-b2-g"] },
+    { "typeId": "cte.manufacturing.1", "levels": ["regular"], "cite": ["tx-pos-welding", "tx-pos-welding-bi"] },
+    { "typeId": "cte.manufacturing.2", "levels": ["regular"], "cite": ["tx-pos-welding", "tx-pos-welding-bi"] },
+    { "typeId": "cte.manufacturing.3", "levels": ["regular"], "cite": ["tx-pos-welding", "tx-pos-welding-bi"] },
+    { "typeId": "cte.arts_av.1", "levels": ["regular"], "cite": ["tx-pos-graphic-design", "tx-pos-graphic-design-bi"] },
+    { "typeId": "cte.arts_av.2", "levels": ["regular"], "cite": ["tx-pos-graphic-design", "tx-pos-graphic-design-bi"] },
+    { "typeId": "cte.arts_av.3", "levels": ["regular"], "cite": ["tx-pos-graphic-design", "tx-pos-graphic-design-bi"] },
+    { "typeId": "cte.human_services.1", "levels": ["regular"], "cite": ["tx-pos-cosmetology", "tx-pos-cosmetology-bi"] },
+    { "typeId": "cte.human_services.2", "levels": ["regular"], "cite": ["tx-pos-cosmetology", "tx-pos-cosmetology-bi"] },
+    { "typeId": "cte.human_services.3", "levels": ["regular"], "cite": ["tx-pos-cosmetology", "tx-pos-cosmetology-bi"] },
     { "typeId": "other.driver_ed", "levels": ["regular"] },
     { "typeId": "other.jrotc", "levels": ["regular"] }
   ]

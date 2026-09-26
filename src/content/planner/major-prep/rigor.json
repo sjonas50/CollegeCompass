@@ -267,7 +267,8 @@
       "id": "ut-austin-calculus-readiness",
       "colleges": [228778],
       "families": ["engineering", "computer_data_science", "natural_resources"],
-      "text": "UT Austin requires calculus readiness for engineering, computer science and environmental science majors.",
+      "cips": ["40.06"],
+      "text": "UT Austin requires calculus readiness for engineering, geosciences, computer science and environmental science majors.",
       "cite": ["tx-ut-calc-majors", "tx-ut-calc-majors-2"]
     },
     {

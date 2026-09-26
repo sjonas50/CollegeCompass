@@ -192,6 +192,8 @@ export type RigorRaise = {
   id: string;
   colleges: number[];
   families: FamilyId[];
+  /** Or a target major's CIP code starts with one of these (a gate that names majors, not a whole family). */
+  cips?: string[];
   /** "UT Austin requires calculus readiness for these majors." */
   text: string;
   cite: CitationId[];

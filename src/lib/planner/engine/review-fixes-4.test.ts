@@ -611,7 +611,9 @@ describe("A typed \"Integrated Physics and Chemistry\" is IPC, not Physics (cour
 
 // 9. Tennessee waivers expand the focus ---------------------------------------------------------------
 
-describe("Tennessee: world language and fine arts waivers add credits to the elective focus (Policy 2.103 I(16)-(17))", () => {
+describe("Tennessee: world language and fine arts waivers add credits that expand the elective focus (Policy 2.103 I(16)-(17))", () => {
+  // Round 5 replaced round 4's "6 credits in one career and technical program": the waived credits
+  // expand the focus as the district decides, next to the 3-credit program (review-fixes-5.test.ts).
   const TN9: CourseSpec[] = [
     { type: "ela.9", grade: 9 },
     { type: "math.alg1", grade: 9 },
@@ -620,14 +622,14 @@ describe("Tennessee: world language and fine arts waivers add credits to the ele
     { type: "cte.architecture_construction.1", grade: 9 },
   ];
 
-  it("V12: with both waivers, the career and technical focus asks for 6 credits and the plan has them", () => {
+  it("V12: with both waivers, the plan finishes the career and technical program and lists the 3 waived credits", () => {
     const path = real({ state: "TN", grade: 9, path: "training", choices: { tnElectiveFocus: "cte", tnWorldLanguageWaiver: true, tnFineArtsWaiver: true }, courses: TN9 }, ELECTRICIAN);
-    const focus = requirement(path, "tn.focus.cte", "focus.both-waivers");
-    expect(focus.required).toBe(24);
-    expect(focus.label).toBe("6 credits in one career and technical program (3, plus 3 for your world language and fine arts waivers)");
+    const focus = requirement(path, "tn.focus.cte", "focus");
+    expect(focus.required).toBe(12);
     expect(focus.missing).toBe(0);
-    expect(focus.counted).toHaveLength(6);
-    expect(ruleSet(path, "tn.focus.cte").requirements.map((r) => r.reqId)).not.toContain("focus");
+    const waived = ["wl.waived", "arts.waived"].map((id) => requirement(path, "tn.grad", id));
+    expect(waived.reduce((n, r) => n + r.required, 0)).toBe(12);
+    for (const r of waived) expect(r.label).toMatch(/expands? your elective focus/);
     const construction = suggestions(path).filter((s) => s.typeId.startsWith("cte.architecture_construction."));
     expect(construction.length).toBe(2);
   });
@@ -637,18 +639,16 @@ describe("Tennessee: world language and fine arts waivers add credits to the ele
     expect(requirement(path, "tn.focus.cte", "focus").required).toBe(12);
   });
 
-  it("the content: every focus is sized by the waivers", () => {
+  it("the content: every focus is 3 credits and says what the waivers do", () => {
     const focusSets = plannerContentFor("TN")
       .rules.flatMap((f) => f.ruleSets)
       .filter((r) => r.appliesWhen.choice?.key === "tnElectiveFocus");
     expect(focusSets).toHaveLength(7);
     for (const rs of focusSets) {
       for (const v of rs.variants) {
-        const sizes = leavesOf(v.requirements)
-          .filter((r) => r.id === "focus" || r.id.endsWith("-waiver") || r.id.endsWith("-waivers"))
-          .map((r) => (r.kind === "credits" ? r.units : 0))
-          .sort((a, b) => a - b);
-        expect(sizes, `${v.id}`).toEqual([12, 16, 20, 24]);
+        const sizes = leavesOf(v.requirements).map((r) => (r.kind === "credits" ? r.units : 0));
+        expect(sizes, `${v.id}`).toEqual([12]);
+        expect((v.warnings ?? []).find((w) => w.id === "focus.waivers")?.cite, v.id).toEqual(["tn-2103-i-16", "tn-2103-i-17"]);
       }
     }
   });

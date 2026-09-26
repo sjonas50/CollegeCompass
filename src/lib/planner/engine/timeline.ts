@@ -1,6 +1,7 @@
 import type { SchoolGrade } from "../common";
 import { courseTypeTitle, LANGUAGE_NAMES, type LanguageCode } from "../course-types";
 import type { ByWhen, Deadline, PendingDecision } from "../engine-io";
+import { confirmedEval } from "./audit";
 import type { Ctx } from "./context";
 import { reason } from "./explain";
 import { type FillResult, ownCtePathway } from "./fill";
@@ -69,7 +70,8 @@ function ladderDeadlines(ctx: Ctx, fill: FillResult, sol: LadderSolution | null,
 
 function ruleDeadlines(ctx: Ctx, fill: FillResult): Deadline[] {
   const out: Deadline[] = [];
-  for (const e of fill.evals) {
+  // As the plan was built: a typed "Algebra 2" being taken now is Algebra II, not a deadline.
+  for (const e of fill.evals.map((x) => confirmedEval(x, fill.items))) {
     if (!e.best || !e.rc.variant) continue;
     const checks = (e.rc.variant.checks ?? []).filter((c) => c.kind === "on_schedule_by");
     for (const leafResult of e.best.leaves) {
@@ -126,7 +128,7 @@ function lastMathBOrBetter(ctx: Ctx): boolean {
 
 function testDeadlines(ctx: Ctx, fill: FillResult): Deadline[] {
   const out: Deadline[] = [];
-  for (const e of fill.evals) {
+  for (const e of fill.evals.map((x) => confirmedEval(x, fill.items))) {
     if (!e.best) continue;
     const open = e.best.leaves.filter((l) => l.missing > 0);
     if (open.length === 0) continue;

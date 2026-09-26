@@ -100,61 +100,13 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 credits in one career and technical program",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 credits in one career and technical program",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 credits in one career and technical program (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "cte": true }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-18a-cte", "tn-2103-i-16", "tn-2103-i-17"],
-                  "note": "At least three of these credits must be in the same career cluster or state program of study."
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 credits in one career and technical program (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "cte": true }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-18a-cte", "tn-2103-i-16"],
-                  "note": "At least three of these credits must be in the same career cluster or state program of study."
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 credits in one career and technical program",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 credits in one career and technical program (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "cte": true }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-18a-cte", "tn-2103-i-17"],
-                  "note": "At least three of these credits must be in the same career cluster or state program of study."
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 credits in one career and technical program",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "cte": true }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-18a-cte"],
-                  "note": "All three credits must be in the same career cluster or state program of study."
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "cte": true }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-18a-cte"],
+              "note": "All three credits must be in the same career cluster or state program of study.",
               "area": "electives"
             }
           ],
@@ -168,6 +120,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ],
           "unverified": [
@@ -184,61 +141,13 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 credits in one career and technical program",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 credits in one career and technical program",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 credits in one career and technical program (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "cte": true }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-18a-cte", "tn-2103-i-16", "tn-2103-i-17"],
-                  "note": "At least three of these credits must be in the same career cluster or state program of study."
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 credits in one career and technical program (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "cte": true }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-18a-cte", "tn-2103-i-16"],
-                  "note": "At least three of these credits must be in the same career cluster or state program of study."
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 credits in one career and technical program",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 credits in one career and technical program (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "cte": true }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-18a-cte", "tn-2103-i-17"],
-                  "note": "At least three of these credits must be in the same career cluster or state program of study."
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 credits in one career and technical program",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "cte": true }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-18a-cte"],
-                  "note": "All three credits must be in the same career cluster or state program of study."
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "cte": true }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-18a-cte"],
+              "note": "All three credits must be in the same career cluster or state program of study.",
               "area": "electives"
             }
           ],
@@ -252,6 +161,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ],
           "unverified": [
@@ -284,57 +198,12 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 more math or science credits",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 more math or science credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 more math or science credits (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "subjects": ["math", "science"], "exclude": ["math.ms", "sci.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-16", "tn-2103-i-17"]
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 more math or science credits (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "subjects": ["math", "science"], "exclude": ["math.ms", "sci.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-16"]
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 more math or science credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 more math or science credits (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "subjects": ["math", "science"], "exclude": ["math.ms", "sci.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-17"]
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 more math or science credits",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "subjects": ["math", "science"], "exclude": ["math.ms", "sci.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a"]
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["math", "science"], "exclude": ["math.ms", "sci.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
               "area": "electives"
             }
           ],
@@ -348,6 +217,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ]
         },
@@ -358,57 +232,12 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 more math or science credits",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 more math or science credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 more math or science credits (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "subjects": ["math", "science"], "exclude": ["math.ms", "sci.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-16", "tn-2103-i-17"]
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 more math or science credits (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "subjects": ["math", "science"], "exclude": ["math.ms", "sci.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-16"]
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 more math or science credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 more math or science credits (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "subjects": ["math", "science"], "exclude": ["math.ms", "sci.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-17"]
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 more math or science credits",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "subjects": ["math", "science"], "exclude": ["math.ms", "sci.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a"]
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["math", "science"], "exclude": ["math.ms", "sci.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
               "area": "electives"
             }
           ],
@@ -422,6 +251,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ]
         }
@@ -448,57 +282,12 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 more humanities credits",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 more humanities credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 more humanities credits (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "subjects": ["english", "social_studies", "world_language"], "exclude": ["ela.ms", "ss.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-16", "tn-2103-i-17"]
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 more humanities credits (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "subjects": ["english", "social_studies", "world_language"], "exclude": ["ela.ms", "ss.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-16"]
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 more humanities credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 more humanities credits (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "subjects": ["english", "social_studies", "world_language"], "exclude": ["ela.ms", "ss.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-17"]
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 more humanities credits",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "subjects": ["english", "social_studies", "world_language"], "exclude": ["ela.ms", "ss.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a"]
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["english", "social_studies", "world_language"], "exclude": ["ela.ms", "ss.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
               "area": "electives"
             }
           ],
@@ -512,6 +301,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ],
           "unverified": [
@@ -528,57 +322,12 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 more humanities credits",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 more humanities credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 more humanities credits (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "subjects": ["english", "social_studies", "world_language"], "exclude": ["ela.ms", "ss.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-16", "tn-2103-i-17"]
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 more humanities credits (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "subjects": ["english", "social_studies", "world_language"], "exclude": ["ela.ms", "ss.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-16"]
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 more humanities credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 more humanities credits (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "subjects": ["english", "social_studies", "world_language"], "exclude": ["ela.ms", "ss.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-17"]
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 more humanities credits",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "subjects": ["english", "social_studies", "world_language"], "exclude": ["ela.ms", "ss.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a"]
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["english", "social_studies", "world_language"], "exclude": ["ela.ms", "ss.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
               "area": "electives"
             }
           ],
@@ -592,6 +341,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ],
           "unverified": [
@@ -624,57 +378,12 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 more fine arts credits",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 more fine arts credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 more fine arts credits (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-16", "tn-2103-i-17"]
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 more fine arts credits (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-16"]
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 more fine arts credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 more fine arts credits (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-17"]
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 more fine arts credits",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a"]
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
               "area": "electives"
             }
           ],
@@ -688,6 +397,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ]
         },
@@ -698,57 +412,12 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 more fine arts credits",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 more fine arts credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 more fine arts credits (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-16", "tn-2103-i-17"]
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 more fine arts credits (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-16"]
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 more fine arts credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 more fine arts credits (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-17"]
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 more fine arts credits",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a"]
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a"],
               "area": "electives"
             }
           ],
@@ -762,6 +431,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ]
         }
@@ -788,65 +462,14 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 AP or IB credits",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 AP or IB credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 AP or IB credits (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "levels": ["ap", "ib"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b", "tn-2103-i-16", "tn-2103-i-17"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (AP U.S. History for U.S. History) also counts here."
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 AP or IB credits (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "levels": ["ap", "ib"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b", "tn-2103-i-16"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (AP U.S. History for U.S. History) also counts here."
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 AP or IB credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 AP or IB credits (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "levels": ["ap", "ib"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b", "tn-2103-i-17"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (AP U.S. History for U.S. History) also counts here."
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 AP or IB credits",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "levels": ["ap", "ib"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (AP U.S. History for U.S. History) also counts here."
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "levels": ["ap", "ib"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b"],
+              "shareable": true,
+              "note": "A class that stands in for another requirement (AP U.S. History for U.S. History) also counts here.",
               "area": "electives"
             }
           ],
@@ -860,6 +483,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ]
         },
@@ -870,65 +498,14 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 AP or IB credits",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 AP or IB credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 AP or IB credits (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "levels": ["ap", "ib"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b", "tn-2103-i-16", "tn-2103-i-17"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (AP U.S. History for U.S. History) also counts here."
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 AP or IB credits (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "levels": ["ap", "ib"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b", "tn-2103-i-16"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (AP U.S. History for U.S. History) also counts here."
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 AP or IB credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 AP or IB credits (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "levels": ["ap", "ib"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b", "tn-2103-i-17"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (AP U.S. History for U.S. History) also counts here."
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 AP or IB credits",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "levels": ["ap", "ib"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (AP U.S. History for U.S. History) also counts here."
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "levels": ["ap", "ib"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b"],
+              "shareable": true,
+              "note": "A class that stands in for another requirement (AP U.S. History for U.S. History) also counts here.",
               "area": "electives"
             }
           ],
@@ -942,6 +519,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ]
         }
@@ -968,65 +550,14 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 Cambridge credits",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 Cambridge credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 Cambridge credits (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "levels": ["cambridge"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b", "tn-2103-i-16", "tn-2103-i-17"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (a Cambridge English class for English III) also counts here."
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 Cambridge credits (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "levels": ["cambridge"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b", "tn-2103-i-16"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (a Cambridge English class for English III) also counts here."
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 Cambridge credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 Cambridge credits (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "levels": ["cambridge"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b", "tn-2103-i-17"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (a Cambridge English class for English III) also counts here."
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 Cambridge credits",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "levels": ["cambridge"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (a Cambridge English class for English III) also counts here."
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "levels": ["cambridge"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b"],
+              "shareable": true,
+              "note": "A class that stands in for another requirement (a Cambridge English class for English III) also counts here.",
               "area": "electives"
             }
           ],
@@ -1040,6 +571,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ]
         },
@@ -1050,65 +586,14 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 Cambridge credits",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 Cambridge credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 Cambridge credits (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "levels": ["cambridge"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b", "tn-2103-i-16", "tn-2103-i-17"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (a Cambridge English class for English III) also counts here."
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 Cambridge credits (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "levels": ["cambridge"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b", "tn-2103-i-16"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (a Cambridge English class for English III) also counts here."
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 Cambridge credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 Cambridge credits (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "levels": ["cambridge"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b", "tn-2103-i-17"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (a Cambridge English class for English III) also counts here."
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 Cambridge credits",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "levels": ["cambridge"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b"],
-                  "shareable": true,
-                  "note": "A class that stands in for another requirement (a Cambridge English class for English III) also counts here."
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "levels": ["cambridge"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-3103-i-4b"],
+              "shareable": true,
+              "note": "A class that stands in for another requirement (a Cambridge English class for English III) also counts here.",
               "area": "electives"
             }
           ],
@@ -1122,6 +607,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ]
         }
@@ -1148,65 +638,14 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 computer science credits",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 computer science credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 computer science credits (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-4b1", "tn-2103-i-4b1-only", "tn-3103-i-4b", "tn-2103-i-16", "tn-2103-i-17"],
-                  "shareable": true,
-                  "note": "The class you take for Tennessee's computer science credit counts here too, and so does a computer science class that stands in for your 4th math or 3rd science."
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 computer science credits (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-4b1", "tn-2103-i-4b1-only", "tn-3103-i-4b", "tn-2103-i-16"],
-                  "shareable": true,
-                  "note": "The class you take for Tennessee's computer science credit counts here too, and so does a computer science class that stands in for your 4th math or 3rd science."
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 computer science credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 computer science credits (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-4b1", "tn-2103-i-4b1-only", "tn-3103-i-4b", "tn-2103-i-17"],
-                  "shareable": true,
-                  "note": "The class you take for Tennessee's computer science credit counts here too, and so does a computer science class that stands in for your 4th math or 3rd science."
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 computer science credits",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-4b1", "tn-2103-i-4b1-only", "tn-3103-i-4b"],
-                  "shareable": true,
-                  "note": "The class you take for Tennessee's computer science credit counts here too, and so does a computer science class that stands in for your 4th math or 3rd science."
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-4b1", "tn-2103-i-4b1-only", "tn-3103-i-4b"],
+              "shareable": true,
+              "note": "The class you take for Tennessee's computer science credit counts here too, and so does a computer science class that stands in for your 4th math or 3rd science.",
               "area": "electives"
             }
           ],
@@ -1220,6 +659,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ]
         },
@@ -1230,65 +674,14 @@
           "allocation": "exclusive",
           "requirements": [
             {
-              "id": "focus.size",
+              "id": "focus",
               "label": "3 computer science credits",
-              "kind": "option",
-              "pref": "tnWorldLanguageWaiver",
-              "on": {
-                "id": "focus.size.wl",
-                "label": "3 computer science credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.both-waivers",
-                  "label": "6 computer science credits (3, plus 3 for your world language and fine arts waivers)",
-                  "kind": "credits",
-                  "units": 24,
-                  "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-4b1", "tn-2103-i-4b1-only", "tn-3103-i-4b", "tn-2103-i-16", "tn-2103-i-17"],
-                  "shareable": true,
-                  "note": "The class you take for Tennessee's computer science credit counts here too, and so does a computer science class that stands in for your 4th math or 3rd science."
-                },
-                "off": {
-                  "id": "focus.wl-waiver",
-                  "label": "5 computer science credits (3, plus 2 for your world language waiver)",
-                  "kind": "credits",
-                  "units": 20,
-                  "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-4b1", "tn-2103-i-4b1-only", "tn-3103-i-4b", "tn-2103-i-16"],
-                  "shareable": true,
-                  "note": "The class you take for Tennessee's computer science credit counts here too, and so does a computer science class that stands in for your 4th math or 3rd science."
-                },
-                "cite": ["tn-2103-i-16", "tn-2103-i-17"]
-              },
-              "off": {
-                "id": "focus.size.no-wl",
-                "label": "3 computer science credits",
-                "kind": "option",
-                "pref": "tnFineArtsWaiver",
-                "on": {
-                  "id": "focus.arts-waiver",
-                  "label": "4 computer science credits (3, plus 1 for your fine arts waiver)",
-                  "kind": "credits",
-                  "units": 16,
-                  "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-4b1", "tn-2103-i-4b1-only", "tn-3103-i-4b", "tn-2103-i-17"],
-                  "shareable": true,
-                  "note": "The class you take for Tennessee's computer science credit counts here too, and so does a computer science class that stands in for your 4th math or 3rd science."
-                },
-                "off": {
-                  "id": "focus",
-                  "label": "3 computer science credits",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
-                  "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-4b1", "tn-2103-i-4b1-only", "tn-3103-i-4b"],
-                  "shareable": true,
-                  "note": "The class you take for Tennessee's computer science credit counts here too, and so does a computer science class that stands in for your 4th math or 3rd science."
-                },
-                "cite": ["tn-2103-i-17"]
-              },
-              "cite": ["tn-2103-i-16", "tn-2103-i-17"],
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
+              "cite": ["tn-2103-i-18", "tn-2103-i-18a", "tn-2103-i-4b1", "tn-2103-i-4b1-only", "tn-3103-i-4b"],
+              "shareable": true,
+              "note": "The class you take for Tennessee's computer science credit counts here too, and so does a computer science class that stands in for your 4th math or 3rd science.",
               "area": "electives"
             }
           ],
@@ -1302,6 +695,11 @@
               "id": "focus.substitutes",
               "text": "A class that stands in for another requirement can also count toward your focus.",
               "cite": ["tn-3103-i-4b"]
+            },
+            {
+              "id": "focus.waivers",
+              "text": "If your family chose a world language or fine arts waiver, those credits expand your elective focus. They're listed with Tennessee's graduation requirements; ask your counselor which classes count.",
+              "cite": ["tn-2103-i-16", "tn-2103-i-17"]
             }
           ]
         }

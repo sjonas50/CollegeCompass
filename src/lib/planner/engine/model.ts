@@ -36,6 +36,11 @@ export type Item = {
   letter: LetterGrade | null;
   cte: boolean;
   lectureOnly: boolean;
+  /**
+   * A guessed kind taken as confirmed (`asConfirmed`): it counts as that kind, but where a class
+   * the student confirmed would do as well, that one counts first.
+   */
+  guess?: true;
 };
 
 export function itemFromFact(fact: CourseFact): Item {
@@ -109,7 +114,7 @@ export function itemFromSuggestion(s: SuggestionSpec): Item {
  * identity.
  */
 export function asConfirmed(items: readonly Item[]): Item[] {
-  return items.map((i) => (i.own && i.assumed ? { ...i, assumed: false } : i));
+  return items.map((i) => (i.own && i.assumed ? { ...i, assumed: false, guess: true } : i));
 }
 
 /** A class taken (or planned) that can still be built on: not failed or withdrawn. */

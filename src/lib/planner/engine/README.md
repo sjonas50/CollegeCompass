@@ -14,7 +14,7 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
 
 | Step | File | What it does |
 |---|---|---|
-| Context | `context.ts` | Plan years (the current grade during the school year, the next one in June-July), the class list per grade (school list, else generic; unconfirmed subjects fall back to the generic list), rule sets that apply (gates, cohort variants, projected, stale, the labeled state default, the DLA default), major families, the rigor tier |
+| Context | `context.ts` | Plan years (the current grade during the school year, the next one in June-July), the class list per grade (school list, else generic; unconfirmed subjects fall back to the generic list), rule sets that apply (gates by family or by a goal's major CIP code, cohort variants, projected, stale, the labeled state default, the DLA default), major families, the rigor tier |
 | Compile | `compile.ts` | Requirement trees to flat alternatives (`all` multiplies, `any` adds, `choose` combines, `option` follows the family's choice, substitutions add alternatives), extended variants joined in, 256 cap |
 | Audit | `allocate.ts`, `flow.ts`, `audit.ts` | Min-cost max-flow in quarter-credit units; firm classes cost 1, planned 10, plus 0-5 for how broad a requirement is. Shareable requirements, counts and totals never use up credit; same-language requirements take their language classes first and share them. Statuses, modifiers, checks, conditions, diploma-vs-admission conflicts |
 | Needs | `needs.ts` | Unmet requirements and major-prep targets become demands P0-P3 with windows and exclusive groups |
@@ -41,14 +41,22 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
 - A suggestion's "Required by" lines come only from the final audit's route, and only for
   requirements that would go short without it (and the classes that build on it); a class that's
   one way through a "choose" names the whole requirement ("Science (two of the five foundation
-  science areas and one more science credit)"). Projected rules read "Expected by". A suggestion
-  nothing needs any more is taken out, and one with nothing behind it reads as an idea for an
-  open slot.
+  science areas and one more science credit)"). Suggestions that could stand in for each other
+  (Chemistry, and a Physics a college only recommends, for Utah's "one more science credit") don't
+  cancel each other out: the class the route counts carries the requirement. Projected rules read
+  "Expected by". A suggestion nothing needs any more is taken out, and one with nothing behind it
+  reads as an idea for an open slot (never one placed for a required credit).
 - A class typed with a name only (a guessed type) is planned around as if the guess were right:
-  the fill never adds a second class of a kind the student probably has. The audit keeps the
-  guess visible ("Guessed class type") and reports the route the guesses would meet.
+  the fill never adds a second class of a kind the student probably has. The audit, its checks,
+  the "by when" strip and diploma-vs-admission questions all read that same route (a Physics added
+  for the 3rd lab science shows there; a typed "Algebra 2" being taken now isn't a deadline), and
+  a requirement a guess meets by kind reads "Room to add" with "Guessed class type" (confirm the
+  kind), never Done. Where a confirmed class does as well, it counts before a guess.
 - Credits never double-count inside an exclusive rule set, except where a rule shares them
-  (`shareable`, a substitution, shared same-language levels).
+  (`shareable`, a substitution, shared same-language levels). A kind of class that may stand in
+  only once (`substituteOnce`: Tennessee's computer science for "one (1) credit in mathematics,
+  or one (1) credit in science", Policy 2.103 I(4)(b)1) keeps its substitute selectors on one of
+  the requirements it names per compiled route.
 - Prerequisites and grade availability of the list in use are respected (printed prerequisite
   loops and unresolved references are ignored and turned into a counselor question).
 - The school's name, id and guide id never appear in the output; local course titles appear only
@@ -125,8 +133,12 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   pathway wins over routes that only overlap other targets (Education and Training for a future
   teacher's Public Services endorsement); the slot names the whole requirement ("one way: …") and
   offers the other programs' first classes as Other choices. Other choices never drop a required
-  class the suggestion is needed for. A requirement of the program an option builds on is named
-  only when the base program's own route counts the class there.
+  class the suggestion is needed for: each counts for that requirement itself, or, swapped in,
+  keeps the route met or meets another route as well (Physics for Chemistry among Utah's science
+  areas), or is another program's class at the same step. A sibling in the same route (Speech for
+  a required World History in "four credits in each core subject") never is, and a retake's
+  choices are never AP or college classes. A requirement of the program an option builds on is
+  named only when the base program's own route counts the class there.
 - **Opt-outs**: after Utah's Secondary Math III opt-out, targets past that rung leave the ladder,
   which plans Secondary Math II by 10th and then the applied class (the generic list gives Utah's
   applied statistics and financial math Secondary Math II as a prerequisite).
@@ -145,7 +157,10 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   next (not one they have, not a rung at or below theirs, prerequisites met); with none, only
   "Ask your counselor". A need that counts years (four years of math) gets no load options.
   College credit is offered only for a class that has a college-credit version, and for math only
-  when two college classes in a year would actually close the gap. A total-credit shortfall lists
+  when two college classes in a year would actually close the gap. Credit totals count the year
+  in progress only for its spring term (half a credit per open period: its schedule is mostly set,
+  and an open period may earn no credit); when only the whole year's open periods would hold the
+  total, the gap says it fits only if classes are added this year. A total-credit shortfall lists
   the state's verified summer, online or exam options, and so does a program's own total on top
   of its base (a Texas endorsement's 26 credits, §74.13(c)) that the years left can't hold,
   "Needs a plan now" for a senior. Such a total also counts against the rule set when another
@@ -155,7 +170,8 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   programs include the goal's or the student's current pathway), else the fewest added classes
   (Multidisciplinary Studies when there's no goal); STEM only for a STEM goal. A trial whose
   program counts only on a condition the plan doesn't meet (IT for Business and Industry while STEM's
-  math and science are met) isn't offered. Where the two-plan choice doesn't apply (the training
+  math and science are met) isn't offered, and for an endorsement the student named, the plan is
+  built again without that program when another fits as well. Where the two-plan choice doesn't apply (the training
   path, 11th grade, transfers) and no endorsement is named, the plan uses a default: the one the
   student's own career classes belong to, else Multidisciplinary Studies; the audit says so and
   the decision stays open. Seniors keep the Foundation plan, and the audit says that too. The

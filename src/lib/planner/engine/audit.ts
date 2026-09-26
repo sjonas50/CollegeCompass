@@ -40,6 +40,22 @@ export function evaluateRuleSet(rc: RuleSetCtx, items: Item[], opts: PickOptions
   return { rc, best: rankItems ? evaluateAlternative(best.alt, items, rc.allocation) : best };
 }
 
+/**
+ * The same route with the student's guessed class kinds taken as confirmed, as the plan was built
+ * (a typed "Algebra 2" is Algebra II): which requirement each class counts toward, for the audit,
+ * its checks, the "by when" strip and diploma-vs-admission conflicts. Without guesses, the route
+ * as evaluated.
+ */
+export function confirmedEval(e: RuleSetEval, items: readonly Item[]): RuleSetEval {
+  if (!e.best || !items.some((i) => i.own && i.assumed && i.creditable)) return e;
+  return { rc: e.rc, best: evaluateAlternative(e.best.alt, asConfirmed(items), e.rc.allocation) };
+}
+
+/** The student's classes whose kind is a guess, by key. */
+function guessedKeys(items: readonly Item[]): Set<string> {
+  return new Set(items.filter((i) => i.own && i.assumed).map((i) => i.key));
+}
+
 const SEVERITY: Record<AuditStatus, number> = { not_tracked: 0, done: 1, planned: 2, ask_counselor: 3, room_to_add: 4 };
 
 export function worst(statuses: AuditStatus[]): AuditStatus {
@@ -199,7 +215,10 @@ export function evaluateCheck(
       const verb = results.length > 1 ? "are" : "is";
       const past = ctx.grade > check.grade || (ctx.grade === check.grade && ctx.inProgressGrade === null);
       if (results.every((r) => r.missing === 0)) {
-        if (!past) return { ...base, status: "ok", text: `${label} ${verb} on your plan, so you're on schedule by the end of ${nth(check.grade)} grade.` };
+        // Counting a class whose kind is a guess (a typed "Algebra 2"): say so.
+        const guessed = guessedKeys(items);
+        const sure = results.some((r) => r.counted.some((c) => guessed.has(c.item.key))) ? ` That counts a class whose kind we guessed; set "What kind of class is this?" on it to be sure.` : "";
+        if (!past) return { ...base, status: "ok", text: `${label} ${verb} on your plan, so you're on schedule by the end of ${nth(check.grade)} grade.${sure}` };
         // After that grade the question is what the transcript showed then (§51.803(d)), which a
         // plan can't know unless every class was finished by then. Classes added this year don't count.
         const finished = results.every((r) => r.counted.every((c) => c.item.completed && c.item.grade <= check.grade));
@@ -380,8 +399,12 @@ function typeProbe(typeId: Item["typeId"]): Item {
  * requirements in the area would accept this class (computer science as the 4th math, Floral
  * Design as fine arts, CTE as a lab science).
  */
-export function admissionConflicts(evals: RuleSetEval[]): Map<string, AdmissionConflict[]> {
+export function admissionConflicts(raw: RuleSetEval[], items: readonly Item[]): Map<string, AdmissionConflict[]> {
   const out = new Map<string, AdmissionConflict[]>();
+  // With the student's guessed class kinds taken as confirmed: a typed "Secondary Math I" counts for
+  // the diploma and for the college alike, so only a real substitution (computer science as the 4th
+  // math, a career class as a lab science, Floral Design as an art) raises the question.
+  const evals = raw.map((e) => confirmedEval(e, items));
   // Unit patterns only: a program gate ("Calculus I with a B") isn't a list of what counts in an area.
   const admissions = evals.filter((e) => e.best && e.rc.rs.kind === "college_admission");
   for (const e of evals) {
@@ -480,11 +503,40 @@ export function requirementAudit(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, confli
     counted: r.counted.map((c) => ({ ref: c.item.ref, amount: c.amount, firm: c.item.firm })),
     reasons: [
       requirementReason(rc, r.leaf),
-      ...[leafNoteReason(rc, r.leaf)].filter((x): x is Reason => x !== null),
+      ...[leafNoteReason(rc, r.leaf, ctx.items)].filter((x): x is Reason => x !== null),
       ...ruleSetNotes(rc).filter((n) => n.kind === "projected" || n.kind === "stale"),
     ],
     conflicts,
   };
+}
+
+/**
+ * A requirement on the confirmed route. A class whose kind is a guess never makes a requirement
+ * that names a kind of class (Biology, Algebra II) done: it shows as counted, the requirement
+ * reads "Room to add" with "Guessed class type" (confirm the kind), and it's `guessOnly` when
+ * confirming would meet it. A guess counted by subject alone ("3 science credits") counts as usual.
+ */
+function withGuesses(l: LeafResult, items: readonly Item[], guessed: Set<string>): { result: LeafResult; guessOnly: boolean } {
+  const kind = l.leaf.req.kind;
+  // Totals and "the rest in electives" count any class.
+  if (guessed.size === 0 || (kind !== "credits" && kind !== "count" && kind !== "same_language")) return { result: l, guessOnly: false };
+  const original = new Map(items.map((i) => [i.key, i]));
+  // A language level is never counted from a guess (allocate.ts languageOf).
+  const accepts = (i: Item) => kind !== "same_language" && leafAccepts(l.leaf, i);
+  const shaky = l.counted.filter((c) => guessed.has(c.item.key) && !accepts(original.get(c.item.key)!));
+  const usesGuess = l.counted.some((c) => guessed.has(c.item.key));
+  if (shaky.length === 0) return { result: { ...l, guessed: l.guessed || usesGuess }, guessOnly: false };
+  let firm = 0;
+  let planned = 0;
+  for (const c of l.counted) {
+    if (shaky.includes(c)) continue;
+    if (c.item.firm) firm += c.amount;
+    else planned += c.amount;
+  }
+  firm = Math.min(firm, l.required);
+  planned = Math.min(planned, l.required - firm);
+  const missing = l.required - firm - planned;
+  return { result: { ...l, firm, planned, missing, guessed: true }, guessOnly: l.missing === 0 && missing > 0 };
 }
 
 export function ruleSetAudit(
@@ -495,15 +547,20 @@ export function ruleSetAudit(
   needsPlanNowKeys: Set<string>,
   statusOf: (id: string) => AuditStatus | null,
 ): RuleSetAudit {
-  const { rc, best } = e;
+  const { rc } = e;
   const variant = rc.variant;
-  // The same route with the student's guessed class kinds taken as confirmed (as the plan was built).
-  const confirmed = best && best.leaves.some((l) => l.guessed && l.missing > 0) ? evaluateAlternative(best.alt, asConfirmed(items), rc.allocation) : null;
+  // The route as the plan was built: the student's guessed class kinds taken as confirmed, so each
+  // class shows under the requirement the plan counts it for (a Physics added for the 3rd lab
+  // science isn't shown under "IPC, chemistry or physics" while a typed IPC waits for its kind).
+  const best = confirmedEval(e, items).best;
+  const guessed = guessedKeys(items);
   const requirements = best
     ? best.leaves
-        .map((l, i) => ({ l, guessOnly: l.guessed && l.missing > 0 && confirmed !== null && confirmed.leaves[i].missing === 0 }))
-        .filter(({ l }) => l.leaf.own)
-        .map(({ l, guessOnly }) => requirementAudit(ctx, rc, l, conflicts.get(`${rc.rs.id}/${l.leaf.id}`) ?? [], needsPlanNowKeys, guessOnly))
+        .filter((l) => l.leaf.own)
+        .map((l) => {
+          const { result, guessOnly } = withGuesses(l, items, guessed);
+          return requirementAudit(ctx, rc, result, conflicts.get(`${rc.rs.id}/${l.leaf.id}`) ?? [], needsPlanNowKeys, guessOnly);
+        })
     : [];
   const checks = best && variant ? (variant.checks ?? []).flatMap((c) => evaluateCheck(ctx, rc, c, best.leaves, items, statusOf) ?? []) : [];
   // A check that needs another rule set that's only planned (the Foundation program with classes

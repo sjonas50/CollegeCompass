@@ -546,7 +546,7 @@
       "confidence": "verified",
       "cohortKey": "class_year",
       "recheckBy": "2027-09-15",
-      "appliesWhen": { "colleges": [228778], "families": ["engineering", "computer_data_science", "natural_resources"] },
+      "appliesWhen": { "colleges": [228778], "families": ["engineering", "computer_data_science", "natural_resources"], "cips": ["40.06"] },
       "variants": [
         {
           "id": "utaustin.calc-ready.all",

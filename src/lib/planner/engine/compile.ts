@@ -1,3 +1,4 @@
+import { type CourseTypeId, getCourseType } from "../course-types";
 import type { PlannerChoices } from "../engine-io";
 import type {
   CitationId,
@@ -8,11 +9,14 @@ import type {
   ReqArea,
   ReqId,
   SameLanguageReq,
+  Selector,
   Strength,
   TotalCreditsReq,
   Variant,
 } from "../rules";
 import { MAX_ALTERNATIVES_PER_VARIANT } from "../validate";
+import { type Item, itemFromSuggestion } from "./model";
+import { matchesAny } from "./select";
 
 // ---------------------------------------------------------------------------
 // Compilation (design §5.4): a variant's requirement tree becomes flat alternatives, each a list
@@ -39,6 +43,12 @@ export type CLeaf = {
   path: ReqId[];
   /** In this alternative the leaf's classes also count toward that leaf (Tennessee computer science). */
   subFor: ReqId | null;
+  /**
+   * In this alternative the requirement's substitute selectors for the kind of class that leaf
+   * names (a `substituteOnce` credit) are off: that kind stands in somewhere else (Tennessee's
+   * computer science as the 4th math, so not as the 3rd lab science too).
+   */
+  noSubstitutesOf: ReqId | null;
   measure: "units" | "courses" | "levels";
   required: number;
   /** The whole group this leaf belongs to is a family-chosen option branch. */
@@ -129,6 +139,7 @@ function leafOf(req: LeafReq, inh: Inherited, own: boolean): CLeaf {
     own,
     path: inh.path,
     subFor: null,
+    noSubstitutesOf: null,
     measure,
     required,
     optionPref: inh.optionPref,
@@ -185,6 +196,12 @@ function variantLeaves(variant: Variant, strength: Strength, strengthCite: Citat
   return variant.requirements.reduce<CLeaf[][]>((acc, r) => product(acc, compileReq(r, root, own, choices)), [[]]);
 }
 
+/** The leaf a substitution names: the leaf itself, or the last credits leaf of the group it names. */
+function substitutionTarget(leaves: CLeaf[], id: ReqId, self: CLeaf): CLeaf | null {
+  const direct = leaves.find((l) => l.id === id && l !== self && l.req.kind === "credits");
+  return direct ?? [...leaves].reverse().find((l) => l !== self && l.path.includes(id) && l.req.kind === "credits") ?? null;
+}
+
 /**
  * A substitution names a requirement id: a leaf, or a group whose last credits leaf takes it. An
  * alternative whose substitution target isn't in it is the same as the plain alternative, so it's
@@ -197,13 +214,67 @@ function resolveSubstitutions(leaves: CLeaf[]): CLeaf[] | null {
       out.push(leaf);
       continue;
     }
-    const direct = leaves.find((l) => l.id === leaf.subFor && l !== leaf && l.req.kind === "credits");
-    const inGroup = [...leaves].reverse().find((l) => l !== leaf && l.path.includes(leaf.subFor!) && l.req.kind === "credits");
-    const target = direct ?? inGroup;
+    const target = substitutionTarget(leaves, leaf.subFor, leaf);
     if (!target) return null;
     out.push({ ...leaf, subFor: target.id });
   }
   return out;
+}
+
+/** A course type as a plain class, to test which requirements its kind belongs to. */
+function typeItem(typeId: CourseTypeId): Item {
+  const t = getCourseType(typeId);
+  return itemFromSuggestion({ n: -1, key: "kind", typeId, level: "regular", grade: 10, schoolYear: 2030, term: "full_year", units: t.units, cte: t.cte === "always", lectureOnly: false });
+}
+
+/** A substitute selector for the kind of class a `substituteOnce` credit counts (computer science). */
+function sameKind(sel: Selector, kind: readonly Selector[]): boolean {
+  if (!sel.substitute) return false;
+  if (sel.types?.length) return sel.types.every((t) => matchesAny(typeItem(t), kind));
+  return !!sel.subjects?.length && sel.subjects.every((s) => kind.some((k) => k.subjects?.includes(s)));
+}
+
+/**
+ * A kind of class that may stand in only once (`substituteOnce`, Tennessee Policy 2.103 I(4)(b)1:
+ * computer science for "one (1) credit in mathematics, or one (1) credit in science"): in each
+ * alternative, the requirements it may stand in for keep their substitute selectors for that kind
+ * on at most one of them. When the credit itself stands in for one, the others lose them; the
+ * plain route splits into one alternative per requirement that may still take such a class.
+ */
+function limitSubstitutions(leaves: CLeaf[]): CLeaf[][] {
+  let lists: CLeaf[][] = [leaves];
+  for (const src of leaves) {
+    const req = src.req;
+    if (req.kind !== "credits" || !req.substituteOnce || !req.substitutesForOneOf?.length) continue;
+    const next: CLeaf[][] = [];
+    for (const list of lists) {
+      const self = list.find((l) => l.id === src.id) ?? src;
+      const targets: ReqId[] = [];
+      for (const id of req.substitutesForOneOf) {
+        const t = substitutionTarget(list, id, self);
+        if (t && !targets.includes(t.id)) targets.push(t.id);
+      }
+      const strip = (off: ReqId[]) =>
+        list.map((l) => {
+          if (!off.includes(l.id) || l.req.kind !== "credits") return l;
+          const select = l.req.select.filter((s) => !sameKind(s, req.select));
+          return select.length === l.req.select.length || select.length === 0 ? l : { ...l, req: { ...l.req, select }, noSubstitutesOf: src.id };
+        });
+      if (self.subFor) next.push(strip(targets.filter((t) => t !== self.subFor)));
+      else if (targets.length === 0) next.push(list);
+      else for (const keep of targets) next.push(strip(targets.filter((t) => t !== keep)));
+    }
+    lists = next;
+  }
+  return lists;
+}
+
+/**
+ * What identifies a leaf across alternatives and rule sets that join it: its id, what it stands in
+ * for, and whether a one-time substitution is off for it.
+ */
+export function leafSignature(l: CLeaf): string {
+  return `${l.id}>${l.subFor ?? ""}${l.noSubstitutesOf ? `!${l.noSubstitutesOf}` : ""}`;
 }
 
 export type RuleSetStrength = { strength: Strength; strengthCite: CitationId };
@@ -219,7 +290,11 @@ export function compileVariant(variant: Variant, rs: RuleSetStrength, bases: { v
   const out: Alternative[] = [];
   for (const leaves of lists) {
     const resolved = resolveSubstitutions(leaves);
-    if (resolved) out.push({ index: out.length, leaves: resolved });
+    if (!resolved) continue;
+    for (const limited of limitSubstitutions(resolved)) {
+      if (out.length >= CAP) break;
+      out.push({ index: out.length, leaves: limited });
+    }
   }
   return out;
 }

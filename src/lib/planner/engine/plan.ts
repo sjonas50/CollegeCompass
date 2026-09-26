@@ -27,7 +27,7 @@ import { isStale, reviewLabel, staleLabel } from "../review";
 import type { ContentHeader, Req, Selector } from "../rules";
 import { type AltResult, evaluateAlternative, type LeafResult } from "./allocate";
 import { admissionConflicts, ruleSetAudit, waiverNotes, worst } from "./audit";
-import type { Alternative, CLeaf } from "./compile";
+import { type Alternative, type CLeaf, leafSignature } from "./compile";
 import { buildContext, type Ctx, type FamilyCtx, leafPriority, rowIsOffered, type RuleSetCtx, schoolYearOfGrade } from "./context";
 import { algebra2Reason, leafNoteReason, loadReason, prepReason, reason, requirementReason, resolveCitations, retakeReason } from "./explain";
 import { type FillResult, isRepeatable, pastIntro, type PlanConfig, prereqsMetIn, runFill, sameContent } from "./fill";
@@ -222,7 +222,7 @@ function endorsementSplit(ctx: Ctx, base: PlanConfig): Decision | null {
   const all = options.map(({ rs }, order) => {
     const value = rs.appliesWhen.choice!.value as EndorsementValue;
     const sub = buildContext({ ...ctx.input, state: ctx.state, content: ctx.content, prefs: { ...ctx.input.prefs, choices: { ...ctx.input.prefs.choices, txEndorsements: [value] } } });
-    const fill = runFill(sub, { ...base, ruleSets: sub.ruleSets, families: sub.families });
+    const fill = runFill(sub, { ...base, ruleSets: sub.ruleSets, families: sub.families }, false);
     const unmet = fill.needs.filter((n) => n.priority <= 1 && !n.soft).reduce((s, n) => s + needUnits(n), 0);
     const added = fill.placements.reduce((s, p) => s + p.item.units, 0);
     const college = fill.placements.filter((p) => isCollegeLevel(p.item.level)).length;
@@ -326,13 +326,15 @@ type Routes = {
   routes: Map<string, AltResult>;
   /** What each suggestion is needed for, per rule set (computed once per slot). */
   needed: Map<string, { rc: RuleSetCtx; route: AltResult; leaves: CLeaf[]; rest: Item[] }[]>;
+  /** Every alternative of a rule set on the plan's classes (computed once, for Other choices). */
+  all: Map<string, AltResult[]>;
 };
 
 function confirmedRoutes(fill: FillResult): Routes {
   const items = asConfirmed(fill.items);
   const routes = new Map<string, AltResult>();
   for (const e of fill.evals) if (e.best) routes.set(e.rc.rs.id, evaluateAlternative(e.best.alt, items, e.rc.allocation));
-  return { items, routes, needed: new Map() };
+  return { items, routes, needed: new Map(), all: new Map() };
 }
 
 /** Each rule set's requirements a suggestion is needed for, on the final audit's routes. */
@@ -343,32 +345,109 @@ function neededFor(ctx: Ctx, fill: FillResult, routes: Routes, item: Item): { rc
   const out: { rc: RuleSetCtx; route: AltResult; leaves: CLeaf[]; rest: Item[] }[] = [];
   for (const e of fill.evals) {
     const route = routes.routes.get(e.rc.rs.id);
-    if (route) out.push({ rc: e.rc, route, leaves: neededLeaves(e.rc, route, item.key, rest), rest });
+    if (!route) continue;
+    let leaves = neededLeaves(e.rc, route, item.key, rest);
+    // Suggestions that could stand in for each other (Chemistry, and a Physics a college only
+    // recommends, for Utah's "one more science credit"): taking out either one leaves the
+    // requirement met, but setting both aside would leave it short. The class the route counts
+    // carries the requirement; the others count only as what they're there for.
+    if (leaves.length === 0 && !item.own) {
+      const strict = withoutFreeSuggestions(route, rest);
+      if (strict.length < rest.length) leaves = neededLeaves(e.rc, route, item.key, strict);
+    }
+    out.push({ rc: e.rc, route, leaves, rest });
   }
   routes.needed.set(item.key, out);
   return out;
 }
 
 /**
- * What another class must count for to take a suggestion's place: every required (P0-P1)
- * requirement the suggestion is needed for (U.S. History, not just "the rest of your social
- * studies credits"), each as the whole choice when the requirement is one route through it.
+ * The classes left once suggestions this rule set's route doesn't use are set aside: the
+ * student's own classes, and suggestions the route counts toward a requirement that uses up their
+ * credit (not a total, the electives, or a requirement that shares credit).
  */
-function requiredSelectorsFor(ctx: Ctx, fill: FillResult, routes: Routes, item: Item): Selector[][] {
-  const out: Selector[][] = [];
-  for (const { rc, leaves } of neededFor(ctx, fill, routes, item)) {
+function withoutFreeSuggestions(route: AltResult, rest: Item[]): Item[] {
+  const carried = new Set<string>();
+  for (const l of route.leaves) {
+    if (!namedLeaf(l)) continue;
+    const req = l.leaf.req;
+    if (req.kind === "credits" && req.shareable) continue;
+    for (const c of l.counted) carried.add(c.item.key);
+  }
+  return rest.filter((i) => i.own || carried.has(i.key));
+}
+
+/**
+ * What another class must do to take a suggestion's place, one test per required (P0-P1)
+ * requirement the suggestion is needed for (U.S. History, not just "the rest of your social
+ * studies credits"): count for that requirement itself; or, swapped in, keep the rule set's route
+ * as met, or meet another of its routes as well (Physics for Chemistry in Utah's "two of the five
+ * science areas"); or, for a graduation option's program of study, be another program's class at
+ * the same step (Health Science 1 for Education and Training 1). A sibling in the same route
+ * (Speech for a required World History in "four credits in each core subject") never is.
+ */
+function requiredChecks(ctx: Ctx, fill: FillResult, routes: Routes, item: Item): ((probe: Item) => boolean)[] {
+  const out: ((probe: Item) => boolean)[] = [];
+  const step = getCourseType(item.typeId).ladder?.rank ?? null;
+  for (const { rc, route, leaves } of neededFor(ctx, fill, routes, item)) {
+    const cache = new Map<string, boolean>();
+    const swapOk = (probe: Item): boolean => {
+      const k = `${probe.typeId}|${probe.level}|${probe.units}|${probe.cte}|${probe.lectureOnly}`;
+      let ok = cache.get(k);
+      if (ok === undefined) {
+        ok = swapKeepsRoute(rc, route, routes, probe, routes.items.map((i) => (i.key === item.key ? probe : i)));
+        cache.set(k, ok);
+      }
+      return ok;
+    };
     for (const leaf of leaves) {
       const owner = leaf.own ? rc : (ctx.ruleSets.find((r) => rc.bases.some((b) => b.rs.id === r.rs.id)) ?? rc);
       const priority = leafPriority(owner, leaf.strength);
       if (priority === null || priority > 1) continue;
       const own = leaf.req.kind === "credits" || leaf.req.kind === "count" ? leaf.req.select : leaf.req.kind === "same_language" ? [{ subjects: ["world_language" as const] }] : null;
       if (!own) continue;
-      const group = leaf.choice && owner.variant ? findReq(owner.variant.requirements, leaf.choice.id) : null;
-      const whole = group ? reqLeaves([group]).flatMap((r) => (r.kind === "credits" || r.kind === "count" ? r.select : r.kind === "same_language" ? [{ subjects: ["world_language" as const] }] : [])) : [];
-      out.push([...own, ...whole]);
+      const group = leaf.choice?.kind === "any" && owner.rs.kind === "graduation_option" && owner.variant ? findReq(owner.variant.requirements, leaf.choice.id) : null;
+      const otherPrograms =
+        group?.kind === "any" ? group.of.filter((b) => !containsReq(b, leaf.id)).flatMap((b) => reqLeaves([b]).flatMap((r) => (r.kind === "credits" || r.kind === "count" ? r.select : []))) : [];
+      out.push(
+        (probe) =>
+          matchesAny(probe, own) ||
+          (step !== null && (getCourseType(probe.typeId).ladder?.rank ?? null) === step && matchesAny(probe, otherPrograms)) ||
+          swapOk(probe),
+      );
     }
   }
   return out;
+}
+
+/**
+ * With a class swapped for another, the rule set's route loses nothing it had, or another of its
+ * routes is met at least as well.
+ */
+function swapKeepsRoute(rc: RuleSetCtx, route: AltResult, routes: Routes, probe: Item, swapped: Item[]): boolean {
+  const before = new Map(route.leaves.filter(namedLeaf).map((l) => [l.leaf.id, l.missing]));
+  const same = evaluateAlternative(route.alt, swapped, rc.allocation);
+  const lost = same.leaves.filter((l) => namedLeaf(l) && l.missing > (before.get(l.leaf.id) ?? 0)).map((l) => leafSignature(l.leaf));
+  if (same.notDone <= route.notDone && lost.length === 0) return true;
+  let now = routes.all.get(rc.rs.id);
+  if (!now) {
+    now = rc.alternatives.map((alt) => evaluateAlternative(alt, routes.items, rc.allocation));
+    routes.all.set(rc.rs.id, now);
+  }
+  return rc.alternatives.some((alt, i) => {
+    // A route that has every requirement the swap left short goes short the same way, and one more
+    // than a class away now can't be met by swapping one class.
+    if (alt.index === route.alt.index || lost.every((sig) => alt.leaves.some((l) => leafSignature(l) === sig))) return false;
+    if (now[i].missingNamed - probe.units > route.missingNamed || now[i].offTrackNamed - 1 > route.offTrackNamed) return false;
+    const r = evaluateAlternative(alt, swapped, rc.allocation);
+    return r.notDone === 0 && r.offTrackNamed <= route.offTrackNamed && r.missingNamed <= route.missingNamed;
+  });
+}
+
+function containsReq(req: Req, id: string): boolean {
+  if (req.id === id) return true;
+  const kids = req.kind === "all" || req.kind === "any" || req.kind === "choose" ? req.of : req.kind === "option" ? [req.on, req.off] : [];
+  return kids.some((k) => containsReq(k, id));
 }
 
 const namedLeaf = (l: LeafResult) => l.leaf.req.kind !== "total_credits" && l.leaf.req.kind !== "remaining_electives";
@@ -395,7 +474,7 @@ function neededLeaves(rc: RuleSetCtx, route: AltResult, key: string, rest: Item[
     const outside = (a: Alternative) =>
       a.leaves
         .filter((l) => !l.path.some((p) => groups.has(p)))
-        .map((l) => `${l.id}>${l.subFor ?? ""}`)
+        .map(leafSignature)
         .sort()
         .join("|");
     const same = outside(route.alt);
@@ -445,11 +524,13 @@ function withoutClass(ctx: Ctx, fill: FillResult, items: Item[], key: string): I
  * only when the class is needed for it, and names the whole requirement when the class is one way
  * through a choice.
  */
-function slotReasons(ctx: Ctx, fill: FillResult, routes: Routes, item: Item, extra: Reason[], primary: Need | null): Reason[] {
+function slotReasons(ctx: Ctx, fill: FillResult, routes: Routes, item: Item, extra: Reason[], primary: Need | null, priority: number): Reason[] {
   const out: Reason[] = [];
   const seen = new Set<string>();
   const push = (r: Reason) => {
-    const k = `${r.kind}|${r.ruleSetId}|${r.reqId}|${r.familyId}|${r.text}`;
+    // By what the line says: two requirements of one route named as the whole choice ("… (one way:
+    // four credits in each core subject)") are one line.
+    const k = `${r.kind}|${r.ruleSetId}|${r.familyId}|${r.text}`;
     if (seen.has(k)) return;
     seen.add(k);
     out.push(r);
@@ -476,7 +557,7 @@ function slotReasons(ctx: Ctx, fill: FillResult, routes: Routes, item: Item, ext
         // career and technical program of study (one way: education and training program)").
         const whole = leaf.choice?.kind === "choose" || (leaf.choice?.kind === "any" && owner.rs.kind === "graduation_option");
         push(requirementReason(owner, leaf, whole ? leaf.choice!.text : leaf.label, true));
-        const note = leafNoteReason(owner, leaf);
+        const note = leafNoteReason(owner, leaf, ctx.items);
         if (note) push(note);
       }
     }
@@ -488,7 +569,9 @@ function slotReasons(ctx: Ctx, fill: FillResult, routes: Routes, item: Item, ext
   // A check (Tennessee: math in every year) isn't an audit line of its own; its reason stands.
   if (primary?.source === "check") for (const r of primary.reasons) push(r);
   for (const r of extra) push(r);
-  // Nothing requires it any more: an idea for an open slot, never "Required".
+  // A class placed for a required credit keeps what it was placed for; only a class nothing
+  // requires any more is an idea for an open slot, never "Required".
+  if (out.length === 0 && priority <= 1 && primary) for (const r of primary.reasons) push(r);
   if (out.length === 0) push(reason("choice", "An idea for an open slot. It's your choice.", { claim: "suggestion" }));
   if (ctx.items.some((i) => i.own && i.noCredit && i.typeId === item.typeId)) {
     push(retakeReason());
@@ -503,15 +586,16 @@ function slotReasons(ctx: Ctx, fill: FillResult, routes: Routes, item: Item, ext
 /**
  * What another class could count for in a suggestion's place: the need's own requirement, and for
  * a graduation option's route through a choice (one of a Texas endorsement's programs, §74.13(f)),
- * the other routes it lists.
+ * the other routes it lists (never the rest of its own route: Speech isn't another way to meet
+ * "four social studies credits").
  */
 function routeSelectors(need: Need): Selector[] {
   const leaf = need.leaf;
   const rc = need.rc;
   if (!leaf || !rc?.variant || leaf.choice?.kind !== "any" || rc.rs.kind !== "graduation_option") return need.selectors;
   const group = findReq(rc.variant.requirements, leaf.choice.id);
-  if (!group) return need.selectors;
-  const others = reqLeaves([group]).flatMap((r) => (r.kind === "credits" || r.kind === "count" ? r.select : []));
+  if (!group || group.kind !== "any") return need.selectors;
+  const others = group.of.filter((b) => !containsReq(b, leaf.id)).flatMap((b) => reqLeaves([b]).flatMap((r) => (r.kind === "credits" || r.kind === "count" ? r.select : [])));
   return [...need.selectors, ...others];
 }
 
@@ -555,7 +639,8 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
       // below it (Secondary Math I after Secondary Math III).
       const reached = startRank(others, grade);
       const altSelectors = routeSelectors(primary);
-      const required = requiredSelectorsFor(ctx, fill, routes, p.item);
+      const required = requiredChecks(ctx, fill, routes, p.item);
+      const retake = ctx.items.some((i) => i.own && i.noCredit && i.typeId === p.item.typeId);
       const seen = new Set<string>([`${p.item.typeId}:${p.item.level}`]);
       for (const row of cat.rows) {
         if (alternatives.length >= 4) break;
@@ -568,8 +653,8 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
           const rung = getCourseType(row.typeId).ladder?.rank ?? null;
           if (!matchesAny(probeItem, altSelectors) || rung !== (getCourseType(p.item.typeId).ladder?.rank ?? null)) continue;
         }
-        // Never a class that drops a required class (Creative Writing for a required U.S. History).
-        if (!required.every((sels) => matchesAny(probeItem, sels))) continue;
+        // A retake of a class the student didn't pass is never its AP or college version.
+        if (retake && isCollegeLevel(row.level)) continue;
         if (!isRepeatable(row.typeId) && fill.items.some((i) => sameContent(i.typeId, row.typeId) && !i.noCredit && i.key !== p.item.key)) continue;
         if (pastIntro(others, row.typeId, grade)) continue;
         const rank = mathRankOf(row.typeId);
@@ -577,6 +662,8 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
         // Never a class the family opted out of in writing (Utah Secondary Math III).
         if (ctx.choices.utMath3OptOut && rank === 3) continue;
         if (!prereqsMetIn(others, row, grade, () => null, false, p.item.term === "spring")) continue;
+        // Never a class that drops a required class (Creative Writing for a required U.S. History).
+        if (!required.every((ok) => ok(probeItem))) continue;
         seen.add(k);
         alternatives.push({
           key: suggestionKey(primary.forWhat as Parameters<typeof suggestionKey>[0], row.typeId, row.level),
@@ -587,7 +674,7 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
         });
       }
     }
-    const reasons = slotReasons(ctx, fill, routes, p.item, p.extraReasons, primary);
+    const reasons = slotReasons(ctx, fill, routes, p.item, p.extraReasons, primary, p.priority);
     if (p.needsPlanNow) reasons.push(reason("gap", "A required credit you still need this year. Talk to your counselor soon.", { ruleSetId: primary?.rc?.rs.id ?? null }));
     slots.push({
       kind: "suggested",
@@ -726,7 +813,7 @@ function demands(fill: FillResult): Demand[] {
 }
 
 function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
-  const conflicts = admissionConflicts(fill.evals);
+  const conflicts = admissionConflicts(fill.evals, fill.items);
   const waivers = waiverNotes(fill.evals);
   const npn = new Set(fill.placements.filter((p) => p.needsPlanNow).map((p) => p.key));
   const free = freeUnits(fill);

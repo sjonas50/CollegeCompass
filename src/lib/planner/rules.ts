@@ -2,7 +2,7 @@ import type { CourseSubject } from "@/db/schema";
 import type { LetterGrade } from "@/lib/courses/catalog";
 import type { IsoDate, PlannerState, SchoolGrade, SchoolYear } from "./common";
 import type { Capability, CourseTypeId, CourseTypeLevel, CteCluster, LanguageCode } from "./course-types";
-import type { FamilyId } from "./families";
+import type { CipPrefix, FamilyId } from "./families";
 
 // ---------------------------------------------------------------------------
 // The rule language (design §5.4): how reviewed content describes graduation rules, college
@@ -186,6 +186,13 @@ export type CreditsReq = Leaf & {
   shareable?: boolean;
   /** May stand in for one of these requirements instead (TN computer science credit). */
   substitutesForOneOf?: ReqId[];
+  /**
+   * Classes of this kind stand in (`substitute` selectors) for only one of `substitutesForOneOf` in
+   * all: this credit standing in for one of them, or another such class counted through that
+   * requirement's own substitute selector (Tennessee Policy 2.103 I(4)(b)1: computer science
+   * substitutes for "one (1) credit in mathematics, or one (1) credit in science").
+   */
+  substituteOnce?: true;
   /** One full credit may cover two half-credit requirements (TN Policy 3.103). */
   allowSplit?: boolean;
   /** Must be done (or planned) by the end of this grade. */
@@ -371,6 +378,12 @@ export type Gate = {
   colleges?: number[];
   /** A target major family is one of these (program gates, major-specific admission). */
   families?: FamilyId[];
+  /**
+   * Or a target major's CIP code starts with one of these: a gate that names majors inside a
+   * family (UT Austin's calculus readiness for "All majors in the Jackson School of Geosciences",
+   * CIP 40.06, while other physical sciences route to the same family).
+   */
+  cips?: CipPrefix[];
   /**
    * The labeled default target when the college list has no in-state public college ("Texas: the
    * DLA plus what Texas A&M recommends"). Applies even without `colleges` matching.

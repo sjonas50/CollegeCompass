@@ -164,6 +164,7 @@ export const ReqSchema: z.ZodType<Req> = z.lazy(() =>
       select: z.array(SelectorSchema).min(1),
       shareable: z.boolean().optional(),
       substitutesForOneOf: z.array(Id).min(1).optional(),
+      substituteOnce: z.literal(true).optional(),
       allowSplit: z.boolean().optional(),
       deadlineGrade: Grade.optional(),
       onlyWhenDone: z.literal(true).optional(),
@@ -237,11 +238,14 @@ const ChoiceGateSchema = z.discriminatedUnion("key", [
 
 const UnitId = z.number().int().positive();
 
+const CipPrefixSchema = z.string().regex(CIP_PREFIX, "A CIP prefix looks like \"51\", \"51.38\" or \"51.3801\".");
+
 const GateSchema = z.strictObject({
   choice: ChoiceGateSchema.optional(),
   paths: z.array(z.enum(PATH_KINDS)).min(1).optional(),
   colleges: z.array(UnitId).min(1).optional(),
   families: z.array(FamilyIdSchema).min(1).optional(),
+  cips: z.array(CipPrefixSchema).min(1).optional(),
   stateDefault: z.boolean().optional(),
 });
 
@@ -377,7 +381,7 @@ export const CipRoutingFileSchema = z.strictObject({
   rules: z
     .array(
       z.strictObject({
-        match: z.array(z.string().regex(CIP_PREFIX, "A CIP prefix looks like \"51\", \"51.38\" or \"51.3801\".")).min(1),
+        match: z.array(CipPrefixSchema).min(1),
         family: FamilyIdSchema,
         note: plain(TEXT_MAX).optional(),
       }),
@@ -404,6 +408,7 @@ export const RigorFileSchema = z.strictObject({
       id: Id,
       colleges: z.array(UnitId).min(1),
       families: z.array(FamilyIdSchema).min(1),
+      cips: z.array(CipPrefixSchema).min(1).optional(),
       text: plain(TEXT_MAX),
       cite: CiteList,
     }),

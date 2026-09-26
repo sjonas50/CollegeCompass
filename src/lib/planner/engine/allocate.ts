@@ -57,6 +57,16 @@ const ELECTIVE_COST = 5;
  * 3rd lab science and the 4th math is what's missing. It still beats leaving the class unused.
  */
 const SUBSTITUTE_COST = 4;
+/**
+ * A class whose kind is a guess, counted toward a requirement only its confirmed kind meets
+ * (Biology, not "3 science credits"): a confirmed class goes there first, so the audit asks to
+ * confirm a kind only when it matters.
+ */
+const GUESS_COST = 1;
+
+function onlyIfConfirmed(item: Item, sels: readonly Selector[]): boolean {
+  return item.guess === true && !matchesAny({ ...item, assumed: true }, sels);
+}
 const MAX_SPLIT_REPAIRS = 24;
 
 function selectOf(leaf: CLeaf): Selector[] | null {
@@ -100,7 +110,7 @@ function result(leaf: CLeaf, counted: { item: Item; amount: number }[], guessed:
 
 /** Greedy for one requirement on its own: firm classes first, then planned, earliest grade first. */
 function takeGreedy(items: Item[], need: number, perItem: (item: Item) => number): { item: Item; amount: number }[] {
-  const sorted = [...items].sort((a, b) => Number(b.firm) - Number(a.firm) || itemOrder(a, b));
+  const sorted = [...items].sort((a, b) => Number(b.firm) - Number(a.firm) || Number(a.guess === true) - Number(b.guess === true) || itemOrder(a, b));
   const out: { item: Item; amount: number }[] = [];
   let left = need;
   for (const item of sorted) {
@@ -214,7 +224,7 @@ function solveFlow(pool: { item: Item; units: number }[], leaves: { leaf: CLeaf;
       if (cap <= 0 || !allowed(i, j)) return;
       if (!leafAccepts(leaf, p.item)) return;
       const sels = selectOf(leaf);
-      const cost = (p.item.firm ? 1 : 10) + spec[j] + (sels && matchesOnlyAsSubstitute(p.item, sels) ? SUBSTITUTE_COST : 0);
+      const cost = (p.item.firm ? 1 : 10) + spec[j] + (sels && matchesOnlyAsSubstitute(p.item, sels) ? SUBSTITUTE_COST : 0) + (sels && onlyIfConfirmed(p.item, sels) ? GUESS_COST : 0);
       edges.push({ i, l: j, e: g.addEdge(i, P + j, p.units, cost) });
     });
   });

@@ -15,7 +15,7 @@ import {
   RIGOR_TIERS,
   type StudentCohort,
 } from "../engine-io";
-import { type MathTarget, getFamily } from "../families";
+import { type FamilyId, type MathTarget, getFamily } from "../families";
 import { contentFingerprint, isStale } from "../review";
 import type { Citation, ContentHeader, Gate, RuleFile, RuleSet, Source, SourceKey, Strength, Variant } from "../rules";
 import type { Allocation } from "./allocate";
@@ -128,10 +128,20 @@ function inStatePublic(colleges: CollegeTarget[], state: PlannerState): boolean 
   return colleges.some((c) => c.public && c.state === state);
 }
 
+/**
+ * A target the gate names: its family, or its major's CIP code under one of the prefixes (a gate
+ * that names majors inside a family: UT Austin's geosciences, CIP 40.06, among the physical sciences).
+ */
+function aimsAt(target: FamilyTarget, families: readonly FamilyId[] | undefined, cips: readonly string[] | undefined): boolean {
+  if (families?.includes(target.familyId)) return true;
+  const cip = target.cip6;
+  return !!cip && !!cips?.some((prefix) => cip === prefix || cip.startsWith(`${prefix}${prefix.length === 2 ? "." : ""}`));
+}
+
 function gateApplies(gate: Gate, input: PlannerInput, choices: PlannerChoices, state: PlannerState): { applies: boolean; viaDefault: boolean } {
   const targets = input.targets;
   if (gate.paths && !gate.paths.includes(targets.path)) return { applies: false, viaDefault: false };
-  if (gate.families && !targets.families.some((f) => gate.families!.includes(f.familyId))) return { applies: false, viaDefault: false };
+  if ((gate.families || gate.cips) && !targets.families.some((f) => aimsAt(f, gate.families, gate.cips))) return { applies: false, viaDefault: false };
   if (gate.choice) {
     const g = gate.choice;
     let ok: boolean;
@@ -186,9 +196,8 @@ function resolveBases(variant: Variant, all: Map<string, { rs: RuleSet; variant:
 function programRaise(input: PlannerInput, ruleSets: RuleSetCtx[]): string | null {
   const rigor = input.content?.rigor;
   const colleges = new Set(input.targets.colleges.map((c) => c.unitId));
-  const families = new Set(input.targets.families.map((f) => f.familyId));
   if (rigor) {
-    const raise = rigor.raises.find((r) => r.colleges.some((c) => colleges.has(c)) && r.families.some((f) => families.has(f)));
+    const raise = rigor.raises.find((r) => r.colleges.some((c) => colleges.has(c)) && input.targets.families.some((f) => aimsAt(f, r.families, r.cips)));
     return raise ? raise.text : null;
   }
   const gate = ruleSets.find((r) => r.rs.kind === "program_admission" && r.rs.strength === "required" && r.rs.confidence === "verified" && !r.projected);

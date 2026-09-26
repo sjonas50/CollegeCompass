@@ -104,7 +104,9 @@ function chooseCount(counts: number[], n: number): number {
 /**
  * How many flat alternatives a requirement compiles to (design §5.4): `all` multiplies, `any`
  * adds, `choose` counts the combinations, `option` counts both branches, and a credit that may
- * substitute for one of k requirements multiplies by k + 1. The engine's compiler must agree.
+ * substitute for one of k requirements multiplies by k + 1 (2k when its kind of class may stand in
+ * only once: the plain route splits by which requirement may still take one). The engine's
+ * compiler must agree.
  */
 export function countAlternatives(req: Req): number {
   switch (req.kind) {
@@ -116,8 +118,10 @@ export function countAlternatives(req: Req): number {
       return chooseCount(req.of.map(countAlternatives), req.n);
     case "option":
       return countAlternatives(req.on) + countAlternatives(req.off);
-    case "credits":
-      return 1 + (req.substitutesForOneOf?.length ?? 0);
+    case "credits": {
+      const k = req.substitutesForOneOf?.length ?? 0;
+      return req.substituteOnce && k > 0 ? 2 * k : 1 + k;
+    }
     default:
       return 1;
   }
@@ -188,6 +192,7 @@ function checkVariant(v: Variant, where: string, issues: string[]) {
     if (r.kind === "choose" && r.n > r.of.length) issues.push(`${where} ${r.id}: chooses ${r.n} of only ${r.of.length}.`);
     if (r.kind === "credits") {
       for (const s of r.substitutesForOneOf ?? []) if (!ids.has(s)) issues.push(`${where} ${r.id}: substitutesForOneOf names unknown requirement "${s}".`);
+      if (r.substituteOnce && !r.substitutesForOneOf?.length) issues.push(`${where} ${r.id}: substituteOnce needs substitutesForOneOf.`);
     }
     if (r.kind === "same_language" && r.differentFrom !== undefined) {
       const other = all.find((q) => q.id === r.differentFrom);

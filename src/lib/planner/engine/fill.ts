@@ -16,9 +16,9 @@ import {
 import { type DemandPriority, type Reason, suggestionKey } from "../engine-io";
 import { MATH_TARGET_DEFS } from "../families";
 import { advancedOnly, type AltResult, evaluateAlternative, leafAccepts, pickAlternative, type PickOptions } from "./allocate";
-import { earlyWithoutCredit, evaluateRuleSet, type RuleSetEval } from "./audit";
+import { earlyWithoutCredit, evaluateCheck, evaluateRuleSet, type RuleSetEval } from "./audit";
 import type { CatalogRow } from "./catalog";
-import type { Alternative, CLeaf } from "./compile";
+import { type Alternative, type CLeaf, leafSignature } from "./compile";
 import { type Ctx, type FamilyCtx, leafPriority, levelOrder, rowIsOffered, type RuleSetCtx, schoolYearOfGrade } from "./context";
 import { reason } from "./explain";
 import { MinCostFlow } from "./flow";
@@ -223,7 +223,10 @@ export class Filler {
   constructor(
     readonly ctx: Ctx,
     readonly config: PlanConfig,
+    /** Requirements (by rule set) whose routes the plan doesn't take (a program that wouldn't count). */
+    exclude: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
   ) {
+    for (const [id, leaves] of exclude) this.excluded.set(id, new Set(leaves));
     this.items = [...ctx.items];
     this.ladderFamilyValue = ladderFamily(ctx.state, ctx.items);
     for (const grade of ctx.planGrades) {
@@ -348,7 +351,7 @@ export class Filler {
 
   /** What an extension still misses (in units) on its best route that follows this base route. */
   private extensionMissing(ext: RuleSetCtx, base: Alternative, items: Item[]): number {
-    const sig = (l: CLeaf) => `${l.id}>${l.subFor ?? ""}`;
+    const sig = leafSignature;
     const want = base.leaves.map(sig).sort().join("|");
     const alts = ext.alternatives.filter((a) => a.leaves.filter((l) => !l.own).map(sig).sort().join("|") === want);
     if (alts.length === 0) return 0;
@@ -368,7 +371,7 @@ export class Filler {
     const chosen = baseChoice?.get(baseRc.rs.id) ?? baseRc.alternatives.find((a) => a.index === this.chosen.get(baseRc.rs.id));
     if (!chosen) return undefined;
     // Leaf ids and what each stands in for: the plain route and a substitution route share ids.
-    const sig = (l: CLeaf) => `${l.id}>${l.subFor ?? ""}`;
+    const sig = leafSignature;
     const want = chosen.leaves.map(sig).sort().join("|");
     return (alt) => alt.leaves.filter((l) => !l.own).map(sig).sort().join("|") === want;
   }
@@ -1457,8 +1460,9 @@ export class Filler {
         if (!usable(grade)) continue;
         const row = grade === next && nextRow ? nextRow : this.languageRow(need, typeId, grade);
         if (!row) continue;
-        // A year without the language before this level: say so, the counselor may find room.
-        const skipped = lastGrade >= 8 && grade > lastGrade + 1;
+        // A year without the language before this level: say so, the counselor may find room. Only
+        // for a year still ahead (or in progress): a senior can't take it in 10th any more.
+        const skipped = lastGrade >= 8 && grade > lastGrade + 1 && this.ctx.planGrades.includes((lastGrade + 1) as SchoolGrade);
         const extra = skipped
           ? [reason("gap", `There's a year without ${LANGUAGE_NAMES[code]} before this class because ${nth(lastGrade + 1)} grade is full. Ask your counselor whether it can come in ${nth(lastGrade + 1)} instead.`, { claim: "suggestion" })]
           : [];
@@ -2033,6 +2037,14 @@ export class Filler {
 
   // Pruning -------------------------------------------------------------------------------------
 
+  /** `allowed`, without routes through an excluded requirement (unless that leaves none). */
+  private notExcluded(rc: RuleSetCtx, allowed: ((alt: Alternative) => boolean) | undefined): ((alt: Alternative) => boolean) | undefined {
+    const excluded = this.excluded.get(rc.rs.id);
+    if (!excluded?.size) return allowed;
+    const both = (alt: Alternative) => (!allowed || allowed(alt)) && !alt.leaves.some((l) => excluded.has(l.id));
+    return rc.alternatives.some(both) ? both : allowed;
+  }
+
   /**
    * One pass over the rule sets (bases first, extensions following them), with an optional last
    * tie-break. With `previous`, a rule set whose earlier result can't change (no tie-break to apply,
@@ -2049,7 +2061,9 @@ export class Filler {
       let e: RuleSetEval;
       if (prev && (reuse || reuseSingle)) e = prev;
       else {
-        const opts = this.pickOptions(rc, asConfirmed(items), finalChoice);
+        const base = this.pickOptions(rc, asConfirmed(items), finalChoice);
+        // A route the plan was told not to take (a program that wouldn't count) isn't the audit's either.
+        const opts = { ...base, allowed: this.notExcluded(rc, base.allowed) };
         const prefer = opts.prefer!;
         e = evaluateRuleSet(rc, items, unique ? { ...opts, prefer: (r) => prefer(r) * 1000 - unique(rc, r) } : opts, asConfirmed(items));
         if (prev && e.best?.alt.index !== prev.best?.alt.index) changed.add(rc.rs.id);
@@ -2344,6 +2358,37 @@ function cteTitle(cluster: string): string {
   return t.slice(0, t.indexOf(":"));
 }
 
-export function runFill(ctx: Ctx, config: PlanConfig): FillResult {
-  return new Filler(ctx, config).run();
+/**
+ * `reroute`: a program that counts only on a condition the plan doesn't meet (an engineering
+ * program for Business and Industry when the plan meets STEM's math and science too, 19 TAC
+ * §74.13(f)(7)(B)) isn't a way to earn the endorsement the student named: plan another of its
+ * programs instead, when one fits as well. The two-plan endorsement choice turns it off: there,
+ * such an endorsement isn't offered at all.
+ */
+export function runFill(ctx: Ctx, config: PlanConfig, reroute = true): FillResult {
+  const first = new Filler(ctx, config).run();
+  const conditional = reroute ? conditionalPrograms(ctx, first) : new Map<string, Set<string>>();
+  if (conditional.size === 0) return first;
+  const second = new Filler(ctx, config, conditional).run();
+  return requiredUnmet(second) <= requiredUnmet(first) && conditionalPrograms(ctx, second).size === 0 ? second : first;
+}
+
+/** Program requirements on the plan's routes whose "counts unless" check ends at "ask your counselor". */
+function conditionalPrograms(ctx: Ctx, fill: FillResult): Map<string, Set<string>> {
+  const out = new Map<string, Set<string>>();
+  for (const e of fill.evals) {
+    if (!e.best) continue;
+    for (const check of e.rc.variant?.checks ?? []) {
+      if (check.kind !== "counts_unless") continue;
+      const result = evaluateCheck(ctx, e.rc, check, e.best.leaves, fill.items, () => null);
+      if (result?.status !== "ask_counselor") continue;
+      out.set(e.rc.rs.id, new Set([...(out.get(e.rc.rs.id) ?? []), check.req]));
+    }
+  }
+  return out;
+}
+
+/** Units of required (P0-P1) needs still unmet. */
+function requiredUnmet(fill: FillResult): number {
+  return fill.needs.filter((n) => n.priority <= 1 && !n.soft && n.missing > 0).reduce((s, n) => s + needUnits(n), 0);
 }

@@ -300,7 +300,8 @@ describe("An endorsement's 26 credits count for the DLA, with a gap a senior can
     expect(check.status).toBe("room_to_add");
     expect(check.text).not.toMatch(/on your plan too/);
     const gap = path.gaps.find((g) => g.id === "gap:tx.endorse.multidisciplinary/e.electives")!;
-    expect(gap.text).toMatch(/^Needs a plan now: Your plan has room for about 1 more credit, and the Multidisciplinary Studies endorsement needs at least 26 credits in all \(4\.5 more\)\.$/);
+    // The year in progress counts only for its spring term (round 5): one open period is half a credit.
+    expect(gap.text).toMatch(/^Needs a plan now: Your plan has room for about 0\.5 more credits, and the Multidisciplinary Studies endorsement needs at least 26 credits in all \(4\.5 more\)\.$/);
     expect(gap.options.map((o) => o.kind)).toEqual(["credit_by_exam", "ask_counselor"]);
     expect(gap.reasons[0].citations).toContain("tx-74-13-c");
   });
@@ -337,9 +338,10 @@ describe("An endorsement's 26 credits count for the DLA, with a gap a senior can
       ],
     });
     expect(ruleSet(path, "tx.dla").checks.find((c) => c.checkId === "dla.endorsement")!.status).toBe("room_to_add");
-    // Room for 3 more credits, 3.5 short: half a credit out of reach.
+    // Three open periods this year, 3.5 short: half a credit out of reach even with all of them,
+    // and 1.5 credits of room once the year counts only for its spring term (round 5).
     const gap = path.gaps.find((g) => g.id === "gap:tx.endorse.multidisciplinary/e.electives")!;
-    expect(gap.text).toBe("Needs a plan now: Your plan has room for about 3 more credits, and the Multidisciplinary Studies endorsement needs at least 26 credits in all (3.5 more).");
+    expect(gap.text).toBe("Needs a plan now: Your plan has room for about 1.5 more credits, and the Multidisciplinary Studies endorsement needs at least 26 credits in all (3.5 more).");
   });
 
   it("a 9th grader with years of room keeps the DLA's endorsement check and no credit gap", () => {

@@ -71,9 +71,21 @@ the folder, the manifest and the loader agree).
   half credit added to any of the required half-credit courses"), the leaves set `allowSplit`.
 - **Two different languages.** A `same_language` leaf with `differentFrom` counts a language other
   than the one its partner counts (Texas Arts and Humanities, §74.13(f)(4)(C)).
-- **Waivers size the focus.** Tennessee's world language and fine arts waivers "expand and enhance
-  the elective focus" (Policy 2.103 I(16)-(17)), so each focus is an `option` on the waivers: 3, 4,
-  5 or 6 credits in the focus area.
+- **Waivers expand the focus, next to its program.** Tennessee's world language and fine arts
+  waivers are granted "to expand and enhance the elective focus" (Policy 2.103 I(16)-(17)), which
+  doesn't say which classes count. The waived credits are the graduation rules' own lines ("2 more
+  credits that expand your elective focus (world language waived; ask your counselor which classes
+  count)"), counted by any class; each focus stays its 3 credits (a CTE focus: "three (3) credits in
+  the same CTE career cluster", I(18)(a)) with a warning that names the waivers. (Round 4 sized the
+  focus 3-6 credits in one program, which double-counted the waived credits and filled them with an
+  unrelated cluster.)
+- **One computer science substitution.** Tennessee's 2024 computer science credit is
+  `substituteOnce`: computer science stands in for "one (1) credit in mathematics, or one (1)
+  credit in science" (Policy 2.103 I(4)(b)1), so each compiled route keeps the computer science
+  substitute selectors on the 4th math or the 3rd lab science, not both.
+- **Gates by major.** A rule set's `appliesWhen.cips` (and a rigor raise's `cips`) name majors
+  inside a family by CIP prefix: UT Austin's calculus readiness covers "All majors in the Jackson
+  School of Geosciences" (CIP 40.06), while other physical sciences route to the same family.
 - **"On schedule" isn't "done by".** The DLA's Algebra II can be planned for 12th: by the end of
   11th the plan must show it (TEC §51.803(d)), so it has no `deadlineGrade`; the `on_schedule_by`
   check lists what must be on the plan (`req` and `with`).
@@ -101,6 +113,10 @@ the folder, the manifest and the loader agree).
 - Tennessee's elective focus is 3 credits beyond the core, checked when the student picks a focus
   (the graduation total of 22 credits covers it before then).
 - Tennessee's list of CTE programs of study wasn't verified, so no family names Tennessee pathways.
+- Texas's generic list has three levels for each career cluster a family names, from TEA's
+  statewide programs of study (manufacturing from Welding, arts/AV from Graphic Design and
+  Interactive Media, human services from Cosmetology and Personal Care Services), each of which
+  "will fulfill requirements of the Business and Industry endorsement".
 - Pre-nursing (CIP 51.1105) routes to nursing, ahead of the pre-health rule for 51.11.
 - A career whose majors route to several families goes to the family whose majors the most
   colleges offer (each major weighed by the colleges offering its 4-digit family), not to the

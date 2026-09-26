@@ -633,7 +633,7 @@
               "pref": "tnWorldLanguageWaiver",
               "on": {
                 "id": "wl.waived",
-                "label": "2 more elective focus credits (world language waived)",
+                "label": "2 more credits that expand your elective focus (world language waived; ask your counselor which classes count)",
                 "kind": "remaining_electives",
                 "units": 8,
                 "cite": ["tn-2103-i-16", "tn-0520-01-03-06-waiver"]
@@ -655,7 +655,7 @@
               "pref": "tnFineArtsWaiver",
               "on": {
                 "id": "arts.waived",
-                "label": "1 more elective focus credit (fine arts waived)",
+                "label": "1 more credit that expands your elective focus (fine arts waived; ask your counselor which classes count)",
                 "kind": "remaining_electives",
                 "units": 4,
                 "cite": ["tn-2103-i-17", "tn-0520-01-03-06-waiver"]
@@ -1015,7 +1015,7 @@
               "pref": "tnWorldLanguageWaiver",
               "on": {
                 "id": "wl.waived",
-                "label": "2 more elective focus credits (world language waived)",
+                "label": "2 more credits that expand your elective focus (world language waived; ask your counselor which classes count)",
                 "kind": "remaining_electives",
                 "units": 8,
                 "cite": ["tn-2103-i-16", "tn-0520-01-03-06-waiver"]
@@ -1037,7 +1037,7 @@
               "pref": "tnFineArtsWaiver",
               "on": {
                 "id": "arts.waived",
-                "label": "1 more elective focus credit (fine arts waived)",
+                "label": "1 more credit that expands your elective focus (fine arts waived; ask your counselor which classes count)",
                 "kind": "remaining_electives",
                 "units": 4,
                 "cite": ["tn-2103-i-17", "tn-0520-01-03-06-waiver"]
@@ -1066,6 +1066,7 @@
               "cite": ["tn-2103-i-4b", "tn-2103-i-4b1", "tn-2103-i-4b1-only", "tn-2103-i-4b2"],
               "area": "computer_science",
               "substitutesForOneOf": ["math.fourth", "sci.third"],
+              "substituteOnce": true,
               "note": "It can also be your 4th math or your 3rd science (one of them), or part of your elective focus. Students who move to Tennessee in 12th grade are exempt."
             },
             {

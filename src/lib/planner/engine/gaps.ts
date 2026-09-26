@@ -267,11 +267,21 @@ function gapText(ctx: Ctx, need: Need, kind: Gap["kind"], block: BlockReason | n
 }
 
 /**
- * Room left in the plan's school years, in units. The year in progress counts too: classes being
- * taken now may not be recorded yet.
+ * Room left in the plan's school years, in units. The year in progress counts only for its spring
+ * term (half a credit per open class period): its schedule is mostly set, and an open period may
+ * earn no credit (release time, a study hall). `wholeYear` counts all of it: classes being taken
+ * now may not be recorded yet.
  */
-export function freeUnits(fill: FillResult): number {
-  return [...fill.years.values()].reduce((n, y) => n + Math.max(0, y.capHalves - y.used) * 2, 0);
+export function freeUnits(fill: FillResult, wholeYear = false): number {
+  return [...fill.years.values()].reduce((n, y) => n + Math.max(0, y.capHalves - y.used) * (y.inProgress && !wholeYear ? 1 : 2), 0);
+}
+
+/**
+ * "Your plan has room for about 2 more credits, and total credits needs 3 more." When only this
+ * year's open periods would hold it, the gap says what that takes.
+ */
+function roomText(room: string, needs: string, fitsThisYear: boolean): string {
+  return fitsThisYear ? `${room} after this fall, and ${needs}. That fits only if you add classes this year; ask your counselor.` : `${room}, and ${needs}.`;
 }
 
 /**
@@ -381,8 +391,9 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
       reasons: block === "hs_credit" ? [...reasons, ...earlyCreditNotes(ctx)] : reasons,
     });
   }
-  // Graduation totals the remaining years can't hold.
+  // Graduation totals the remaining years can't hold (this year only for its spring term).
   const free = freeUnits(fill);
+  const whole = freeUnits(fill, true);
   const room = `Your plan has room for about ${toCredits(free)} more ${creditNoun(toCredits(free))}`;
   for (const e of fill.evals) {
     if (!e.best || ctx.firstGrade <= 8) continue;
@@ -394,7 +405,7 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
           kind: "doesnt_fit",
           priority: 0,
           demandId: null,
-          text: `${room}, and ${l.leaf.label.toLowerCase()} needs ${toCredits(l.missing)} more.`,
+          text: roomText(room, `${l.leaf.label.toLowerCase()} needs ${toCredits(l.missing)} more`, whole >= l.missing),
           decideBy: byWhenFor(ctx, 12),
           options: creditOptions(ctx),
           reasons: [reason("requirement", `${l.leaf.label}: ${toCredits(l.required)} credits.`, { ruleSetId: e.rc.rs.id, reqId: l.leaf.id, citations: l.leaf.cite })],
@@ -413,7 +424,7 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
       kind: "doesnt_fit",
       priority,
       demandId: null,
-      text: `${planNow ? "Needs a plan now: " : ""}${room}, and the ${e.rc.rs.title} needs at least ${toCredits(added.required)} credits in all (${toCredits(added.missing)} more).`,
+      text: `${planNow ? "Needs a plan now: " : ""}${roomText(room, `the ${e.rc.rs.title} needs at least ${toCredits(added.required)} credits in all (${toCredits(added.missing)} more)`, whole >= added.missing)}`,
       decideBy: byWhenFor(ctx, 12),
       options: creditOptions(ctx),
       reasons: [
