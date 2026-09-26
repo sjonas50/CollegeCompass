@@ -192,8 +192,11 @@ function checkVariant(v: Variant, where: string, issues: string[]) {
   }
   if (!v.extends) {
     for (const c of v.checks ?? []) {
-      if (c.kind === "on_schedule_by" && !ids.has(c.req)) issues.push(`${where} ${c.id}: on_schedule_by names unknown requirement "${c.req}".`);
+      if (c.kind === "on_schedule_by") for (const id of [c.req, ...(c.with ?? [])]) if (!ids.has(id)) issues.push(`${where} ${c.id}: on_schedule_by names unknown requirement "${id}".`);
     }
+  }
+  for (const c of v.checks ?? []) {
+    if (c.kind === "counts_unless" && !ids.has(c.req)) issues.push(`${where} ${c.id}: counts_unless names unknown requirement "${c.req}".`);
   }
   const alternatives = variantAlternatives(v);
   if (alternatives > MAX_ALTERNATIVES_PER_VARIANT) {
@@ -261,12 +264,23 @@ function checkRuleFiles(files: { file: RuleFile; label: string }[], issues: stri
           if (!base) issues.push(`${label} ${v.id}: extends unknown variant "${v.extends}".`);
           const ids = new Set(walkReqs([...(base?.requirements ?? []), ...v.requirements]).map((r) => r.id));
           for (const c of v.checks ?? []) {
-            if (c.kind === "on_schedule_by" && !ids.has(c.req)) issues.push(`${label} ${v.id} ${c.id}: on_schedule_by names unknown requirement "${c.req}".`);
+            if (c.kind === "on_schedule_by") for (const id of [c.req, ...(c.with ?? [])]) if (!ids.has(id)) issues.push(`${label} ${v.id} ${c.id}: on_schedule_by names unknown requirement "${id}".`);
           }
         }
         for (const c of v.checks ?? []) {
-          if (c.kind !== "requires_rule_set") continue;
-          for (const id of c.anyOf) if (!ruleSetIds.has(id)) issues.push(`${label} ${v.id} ${c.id}: requires unknown rule set "${id}".`);
+          if (c.kind === "requires_rule_set") for (const id of c.anyOf) if (!ruleSetIds.has(id)) issues.push(`${label} ${v.id} ${c.id}: requires unknown rule set "${id}".`);
+          if (c.kind === "counts_unless") {
+            const other = ruleSets.find((r) => r.id === c.unless.ruleSet);
+            if (!other) issues.push(`${label} ${v.id} ${c.id}: counts_unless names unknown rule set "${c.unless.ruleSet}".`);
+            else {
+              const known = new Set(other.variants.flatMap((x) => walkReqs(x.requirements).map((r) => r.id)));
+              for (const id of c.unless.groups.flat()) if (!known.has(id)) issues.push(`${label} ${v.id} ${c.id}: counts_unless names unknown requirement "${id}" of ${other.id}.`);
+            }
+          }
+        }
+        for (const t of rs.testRoutes ?? []) {
+          const known = new Set(rs.variants.flatMap((x) => [...walkReqs(x.requirements).map((r) => r.id), ...(x.checks ?? []).map((c) => c.id)]));
+          for (const id of t.reqIds ?? []) if (!known.has(id)) issues.push(`${label} ${rs.id} test route ${t.id}: names unknown requirement or check "${id}".`);
         }
       }
     }
@@ -288,6 +302,7 @@ function checkFamilies(file: MajorFamiliesFile, label: string, issues: string[],
   const cited = file.families.flatMap((f) => [
     ...f.math.cite,
     ...f.ctePathways.flatMap((p) => p.cite),
+    ...(f.txEndorsement?.cite ?? []),
     ...f.gates.flatMap((g) => g.cite),
     ...f.cautions.flatMap((c) => c.cite),
   ]);

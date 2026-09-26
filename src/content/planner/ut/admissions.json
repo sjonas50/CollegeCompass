@@ -175,7 +175,7 @@
                   "label": "4 years of math",
                   "kind": "credits",
                   "units": 16,
-                  "select": [{ "subjects": ["math"], "exclude": ["math.ms"] }],
+                  "select": [{ "types": ["math.alg1", "math.int1", "math.ut_sec1", "math.geom", "math.int2", "math.ut_sec2"] }, { "capabilities": ["alg2_or_beyond"] }, { "types": ["math.stats"] }],
                   "cite": ["ut-usu-prep-1"]
                 },
                 {

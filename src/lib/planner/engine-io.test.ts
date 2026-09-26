@@ -28,7 +28,7 @@ const reason: Reason = {
 };
 
 const ask: GapOption = { kind: "ask_counselor", text: "Ask your counselor", note: "", closes: null, adds: [], citations: [] };
-const plan: PlanOption = { id: "A", label: "Plan A", years: [] };
+const plan: PlanOption = { id: "A", label: "Plan A", years: [], audit: [], gaps: [], deadlines: [], askCounselor: [] };
 
 describe("engine input", () => {
   it("is plain JSON, so the engine can stay pure and deterministic", () => {

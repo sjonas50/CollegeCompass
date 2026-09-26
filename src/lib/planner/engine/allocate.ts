@@ -42,6 +42,11 @@ export type AltResult = {
   collegeOnlyUnmet: number;
   /** Missing, in units (a course or a language level counts as a credit). */
   missingUnits: number;
+  /** Requirements that count only once finished (Utah calculus with a C) and aren't finished yet. */
+  notDone: number;
+  /** Not on track, and missing units, among requirements that name classes (not totals or electives). */
+  offTrackNamed: number;
+  missingNamed: number;
 };
 
 const ELECTIVE_COST = 5;
@@ -324,27 +329,59 @@ export function evaluateAlternative(alt: Alternative, items: Item[], allocation:
   let onTrack = 0;
   let missingUnits = 0;
   let collegeOnlyUnmet = 0;
+  let notDone = 0;
+  let offTrackNamed = 0;
+  let missingNamed = 0;
   for (const r of leaves) {
+    const units = r.leaf.measure === "units" ? r.missing : r.missing * UNITS_PER_CREDIT;
     if (r.missing === 0 && r.planned === 0) firmMet++;
     if (r.missing === 0) onTrack++;
     if (r.missing > 0 && requiresCollegeLevel(r.leaf)) collegeOnlyUnmet++;
-    missingUnits += r.leaf.measure === "units" ? r.missing : r.missing * UNITS_PER_CREDIT;
+    if (r.leaf.req.kind === "credits" && r.leaf.req.onlyWhenDone && !finished(r)) notDone++;
+    missingUnits += units;
+    // Totals and "the rest in electives" are met by any class (a "Your choice" slot): they break ties only.
+    if (r.leaf.req.kind !== "total_credits" && r.leaf.req.kind !== "remaining_electives" && r.missing > 0) {
+      offTrackNamed++;
+      missingNamed += units;
+    }
   }
-  return { alt, leaves, firmMet, onTrack, collegeOnlyUnmet, missingUnits };
+  // One missing class that stands in for another requirement covers both (Tennessee computer science).
+  for (const r of leaves) {
+    if (!r.leaf.subFor || r.missing <= 0) continue;
+    const target = leaves.find((l) => l.leaf.id === r.leaf.subFor);
+    if (target) {
+      missingUnits -= Math.min(target.missing, r.missing);
+      missingNamed -= Math.min(target.missing, r.missing);
+    }
+  }
+  return { alt, leaves, firmMet, onTrack, collegeOnlyUnmet, missingUnits, notDone, offTrackNamed, missingNamed };
 }
 
-/** Only AP, IB, Cambridge or college-credit classes can meet it. */
-export function requiresCollegeLevel(leaf: CLeaf): boolean {
-  const sels = selectOf(leaf);
-  return !!sels && sels.length > 0 && sels.every((s) => s.levels !== undefined && s.levels.every((l) => l === "ap" || l === "ib" || l === "cambridge" || l === "dual_enrollment"));
+/** Met by finished classes only (not in progress, not planned). */
+function finished(r: LeafResult): boolean {
+  return r.missing === 0 && r.counted.every((c) => c.item.completed);
 }
 
 /**
- * The alternative to report and plan toward (design §5.5, adapted): one whose unmet requirements
- * can still be met; then the fewest unmet requirements only college-level classes could meet
- * (rigor is never the default route); then most requirements done and most on track (counted as
- * the fewest still open, so alternatives of different sizes compare fairly); then the fewest
- * missing units; then `prefer`; then author order.
+ * Only an advanced level of a class can meet it (honors, AP, IB, Cambridge or college credit: an aid
+ * rule's "one AP class", Texas Multidisciplinary's "four advanced courses"). Such a requirement is
+ * met by a level choice on a class already planned, never by adding classes (design §5.7).
+ */
+export function requiresCollegeLevel(leaf: CLeaf): boolean {
+  const sels = selectOf(leaf);
+  return !!sels && advancedOnly(sels);
+}
+
+export function advancedOnly(sels: readonly Selector[]): boolean {
+  return sels.length > 0 && sels.every((s) => s.levels !== undefined && !s.levels.includes("regular"));
+}
+
+/**
+ * The alternative to report and plan toward (design §5.5, adapted): never one that counts only a
+ * finished class it doesn't have yet; one whose unmet requirements can still be met; then the
+ * fewest unmet requirements only college-level classes could meet (rigor is never the default
+ * route); then the fewest requirements not on track; the fewest missing units; `prefer`; the
+ * fewest not yet done; then author order.
  */
 export type PickOptions = {
   /** Only these alternatives are considered (an extension follows its base's choice). */
@@ -356,9 +393,13 @@ export type PickOptions = {
 };
 
 export function pickAlternative(results: AltResult[], opts: PickOptions = {}): AltResult {
-  // Open requirements (not done; not on track) rather than done ones, so an alternative with more,
-  // smaller requirements doesn't win just by having more of them ("calculus with a C" is one
-  // requirement that completes Utah math; the three-course sequence is three).
+  // Unmet requirements (not on track) come first, so an alternative that's fully on track beats one
+  // that isn't, whatever their sizes; then the fewest missing units; then `prefer` (merge potential,
+  // and in the final audit the route that leans least on classes nothing else needs); then the
+  // fewest requirements not yet done. Counting requirements (rather than done ones) keeps an
+  // alternative with more, smaller requirements from winning just by having more of them. A
+  // requirement that counts only once finished (Utah's "calculus with a C") never makes its
+  // alternative the one to plan toward until it's finished.
   const open = (x: AltResult) => x.leaves.length - x.firmMet;
   const offTrack = (x: AltResult) => x.leaves.length - x.onTrack;
   const feasible = results.map((r) => (opts.feasible ? opts.feasible(r) : true));
@@ -367,12 +408,15 @@ export function pickAlternative(results: AltResult[], opts: PickOptions = {}): A
     const r = results[i];
     const best = results[bestIndex];
     const d =
+      Number(r.notDone === 0) - Number(best.notDone === 0) ||
       Number(feasible[i]) - Number(feasible[bestIndex]) ||
       best.collegeOnlyUnmet - r.collegeOnlyUnmet ||
-      open(best) - open(r) ||
+      best.offTrackNamed - r.offTrackNamed ||
+      best.missingNamed - r.missingNamed ||
       offTrack(best) - offTrack(r) ||
       best.missingUnits - r.missingUnits ||
-      (opts.prefer ? opts.prefer(r) - opts.prefer(best) : 0);
+      (opts.prefer ? opts.prefer(r) - opts.prefer(best) : 0) ||
+      open(best) - open(r);
     if (d > 0) bestIndex = i;
   }
   return results[bestIndex];

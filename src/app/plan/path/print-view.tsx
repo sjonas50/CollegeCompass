@@ -6,7 +6,7 @@ import { getFamily } from "@/lib/planner/families";
 import { REVIEW_LABELS } from "@/lib/planner/review";
 import type { PathContext } from "@/lib/planner/service";
 import { savedSchoolLabel } from "@/lib/schools/labels";
-import { cohortLine, COURSE_STATUS_WORDS, PATH_LABELS, stateTitle, yearLabel } from "@/lib/planner/view";
+import { cohortLine, COURSE_STATUS_WORDS, PATH_LABELS, planParts, stateTitle, yearLabel } from "@/lib/planner/view";
 
 // The one-page draft for the counselor meeting (design §2.8): semantic HTML that prints on one or
 // two pages. The first name is off unless the student turns it on; the school shows because the
@@ -33,8 +33,10 @@ export function PrintView({
   today: string;
 }) {
   const plan = path.plans.find((p) => p.id === planId) ?? path.plans[0];
+  // The printed plan's own questions, gaps and audit (Plan B's when printing Plan B).
+  const parts = planParts(path, planId);
   const school = ctx.school?.current;
-  const graduation = path.audit.filter((rs) => rs.kind === "state_graduation");
+  const graduation = parts.audit.filter((rs) => rs.kind === "state_graduation");
   const conditions = graduation.flatMap((rs) => rs.conditions);
   const reviewed = path.builtFrom.ruleSets;
   return (
@@ -83,13 +85,13 @@ export function PrintView({
         <dd>{today}</dd>
       </dl>
 
-      {path.askCounselor.length > 0 && (
+      {parts.askCounselor.length > 0 && (
         <section aria-labelledby="print-questions">
           <h2 id="print-questions" className="text-lg font-semibold">
             Questions for my counselor
           </h2>
           <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm">
-            {path.askCounselor.map((q) => (
+            {parts.askCounselor.map((q) => (
               <li key={q.id}>{q.text}</li>
             ))}
           </ol>
@@ -144,13 +146,13 @@ export function PrintView({
         </section>
       )}
 
-      {path.gaps.length > 0 && (
+      {parts.gaps.length > 0 && (
         <section aria-labelledby="print-left">
           <h2 id="print-left" className="text-lg font-semibold">
             What&apos;s still open
           </h2>
           <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
-            {path.gaps.map((g) => (
+            {parts.gaps.map((g) => (
               <li key={g.id}>
                 {g.text} Options: {g.options.map((o) => o.text).join("; ")}.
               </li>

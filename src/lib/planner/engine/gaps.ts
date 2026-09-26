@@ -1,13 +1,14 @@
 import type { SchoolGrade } from "../common";
 import { GAP_OPTION_KINDS, type GapOptionKind, type OptionFact } from "../content-types";
-import { courseTypeTitle, type CourseTypeId, levelLabel } from "../course-types";
+import { courseTypeTitle, type CourseTypeId, getCourseType, levelLabel } from "../course-types";
 import type { ByWhen, Gap, GapOption, UpToThree } from "../engine-io";
 import { MATH_TARGET_DEFS } from "../families";
-import type { Ctx } from "./context";
+import { type Ctx, rowIsOffered, schoolYearOfGrade } from "./context";
 import { algebra2Reason, reason } from "./explain";
-import type { BlockReason, FillResult } from "./fill";
-import { type LadderSolution, rungName, rungTypes, solveLadder } from "./ladder";
+import { type BlockReason, type FillResult, probe } from "./fill";
+import { type LadderMoves, type LadderSolution, rungName, rungTypes, solveLadder } from "./ladder";
 import { isLadderish, type Need } from "./needs";
+import { matchesAny } from "./select";
 import { atLeast, nth } from "./util";
 import { toCredits } from "../common";
 
@@ -39,21 +40,39 @@ function lastMathBOrBetter(fill: FillResult): boolean {
   return last ? atLeast(last.letter, "B") === true : false;
 }
 
+/** The kind of class that would meet a need: one the class lists offer that matches it (a CTE credit is a CTE class). */
 function typeForNeed(ctx: Ctx, need: Need): CourseTypeId | null {
-  for (const s of need.selectors) if (s.types?.length) return s.types[0];
   for (const grade of ctx.planGrades) {
-    const row = ctx.catalogs.get(grade)?.rows.find((r) => need.selectors.some((s) => (!s.subjects || s.subjects.includes(r.subject)) && !s.types && !s.capabilities));
+    if (grade < 9) continue;
+    const sy = schoolYearOfGrade(ctx, grade);
+    const row = ctx.catalogs.get(grade)?.rows.find((r) => rowIsOffered(r, grade, sy) && matchesAny(probe(r, grade, sy), need.selectors));
     if (row) return row.typeId;
   }
+  for (const s of need.selectors) if (s.types?.length) return s.types[0];
   return null;
 }
 
-/** Extra summer or double-up math that would reach the target (re-solving the ladder with more moves). */
-function ladderAdds(fill: FillResult, moves: { double: boolean; summer: boolean }): LadderSolution | null {
+/** Extra summer, double-up or college-credit math that would reach the target (re-solving the ladder with more moves). */
+function ladderAdds(fill: FillResult, moves: LadderMoves): LadderSolution | null {
   const problem = fill.ladder.problem;
   if (!problem) return null;
   const sol = solveLadder({ ...problem, moves });
   return sol.unmet.length < (fill.ladder.solution?.unmet.length ?? 0) ? sol : null;
+}
+
+/**
+ * Whether the options that add load (summer, online, college credit, an exam) are offered: for
+ * required (P0-P1) needs, and for targets the student picked (a college on their list, a career
+ * goal). A labeled default target's recommendation or a scholarship's course part is information
+ * with "Ask your counselor" only; college classes are never pushed for a recommendation.
+ */
+function loadOptionsAllowed(need: Need): boolean {
+  if (need.priority <= 1) return true;
+  if (need.id.startsWith("cte:")) return false;
+  if (need.source === "prep") return need.familyId !== null;
+  if (!need.rc) return false;
+  const kind = need.rc.rs.kind;
+  return !need.rc.viaStateDefault && (kind === "college_admission" || kind === "program_admission" || kind === "guaranteed_admission");
 }
 
 export function optionsFor(ctx: Ctx, fill: FillResult, need: Need, ladder: boolean): UpToThree<GapOption> {
@@ -61,13 +80,14 @@ export function optionsFor(ctx: Ctx, fill: FillResult, need: Need, ladder: boole
   const byGrade = Math.max(ctx.firstGrade, Math.min(12, need.byGrade));
   const out: GapOption[] = [];
   const type = typeForNeed(ctx, need);
-  const typeTitle = type ? courseTypeTitle(type, ctx.state) : need.label;
+  const typeTitle = type ? courseTypeTitle(type, ctx.state) : `a class for ${lowerFirst(need.label)}`;
+  const withLoad = loadOptionsAllowed(need);
 
   for (const route of need.testRoutes) {
     out.push({ kind: "test_score", text: route.text, note: "A test score instead of a class. Scores and dates are the source's own.", closes: null, adds: [], citations: route.cite });
     break;
   }
-  const summer = lim.allowSummer ? fact(ctx, "summer", null) : null;
+  const summer = lim.allowSummer && withLoad ? fact(ctx, "summer", null) : null;
   if (summer) {
     let adds: GapOption["adds"] = [];
     if (ladder) {
@@ -96,20 +116,33 @@ export function optionsFor(ctx: Ctx, fill: FillResult, need: Need, ladder: boole
       }
     }
   }
-  const online = lim.allowOnline ? fact(ctx, "state_online", byGrade) : null;
+  const online = lim.allowOnline && withLoad ? fact(ctx, "state_online", byGrade) : null;
   if (online) out.push({ kind: "state_online", text: `Take ${typeTitle} online${online.programName ? ` through ${online.programName}` : ""}.`, note: online.note, closes: null, adds: [], citations: online.cite });
-  const college = lim.allowCollegeCredit ? (fact(ctx, "college_credit", byGrade) ?? fact(ctx, "college_credit", 12)) : null;
+  const college = lim.allowCollegeCredit && withLoad ? (fact(ctx, "college_credit", byGrade) ?? fact(ctx, "college_credit", 12)) : null;
   if (college) {
-    out.push({
-      kind: "college_credit",
-      text: `Take ${typeTitle} as a ${levelLabel("dual_enrollment", ctx.state).toLowerCase()} class${college.programName ? ` (${college.programName})` : ""}.`,
-      note: college.note,
-      closes: null,
-      adds: [],
-      citations: college.cite,
-    });
+    const name = college.programName ?? levelLabel("dual_enrollment", ctx.state);
+    if (ladder) {
+      // Only when college classes would actually close the gap (two college math classes in one
+      // year, precalculus first), in the grades the state allows.
+      const grades = (college.grades ?? ([9, 10, 11, 12] as SchoolGrade[])).filter((g) => g >= 9);
+      const sol = ladderAdds(fill, { double: false, summer: false, college: grades });
+      const steps = sol?.steps.filter((st) => st.college) ?? [];
+      if (steps.length) {
+        const year = steps[0].grade;
+        out.push({
+          kind: "college_credit",
+          text: `Take ${rungName(fill.ladder.family, steps[0].rank, ctx.state)} and then ${rungName(fill.ladder.family, steps[steps.length - 1].rank, ctx.state)} for college credit in ${nth(year)} grade: ${name}.`,
+          note: college.note,
+          closes: null,
+          adds: steps.map((st) => ({ grade: st.grade, typeId: rungTypes(fill.ladder.family, st.rank)[0], level: "dual_enrollment", term: "full_year" })),
+          citations: college.cite,
+        });
+      }
+    } else if (type && getCourseType(type).levels.includes("dual_enrollment")) {
+      out.push({ kind: "college_credit", text: `Take ${typeTitle} for college credit: ${name}.`, note: college.note, closes: null, adds: [], citations: college.cite });
+    }
   }
-  const exam = fact(ctx, "credit_by_exam", null);
+  const exam = withLoad ? fact(ctx, "credit_by_exam", null) : null;
   if (exam && (!exam.types || (type && exam.types.includes(type)))) {
     out.push({ kind: "credit_by_exam", text: `Earn the credit by exam${exam.programName ? ` (${exam.programName})` : ""}.`, note: exam.note, closes: null, adds: [], citations: exam.cite });
   }
@@ -134,6 +167,10 @@ export function optionsFor(ctx: Ctx, fill: FillResult, need: Need, ladder: boole
   return [...chosen, ASK] as UpToThree<GapOption>;
 }
 
+function lowerFirst(text: string): string {
+  return /^(A|An|The|One|Two|Three|Four) /.test(text) ? text.charAt(0).toLowerCase() + text.slice(1) : text;
+}
+
 function byWhenFor(ctx: Ctx, grade: number): ByWhen | null {
   if (grade < ctx.grade) return null;
   return { grade: Math.max(7, Math.min(12, grade)) as SchoolGrade, point: "end" };
@@ -149,7 +186,7 @@ function gapText(ctx: Ctx, need: Need, kind: Gap["kind"], block: BlockReason | n
     case "ladder_infeasible":
       return need.byGrade > ctx.grade || (need.byGrade === ctx.grade && ctx.inProgressGrade === null)
         ? `${label} by the end of ${nth(Math.min(12, need.byGrade))} grade would take more than one math class a year from here.`
-        : `${label} isn't on your plan by the end of ${nth(Math.min(12, need.byGrade))} grade.`;
+        : `${label} doesn't fit by the end of ${nth(Math.min(12, need.byGrade))} grade with the classes you're taking now.`;
     case "not_offered":
       return `Your school's class list doesn't show a class for this: ${label}.`;
     case "doesnt_fit":
@@ -170,6 +207,12 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
     let block = fill.unmet.get(need.id) ?? null;
     if (ctx.choices.utMath3OptOut && (isLadderish(need.selectors) ?? 0) >= 3) block = "choice";
     if (block === "guessed") continue;
+    // A dated test-score route (UT Austin calculus readiness) is the plan when the class route
+    // isn't planned: it's on the "by when" strip with the class route as a line, not a gap.
+    if (need.testRoutes.some((t) => t.by)) continue;
+    // A major-prep class no remaining grade's list offers never counts against the student (design
+    // §5.1): it's a good choice if the school has it, not a gap.
+    if (need.source === "prep" && block === "not_offered") continue;
     // A senior's admission and prep extras aren't actionable; required credits are.
     if (ctx.inProgressGrade === 12 && need.priority >= 2) continue;
     if (ctx.firstGrade <= 8) continue;
@@ -186,14 +229,16 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
     const reasons = [...need.reasons];
     if (ctx.state === "TX" && need.selectors.some((s) => s.types?.includes("math.alg2"))) reasons.push(algebra2Reason());
     if (needsPlanNow) reasons.push(reason("gap", "This is a required credit. Summer school or credit recovery may work; ask your counselor soon.", { ruleSetId: need.rc?.rs.id ?? null }));
+    // A career pathway's next level the list doesn't show: the counselor knows the school's sequence.
+    const pathway = need.id.startsWith("cte:");
     gaps.push({
       id: `gap:${need.id}`,
       kind,
       priority: need.priority,
       demandId: need.id,
-      text: gapText(ctx, need, kind, block, needsPlanNow),
+      text: pathway ? `Room to add: ${need.label}. Ask your counselor about the next class in this pathway.` : gapText(ctx, need, kind, block, needsPlanNow),
       decideBy: byWhenFor(ctx, need.byGrade),
-      options: block === "choice" || block === "equivalent" ? [ASK] : optionsFor(ctx, fill, need, ladder),
+      options: block === "choice" || block === "equivalent" || pathway ? [ASK] : optionsFor(ctx, fill, need, ladder),
       reasons,
     });
   }

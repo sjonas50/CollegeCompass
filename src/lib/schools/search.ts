@@ -81,6 +81,15 @@ export async function searchSchools(db: Db, input: { state: string; query: strin
   return rows.map(toOption);
 }
 
+/**
+ * A page of search results for the pickers: the first SCHOOL_SEARCH_LIMIT, and whether there were
+ * more (so the picker can say "type more of the name or the city" instead of "N schools found").
+ */
+export async function searchSchoolsPage(db: Db, input: { state: string; query: string }): Promise<{ results: SchoolOption[]; truncated: boolean }> {
+  const rows = await searchSchools(db, { ...input, limit: SCHOOL_SEARCH_LIMIT + 1 });
+  return { results: rows.slice(0, SCHOOL_SEARCH_LIMIT), truncated: rows.length > SCHOOL_SEARCH_LIMIT };
+}
+
 /** The schools with these refs that are still in the directory, by ref. */
 export async function schoolsByRef(db: Db, refs: readonly string[]): Promise<Map<string, SchoolOption>> {
   const wanted = [...new Set(refs)].filter(Boolean);

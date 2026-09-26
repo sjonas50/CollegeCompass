@@ -7,20 +7,30 @@ import { announcePath, focusPath } from "./announcer";
 
 export type AlternativeChoice = { key: string; label: string };
 
+/**
+ * What happens after an action, announced once (design §10.7): a failure shows in the error line,
+ * whose role="alert" announces it; a success goes to the path's polite live region and moves focus.
+ */
+export function afterAction(
+  res: PathActionResult,
+  focusAfter: string,
+  ui: { setError: (message: string) => void; announce: (message: string) => void; focus: (id: string) => void },
+): void {
+  if (!res.ok) {
+    ui.setError(res.message);
+    return;
+  }
+  if (res.message) ui.announce(res.message);
+  ui.focus(focusAfter);
+}
+
 function useAction() {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
   function run(action: () => Promise<PathActionResult>, focusAfter: string) {
     setError(undefined);
     startTransition(async () => {
-      const res = await action();
-      if (!res.ok) {
-        setError(res.message);
-        announcePath(res.message);
-        return;
-      }
-      if (res.message) announcePath(res.message);
-      focusPath(focusAfter);
+      afterAction(await action(), focusAfter, { setError, announce: announcePath, focus: focusPath });
     });
   }
   return { pending, error, run };

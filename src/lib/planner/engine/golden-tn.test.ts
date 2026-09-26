@@ -29,9 +29,9 @@ describe("TN-1: started 9th grade in 2025, UT Knoxville nursing", () => {
     expect(planLines(path)).toMatchInlineSnapshot(`
       [
         "Your path",
-        "  10: Visual art | English II | Geometry | Spanish II (4/7)",
-        "  11: Visual art | Computer programming 1 | English III | Physical education | Algebra II | Statistics (AP) | Chemistry (H) | Personal financial literacy (7/7)",
-        "  12: Visual art | English IV | Anatomy and physiology | U.S. government | Economics | U.S. history | Spanish III (6/7)",
+        "  10: English II | Geometry | Spanish II (3/7)",
+        "  11: Visual art | Computer programming 1 | English III | Physical education | Algebra II | Chemistry (H) | U.S. history | Personal financial literacy (7/7)",
+        "  12: Visual art | Band, choir or orchestra | English IV | Anatomy and physiology | U.S. government | Economics | Spanish III | Statistics (7/7)",
       ]
     `);
   });

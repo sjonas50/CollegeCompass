@@ -7,7 +7,7 @@ import { getFamily } from "@/lib/planner/families";
 import { REVIEW_LABELS } from "@/lib/planner/review";
 import type { InfoCard } from "@/lib/planner/rules";
 import type { PathContext } from "@/lib/planner/service";
-import { type AuditGroupId, auditGroup, COURSE_STATUS_WORDS, ordinal, progressText, statusWord, strengthLine, suggestionsByKey } from "@/lib/planner/view";
+import { type AuditGroupId, auditGroup, COURSE_STATUS_WORDS, ordinal, planParts, progressText, statusWord, strengthLine, suggestionsByKey } from "@/lib/planner/view";
 import { Chip, PathSection, StatusBadge } from "./parts";
 import { Why } from "./why";
 
@@ -230,7 +230,7 @@ function MajorPrep({ path, planId }: { path: PlannedPath; planId: "A" | "B" }) {
       {families.map((f, i) => {
         const fc = content.find((c) => c.id === f.familyId);
         const planned = inPlan.filter((s) => s.reasons.some((r) => r.familyId === f.familyId));
-        const gaps = path.gaps.filter((g) => g.reasons.some((r) => r.familyId === f.familyId));
+        const gaps = planParts(path, planId).gaps.filter((g) => g.reasons.some((r) => r.familyId === f.familyId));
         const listed = new Set(path.builtFrom.colleges.flatMap((c) => (c.unitId ? [c.unitId] : [])));
         const notes = [
           ...(fc?.gates ?? []).filter((g) => !g.colleges || g.colleges.some((u) => listed.has(u))).map((g) => ({ id: g.id, text: g.text, cite: g.cite })),
@@ -294,7 +294,7 @@ export function WhatCounts({ path, ctx, planId = "A" }: { path: PlannedPath; ctx
     <PathSection id="path-counts" title="What counts toward what" lead="Tap any line to see who asks for it, how strongly, and the source's own words.">
       <div className="space-y-6">
         {groups.map((g) => {
-          const sets = auditGroup(path, g.id);
+          const sets = auditGroup(planParts(path, planId).audit, g.id);
           if (!sets.length && !g.extra?.length) return null;
           return (
             <Group key={g.id} id={g.id} title={g.title} lead={g.lead}>

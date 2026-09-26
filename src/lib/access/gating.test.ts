@@ -24,6 +24,7 @@ import ApplicationsPage from "@/app/applications/page";
 import ConversationPage from "@/app/counselor/[id]/page";
 import CounselorPage from "@/app/counselor/page";
 import ChildPlanPage from "@/app/parent/children/[id]/plan/page";
+import ChildPlanPrintPage from "@/app/parent/children/[id]/plan/print/page";
 import PlanPage from "@/app/plan/page";
 import PlanPrintPage from "@/app/plan/print/page";
 import RoadmapPage from "@/app/roadmap/page";
@@ -58,12 +59,15 @@ const DAY_MS = 86_400_000;
 let db: Db;
 
 beforeEach(async () => {
+  // The students are 11th graders in 2026-27: pin today so they don't graduate out of the tests.
+  vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-09-25T15:00:00Z") });
   db = await createTestDb();
   state.db = db;
   vi.mocked(respond).mockClear();
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   state.db = null;
   state.user = null;
 });
@@ -304,6 +308,33 @@ describe("a parent's view of a child's path", () => {
       .returning({ id: schema.users.id });
     await db.insert(schema.parentStudentLinks).values({ parentUserId: parentId, studentUserId: child.id });
     expect(await redirectOf(ChildPlanPage(pageProps<PageProps<"/parent/children/[id]/plan">>({ id: child.id })))).toBe("/account/access");
+  });
+
+  it("the printable draft too: a locked parent goes to /account/access", async () => {
+    const parentId = await signIn("locked", { role: "parent" });
+    const [child] = await db
+      .insert(schema.users)
+      .values({ role: "student", householdId: state.user!.householdId, displayName: "Leo", passwordHash: "x", birthDate: "2011-03-01", grade: 10, gradeSchoolYear: 2026, homeState: "TX" })
+      .returning({ id: schema.users.id });
+    await db.insert(schema.parentStudentLinks).values({ parentUserId: parentId, studentUserId: child.id });
+    expect(await redirectOf(ChildPlanPrintPage(pageProps<PageProps<"/parent/children/[id]/plan/print">>({ id: child.id })))).toBe("/account/access");
+  });
+
+  it("the printable draft is only for the parent's own children, and prints with full access", async () => {
+    const parentId = await signIn("full", { role: "parent" });
+    const [child, stranger] = await db
+      .insert(schema.users)
+      .values([
+        { role: "student", householdId: state.user!.householdId, displayName: "Leo", passwordHash: "x", birthDate: "2011-03-01", grade: 10, gradeSchoolYear: 2026, homeState: "TX" },
+        { role: "student", householdId: state.user!.householdId, displayName: "Ana", passwordHash: "x", birthDate: "2011-03-01", grade: 10, gradeSchoolYear: 2026, homeState: "TX" },
+      ])
+      .returning({ id: schema.users.id });
+    await db.insert(schema.parentStudentLinks).values({ parentUserId: parentId, studentUserId: child.id });
+    await expect(ChildPlanPrintPage(pageProps<PageProps<"/parent/children/[id]/plan/print">>({ id: stranger.id }))).rejects.toMatchObject({
+      digest: expect.stringMatching(/;404$/),
+    });
+    const html = await render(ChildPlanPrintPage(pageProps<PageProps<"/parent/children/[id]/plan/print">>({ id: child.id })) as Promise<ReactNode>);
+    expect(text(html)).toContain("Draft class plan, to talk over with my school counselor");
   });
 });
 

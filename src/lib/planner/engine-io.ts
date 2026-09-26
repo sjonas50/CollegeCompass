@@ -332,7 +332,7 @@ export type PlannedPath = {
     review: ReviewNotice[];
   };
   builtFrom: BuiltFrom;
-  /** The "by when" strip: zero-slack ladder steps and rule deadlines, soonest first. */
+  /** The "by when" strip: zero-slack ladder steps and rule deadlines, soonest first. Plan A's; each plan has its own. */
   deadlines: Deadline[];
   /** Choices a rule depends on that the student hasn't made (endorsement, elective focus). */
   decisions: PendingDecision[];
@@ -340,6 +340,7 @@ export type PlannedPath = {
   plans: [] | [PlanOption] | [PlanOption, PlanOption];
   /** Why there are two plans; null with one. */
   planChoice: PlanChoice | null;
+  /** Plan A's gaps, audit and questions (each plan in `plans` carries its own). */
   gaps: Gap[];
   audit: RuleSetAudit[];
   demands: Demand[];
@@ -453,6 +454,8 @@ export type Deadline = {
   text: string;
   /** School years of slack; the strip shows zero-slack steps. */
   slackYears: number;
+  /** A line under it: for a test-score route, what the class route would take ("Or show it with a class: …"). */
+  note?: string;
   reasons: Reason[];
 };
 
@@ -498,6 +501,11 @@ export type PlanOption = {
   /** Labeled by what differs: "Plan A: show calculus readiness with a test score." */
   label: string;
   years: PlanYear[];
+  /** This plan's own audit, gaps, "by when" and counselor questions (the path's top-level ones are Plan A's). */
+  audit: RuleSetAudit[];
+  gaps: Gap[];
+  deadlines: Deadline[];
+  askCounselor: CounselorQuestion[];
 };
 
 export type PlanYear = {

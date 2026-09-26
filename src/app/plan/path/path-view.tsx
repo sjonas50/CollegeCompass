@@ -10,9 +10,12 @@ import {
   byWhenText,
   COURSE_STATUS_WORDS,
   cohortLine,
+  confirmTypeCount,
+  confirmTypeText,
   mainReason,
   ordinal,
   PATH_LABELS,
+  planParts,
   stateTitle,
   TN_FOCUS_LABELS,
   TX_ENDORSEMENT_LABELS,
@@ -120,7 +123,8 @@ function decisionField(key: string): "txEndorsement" | "tnElectiveFocus" | "worl
 }
 
 function Decisions({ path, mode }: { path: PlannedPath; mode: PathViewMode }) {
-  if (!path.decisions.length) return null;
+  const confirm = confirmTypeCount(path);
+  if (!path.decisions.length && !confirm) return null;
   const labels: Record<string, string> = {
     txEndorsement: "Endorsement",
     tnElectiveFocus: "Elective focus",
@@ -130,6 +134,19 @@ function Decisions({ path, mode }: { path: PlannedPath; mode: PathViewMode }) {
   return (
     <PathSection id="path-decisions" title="Choices to make" lead="The rules depend on these. Nothing is final; you can change them later.">
       <ul className="space-y-3">
+        {confirm > 0 && (
+          <li className="rounded-xl border border-border bg-surface p-4 text-sm">
+            <p className="font-medium">{confirmTypeText(confirm)}</p>
+            <p className="text-muted">
+              We guessed the kind of some classes from their names. A guess never makes a specific requirement done.
+            </p>
+            {mode === "student" && (
+              <Link href="#classes" className="inline-flex min-h-11 items-center font-medium underline underline-offset-2">
+                Go to your classes
+              </Link>
+            )}
+          </li>
+        )}
         {path.decisions.map((d) => {
           const field = decisionField(d.key);
           return (
@@ -151,10 +168,10 @@ function Decisions({ path, mode }: { path: PlannedPath; mode: PathViewMode }) {
   );
 }
 
-function ByWhen({ path }: { path: PlannedPath }) {
+function ByWhen({ path, planId }: { path: PlannedPath; planId: "A" | "B" }) {
   // Choices already shown under "Choices to make" aren't repeated here.
   const decided = new Set(path.decisions.map((d) => d.text));
-  const items = path.deadlines.filter((d) => (d.slackYears === 0 || d.kind !== "ladder") && !(d.kind === "decision" && decided.has(d.text)));
+  const items = planParts(path, planId).deadlines.filter((d) => (d.slackYears === 0 || d.kind !== "ladder") && !(d.kind === "decision" && decided.has(d.text)));
   if (!items.length) return null;
   return (
     <PathSection id="path-by-when" title="By when" lead="The few dates that keep doors open.">
@@ -167,6 +184,7 @@ function ByWhen({ path }: { path: PlannedPath }) {
             <span className="min-w-0">
               <span className="block font-medium first-letter:uppercase">{byWhenText(d.by)}</span>
               <span className="block">{d.text}</span>
+              {d.note && <span className="block text-muted">{d.note}</span>}
               <Why ids={d.reasons.flatMap((r) => r.citations)} citations={path.citations} srContext={`for ${d.text}`} />
             </span>
           </li>
@@ -322,12 +340,13 @@ function Plans({ path, mode, planId, planHref }: { path: PlannedPath; mode: Path
   );
 }
 
-function Gaps({ path }: { path: PlannedPath }) {
-  if (!path.gaps.length) return null;
+function Gaps({ path, planId }: { path: PlannedPath; planId: "A" | "B" }) {
+  const gaps = planParts(path, planId).gaps;
+  if (!gaps.length) return null;
   return (
     <PathSection id="path-gaps" title="Room to add" lead="Things that don't fit yet, and real options for each. Plans change; here's what still fits.">
       <ul className="space-y-3">
-        {path.gaps.map((g) => (
+        {gaps.map((g) => (
           <li key={g.id} className="rounded-xl border border-border bg-surface p-4 text-sm">
             <p className="font-medium">{g.text}</p>
             {g.decideBy && <p className="text-muted">Decide {byWhenText(g.decideBy)}.</p>}
@@ -401,12 +420,13 @@ function MiddleSchool({ path }: { path: PlannedPath }) {
   );
 }
 
-function Questions({ path, printHref }: { path: PlannedPath; printHref: string }) {
-  if (!path.askCounselor.length) return null;
+function Questions({ path, planId, printHref }: { path: PlannedPath; planId: "A" | "B"; printHref: string }) {
+  const questions = planParts(path, planId).askCounselor;
+  if (!questions.length) return null;
   return (
     <PathSection id="path-questions" title="Questions for your counselor" lead="Bring these to your next meeting.">
       <ol className="list-decimal space-y-1 pl-5 text-sm">
-        {path.askCounselor.map((q) => (
+        {questions.map((q) => (
           <li key={q.id}>{q.text}</li>
         ))}
       </ol>
@@ -445,9 +465,12 @@ function HowBuilt({ path }: { path: PlannedPath }) {
 
 export function settingsValues(ctx: PathContext): PathSettingsValues {
   const c = ctx.prefs.choices;
+  const reason = ctx.prefs.cohort.grade9Entry?.reason ?? ctx.prefs.cohort.classYear?.reason ?? "";
   return {
-    path: ctx.path,
+    // A path the student picked; "" while it follows their goals ("Let my goals decide").
+    path: ctx.pathInferred ? "" : ctx.path,
     pathInferred: ctx.pathInferred,
+    inferredPath: ctx.inferredPath,
     familyId: ctx.prefs.familyId ?? "",
     maxCollegeLevelPerYear: ctx.prefs.limits.maxCollegeLevelPerYear,
     accelerateMath: ctx.prefs.limits.accelerateMath,
@@ -455,6 +478,11 @@ export function settingsValues(ctx: PathContext): PathSettingsValues {
     txAimDla: c.txAimDla ?? ctx.path === "degree",
     tnElectiveFocus: c.tnElectiveFocus ?? "",
     worldLanguage: c.worldLanguage ?? "",
+    grade9EntryYear: ctx.cohort?.grade9EntryYear ?? null,
+    classYear: ctx.cohort?.classYear ?? null,
+    grade9EntryDefault: ctx.cohortDefault?.grade9EntryYear ?? null,
+    classYearDefault: ctx.cohortDefault?.classYear ?? null,
+    cohortReason: reason,
   };
 }
 
@@ -505,11 +533,11 @@ export function PathView({
       {mode === "student" && ctx.prefs.dismissed.length > 0 && <RestoreSuggestions count={ctx.prefs.dismissed.length} />}
       <Decisions path={path} mode={mode} />
       {path.stage === "middle_school" && <MiddleSchool path={path} />}
-      <ByWhen path={path} />
+      <ByWhen path={path} planId={planId} />
       <Plans path={path} mode={mode} planId={planId} planHref={planHref} />
-      <Gaps path={path} />
+      <Gaps path={path} planId={planId} />
       <WhatCounts path={path} ctx={ctx} planId={planId} />
-      <Questions path={path} printHref={printHref} />
+      <Questions path={path} planId={planId} printHref={printHref} />
       <PathSection id="path-choices" title={mode === "parent" ? "Their choices" : "Your choices"}>
         {mode === "student" ? (
           <details className="rounded-xl border border-border bg-surface p-4">

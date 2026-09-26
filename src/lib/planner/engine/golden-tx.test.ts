@@ -25,8 +25,8 @@ describe("TX-1: the design's worked example (§5.13)", () => {
         "Your path",
         "  9: [English I (9th grade English)] | [Geometry] | [Biology] | [World or human geography] | [Spanish I] | [Computer programming 1 (Computer Science I, Coding I)] | [School athletics (a sports season)] (6.5/7)",
         "  10: Visual art | English II (H) | Chemistry (H) | U.S. history | Spanish II | Algebra II (H) | Your choice (6/7)",
-        "  11: Computer programming 2 or AP Computer Science A (AP) | English III (H) | School athletics | Physics (AP) | Environmental science or ecology | Precalculus (H) | Your choice (5.5/7)",
-        "  12: English IV (H) | U.S. government | Personal financial literacy | Calculus (AP) (3/7)",
+        "  11: Computer programming 2 or AP Computer Science A (AP) | English III (H) | School athletics | Physics (AP) | Precalculus (H) | Your choice (4.5/7)",
+        "  12: English IV (H) | Anatomy and physiology | U.S. government | Personal financial literacy | Calculus (AP) (4/7)",
       ]
     `);
   });
@@ -47,11 +47,14 @@ describe("TX-1: the design's worked example (§5.13)", () => {
     expect(path.deadlines.map((d) => d.by.grade)).toEqual([...path.deadlines.map((d) => d.by.grade)].sort((a, b) => a - b));
   });
 
-  it("offers calculus readiness by test score first, and a class route only as an option", () => {
-    const gap = path.gaps.find((g) => g.demandId === "utaustin.calc_ready/cr.calc");
-    expect(gap?.kind).toBe("ladder_infeasible");
-    expect(gap?.options.map((o) => o.kind)).toEqual(["test_score", "summer", "ask_counselor"]);
-    expect(gap?.options[0].text).toMatch(/SAT Math score of 620/);
+  it("plans calculus readiness by test score (the default), with the class route as a line, not a gap", () => {
+    expect(path.gaps.find((g) => g.demandId === "utaustin.calc_ready/cr.calc")).toBeUndefined();
+    const test = path.deadlines.find((d) => d.kind === "test")!;
+    expect(test.text).toMatch(/SAT Math score of 620/);
+    expect(test.note).toBe(
+      "Or show it with a class: Calculus I with a B or higher by the end of 11th grade. From where you are, that would take a summer class or two math classes in one year. Only if you want that and your last math grade is a B or better.",
+    );
+    expect(path.askCounselor.map((q) => q.text)).toContain("Should I plan to show UT Austin calculus readiness with a test score or with a class, and when do scores need to be in?");
   });
 
   it("counts AP Computer Science A for both math and language, with the recording note (§74.11(n))", () => {
@@ -169,7 +172,7 @@ describe("P3 (Sam): five AP classes in 11th, UT Austin engineering", () => {
   it("shows calculus readiness by test score, by December 10, and no Plan B without opting in", () => {
     expect(path.deadlines.some((d) => d.kind === "test" && d.by.point === "date")).toBe(true);
     expect(path.planChoice).toBeNull();
-    expect(path.gaps.find((g) => g.demandId === "utaustin.calc_ready/cr.calc")?.options[0].kind).toBe("test_score");
+    expect(path.gaps.find((g) => g.demandId === "utaustin.calc_ready/cr.calc")).toBeUndefined();
   });
 });
 
@@ -217,9 +220,32 @@ describe("Texas endorsement not chosen yet", () => {
       ),
     );
     expect(path.planChoice?.kind).toBe("endorsement");
-    expect(path.plans.map((p) => p.label)).toEqual(["Plan A: with the STEM endorsement.", "Plan B: with the Multidisciplinary Studies endorsement."]);
+    // Never STEM for a student without a STEM goal; the fewest added classes first.
+    expect(path.plans.map((p) => p.label)).toEqual(["Plan A: with the Multidisciplinary Studies endorsement.", "Plan B: with the Arts and Humanities endorsement."]);
     expectNeutralLabels(path);
-    expect(path.audit.map((r) => r.ruleSetId)).toContain("tx.endorse.stem");
+    expect(path.audit.map((r) => r.ruleSetId)).toContain("tx.endorse.multi");
+    expect(path.plans[1]!.audit.map((r) => r.ruleSetId)).toContain("tx.endorse.ah");
     expect(path.decisions.map((d) => d.key)).toContain("txEndorsements");
+  });
+
+  it("in 9th grade, puts STEM first for a student whose goal is a STEM field", () => {
+    const path = planned(
+      plan(
+        scenario({
+          state: "TX",
+          grade: 9,
+          courses: [
+            { type: "ela.9", grade: 9 },
+            { type: "math.alg1", grade: 9 },
+            { type: "sci.bio", grade: 9 },
+          ],
+          families: ["engineering"],
+          colleges: [COLLEGES.tamu],
+        }),
+      ),
+    );
+    expect(path.planChoice?.kind).toBe("endorsement");
+    expect(path.plans[0]!.label).toBe("Plan A: with the STEM endorsement.");
+    expect(path.planChoice?.text).toMatch(/two that fit your goals/);
   });
 });

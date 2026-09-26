@@ -29,12 +29,18 @@ vi.mock("@/lib/auth/dal", () => ({ requireUser: async () => state.user, getCurre
 
 let db: Db;
 
+// Students are created with grade 2026-27, and the pages plan from today: pin today so the tests
+// don't move a grade every August.
+const TODAY = new Date("2026-09-25T15:00:00Z");
+
 beforeEach(async () => {
+  vi.useFakeTimers({ toFake: ["Date"], now: TODAY });
   db = await createTestDb();
   state.db = db;
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   state.db = null;
   state.user = null;
 });

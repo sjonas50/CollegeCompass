@@ -165,6 +165,7 @@ export const ReqSchema: z.ZodType<Req> = z.lazy(() =>
       substitutesForOneOf: z.array(Id).min(1).optional(),
       allowSplit: z.boolean().optional(),
       deadlineGrade: Grade.optional(),
+      onlyWhenDone: z.literal(true).optional(),
     }),
     z.strictObject({ ...leaf, kind: z.literal("count"), n: z.number().int().positive(), select: z.array(SelectorSchema).min(1) }),
     z.strictObject({
@@ -191,7 +192,7 @@ export const ReqSchema: z.ZodType<Req> = z.lazy(() =>
 
 const CheckSchema = z.discriminatedUnion("kind", [
   z.strictObject({ id: Id, kind: z.literal("enrolled_years"), subject: Subject, years: z.number().int().min(1).max(6), cite: CiteList }),
-  z.strictObject({ id: Id, kind: z.literal("on_schedule_by"), req: Id, grade: Grade, cite: CiteList }),
+  z.strictObject({ id: Id, kind: z.literal("on_schedule_by"), req: Id, with: z.array(Id).min(1).optional(), grade: Grade, cite: CiteList }),
   z.strictObject({ id: Id, kind: z.literal("senior_year_math"), unlessChoice: z.literal("utMathCompetencyMet"), cite: CiteList }),
   z.strictObject({
     id: Id,
@@ -201,6 +202,14 @@ const CheckSchema = z.discriminatedUnion("kind", [
     cite: CiteList,
   }),
   z.strictObject({ id: Id, kind: z.literal("requires_rule_set"), anyOf: z.array(Id).min(1), cite: CiteList }),
+  z.strictObject({
+    id: Id,
+    kind: z.literal("counts_unless"),
+    req: Id,
+    unless: z.strictObject({ ruleSet: Id, groups: z.array(z.array(Id).min(1)).min(1) }),
+    text: plain(TEXT_MAX),
+    cite: CiteList,
+  }),
 ]);
 
 const ConditionSchema = z.strictObject({ id: Id, label: plain(LABEL_MAX), kind: z.enum(CONDITION_KINDS), cite: CiteList });
@@ -256,6 +265,7 @@ const RuleSetSchema = z.strictObject({
         text: plain(TEXT_MAX),
         cite: CiteList,
         by: z.strictObject({ grade: Grade, month: z.number().int().min(1).max(12), day: z.number().int().min(1).max(31) }).optional(),
+        reqIds: z.array(Id).min(1).optional(),
       }),
     )
     .optional(),
@@ -343,6 +353,7 @@ export const MajorFamiliesFileSchema = z.strictObject({
       keyCourses: z.array(CourseTypeIdSchema),
       rigorFirst: z.array(CourseTypeIdSchema).max(3, "Three \"rigor first\" subjects at most."),
       ctePathways: z.array(z.strictObject({ state: State, cluster: z.enum(CTE_CLUSTERS), name: plain(LABEL_MAX), cite: CiteList })),
+      txEndorsement: z.strictObject({ value: z.enum(TX_ENDORSEMENTS), cite: CiteList }).optional(),
       gates: z.array(
         z.strictObject({
           id: Id,

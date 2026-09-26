@@ -18,6 +18,7 @@ import type { PathKind } from "../../rules";
 import { tnContent, UTC, UTK, UTM } from "./content-tn";
 import { TAMU, txContent, UT_AUSTIN } from "./content-tx";
 import { USU, UOFU, utContent } from "./content-ut";
+import { rigorContent } from "../../content";
 import { testFamilies } from "./families";
 
 // Test helper: builds a PlannerInput from a short description, the way loadPlannerInput will
@@ -80,7 +81,8 @@ export const COLLEGES = {
 
 export function contentFor(state: PlannerState): PlannerContent {
   const base = state === "TX" ? txContent() : state === "TN" ? tnContent() : utContent();
-  return { ...base, families: testFamilies() };
+  // The real rigor file: its tier raises are reviewed program gates (UT Austin calculus readiness).
+  return { ...base, families: testFamilies(), rigor: rigorContent() };
 }
 
 export function scenario(s: Scenario): PlannerInput {

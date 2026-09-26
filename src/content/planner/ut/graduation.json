@@ -67,6 +67,12 @@
       "quote": "A student who successfully completes a Calculus course with a \"C\" grade or higher has completed mathematics graduation requirements, regardless of the number of mathematics credits earned."
     },
     {
+      "id": "ut-r277-700-6-9-grad",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(9)",
+      "quote": "A student who successfully completes a mathematics foundation course before 9th grade shall earn 3.0 units of additional mathematics credit by:"
+    },
+    {
       "id": "ut-r277-700-6-11-bio",
       "source": "UT-S1",
       "pinpoint": "R277-700-6(11)(a)(ii)",
@@ -517,6 +523,16 @@
                         "cite": ["ut-r277-700-6-6"]
                       },
                       "cite": ["ut-r277-700-6-7"]
+                    },
+                    {
+                      "id": "math.hs_credits",
+                      "label": "3 math credits in grades 9-12",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "subjects": ["math"], "grades": [9, 10, 11, 12], "exclude": ["math.ms"] }],
+                      "shareable": true,
+                      "cite": ["ut-r277-700-6-9-grad"],
+                      "note": "A math class passed before 9th grade still leaves 3 math credits to earn in high school."
                     }
                   ]
                 },
@@ -526,7 +542,9 @@
                   "kind": "credits",
                   "units": 4,
                   "select": [{ "types": ["math.calc", "math.calc2"], "minLetter": "C" }],
-                  "cite": ["ut-r277-700-6-10"]
+                  "cite": ["ut-r277-700-6-10"],
+                  "onlyWhenDone": true,
+                  "note": "This counts once you've passed a calculus class with a C or better. Until then, Secondary Math I, II and III is the route we plan."
                 }
               ],
               "area": "math",
@@ -915,6 +933,16 @@
                         "cite": ["ut-r277-700-6-6"]
                       },
                       "cite": ["ut-r277-700-6-7"]
+                    },
+                    {
+                      "id": "math.hs_credits",
+                      "label": "3 math credits in grades 9-12",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "subjects": ["math"], "grades": [9, 10, 11, 12], "exclude": ["math.ms"] }],
+                      "shareable": true,
+                      "cite": ["ut-r277-700-6-9-grad"],
+                      "note": "A math class passed before 9th grade still leaves 3 math credits to earn in high school."
                     }
                   ]
                 },
@@ -924,7 +952,9 @@
                   "kind": "credits",
                   "units": 4,
                   "select": [{ "types": ["math.calc", "math.calc2"], "minLetter": "C" }],
-                  "cite": ["ut-r277-700-6-10"]
+                  "cite": ["ut-r277-700-6-10"],
+                  "onlyWhenDone": true,
+                  "note": "This counts once you've passed a calculus class with a C or better. Until then, Secondary Math I, II and III is the route we plan."
                 }
               ],
               "area": "math",
@@ -1207,7 +1237,8 @@
         {
           "id": "ut.math-competency",
           "text": "College-bound students show they're ready for college math with one of these: an AP Calculus or AP Statistics score of 3 or higher, an IB higher level math score of 5 or higher, a CLEP precalculus or calculus score of 50 or higher, an ACT math score of 26 or higher, an SAT math score of 640 or higher, or a C in a concurrent enrollment math class that meets the college quantitative literacy requirement. Otherwise, take a full year of math in 12th grade.",
-          "cite": ["ut-r277-700-9-2", "ut-r277-700-9-2a-1", "ut-r277-700-9-2a-2", "ut-r277-700-9-2a-3", "ut-r277-700-9-2b"]
+          "cite": ["ut-r277-700-9-2", "ut-r277-700-9-2a-1", "ut-r277-700-9-2a-2", "ut-r277-700-9-2a-3", "ut-r277-700-9-2b"],
+          "reqIds": ["ut.grad.senior-math"]
         }
       ]
     }

@@ -145,12 +145,27 @@
     { "typeId": "lang.la.2", "levels": ["regular"], "cite": ["tn-3205-world-languages"] },
     { "typeId": "cte.health.1", "levels": ["regular"] },
     { "typeId": "cte.health.2", "levels": ["regular"] },
+    { "typeId": "cte.health.3", "levels": ["regular"] },
     { "typeId": "cte.business.1", "levels": ["regular"] },
+    { "typeId": "cte.business.2", "levels": ["regular"] },
+    { "typeId": "cte.business.3", "levels": ["regular"] },
     { "typeId": "cte.ag.1", "levels": ["regular"] },
+    { "typeId": "cte.ag.2", "levels": ["regular"] },
+    { "typeId": "cte.ag.3", "levels": ["regular"] },
     { "typeId": "cte.engineering.1", "levels": ["regular"] },
+    { "typeId": "cte.engineering.2", "levels": ["regular"] },
+    { "typeId": "cte.engineering.3", "levels": ["regular"] },
     { "typeId": "cte.it.1", "levels": ["regular"] },
+    { "typeId": "cte.it.2", "levels": ["regular"] },
+    { "typeId": "cte.it.3", "levels": ["regular"] },
     { "typeId": "cte.architecture_construction.1", "levels": ["regular"] },
+    { "typeId": "cte.architecture_construction.2", "levels": ["regular"] },
+    { "typeId": "cte.architecture_construction.3", "levels": ["regular"] },
     { "typeId": "cte.manufacturing.1", "levels": ["regular"] },
-    { "typeId": "cte.human_services.1", "levels": ["regular"] }
+    { "typeId": "cte.manufacturing.2", "levels": ["regular"] },
+    { "typeId": "cte.manufacturing.3", "levels": ["regular"] },
+    { "typeId": "cte.human_services.1", "levels": ["regular"] },
+    { "typeId": "cte.human_services.2", "levels": ["regular"] },
+    { "typeId": "cte.human_services.3", "levels": ["regular"] }
   ]
 }

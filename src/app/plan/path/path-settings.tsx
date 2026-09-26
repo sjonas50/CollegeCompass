@@ -1,30 +1,40 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
 import { type PathSettingsState, savePathSettingsAction } from "@/app/actions/path";
 import { Button, FormMessage } from "@/components/ui";
 import { useFormAction } from "@/components/use-form-action";
 import type { PlannerState } from "@/lib/planner/common";
 import { LANGUAGE_NAMES, LANGUAGES } from "@/lib/planner/course-types";
-import { MAX_COLLEGE_LEVEL_PER_YEAR } from "@/lib/planner/engine-io";
+import { COHORT_OVERRIDE_REASONS, MAX_COLLEGE_LEVEL_PER_YEAR } from "@/lib/planner/engine-io";
 import { MAJOR_FAMILIES } from "@/lib/planner/families";
 import { PATH_KINDS, TN_ELECTIVE_FOCUSES, TX_ENDORSEMENTS } from "@/lib/planner/rules";
-import { PATH_LABELS, TN_FOCUS_LABELS, TX_ENDORSEMENT_LABELS } from "@/lib/planner/view";
+import { COHORT_REASON_LABELS, PATH_LABELS, TN_FOCUS_LABELS, TX_ENDORSEMENT_LABELS } from "@/lib/planner/view";
 import { announcePath, focusPath } from "./announcer";
 
 // The path's settings and the choices a rule depends on. Every control is labeled, values survive
 // a failed save (useFormAction), and each save is announced once.
 
 export type PathSettingsValues = {
+  /** The stored kind of path, or "" while it follows the student's goals. */
   path: string;
   pathInferred: boolean;
+  /** What the goals point to (shown on "Let my goals decide"). */
+  inferredPath: string;
   familyId: string;
   maxCollegeLevelPerYear: number;
   accelerateMath: boolean;
   txEndorsement: string;
+  /** Shown checked when the student chose it, or by default on the degree path. */
   txAimDla: boolean;
   tnElectiveFocus: string;
   worldLanguage: string;
+  /** "You started 9th grade in fall 2026 (class of 2030)": the years used, the years from the grade, and why they differ. */
+  grade9EntryYear: number | null;
+  classYear: number | null;
+  grade9EntryDefault: number | null;
+  classYearDefault: number | null;
+  cohortReason: string;
 };
 
 const select =
@@ -47,9 +57,9 @@ function useSave(focusAfter?: string) {
   return { state, action, pending, values };
 }
 
-export function EndorsementSelect({ id, value }: { id: string; value: string }) {
+export function EndorsementSelect({ id, value, describedBy }: { id: string; value: string; describedBy?: string }) {
   return (
-    <select id={id} name="txEndorsement" defaultValue={value} className={select}>
+    <select id={id} name="txEndorsement" defaultValue={value} aria-describedby={describedBy} className={select}>
       <option value="">Not sure yet</option>
       {TX_ENDORSEMENTS.map((e) => (
         <option key={e} value={e}>
@@ -60,9 +70,9 @@ export function EndorsementSelect({ id, value }: { id: string; value: string }) 
   );
 }
 
-export function FocusSelect({ id, value }: { id: string; value: string }) {
+export function FocusSelect({ id, value, describedBy }: { id: string; value: string; describedBy?: string }) {
   return (
-    <select id={id} name="tnElectiveFocus" defaultValue={value} className={select}>
+    <select id={id} name="tnElectiveFocus" defaultValue={value} aria-describedby={describedBy} className={select}>
       <option value="">Not sure yet</option>
       {TN_ELECTIVE_FOCUSES.map((f) => (
         <option key={f} value={f}>
@@ -86,9 +96,9 @@ export function LanguageSelect({ id, value }: { id: string; value: string }) {
   );
 }
 
-export function FamilySelect({ id, value, northStarNote }: { id: string; value: string; northStarNote: string }) {
+export function FamilySelect({ id, value, northStarNote, describedBy }: { id: string; value: string; northStarNote: string; describedBy?: string }) {
   return (
-    <select id={id} name="familyId" defaultValue={value} className={select}>
+    <select id={id} name="familyId" defaultValue={value} aria-describedby={describedBy} className={select}>
       <option value="">{northStarNote}</option>
       {MAJOR_FAMILIES.map((f) => (
         <option key={f.id} value={f.id}>
@@ -123,20 +133,44 @@ export function DecisionForm({ field, label, value }: { field: "txEndorsement" |
   );
 }
 
-/** "What your path plans for": the kind of path, the family, limits and state choices. */
+/**
+ * "What your path plans for": the kind of path, the family, limits, state choices and the
+ * student's class year. Only what the student changes is saved (`touched`), so a default they never
+ * picked (the inferred path, the DLA on the degree path, the college-level limit) keeps following
+ * the goals and any later change to the default.
+ */
 export function PathSettings({ state: plannerState, initial }: { state: PlannerState; initial: PathSettingsValues }) {
   const ids = useId();
   const { state, action, pending, values } = useSave();
-  const v = (name: keyof PathSettingsValues) => (values[name] !== undefined ? values[name] : String(initial[name]));
+  const [touched, setTouched] = useState<Set<string>>(() => new Set());
+  const touch = (name: string) => setTouched((t) => (t.has(name) ? t : new Set(t).add(name)));
+  const v = (name: keyof PathSettingsValues) => (values[name] !== undefined ? values[name] : String(initial[name] ?? ""));
   const checked = (name: "accelerateMath" | "txAimDla") => (values[`${name}:present`] !== undefined ? values[name] === "on" : initial[name]);
+  const years = (around: number | null) => (around === null ? [] : [around - 2, around - 1, around, around + 1, around + 2]);
   return (
-    <form action={action} className="space-y-5">
+    <form
+      action={action}
+      className="space-y-5"
+      onChange={(e) => {
+        const name = (e.target as unknown as { name?: string }).name?.replace(/:present$/, "");
+        if (name) touch(name);
+      }}
+    >
+      <input type="hidden" name="touched" value={[...touched].join(",")} />
       <fieldset>
         <legend className="font-medium">What are you planning for after high school?</legend>
-        {initial.pathInferred && (
-          <p className="text-sm text-muted">We picked this from your goals. Change it anytime; every choice is a good one.</p>
-        )}
         <div className="mt-2 space-y-1">
+          <label className="flex min-h-11 items-center gap-3 text-sm">
+            <input type="radio" name="path" value="" defaultChecked={v("path") === ""} className="size-5 shrink-0" />
+            <span>
+              Let my goals decide
+              {initial.inferredPath && (
+                <span className="block text-muted">
+                  Right now that&apos;s: {PATH_LABELS[initial.inferredPath as keyof typeof PATH_LABELS] ?? initial.inferredPath}
+                </span>
+              )}
+            </span>
+          </label>
           {PATH_KINDS.map((p) => (
             <label key={p} className="flex min-h-11 items-center gap-3 text-sm">
               <input type="radio" name="path" value={p} defaultChecked={v("path") === p} className="size-5 shrink-0" />
@@ -153,18 +187,24 @@ export function PathSettings({ state: plannerState, initial }: { state: PlannerS
         <p id={`${ids}-family-hint`} className="text-sm text-muted">
           We usually pick this from your north star careers.
         </p>
-        <FamilySelect id={`${ids}-family`} value={v("familyId")} northStarNote="Use my north star careers" />
+        <FamilySelect id={`${ids}-family`} value={v("familyId")} northStarNote="Use my north star careers" describedBy={`${ids}-family-hint`} />
       </div>
 
       <div>
         <label htmlFor={`${ids}-max`} className="block font-medium">
           At most how many AP, IB or college-credit classes in one year?
         </label>
-        <p className="text-sm text-muted">
+        <p id={`${ids}-max-hint`} className="text-sm text-muted">
           We never suggest more than this. Three is plenty for most students; strong work in the subjects that matter for
           your goals counts for more than the number of advanced classes.
         </p>
-        <select id={`${ids}-max`} name="maxCollegeLevelPerYear" defaultValue={v("maxCollegeLevelPerYear")} className={`${select} sm:w-40`}>
+        <select
+          id={`${ids}-max`}
+          name="maxCollegeLevelPerYear"
+          defaultValue={v("maxCollegeLevelPerYear")}
+          aria-describedby={`${ids}-max-hint`}
+          className={`${select} sm:w-40`}
+        >
           {Array.from({ length: MAX_COLLEGE_LEVEL_PER_YEAR + 1 }, (_, n) => (
             <option key={n} value={n}>
               {n}
@@ -190,8 +230,10 @@ export function PathSettings({ state: plannerState, initial }: { state: PlannerS
             <label htmlFor={`${ids}-endorsement`} className="block font-medium">
               Your Texas endorsement
             </label>
-            <p className="text-sm text-muted">You name one when you start 9th grade and can switch anytime.</p>
-            <EndorsementSelect id={`${ids}-endorsement`} value={v("txEndorsement")} />
+            <p id={`${ids}-endorsement-hint`} className="text-sm text-muted">
+              You name one when you start 9th grade and can switch anytime.
+            </p>
+            <EndorsementSelect id={`${ids}-endorsement`} value={v("txEndorsement")} describedBy={`${ids}-endorsement-hint`} />
           </div>
           <div>
             <input type="hidden" name="txAimDla:present" value="1" />
@@ -213,8 +255,10 @@ export function PathSettings({ state: plannerState, initial }: { state: PlannerS
           <label htmlFor={`${ids}-focus`} className="block font-medium">
             Your Tennessee elective focus
           </label>
-          <p className="text-sm text-muted">Three credits in one area, chosen by the end of 10th grade.</p>
-          <FocusSelect id={`${ids}-focus`} value={v("tnElectiveFocus")} />
+          <p id={`${ids}-focus-hint`} className="text-sm text-muted">
+            Three credits in one area, chosen by the end of 10th grade.
+          </p>
+          <FocusSelect id={`${ids}-focus`} value={v("tnElectiveFocus")} describedBy={`${ids}-focus-hint`} />
         </div>
       )}
 
@@ -224,6 +268,59 @@ export function PathSettings({ state: plannerState, initial }: { state: PlannerS
         </label>
         <LanguageSelect id={`${ids}-language`} value={v("worldLanguage")} />
       </div>
+
+      {initial.grade9EntryYear !== null && initial.classYear !== null && (
+        <fieldset className="space-y-2">
+          <legend className="font-medium">
+            You started 9th grade in fall {initial.grade9EntryYear} (class of {initial.classYear}). Is that right?
+          </legend>
+          <input type="hidden" name="grade9EntryDefault" value={String(initial.grade9EntryDefault ?? "")} />
+          <input type="hidden" name="classYearDefault" value={String(initial.classYearDefault ?? "")} />
+          <p id={`${ids}-cohort-hint`} className="text-sm text-muted">
+            Rules depend on the year you started high school. Change these only if you repeated or skipped a grade, moved, or
+            are graduating early.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <div>
+              <label htmlFor={`${ids}-entry`} className="block text-sm font-medium">
+                Started 9th grade in fall
+              </label>
+              <select id={`${ids}-entry`} name="grade9EntryYear" defaultValue={v("grade9EntryYear")} aria-describedby={`${ids}-cohort-hint`} className={`${select} sm:w-40`}>
+                {years(initial.grade9EntryDefault).map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor={`${ids}-class`} className="block text-sm font-medium">
+                Class of
+              </label>
+              <select id={`${ids}-class`} name="classYear" defaultValue={v("classYear")} aria-describedby={`${ids}-cohort-hint`} className={`${select} sm:w-40`}>
+                {years(initial.classYearDefault).map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-0 flex-1 basis-56">
+              <label htmlFor={`${ids}-reason`} className="block text-sm font-medium">
+                Why is it different?
+              </label>
+              <select id={`${ids}-reason`} name="cohortReason" defaultValue={v("cohortReason")} aria-describedby={`${ids}-cohort-hint`} className={select}>
+                <option value="">It isn&apos;t different</option>
+                {COHORT_OVERRIDE_REASONS.map((r) => (
+                  <option key={r} value={r}>
+                    {COHORT_REASON_LABELS[r]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </fieldset>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending}>

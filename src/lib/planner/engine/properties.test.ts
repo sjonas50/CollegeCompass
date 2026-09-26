@@ -103,6 +103,20 @@ describe("planner properties", () => {
     }
   });
 
+  it("adds no second math class to a year without the opt-in and a B or better (a senior's required credit aside)", () => {
+    for (const { seed, input, path } of plannedCases()) {
+      const last = input.courses.filter((c) => c.subject === "math" && c.status === "completed" && c.finalGrade).sort((a, b) => b.grade - a.grade)[0];
+      const bOrBetter = !!last && ["A+", "A", "A-", "B+", "B"].includes(last.finalGrade!);
+      if (input.prefs.limits.accelerateMath && bOrBetter) continue;
+      eachYear(path, (planId, grade, slots) => {
+        const suggestedMath = slots.filter((s): s is Suggested => s.kind === "suggested" && s.term !== "summer" && getCourseType(s.typeId).subject === "math" && !s.needsPlanNow);
+        if (!suggestedMath.length) return;
+        const ownMath = slots.filter((s) => s.kind === "yours" && getCourseType(s.typeId).subject === "math" && s.status !== "completed");
+        expect(ownMath.length + suggestedMath.length, `seed ${seed} ${planId} ${grade}: ${suggestedMath.map((s) => s.typeId).join(", ")}`).toBeLessThanOrEqual(1);
+      });
+    }
+  });
+
   it("respects prerequisites and grade availability", () => {
     for (const { seed, input, path } of plannedCases()) {
       for (const p of path.plans) {

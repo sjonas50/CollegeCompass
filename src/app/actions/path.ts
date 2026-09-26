@@ -7,7 +7,7 @@ import { requireFullAccess } from "@/lib/access/guard";
 import { requireUser } from "@/lib/auth/dal";
 import { MAX_COURSES } from "@/lib/courses/service";
 import { LANGUAGES } from "@/lib/planner/course-types";
-import { MAX_COLLEGE_LEVEL_PER_YEAR } from "@/lib/planner/engine-io";
+import { COHORT_OVERRIDE_REASONS, MAX_COLLEGE_LEVEL_PER_YEAR } from "@/lib/planner/engine-io";
 import { FAMILY_IDS } from "@/lib/planner/families";
 import type { PlanPrefsPatch } from "@/lib/planner/prefs";
 import { PATH_KINDS, TN_ELECTIVE_FOCUSES, TX_ENDORSEMENTS } from "@/lib/planner/rules";
@@ -76,43 +76,91 @@ function checkbox(formData: FormData, name: string): boolean | undefined {
 }
 
 /**
+ * The fields a form says the student changed. The settings form lists them in `touched`, so a
+ * default shown in the form (the path inferred from goals, the DLA on the degree path, the
+ * college-level limit) is never saved as if the student chose it. A form without the list (a
+ * pending decision's one-question card) saves what it sends.
+ */
+function changedFields(formData: FormData): (name: string) => boolean {
+  if (!formData.has("touched")) return () => true;
+  const touched = new Set(String(formData.get("touched")).split(",").filter(Boolean));
+  return (name) => touched.has(name);
+}
+
+/**
  * The path's settings (kind of path, the family to plan around, the college-level limit, math
- * acceleration) and the choices a rule depends on (Texas endorsement and DLA, Tennessee elective
- * focus, world language). A form may send any subset: a pending decision's card sends one field.
+ * acceleration, the student's class year) and the choices a rule depends on (Texas endorsement and
+ * DLA, Tennessee elective focus, world language). A form may send any subset: a pending decision's
+ * card sends one field.
  */
 export async function savePathSettingsAction(_prev: PathSettingsState, formData: FormData): Promise<PathSettingsState> {
   const student = await requireUser(["student"]);
   await requireFullAccess(student);
+  const changed = changedFields(formData);
+  const has = (name: string) => formData.has(name) && changed(name);
 
   const patch: Omit<PlanPrefsPatch, "dismissed"> = {};
-  const path = field(formData, "path", PATH_KINDS);
+  // "" is "Let my goals decide": the stored path is cleared and follows the goals again.
+  const path = has("path") ? field(formData, "path", PATH_KINDS) : undefined;
   if (path !== undefined) patch.path = path;
-  const family = field(formData, "familyId", FAMILY_IDS);
+  const family = has("familyId") ? field(formData, "familyId", FAMILY_IDS) : undefined;
   if (family !== undefined) patch.familyId = family;
 
   const choices: NonNullable<PlanPrefsPatch["choices"]> = {};
-  const endorsement = field(formData, "txEndorsement", TX_ENDORSEMENTS);
+  const endorsement = has("txEndorsement") ? field(formData, "txEndorsement", TX_ENDORSEMENTS) : undefined;
   if (endorsement !== undefined) choices.txEndorsements = endorsement ? [endorsement] : null;
-  const focus = field(formData, "tnElectiveFocus", TN_ELECTIVE_FOCUSES);
+  const focus = has("tnElectiveFocus") ? field(formData, "tnElectiveFocus", TN_ELECTIVE_FOCUSES) : undefined;
   if (focus !== undefined) choices.tnElectiveFocus = focus;
-  const language = field(formData, "worldLanguage", LANGUAGES);
+  const language = has("worldLanguage") ? field(formData, "worldLanguage", LANGUAGES) : undefined;
   if (language !== undefined) choices.worldLanguage = language;
-  const dla = checkbox(formData, "txAimDla");
+  const dla = changed("txAimDla") ? checkbox(formData, "txAimDla") : undefined;
   if (dla !== undefined) choices.txAimDla = dla;
+  // Leaving the degree path without touching the DLA: it goes back to its default (off there).
+  else if (path !== undefined && path !== null && path !== "degree") choices.txAimDla = null;
   if (Object.keys(choices).length) patch.choices = choices;
 
   const limits: NonNullable<PlanPrefsPatch["limits"]> = {};
-  if (formData.has("maxCollegeLevelPerYear")) {
+  if (has("maxCollegeLevelPerYear")) {
     const max = z.coerce.number().int().min(0).max(MAX_COLLEGE_LEVEL_PER_YEAR).safeParse(formData.get("maxCollegeLevelPerYear"));
     if (!max.success) return { ok: false, message: `Choose a number from 0 to ${MAX_COLLEGE_LEVEL_PER_YEAR}.` };
     limits.maxCollegeLevelPerYear = max.data;
   }
-  const accelerate = checkbox(formData, "accelerateMath");
+  const accelerate = changed("accelerateMath") ? checkbox(formData, "accelerateMath") : undefined;
   if (accelerate !== undefined) limits.accelerateMath = accelerate;
   if (Object.keys(limits).length) patch.limits = limits;
 
-  if (!Object.keys(patch).length) return { ok: false, message: TRY_AGAIN };
+  const cohort = cohortPatch(formData, has);
+  if (typeof cohort === "string") return { ok: false, message: cohort };
+  if (cohort) patch.cohort = cohort;
+
+  if (!Object.keys(patch).length) {
+    if (formData.has("touched")) return { ok: true, message: "Nothing changed." };
+    return { ok: false, message: TRY_AGAIN };
+  }
   await savePlanSettings(await getDb(), student.id, patch);
   revalidatePath("/plan");
   return { ok: true, message: "Saved. Your path is updated." };
+}
+
+/**
+ * "You started 9th grade in fall 2026 (class of 2030). Is that right?": a year that differs from
+ * the one the grade gives needs a reason; choosing the grade's own year (or "It isn't different")
+ * clears the correction. Returns a message when something doesn't check out.
+ */
+function cohortPatch(formData: FormData, has: (name: string) => boolean): PlanPrefsPatch["cohort"] | string | null {
+  if (!has("grade9EntryYear") && !has("classYear") && !has("cohortReason")) return null;
+  const year = z.coerce.number().int().min(2000).max(2100);
+  const entry = year.safeParse(formData.get("grade9EntryYear"));
+  const klass = year.safeParse(formData.get("classYear"));
+  const entryDefault = year.safeParse(formData.get("grade9EntryDefault"));
+  const classDefault = year.safeParse(formData.get("classYearDefault"));
+  const reason = z.enum(COHORT_OVERRIDE_REASONS).safeParse(formData.get("cohortReason"));
+  if (!entry.success || !klass.success || !entryDefault.success || !classDefault.success) return TRY_AGAIN;
+  const entryDiffers = entry.data !== entryDefault.data;
+  const classDiffers = klass.data !== classDefault.data;
+  if ((entryDiffers || classDiffers) && !reason.success) return "Choose why your year is different, or set it back.";
+  return {
+    grade9Entry: entryDiffers && reason.success ? { year: entry.data, reason: reason.data } : null,
+    classYear: classDiffers && reason.success ? { year: klass.data, reason: reason.data } : null,
+  };
 }

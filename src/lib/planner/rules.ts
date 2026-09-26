@@ -183,6 +183,12 @@ export type CreditsReq = Leaf & {
   allowSplit?: boolean;
   /** Must be done (or planned) by the end of this grade. */
   deadlineGrade?: SchoolGrade;
+  /**
+   * Counts only when already finished: the planner never plans toward it or shows it as what to
+   * do (Utah: a calculus class with a C finishes the math requirement, but Secondary Math I-III is
+   * the route to plan).
+   */
+  onlyWhenDone?: true;
 };
 
 /** At least `n` matching courses, whatever their credit (UT Opportunity: one AP/IB/CE math). */
@@ -228,14 +234,26 @@ export type ReqKind = Req["kind"];
 export type Check =
   /** Enrolled in the subject in at least `years` school years (TN: math in 3 years). */
   | { id: string; kind: "enrolled_years"; subject: CourseSubject; years: number; cite: CitationId[] }
-  /** Requirement `req` done or planned by the end of `grade` (TX DLA "on schedule" by the end of 11th). */
-  | { id: string; kind: "on_schedule_by"; req: ReqId; grade: SchoolGrade; cite: CitationId[] }
+  /**
+   * By the end of `grade`, the plan shows requirement `req` (and `with`) done or planned, in any
+   * grade: "on schedule" (TX DLA: by the end of 11th, the transcript shows the student "has
+   * satisfied or is on schedule to satisfy" it, so Algebra II may still be planned for 12th).
+   */
+  | { id: string; kind: "on_schedule_by"; req: ReqId; with?: ReqId[]; grade: SchoolGrade; cite: CitationId[] }
   /** A full year of math in 12th grade unless the student records the competency (UT R277-700-9). */
   | { id: string; kind: "senior_year_math"; unlessChoice: "utMathCompetencyMet"; cite: CitationId[] }
   /** No graduation without an endorsement before the end of `grade`, and only with the parent's written permission (TX §74.11(f)). */
   | { id: string; kind: "no_endorsement_after"; grade: SchoolGrade; needs: "parent_written_permission"; cite: CitationId[] }
   /** This rule set only counts as met when one of these is met or planned (the DLA needs an endorsement). */
-  | { id: string; kind: "requires_rule_set"; anyOf: RuleSetId[]; cite: CitationId[] };
+  | { id: string; kind: "requires_rule_set"; anyOf: RuleSetId[]; cite: CitationId[] }
+  /**
+   * Requirement `req` counts here only while another rule set's requirements aren't met (TX
+   * §74.13(f)(7)(B): an engineering or IT program counts for Business and Industry only "if the
+   * mathematics and science requirements for the STEM endorsement are not met"). `unless.groups`:
+   * the other rule set's requirement ids, and the condition holds when every id in any one group
+   * is met by the student's classes and suggestions.
+   */
+  | { id: string; kind: "counts_unless"; req: ReqId; unless: { ruleSet: RuleSetId; groups: ReqId[][] }; text: string; cite: CitationId[] };
 
 export type CheckKind = Check["kind"];
 
@@ -271,6 +289,12 @@ export type TestRoute = {
    * Shown on the "by when" strip. Optional: most routes have no date.
    */
   by?: { grade: SchoolGrade; month: number; day: number };
+  /**
+   * The requirements (or checks) the score stands in for. Without it the route replaces the rule
+   * set's whole course route (UT Austin calculus readiness); with it, it's offered only for those
+   * (Utah's math competency replaces the senior-year math class, not the CTE credit).
+   */
+  reqIds?: string[];
 };
 
 // Variants and rule sets -------------------------------------------------------

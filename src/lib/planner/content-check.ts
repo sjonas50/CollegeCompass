@@ -57,6 +57,7 @@ export function citedThings(content: ValidatedContent): CitedThing[] {
   for (const fam of content.families?.families ?? []) {
     out.push({ where: `family ${fam.id} math`, cite: fam.math.cite });
     for (const p of fam.ctePathways) out.push({ where: `family ${fam.id} pathway ${p.state} ${p.name}`, cite: p.cite });
+    if (fam.txEndorsement) out.push({ where: `family ${fam.id} Texas endorsement`, cite: fam.txEndorsement.cite });
     for (const g of fam.gates) out.push({ where: `family ${fam.id} gate ${g.id}`, cite: g.cite });
     for (const x of fam.cautions) out.push({ where: `family ${fam.id} caution ${x.id}`, cite: x.cite });
   }

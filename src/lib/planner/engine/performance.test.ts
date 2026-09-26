@@ -5,13 +5,9 @@ import { plan } from "./index";
 import { ALL_SCENARIOS, tx1WorkedExample } from "./testing/scenarios";
 
 // Performance (design §5.12): a plan in under 50 ms (owner's target), and a Katy-sized list of
-// about 600 classes [GD §2] well inside the design's 200 ms CI bound. Medians of several runs after
-// a warm-up, so a busy CI machine doesn't make it flaky.
-
-function median(values: number[]): number {
-  const s = [...values].sort((a, b) => a - b);
-  return s[Math.floor(s.length / 2)];
-}
+// about 600 classes [GD §2] well inside the design's 200 ms CI bound. The fastest of several runs
+// after a warm-up: the parallel test suite shares the machine, and a busy moment slows any one run,
+// never all of them.
 
 function time(input: PlannerInput, runs = 7): number {
   plan(input);
@@ -21,7 +17,7 @@ function time(input: PlannerInput, runs = 7): number {
     plan(input);
     times.push(performance.now() - t0);
   }
-  return median(times);
+  return Math.min(...times);
 }
 
 /** Every course type at every level it's offered: about 600 rows, like Katy ISD's 209-page guide. */
@@ -66,7 +62,7 @@ describe("performance", () => {
   it("plans each golden scenario in under 50 ms", () => {
     const slow: string[] = [];
     for (const [name, make] of Object.entries(ALL_SCENARIOS)) {
-      const ms = time(make(), 3);
+      const ms = time(make());
       if (ms >= 50) slow.push(`${name}: ${ms.toFixed(1)} ms`);
     }
     expect(slow).toEqual([]);

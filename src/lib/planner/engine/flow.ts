@@ -50,6 +50,8 @@ export class MinCostFlow {
         for (let v = 0; v < n; v++) if (!done[v] && dist[v] < Infinity && (u === -1 || dist[v] < dist[u])) u = v;
         if (u === -1) break;
         done[u] = true;
+        // The sink's shortest path is settled: the rest of the search can't change this augmentation.
+        if (u === sink) break;
         for (const e of this.adj[u]) {
           if (this.cap[e] <= 0) continue;
           const v = this.to[e];
@@ -61,7 +63,10 @@ export class MinCostFlow {
         }
       }
       if (dist[sink] === Infinity) break;
-      for (let v = 0; v < n; v++) if (dist[v] < Infinity) potential[v] += dist[v];
+      // Potentials for a search stopped at the sink: settled nodes by their distance, the rest by
+      // the sink's (reduced costs stay non-negative).
+      const cap = dist[sink];
+      for (let v = 0; v < n; v++) potential[v] += Math.min(dist[v], cap);
       let push = Infinity;
       for (let v = sink; v !== source; v = this.to[prevEdge[v] ^ 1]) push = Math.min(push, this.cap[prevEdge[v]]);
       for (let v = sink; v !== source; v = this.to[prevEdge[v] ^ 1]) {

@@ -58,6 +58,8 @@ career clusters. Each type has a generic title, one of the app's 10 subjects (pl
 students often use), default units, a usual grade window, prerequisites (each met by any one listed
 type), and optionally a ladder rank, capabilities and state display names.
 
+- **Prerequisites by level**: `collegePrereqs` adds prerequisites for the AP, IB, Cambridge and
+  college-credit versions only (AP Statistics after Algebra II; regular Statistics after Algebra I).
 - **Levels** (the task's "level capabilities"): `levels` lists the rigor levels a class is offered at
   (regular, honors, AP, IB, Cambridge, and `dual_enrollment` for college credit, labeled "CE" in Utah
   and "Dual credit" in Texas). `cte` says whether it's a CTE class (`always`, `sometimes`, `never`).
@@ -98,11 +100,15 @@ and `citations` (verbatim quotes of 300 characters or fewer).
   match `types` or `capabilities`.
 - **Test routes**: `testRoutes` are quoted, never evaluated, and offered as the test-score option.
   An optional `by: { grade, month, day }` puts a dated route on the "by when" strip ("received by
-  December 10 of 12th grade").
+  December 10 of 12th grade"), with the class route as a line under it rather than a gap. Optional
+  `reqIds` limit a route to the requirements or checks it stands in for.
+- **Only when done**: a credits leaf with `onlyWhenDone` (Utah calculus with a C) counts once
+  finished and is never planned toward or reported as the route before that.
 - **Not course requirements**: `conditions` show as "We don't track this"; `unverified` shows once
   as "Ask your counselor"; `checks` run after allocation (math in 3 years, DLA on schedule by the
-  end of 11th, Utah senior math, no Texas endorsement before the end of 10th, the DLA needs an
-  endorsement).
+  end of 11th: the plan shows `req` and `with`, in any grade; Utah senior math, no Texas
+  endorsement before the end of 10th, the DLA needs an endorsement, and `counts_unless`: a program
+  that counts only while another rule set's requirements aren't met).
 - **Projected and stale**: cohorts past `projectedBeyond` use the latest variant labeled
   Projected, never Done. Past `verifiedForSchoolYear` (July 31 after it) or `recheckBy`, lines read
   "being re-checked" and can't show Done. Dates never fail CI.
@@ -135,11 +141,15 @@ dismissed suggestions) and the state's validated content.
 The output is `no_state`, or a planned path with notices, what it was built from, "by when"
 deadlines, pending decisions, at most 2 plans (typed), gaps with 1 to 3 options (typed; "ask your
 counselor" last), the audit per rule set and requirement, demands (P0-P5), counselor questions, the
-middle-school view, and every cited quote resolved. Every line carries `Reason`s with citation ids.
+middle-school view, and every cited quote resolved. Each plan carries its own audit, gaps, "by
+when" and counselor questions (the path's top-level ones are Plan A's, for summaries), so Plan B
+never shows Plan A's gaps. Every line carries `Reason`s with citation ids.
 
 `student_plan_prefs` stores `PlannerChoices`, `PlannerLimits` and `dismissed` (plus targets and cohort
 overrides); like every new student table it must be in `exportStudentData` and deleted with the
-student.
+student. Only what the student chose is stored: defaults (the limits, the inferred path, the DLA
+on the degree path) are applied when reading, and the settings form saves only the fields the
+student changed, so a later change to a default reaches everyone who never picked.
 
 Invariants the engine keeps: it never edits the student's classes, never goes past
 `maxCollegeLevelPerYear` (default 3; soft warning at 4), never scores anything by counting AP

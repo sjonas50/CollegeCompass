@@ -133,3 +133,14 @@ export const SCHOOL_KIND_LABELS: Record<SchoolKind, string> = {
   charter: "Public charter",
   private: "Private",
 };
+
+/**
+ * The school picker's status line after a search. When the search was cut off at the page size,
+ * it says so, so a family whose school isn't among the first results types more instead of
+ * choosing "My school isn't listed".
+ */
+export function searchStatusText(typed: string, count: number, truncated: boolean): string {
+  if (count === 0) return `No schools found for “${typed}”. Try part of the name or the city, or choose “My school isn’t listed.”`;
+  if (truncated) return `Showing the first ${count}. Type more of the name or the city to narrow it down.`;
+  return `${count === 1 ? "1 school" : `${count} schools`} found. Pick yours below.`;
+}

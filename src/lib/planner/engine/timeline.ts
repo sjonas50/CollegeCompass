@@ -90,18 +90,43 @@ function ruleDeadlines(ctx: Ctx, fill: FillResult): Deadline[] {
   return out;
 }
 
+/** "Calculus I with a B or higher and a 4th math credit". */
+function listLabels(labels: string[]): string {
+  const words = labels.map((l, i) => (i > 0 && /^(A|An|The|One|Two|Three|Four) /.test(l) ? l.charAt(0).toLowerCase() + l.slice(1) : l));
+  return words.length <= 1 ? (words[0] ?? "") : `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+}
+
+/**
+ * A dated test-score route whose class route isn't planned (design §5.6, §5.13: the test route is
+ * the default in Plan A): the date on the strip, and the class route as a line under it, never a
+ * gap or a push to accelerate.
+ */
 function testDeadlines(ctx: Ctx, fill: FillResult): Deadline[] {
   const out: Deadline[] = [];
   for (const e of fill.evals) {
     if (!e.best) continue;
-    const courseRouteOpen = e.best.leaves.some((l) => l.missing > 0);
-    if (!courseRouteOpen) continue;
+    const open = e.best.leaves.filter((l) => l.missing > 0);
+    if (open.length === 0) continue;
     for (const route of e.rc.rs.testRoutes ?? []) {
       if (!route.by) continue;
       const by: ByWhen = { grade: route.by.grade, point: "date", month: route.by.month, day: route.by.day };
       if (!future(ctx, by)) continue;
       const text = `${e.rc.rs.title}, test-score route: ${route.text}`;
-      out.push({ id: `test:${e.rc.rs.id}/${route.id}`, kind: "test", by, text, slackYears: 0, reasons: [reason("deadline", text, { ruleSetId: e.rc.rs.id, citations: route.cite })] });
+      const deadlines = open.map((l) => (l.leaf.req.kind === "credits" ? l.leaf.req.deadlineGrade : undefined)).filter((g): g is SchoolGrade => g !== undefined);
+      const when = deadlines.length ? ` by the end of ${nth(Math.min(...deadlines))} grade` : "";
+      const unreachable = (fill.ladder.solution?.unmet ?? []).some((c) => open.some((l) => c.id === `${e.rc.rs.id}/${l.leaf.id}`));
+      const note =
+        `Or show it with a class: ${listLabels(open.map((l) => l.leaf.label))}${when}.` +
+        (unreachable ? " From where you are, that would take a summer class or two math classes in one year. Only if you want that and your last math grade is a B or better." : "");
+      out.push({
+        id: `test:${e.rc.rs.id}/${route.id}`,
+        kind: "test",
+        by,
+        text,
+        slackYears: 0,
+        note,
+        reasons: [reason("deadline", text, { ruleSetId: e.rc.rs.id, citations: [...route.cite, ...open.flatMap((l) => l.leaf.cite)] })],
+      });
     }
   }
   return out;
@@ -140,9 +165,14 @@ export function buildDecisions(ctx: Ctx, fill: FillResult): PendingDecision[] {
   const lang = fill.placements.find((p) => p.kind === "language");
   if (lang && !ctx.choices.worldLanguage && !ctx.items.some((i) => i.subject === "world_language")) {
     const code = lang.row.typeId.split(".")[1] as LanguageCode;
+    // The latest start that still fits the levels a requirement asks for (2 levels: the start of
+    // 11th); a recommendation alone puts nothing on the "by when" strip.
+    const required = fill.baselineNeeds.filter((n) => n.language && n.priority <= 1 && n.leaf?.strength === "required");
+    const levels = Math.max(0, ...required.map((n) => n.language!.levels));
+    const latest = levels > 0 ? 13 - Math.min(4, levels) : null;
     out.push({
       key: "worldLanguage",
-      by: { grade: lang.item.grade, point: "start" },
+      by: latest !== null && latest >= 9 ? { grade: latest as SchoolGrade, point: "start" } : null,
       text: `Pick a world language. We planned ${LANGUAGE_NAMES[code]} for now; any language your school offers works.`,
       reasons: [reason("choice", "Two years of one language counts for graduation or college here.", { claim: "rule", citations: lang.primary?.reasons.flatMap((r) => r.citations) ?? [] })],
     });

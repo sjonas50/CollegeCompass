@@ -489,17 +489,50 @@
                 {
                   "id": "stem.cte",
                   "label": "A STEM career and technical program of study",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [
+                  "kind": "any",
+                  "of": [
                     {
-                      "cte": true,
-                      "types": ["math.applied.medical", "math.applied.engineering", "sci.phys_eng", "sci.anat", "sci.biotech", "sci.microbio", "cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber", "cs.web", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.biomed", "cte.health_principles", "cte.medical_terminology", "cte.nurse_aide", "cte.energy.1", "cte.energy.2", "cte.energy.3", "cte.energy.4", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4", "cte.health.1", "cte.health.2", "cte.health.3", "cte.health.4", "cte.it.1", "cte.it.2", "cte.it.3", "cte.it.4"]
+                      "id": "stem.cte.engineering",
+                      "label": "Engineering program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["math.applied.engineering", "sci.phys_eng", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4"] }],
+                      "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "stem.cte.it",
+                      "label": "Information technology program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber", "cs.web", "cte.it.1", "cte.it.2", "cte.it.3", "cte.it.4"] }],
+                      "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "stem.cte.health",
+                      "label": "Health science program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["math.applied.medical", "sci.anat", "sci.biotech", "sci.microbio", "cte.biomed", "cte.health_principles", "cte.medical_terminology", "cte.nurse_aide", "cte.health.1", "cte.health.2", "cte.health.3", "cte.health.4"] }],
+                      "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "stem.cte.energy",
+                      "label": "Energy program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.energy.1", "cte.energy.2", "cte.energy.3", "cte.energy.4"] }],
+                      "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
                     }
                   ],
-                  "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
-                  "shareable": true,
-                  "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                  "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"]
                 }
               ],
               "cite": ["tx-74-13-g"]
@@ -672,17 +705,50 @@
                 {
                   "id": "stem.cte",
                   "label": "A STEM career and technical program of study",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [
+                  "kind": "any",
+                  "of": [
                     {
-                      "cte": true,
-                      "types": ["math.applied.medical", "math.applied.engineering", "sci.phys_eng", "sci.anat", "sci.biotech", "sci.microbio", "cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber", "cs.web", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.biomed", "cte.health_principles", "cte.medical_terminology", "cte.nurse_aide", "cte.energy.1", "cte.energy.2", "cte.energy.3", "cte.energy.4", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4", "cte.health.1", "cte.health.2", "cte.health.3", "cte.health.4", "cte.it.1", "cte.it.2", "cte.it.3", "cte.it.4"]
+                      "id": "stem.cte.engineering",
+                      "label": "Engineering program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["math.applied.engineering", "sci.phys_eng", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4"] }],
+                      "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "stem.cte.it",
+                      "label": "Information technology program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber", "cs.web", "cte.it.1", "cte.it.2", "cte.it.3", "cte.it.4"] }],
+                      "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "stem.cte.health",
+                      "label": "Health science program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["math.applied.medical", "sci.anat", "sci.biotech", "sci.microbio", "cte.biomed", "cte.health_principles", "cte.medical_terminology", "cte.nurse_aide", "cte.health.1", "cte.health.2", "cte.health.3", "cte.health.4"] }],
+                      "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "stem.cte.energy",
+                      "label": "Energy program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.energy.1", "cte.energy.2", "cte.energy.3", "cte.energy.4"] }],
+                      "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
                     }
                   ],
-                  "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"],
-                  "shareable": true,
-                  "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                  "cite": ["tx-74-13-f6a", "tx-74-13-f6a-2"]
                 }
               ],
               "cite": ["tx-74-13-g"]
@@ -773,17 +839,120 @@
                 {
                   "id": "bi.cte",
                   "label": "A business and industry career and technical program of study",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [
+                  "kind": "any",
+                  "of": [
                     {
-                      "cte": true,
-                      "types": ["ela.professional_comm", "math.stats", "math.applied.finance", "math.applied.technical", "math.applied.business", "math.applied.engineering", "sci.phys_eng", "arts.media", "cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber", "cs.web", "cte.accounting", "cte.business_office", "cte.floral_design", "cte.landscape_design", "cte.design_foundations", "cte.agriscience", "cte.animal_science", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.ag.1", "cte.ag.2", "cte.ag.3", "cte.ag.4", "cte.architecture_construction.1", "cte.architecture_construction.2", "cte.architecture_construction.3", "cte.architecture_construction.4", "cte.arts_av.1", "cte.arts_av.2", "cte.arts_av.3", "cte.arts_av.4", "cte.business.1", "cte.business.2", "cte.business.3", "cte.business.4", "cte.energy.1", "cte.energy.2", "cte.energy.3", "cte.energy.4", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4", "cte.hospitality.1", "cte.hospitality.2", "cte.hospitality.3", "cte.hospitality.4", "cte.human_services.1", "cte.human_services.2", "cte.human_services.3", "cte.human_services.4", "cte.it.1", "cte.it.2", "cte.it.3", "cte.it.4", "cte.manufacturing.1", "cte.manufacturing.2", "cte.manufacturing.3", "cte.manufacturing.4", "cte.transportation.1", "cte.transportation.2", "cte.transportation.3", "cte.transportation.4"]
+                      "id": "bi.cte.business",
+                      "label": "Business, marketing and finance program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["ela.professional_comm", "math.stats", "math.applied.finance", "math.applied.business", "cte.accounting", "cte.business_office", "cte.business.1", "cte.business.2", "cte.business.3", "cte.business.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.ag",
+                      "label": "Agriculture, food and natural resources program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.floral_design", "cte.landscape_design", "cte.agriscience", "cte.animal_science", "cte.ag.1", "cte.ag.2", "cte.ag.3", "cte.ag.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.architecture_construction",
+                      "label": "Architecture and construction program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.architecture_construction.1", "cte.architecture_construction.2", "cte.architecture_construction.3", "cte.architecture_construction.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.arts_av",
+                      "label": "Arts, A/V technology and communications program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["arts.media", "cte.design_foundations", "cte.arts_av.1", "cte.arts_av.2", "cte.arts_av.3", "cte.arts_av.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.hospitality",
+                      "label": "Hospitality, tourism and culinary arts program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.hospitality.1", "cte.hospitality.2", "cte.hospitality.3", "cte.hospitality.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.human_services",
+                      "label": "Human services program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.human_services.1", "cte.human_services.2", "cte.human_services.3", "cte.human_services.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.manufacturing",
+                      "label": "Manufacturing program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["math.applied.technical", "cte.manufacturing.1", "cte.manufacturing.2", "cte.manufacturing.3", "cte.manufacturing.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.transportation",
+                      "label": "Transportation, distribution and logistics program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.transportation.1", "cte.transportation.2", "cte.transportation.3", "cte.transportation.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.energy",
+                      "label": "Energy program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.energy.1", "cte.energy.2", "cte.energy.3", "cte.energy.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.engineering",
+                      "label": "Engineering program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["math.applied.engineering", "sci.phys_eng", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4"] }],
+                      "cite": ["tx-74-13-f7b"],
+                      "shareable": true,
+                      "note": "An engineering program counts here only if you don't meet the STEM endorsement's math and science requirements."
+                    },
+                    {
+                      "id": "bi.cte.it",
+                      "label": "Information technology program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber", "cs.web", "cte.it.1", "cte.it.2", "cte.it.3", "cte.it.4"] }],
+                      "cite": ["tx-74-13-f7b"],
+                      "shareable": true,
+                      "note": "An information technology program counts here only if you don't meet the STEM endorsement's math and science requirements."
                     }
                   ],
-                  "cite": ["tx-74-13-f7a", "tx-74-13-f7b"],
-                  "shareable": true,
-                  "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                  "cite": ["tx-74-13-f7a", "tx-74-13-f7b"]
                 },
                 {
                   "id": "bi.english",
@@ -811,6 +980,24 @@
             {
               "id": "cte-completer",
               "text": "How many classes make you a 'completer' in a career and technical program of study depends on the program. We plan for three; ask your counselor what your program needs."
+            }
+          ],
+          "checks": [
+            {
+              "id": "bi.cte.engineering.unless-stem",
+              "kind": "counts_unless",
+              "req": "bi.cte.engineering",
+              "unless": { "ruleSet": "tx.endorse.stem", "groups": [["stem.alg2", "stem.chem", "stem.phys", "stem.math"], ["stem.alg2", "stem.chem", "stem.phys", "stem.science"], ["stem.alg2", "stem.chem", "stem.phys", "stem.mixed.math", "stem.mixed.science"]] },
+              "text": "An engineering program counts for Business and Industry only if you don't meet the STEM endorsement's math and science requirements.",
+              "cite": ["tx-74-13-f7b"]
+            },
+            {
+              "id": "bi.cte.it.unless-stem",
+              "kind": "counts_unless",
+              "req": "bi.cte.it",
+              "unless": { "ruleSet": "tx.endorse.stem", "groups": [["stem.alg2", "stem.chem", "stem.phys", "stem.math"], ["stem.alg2", "stem.chem", "stem.phys", "stem.science"], ["stem.alg2", "stem.chem", "stem.phys", "stem.mixed.math", "stem.mixed.science"]] },
+              "text": "An information technology program counts for Business and Industry only if you don't meet the STEM endorsement's math and science requirements.",
+              "cite": ["tx-74-13-f7b"]
             }
           ]
         },
@@ -868,17 +1055,120 @@
                 {
                   "id": "bi.cte",
                   "label": "A business and industry career and technical program of study",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [
+                  "kind": "any",
+                  "of": [
                     {
-                      "cte": true,
-                      "types": ["ela.professional_comm", "math.stats", "math.applied.finance", "math.applied.technical", "math.applied.business", "math.applied.engineering", "sci.phys_eng", "arts.media", "cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber", "cs.web", "cte.accounting", "cte.business_office", "cte.floral_design", "cte.landscape_design", "cte.design_foundations", "cte.agriscience", "cte.animal_science", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.ag.1", "cte.ag.2", "cte.ag.3", "cte.ag.4", "cte.architecture_construction.1", "cte.architecture_construction.2", "cte.architecture_construction.3", "cte.architecture_construction.4", "cte.arts_av.1", "cte.arts_av.2", "cte.arts_av.3", "cte.arts_av.4", "cte.business.1", "cte.business.2", "cte.business.3", "cte.business.4", "cte.energy.1", "cte.energy.2", "cte.energy.3", "cte.energy.4", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4", "cte.hospitality.1", "cte.hospitality.2", "cte.hospitality.3", "cte.hospitality.4", "cte.human_services.1", "cte.human_services.2", "cte.human_services.3", "cte.human_services.4", "cte.it.1", "cte.it.2", "cte.it.3", "cte.it.4", "cte.manufacturing.1", "cte.manufacturing.2", "cte.manufacturing.3", "cte.manufacturing.4", "cte.transportation.1", "cte.transportation.2", "cte.transportation.3", "cte.transportation.4"]
+                      "id": "bi.cte.business",
+                      "label": "Business, marketing and finance program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["ela.professional_comm", "math.stats", "math.applied.finance", "math.applied.business", "cte.accounting", "cte.business_office", "cte.business.1", "cte.business.2", "cte.business.3", "cte.business.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.ag",
+                      "label": "Agriculture, food and natural resources program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.floral_design", "cte.landscape_design", "cte.agriscience", "cte.animal_science", "cte.ag.1", "cte.ag.2", "cte.ag.3", "cte.ag.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.architecture_construction",
+                      "label": "Architecture and construction program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.architecture_construction.1", "cte.architecture_construction.2", "cte.architecture_construction.3", "cte.architecture_construction.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.arts_av",
+                      "label": "Arts, A/V technology and communications program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["arts.media", "cte.design_foundations", "cte.arts_av.1", "cte.arts_av.2", "cte.arts_av.3", "cte.arts_av.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.hospitality",
+                      "label": "Hospitality, tourism and culinary arts program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.hospitality.1", "cte.hospitality.2", "cte.hospitality.3", "cte.hospitality.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.human_services",
+                      "label": "Human services program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.human_services.1", "cte.human_services.2", "cte.human_services.3", "cte.human_services.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.manufacturing",
+                      "label": "Manufacturing program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["math.applied.technical", "cte.manufacturing.1", "cte.manufacturing.2", "cte.manufacturing.3", "cte.manufacturing.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.transportation",
+                      "label": "Transportation, distribution and logistics program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.transportation.1", "cte.transportation.2", "cte.transportation.3", "cte.transportation.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.energy",
+                      "label": "Energy program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.energy.1", "cte.energy.2", "cte.energy.3", "cte.energy.4"] }],
+                      "cite": ["tx-74-13-f7a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "bi.cte.engineering",
+                      "label": "Engineering program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["math.applied.engineering", "sci.phys_eng", "cte.engineering_design", "cte.cad", "cte.robotics", "cte.digital_electronics", "cte.engineering.1", "cte.engineering.2", "cte.engineering.3", "cte.engineering.4"] }],
+                      "cite": ["tx-74-13-f7b"],
+                      "shareable": true,
+                      "note": "An engineering program counts here only if you don't meet the STEM endorsement's math and science requirements."
+                    },
+                    {
+                      "id": "bi.cte.it",
+                      "label": "Information technology program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cs.prog1", "cs.prog2", "cs.advanced", "cs.data_science", "cs.cyber", "cs.web", "cte.it.1", "cte.it.2", "cte.it.3", "cte.it.4"] }],
+                      "cite": ["tx-74-13-f7b"],
+                      "shareable": true,
+                      "note": "An information technology program counts here only if you don't meet the STEM endorsement's math and science requirements."
                     }
                   ],
-                  "cite": ["tx-74-13-f7a", "tx-74-13-f7b"],
-                  "shareable": true,
-                  "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                  "cite": ["tx-74-13-f7a", "tx-74-13-f7b"]
                 },
                 {
                   "id": "bi.english",
@@ -906,6 +1196,24 @@
             {
               "id": "cte-completer",
               "text": "How many classes make you a 'completer' in a career and technical program of study depends on the program. We plan for three; ask your counselor what your program needs."
+            }
+          ],
+          "checks": [
+            {
+              "id": "bi.cte.engineering.unless-stem",
+              "kind": "counts_unless",
+              "req": "bi.cte.engineering",
+              "unless": { "ruleSet": "tx.endorse.stem", "groups": [["stem.alg2", "stem.chem", "stem.phys", "stem.math"], ["stem.alg2", "stem.chem", "stem.phys", "stem.science"], ["stem.alg2", "stem.chem", "stem.phys", "stem.mixed.math", "stem.mixed.science"]] },
+              "text": "An engineering program counts for Business and Industry only if you don't meet the STEM endorsement's math and science requirements.",
+              "cite": ["tx-74-13-f7b"]
+            },
+            {
+              "id": "bi.cte.it.unless-stem",
+              "kind": "counts_unless",
+              "req": "bi.cte.it",
+              "unless": { "ruleSet": "tx.endorse.stem", "groups": [["stem.alg2", "stem.chem", "stem.phys", "stem.math"], ["stem.alg2", "stem.chem", "stem.phys", "stem.science"], ["stem.alg2", "stem.chem", "stem.phys", "stem.mixed.math", "stem.mixed.science"]] },
+              "text": "An information technology program counts for Business and Industry only if you don't meet the STEM endorsement's math and science requirements.",
+              "cite": ["tx-74-13-f7b"]
             }
           ]
         }
@@ -979,17 +1287,50 @@
                 {
                   "id": "ps.cte",
                   "label": "A public services career and technical program of study",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [
+                  "kind": "any",
+                  "of": [
                     {
-                      "cte": true,
-                      "types": ["math.applied.medical", "sci.anat", "sci.forensic", "sci.biotech", "sci.microbio", "cte.biomed", "cte.health_principles", "cte.medical_terminology", "cte.nurse_aide", "cte.emt", "cte.education.1", "cte.education.2", "cte.education.3", "cte.education.4", "cte.health.1", "cte.health.2", "cte.health.3", "cte.health.4", "cte.human_services.1", "cte.human_services.2", "cte.human_services.3", "cte.human_services.4", "cte.law.1", "cte.law.2", "cte.law.3", "cte.law.4"]
+                      "id": "ps.cte.health",
+                      "label": "Health science program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["math.applied.medical", "sci.anat", "sci.biotech", "sci.microbio", "cte.biomed", "cte.health_principles", "cte.medical_terminology", "cte.nurse_aide", "cte.health.1", "cte.health.2", "cte.health.3", "cte.health.4"] }],
+                      "cite": ["tx-74-13-f8a"],
+                      "shareable": true,
+                      "note": "Nursing science and biomedical science count here if you don't meet STEM's requirements; other health science programs always count. Ask your counselor which program yours is."
+                    },
+                    {
+                      "id": "ps.cte.law",
+                      "label": "Law, public safety and security program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["sci.forensic", "cte.emt", "cte.law.1", "cte.law.2", "cte.law.3", "cte.law.4"] }],
+                      "cite": ["tx-74-13-f8a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "ps.cte.education",
+                      "label": "Education and training program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.education.1", "cte.education.2", "cte.education.3", "cte.education.4"] }],
+                      "cite": ["tx-74-13-f8a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "ps.cte.human_services",
+                      "label": "Human services program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.human_services.1", "cte.human_services.2", "cte.human_services.3", "cte.human_services.4"] }],
+                      "cite": ["tx-74-13-f8a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
                     }
                   ],
-                  "cite": ["tx-74-13-f8a"],
-                  "shareable": true,
-                  "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                  "cite": ["tx-74-13-f8a"]
                 },
                 {
                   "id": "ps.jrotc",
@@ -1073,17 +1414,50 @@
                 {
                   "id": "ps.cte",
                   "label": "A public services career and technical program of study",
-                  "kind": "credits",
-                  "units": 12,
-                  "select": [
+                  "kind": "any",
+                  "of": [
                     {
-                      "cte": true,
-                      "types": ["math.applied.medical", "sci.anat", "sci.forensic", "sci.biotech", "sci.microbio", "cte.biomed", "cte.health_principles", "cte.medical_terminology", "cte.nurse_aide", "cte.emt", "cte.education.1", "cte.education.2", "cte.education.3", "cte.education.4", "cte.health.1", "cte.health.2", "cte.health.3", "cte.health.4", "cte.human_services.1", "cte.human_services.2", "cte.human_services.3", "cte.human_services.4", "cte.law.1", "cte.law.2", "cte.law.3", "cte.law.4"]
+                      "id": "ps.cte.health",
+                      "label": "Health science program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["math.applied.medical", "sci.anat", "sci.biotech", "sci.microbio", "cte.biomed", "cte.health_principles", "cte.medical_terminology", "cte.nurse_aide", "cte.health.1", "cte.health.2", "cte.health.3", "cte.health.4"] }],
+                      "cite": ["tx-74-13-f8a"],
+                      "shareable": true,
+                      "note": "Nursing science and biomedical science count here if you don't meet STEM's requirements; other health science programs always count. Ask your counselor which program yours is."
+                    },
+                    {
+                      "id": "ps.cte.law",
+                      "label": "Law, public safety and security program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["sci.forensic", "cte.emt", "cte.law.1", "cte.law.2", "cte.law.3", "cte.law.4"] }],
+                      "cite": ["tx-74-13-f8a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "ps.cte.education",
+                      "label": "Education and training program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.education.1", "cte.education.2", "cte.education.3", "cte.education.4"] }],
+                      "cite": ["tx-74-13-f8a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                    },
+                    {
+                      "id": "ps.cte.human_services",
+                      "label": "Human services program (3 credits in one program)",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "cte": true, "types": ["cte.human_services.1", "cte.human_services.2", "cte.human_services.3", "cte.human_services.4"] }],
+                      "cite": ["tx-74-13-f8a"],
+                      "shareable": true,
+                      "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
                     }
                   ],
-                  "cite": ["tx-74-13-f8a"],
-                  "shareable": true,
-                  "note": "Counts your career and technical classes in one program of study. Your counselor confirms when you've finished it (become a program 'completer')."
+                  "cite": ["tx-74-13-f8a"]
                 },
                 {
                   "id": "ps.jrotc",
@@ -1712,8 +2086,8 @@
               "select": [{ "types": ["math.alg2"] }],
               "cite": ["tx-74-11-g-math-science", "tx-tec-51-803-d"],
               "shareable": true,
-              "deadlineGrade": 11,
-              "area": "math"
+              "area": "math",
+              "note": "It can come in 12th: by the end of 11th grade, your plan needs to show it (\"on schedule\")."
             },
             {
               "id": "dla.math4",
@@ -1752,6 +2126,7 @@
               "id": "dla.on-schedule",
               "kind": "on_schedule_by",
               "req": "dla.alg2",
+              "with": ["dla.math4", "dla.science4"],
               "grade": 11,
               "cite": ["tx-tec-51-803-d"]
             },
@@ -1803,8 +2178,8 @@
               "select": [{ "types": ["math.alg2"] }],
               "cite": ["tx-74-11-g-math-science", "tx-tec-51-803-d"],
               "shareable": true,
-              "deadlineGrade": 11,
-              "area": "math"
+              "area": "math",
+              "note": "It can come in 12th: by the end of 11th grade, your plan needs to show it (\"on schedule\")."
             },
             {
               "id": "dla.math4",
@@ -1843,6 +2218,7 @@
               "id": "dla.on-schedule",
               "kind": "on_schedule_by",
               "req": "dla.alg2",
+              "with": ["dla.math4", "dla.science4"],
               "grade": 11,
               "cite": ["tx-tec-51-803-d"]
             },

@@ -7,6 +7,7 @@ import { US_STATES } from "@/lib/colleges/states";
 import type { FormState } from "@/lib/forms";
 import { isPlannerState } from "@/lib/planner/common";
 import { type SavedSchool, savedSchoolLabel, schoolDetails, stateCoverageNote } from "@/lib/schools/labels";
+import { searchStatusText } from "@/lib/schools/names";
 import type { SchoolOption } from "@/lib/schools/search";
 
 // "Where you go to school": the state and school pickers, in a student's Settings and in each
@@ -21,7 +22,7 @@ const control =
 const choiceCard =
   "flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border border-border px-3 py-2 has-checked:border-accent has-checked:bg-accent-soft has-focus-visible:outline-2 has-focus-visible:outline-accent";
 
-type Search = { query: string; state: string; status: "done" | "error" | "limited"; results: SchoolOption[] };
+type Search = { query: string; state: string; status: "done" | "error" | "limited"; results: SchoolOption[]; truncated: boolean };
 
 /**
  * One school question: search the state's schools, or pick one of the fixed answers. `value` is
@@ -78,13 +79,13 @@ function SchoolChoice({
           signal: controller.signal,
         });
         if (!res.ok) {
-          setSearch({ query: typed, state, status: res.status === 429 ? "limited" : "error", results: [] });
+          setSearch({ query: typed, state, status: res.status === 429 ? "limited" : "error", results: [], truncated: false });
           return;
         }
-        const body = (await res.json()) as { results: SchoolOption[] };
-        setSearch({ query: typed, state, status: "done", results: body.results });
+        const body = (await res.json()) as { results: SchoolOption[]; truncated?: boolean };
+        setSearch({ query: typed, state, status: "done", results: body.results, truncated: body.truncated === true });
       } catch {
-        if (!controller.signal.aborted) setSearch({ query: typed, state, status: "error", results: [] });
+        if (!controller.signal.aborted) setSearch({ query: typed, state, status: "error", results: [], truncated: false });
       }
     }, 250);
     return () => {
@@ -107,9 +108,7 @@ function SchoolChoice({
           ? "That's a lot of searches. Wait a few minutes and try again."
           : current.status === "error"
             ? "Search isn't working right now. Try again, or choose one of the answers below."
-            : results.length === 0
-              ? `No schools found for “${typed}”. Try part of the name or the city, or choose “My school isn’t listed.”`
-              : `${results.length === 1 ? "1 school" : `${results.length} schools`} found. Pick yours below.`;
+            : searchStatusText(typed, results.length, current.truncated);
 
   const select = (v: string, school: SchoolOption | null) => {
     if (school) setPicked(school);

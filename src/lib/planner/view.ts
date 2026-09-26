@@ -97,9 +97,19 @@ export const AUDIT_GROUPS: { id: AuditGroupId; title: string; kinds: readonly Ru
   { id: "scholarships", title: "Scholarships and college credit", kinds: ["state_aid", "college_credit_program"] },
 ];
 
-export function auditGroup(path: PlannedPath, id: AuditGroupId): RuleSetAudit[] {
+/**
+ * What the plan on screen shows for itself: its audit, gaps, "by when" and counselor questions.
+ * With two plans, Plan B's are its own; with one plan (or none, in middle school), the path's.
+ */
+export function planParts(path: PlannedPath, planId: "A" | "B"): Pick<PlannedPath, "audit" | "gaps" | "deadlines" | "askCounselor"> {
+  const plan = path.plans.find((p) => p.id === planId) ?? path.plans[0];
+  if (!plan) return { audit: path.audit, gaps: path.gaps, deadlines: path.deadlines, askCounselor: path.askCounselor };
+  return { audit: plan.audit, gaps: plan.gaps, deadlines: plan.deadlines, askCounselor: plan.askCounselor };
+}
+
+export function auditGroup(audit: readonly RuleSetAudit[], id: AuditGroupId): RuleSetAudit[] {
   const kinds = AUDIT_GROUPS.find((g) => g.id === id)!.kinds;
-  return path.audit.filter((rs) => kinds.includes(rs.kind));
+  return audit.filter((rs) => kinds.includes(rs.kind));
 }
 
 type Suggested = Extract<PlanSlot, { kind: "suggested" }>;
@@ -135,6 +145,15 @@ export const TX_ENDORSEMENT_LABELS = {
   multidisciplinary: "Multidisciplinary Studies",
 } as const;
 
+/** Why a student's class year differs from their grade (COHORT_OVERRIDE_REASONS). */
+export const COHORT_REASON_LABELS = {
+  repeated: "I repeated a grade",
+  skipped: "I skipped a grade",
+  transferred: "I moved or changed schools",
+  graduating_early: "I'm graduating early",
+  other: "Another reason",
+} as const;
+
 export const TN_FOCUS_LABELS = {
   cte: "Career and technical education",
   math_science: "Math and science",
@@ -160,4 +179,20 @@ export function cohortLabel(key: CohortKey, cohort: Variant["cohort"]): string {
   if (from !== undefined) return `Started ${grade} grade in ${schoolYearLabel(from)} or later`;
   if (to !== undefined) return `Started ${grade} grade in ${schoolYearLabel(to)} or earlier`;
   return "Every class";
+}
+
+/** "Set 'What kind of class is this?' … so 2 requirements can count them." */
+export function confirmTypeText(n: number): string {
+  return `Set "What kind of class is this?" on the classes with a guessed kind, so ${n === 1 ? "1 requirement" : `${n} requirements`} can count them.`;
+}
+
+/**
+ * Graduation requirements waiting on a class's kind to be confirmed: a class with a guessed kind
+ * never makes a specific requirement done, so these aren't really "room to add".
+ */
+export function confirmTypeCount(result: PlannedPath): number {
+  return result.audit
+    .filter((r) => r.kind === "state_graduation")
+    .flatMap((r) => r.requirements)
+    .filter((req) => req.status === "room_to_add" && req.modifiers.includes("guessed_type")).length;
 }

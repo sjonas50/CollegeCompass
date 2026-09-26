@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { type Db, createTestDb } from "@/db";
-import { schoolsByRef, searchSchools } from "./search";
+import { searchStatusText } from "./names";
+import { SCHOOL_SEARCH_LIMIT, schoolsByRef, searchSchools, searchSchoolsPage } from "./search";
 import { SCHOOLS, insertSchools, school } from "./test-fixtures";
 
 let db: Db;
@@ -10,6 +11,23 @@ beforeEach(async () => {
 });
 
 const names = (rows: { name: string }[]) => rows.map((r) => r.name);
+
+describe("searchSchoolsPage", () => {
+  it("says when there are more schools than the first page shows", async () => {
+    const many = Array.from({ length: SCHOOL_SEARCH_LIMIT + 3 }, (_, i) =>
+      school({ schoolRef: `nces:4800000009${String(i).padStart(2, "0")}`, name: `Katy Test School ${i + 1}`, state: "TX", city: "Katy" }),
+    );
+    await insertSchools(db, many);
+    const page = await searchSchoolsPage(db, { state: "TX", query: "katy" });
+    expect(page.results).toHaveLength(SCHOOL_SEARCH_LIMIT);
+    expect(page.truncated).toBe(true);
+    expect(searchStatusText("katy", page.results.length, page.truncated)).toBe("Showing the first 20. Type more of the name or the city to narrow it down.");
+    const narrow = await searchSchoolsPage(db, { state: "TX", query: "katy test school 23" });
+    expect(narrow.truncated).toBe(false);
+    expect(searchStatusText("katy test school 23", narrow.results.length, narrow.truncated)).toBe("1 school found. Pick yours below.");
+    expect(searchStatusText("zzz", 0, false)).toMatch(/^No schools found for “zzz”/);
+  });
+});
 
 describe("searchSchools", () => {
   it("finds a school by the start of its words, spelled as filed or as shown", async () => {

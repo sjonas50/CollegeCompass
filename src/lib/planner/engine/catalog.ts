@@ -229,7 +229,9 @@ export function resolveCatalog(view: CatalogView, generic: CatalogView, genericT
         if (types.length || catalogIds.length) groups.push({ types, catalogIds, minLetter: p.minLetter ?? null, concurrentOk: p.concurrentOk ?? false });
       }
     } else {
-      groups = getCourseType(c.typeId).prereqs.map((p) => ({ types: [...p.anyOf], catalogIds: [], minLetter: null, concurrentOk: false }));
+      const type = getCourseType(c.typeId);
+      const typeGroups = [...type.prereqs, ...(isCollegeLevel(c.level) ? type.collegePrereqs : [])];
+      groups = typeGroups.map((p) => ({ types: [...p.anyOf], catalogIds: [], minLetter: null, concurrentOk: false }));
     }
     return {
       ...c,

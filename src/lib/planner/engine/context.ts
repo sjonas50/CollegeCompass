@@ -171,7 +171,25 @@ function resolveBases(variant: Variant, all: Map<string, { rs: RuleSet; variant:
   return [...resolveBases(own, all, cohort, depth + 1), { variant: own, rs: named.rs }];
 }
 
-function rigorTier(input: PlannerInput, programGate: boolean): { tier: RigorTier; why: string } {
+/**
+ * A published program gate that raises the rigor tier one step (major-prep/rigor.json `raises`): a
+ * college on the list and a family the student is aiming at. Without that file (older fixtures),
+ * a verified, required program rule set that applies does. Projected rules and recommendations
+ * (a university's "encouraged" note, a list of minimum courses) never raise it.
+ */
+function programRaise(input: PlannerInput, ruleSets: RuleSetCtx[]): string | null {
+  const rigor = input.content?.rigor;
+  const colleges = new Set(input.targets.colleges.map((c) => c.unitId));
+  const families = new Set(input.targets.families.map((f) => f.familyId));
+  if (rigor) {
+    const raise = rigor.raises.find((r) => r.colleges.some((c) => colleges.has(c)) && r.families.some((f) => families.has(f)));
+    return raise ? raise.text : null;
+  }
+  const gate = ruleSets.find((r) => r.rs.kind === "program_admission" && r.rs.strength === "required" && r.rs.confidence === "verified" && !r.projected);
+  return gate ? `${gate.rs.issuer.name} has its own course requirements for a program you're aiming for.` : null;
+}
+
+function rigorTier(input: PlannerInput, raise: string | null): { tier: RigorTier; why: string } {
   const { path, colleges } = input.targets;
   if (path === "training") return { tier: "open", why: "You're planning for a certificate, apprenticeship or career training." };
   let tier: RigorTier;
@@ -192,9 +210,9 @@ function rigorTier(input: PlannerInput, programGate: boolean): { tier: RigorTier
       why = `${name} is the most selective college on your list.`;
     }
   }
-  if (programGate && tier !== "very_selective") {
+  if (raise && tier !== "very_selective") {
     tier = RIGOR_TIERS[RIGOR_TIERS.indexOf(tier) + 1];
-    why += " A program you're aiming for has its own course requirements, so we plan one step higher.";
+    why += ` ${raise} So we plan one step higher.`;
   }
   return { tier, why };
 }
@@ -284,7 +302,7 @@ export function buildContext(input: PlannerInput & { state: PlannerState; conten
     return { target, content: fc, title: getFamily(target.familyId).title, math: familyMath(fc, input.targets.path) };
   });
 
-  const programGate = ruleSets.some((r) => r.rs.kind === "program_admission");
+  const raise = programRaise(input, ruleSets);
   const files: ContentHeader[] = [...content.rules, content.genericCatalog, content.facts, ...(content.families ? [content.families] : [])];
   const fingerprints = new Map<string, string>(files.map((f) => [f.id, cachedFingerprint(f)]));
   const items = input.courses.map(itemFromFact);
@@ -306,7 +324,7 @@ export function buildContext(input: PlannerInput & { state: PlannerState; conten
     ruleSets,
     allRuleSets,
     families,
-    tier: rigorTier(input, programGate),
+    tier: rigorTier(input, raise),
     items,
     dismissed: new Set(input.prefs.dismissed),
     citations: citationIndex(files),

@@ -35,7 +35,7 @@ function mathReq(): Req {
             { id: "math.sec3", label: "Secondary Math III or higher", kind: "credits", units: 4, select: [{ capabilities: ["alg2_or_beyond"] }], cite: ["ut-math"] },
           ],
         },
-        { id: "math.calc_c", label: "Calculus with a C or better", kind: "credits", units: 4, select: [{ types: ["math.calc", "math.calc2"], minLetter: "C" }], cite: ["ut-math-calc"] },
+        { id: "math.calc_c", label: "Calculus with a C or better", kind: "credits", units: 4, select: [{ types: ["math.calc", "math.calc2"], minLetter: "C" }], cite: ["ut-math-calc"], onlyWhenDone: true },
       ],
     },
     on: {

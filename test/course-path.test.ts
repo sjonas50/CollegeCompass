@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type Db, createTestDb, schema } from "@/db";
 import type { CourseLevel, CourseStatus, CourseSubject } from "@/db/schema";
 import { addNorthStar } from "@/lib/goals";
@@ -26,7 +26,13 @@ import { deleteStudent, exportStudentData } from "@/lib/privacy";
 const NOW = new Date("2026-09-25T15:00:00Z");
 let db: Db;
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 beforeEach(async () => {
+  // Calls that read today (pathOverview, the data download) see the same day as NOW.
+  vi.useFakeTimers({ toFake: ["Date"], now: NOW });
   db = await createTestDb();
   // Reference data: careers with their majors (CIP-SOC crosswalk) and the colleges on lists.
   await db.insert(schema.occupations).values([
@@ -120,7 +126,8 @@ describe("a Texas 9th grader's path", () => {
     // Class of 2030 under the 2026-entry Texas rules.
     expect(path.ctx.cohort).toMatchObject({ grade9EntryYear: 2026, classYear: 2030 });
     expect(r.builtFrom.families[0]).toMatchObject({ familyId: "computer_data_science", because: "Software Developers" });
-    expect(r.builtFrom.colleges.map((c) => c.name)).toEqual(["The University of Texas at Austin", "Texas A&M University-College Station"]);
+    // Both colleges (added in the same instant, so in either order).
+    expect(r.builtFrom.colleges.map((c) => c.name).sort()).toEqual(["Texas A&M University-College Station", "The University of Texas at Austin"]);
     // A degree path (inferred from the goal and the colleges), so the DLA is the default target.
     expect(path.ctx).toMatchObject({ path: "degree", pathInferred: true });
     const ids = r.audit.map((a) => a.ruleSetId);
@@ -227,6 +234,35 @@ describe("a Texas 9th grader's path", () => {
   });
 });
 
+describe("classes recorded without choosing their kind", () => {
+  it("a parent sees them as waiting on a confirmed kind, not as room to add", async () => {
+    const guessed: Row[] = [
+      { name: "English I", subject: "english", grade: 9 },
+      { name: "Algebra I", subject: "math", grade: 9 },
+      { name: "Biology", subject: "science", grade: 9 },
+      { name: "World Geography", subject: "social_studies", grade: 9 },
+      { name: "Spanish I", subject: "world_language", grade: 9 },
+      { name: "English II", subject: "english", grade: 10 },
+      { name: "Geometry", subject: "math", grade: 10 },
+      { name: "Spanish II", subject: "world_language", grade: 10 },
+    ];
+    const id = await student({ grade: 11, state: "TX", rows: guessed });
+    const path = planned(await studentPath(db, id, NOW));
+    const guessedLines = path.result.audit
+      .filter((a) => a.kind === "state_graduation")
+      .flatMap((a) => a.requirements)
+      .filter((r) => r.status === "room_to_add" && r.modifiers.includes("guessed_type"));
+    expect(guessedLines.length).toBeGreaterThan(0);
+    const overview = await pathOverview(db, id, NOW);
+    if (overview.kind !== "planned") throw new Error(overview.kind);
+    expect(overview.summary.counts.confirmType).toBe(guessedLines.length);
+    const roomLines = path.result.audit.filter((a) => a.kind === "state_graduation").flatMap((a) => a.requirements).filter((r) => r.status === "room_to_add");
+    expect(overview.summary.counts.roomToAdd).toBe(roomLines.length - guessedLines.length);
+    // No language gap for the guessed Spanish I and II.
+    expect(path.result.gaps.filter((g) => /language/i.test(g.text))).toEqual([]);
+  });
+});
+
 describe("a Utah 7th grader", () => {
   it("sees the middle-school view: math placement, Utah's notes and a 9th-grade sketch, with nothing to add", async () => {
     const id = await student({
@@ -241,7 +277,8 @@ describe("a Utah 7th grader", () => {
     const path = planned(await studentPath(db, id, NOW));
     expect(path.result.stage).toBe("middle_school");
     expect(path.result.plans).toEqual([]);
-    expect(path.result.middleSchool?.mathPlacement.text).toMatch(/Algebra I in 8th/);
+    // Utah's own name for the first high school math class.
+    expect(path.result.middleSchool?.mathPlacement.text).toMatch(/Secondary Mathematics I in 8th/);
     expect(path.result.middleSchool?.stateNotes.some((n) => /Utah/.test(n.text))).toBe(true);
     expect(path.result.builtFrom.families[0]).toMatchObject({ familyId: "nursing" });
     expect(path.ctx.cohort).toMatchObject({ classYear: 2032 });
@@ -298,6 +335,7 @@ describe("a Tennessee 11th grader", () => {
     if (overview.kind !== "planned") return;
     expect(overview.summary).toMatchObject({ state: "TN", classYear: 2028 });
     expect(overview.summary.counts.done).toBeGreaterThan(10);
+    expect(overview.summary.counts.confirmType).toBe(0);
   });
 });
 
@@ -348,6 +386,38 @@ describe("planning choices (student_plan_prefs)", () => {
     // A chosen family is planned around first, before the north stars.
     const path = planned(await studentPath(db, id, NOW));
     expect(path.result.builtFrom.families[0]).toMatchObject({ familyId: "nursing", source: "chosen" });
+  });
+
+  it("store only what the student chose: the first save doesn't freeze the defaults", async () => {
+    const id = await student({ grade: 10, state: "TX" });
+    const r = planned(await studentPath(db, id, NOW)).result;
+    await dismissSuggestion(db, id, suggestions(r)[0].key, NOW);
+    const [row] = await db.select().from(schema.studentPlanPrefs).where(eq(schema.studentPlanPrefs.userId, id));
+    expect(row.limits).toEqual({});
+    expect((await getPlanPrefs(db, id)).limits).toMatchObject({ maxCollegeLevelPerYear: 3, allowSummer: true });
+    await savePlanSettings(db, id, { limits: { maxCollegeLevelPerYear: 2 } }, NOW);
+    const [after] = await db.select().from(schema.studentPlanPrefs).where(eq(schema.studentPlanPrefs.userId, id));
+    expect(after.limits).toEqual({ maxCollegeLevelPerYear: 2 });
+    // Back to the default: nothing stored again.
+    await savePlanSettings(db, id, { limits: { maxCollegeLevelPerYear: null } }, NOW);
+    const [cleared] = await db.select().from(schema.studentPlanPrefs).where(eq(schema.studentPlanPrefs.userId, id));
+    expect(cleared.limits).toEqual({});
+  });
+
+  it("a corrected grade-9 entry year changes which Texas rules apply", async () => {
+    // A 10th grader in 2026-27 started 9th grade in fall 2025: the Texas rules before the 2026 update.
+    const id = await student({ grade: 10, state: "TX", rows: [{ name: "English II", subject: "english", grade: 10, type: "ela.10" }] });
+    const before = planned(await studentPath(db, id, NOW));
+    expect(before.ctx.cohort).toMatchObject({ grade9EntryYear: 2025, classYear: 2029 });
+    expect(before.result.audit.find((a) => a.ruleSetId === "tx.fhsp.grad")?.variantId).toBe("tx.fhsp.grad.pre2026");
+    // They repeated 9th grade, so they started 9th grade in fall 2026 as far as the rules go.
+    await savePlanSettings(db, id, { cohort: { grade9Entry: { year: 2026, reason: "repeated" } } }, NOW);
+    const after = planned(await studentPath(db, id, NOW));
+    expect(after.ctx.cohort).toMatchObject({ grade9EntryYear: 2026, overrides: { grade9Entry: "repeated" } });
+    expect(after.ctx.cohortDefault).toMatchObject({ grade9EntryYear: 2025 });
+    expect(after.result.audit.find((a) => a.ruleSetId === "tx.fhsp.grad")?.variantId).toBe("tx.fhsp.grad.2026");
+    await savePlanSettings(db, id, { cohort: { grade9Entry: null } }, NOW);
+    expect(planned(await studentPath(db, id, NOW)).ctx.cohort).toMatchObject({ grade9EntryYear: 2025, overrides: {} });
   });
 
   it("are in the student's (and a parent's) data download, and deleted with the student", async () => {

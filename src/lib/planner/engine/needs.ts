@@ -55,11 +55,14 @@ function leafSelectors(leaf: CLeaf): Selector[] | null {
   return null;
 }
 
-function deadlineFor(rc: RuleSetCtx, leaf: CLeaf): number {
-  let by = 12;
-  if (leaf.req.kind === "credits" && leaf.req.deadlineGrade) by = Math.min(by, leaf.req.deadlineGrade);
-  for (const c of rc.variant?.checks ?? []) if (c.kind === "on_schedule_by" && c.req === leaf.id) by = Math.min(by, c.grade);
-  return by;
+function deadlineFor(leaf: CLeaf): number {
+  // An "on schedule by" check doesn't move the class earlier: a class planned for 12th is on schedule.
+  return leaf.req.kind === "credits" && leaf.req.deadlineGrade ? Math.min(12, leaf.req.deadlineGrade) : 12;
+}
+
+/** The rule set's test-score routes that stand in for this requirement (or check): routes without `reqIds` stand in for all of them. */
+export function testRoutesFor(rc: RuleSetCtx, id: string): TestRoute[] {
+  return (rc.rs.testRoutes ?? []).filter((t) => !t.reqIds || t.reqIds.includes(id));
 }
 
 function selectorGradeFloor(sels: Selector[]): number {
@@ -88,23 +91,34 @@ export function needFromLeaf(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, baseRc?: R
     required: r.required,
     missing: r.missing,
     fromGrade: Math.max(ctx.firstGrade, selectorGradeFloor(sels)),
-    byGrade: deadlineFor(owner, leaf),
+    byGrade: deadlineFor(leaf),
     exclusiveGroup: owner.allocation === "exclusive" && leaf.req.kind === "credits" && !shareable ? owner.rs.id : null,
     soft: leaf.strength === "priority",
     language: leaf.req.kind === "same_language" ? { levels: leaf.req.levels } : null,
     distinctGrades: false,
     mathTarget: null,
-    testRoutes: owner.rs.testRoutes ?? [],
+    testRoutes: testRoutesFor(owner, leaf.id),
     forWhat: { ruleSetId: owner.rs.id, reqId: leaf.id },
     reasons: [requirementReason(owner, leaf), ...ruleSetNotes(owner)],
   };
 }
 
-/** Needs from one rule set's evaluated alternative (base leaves joined through `extends` use the base's id). */
+/**
+ * Needs from one rule set's evaluated alternative (base leaves joined through `extends` use the
+ * base's id). A requirement that only counts once finished is never a need. When a class that may
+ * stand in for another requirement (Tennessee's computer science credit for the 4th math) is still
+ * missing, the requirement it stands in for needs only what that class won't cover.
+ */
 export function needsFromEval(ctx: Ctx, rc: RuleSetCtx, alt: AltResult): Need[] {
   const out: Need[] = [];
-  for (const r of alt.leaves) {
-    if (r.missing <= 0) continue;
+  const covered = new Map<string, number>();
+  for (const r of alt.leaves) if (r.leaf.subFor && r.missing > 0) covered.set(r.leaf.subFor, (covered.get(r.leaf.subFor) ?? 0) + r.missing);
+  for (const raw of alt.leaves) {
+    if (raw.missing <= 0) continue;
+    if (raw.leaf.req.kind === "credits" && raw.leaf.req.onlyWhenDone) continue;
+    const cover = covered.get(raw.leaf.id) ?? 0;
+    if (cover >= raw.missing) continue;
+    const r = cover > 0 ? { ...raw, missing: raw.missing - cover } : raw;
     let base: RuleSetCtx | undefined;
     if (!r.leaf.own) {
       const b = rc.bases.find((x) => x.variant.requirements.some((q) => containsReq(q, r.leaf.id)));

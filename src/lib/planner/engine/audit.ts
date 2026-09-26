@@ -8,11 +8,12 @@ import type {
   RequirementAudit,
   RuleSetAudit,
 } from "../engine-io";
-import type { Check, OptionPref, Selector } from "../rules";
+import { cohortValue } from "../cohort";
+import type { Check, OptionPref, Req, Selector } from "../rules";
 import { type AltResult, evaluateAlternative, languageProgress, leafAccepts, type LeafResult, pickAlternative, type PickOptions } from "./allocate";
 import type { CLeaf } from "./compile";
 import type { Ctx, RuleSetCtx } from "./context";
-import { leafPriority, rowIsOffered, schoolYearOfGrade } from "./context";
+import { leafPriority, rowIsOffered, schoolYearOfGrade, variantFor } from "./context";
 import { leafNoteReason, reason, requirementReason, ruleSetNotes } from "./explain";
 import type { Item } from "./model";
 import { matchesAny } from "./select";
@@ -157,7 +158,7 @@ export function evaluateCheck(
   leaves: LeafResult[],
   items: Item[],
   statusOf: (ruleSetId: string) => AuditStatus | null,
-): CheckResult {
+): CheckResult | null {
   const base = { checkId: check.id, kind: check.kind, citations: check.cite };
   switch (check.kind) {
     case "enrolled_years": {
@@ -172,13 +173,34 @@ export function evaluateCheck(
       };
     }
     case "on_schedule_by": {
+      // "On schedule" (TEC §51.803(d)): by the end of the grade, the plan shows the classes, in any
+      // grade through 12th. A class planned for 12th is on schedule.
+      const rs = [check.req, ...(check.with ?? [])].map((id) => leaves.find((l) => l.leaf.id === id));
+      if (rs.some((r) => !r)) return { ...base, status: "ask_counselor", text: "Ask your counselor whether this is on schedule." };
+      const results = rs as LeafResult[];
+      const label = listLabels(results.map((r) => r.leaf.label));
+      const verb = results.length > 1 ? "are" : "is";
+      const past = ctx.grade > check.grade || (ctx.grade === check.grade && ctx.inProgressGrade === null);
+      if (results.every((r) => r.missing === 0)) {
+        return { ...base, status: "ok", text: `${label} ${verb} on your plan, so you're on schedule by the end of ${nth(check.grade)} grade.` };
+      }
+      if (past) return { ...base, status: "ask_counselor", text: `${label} ${results.length > 1 ? "weren't" : "wasn't"} on your plan by the end of ${nth(check.grade)} grade. Ask your counselor what this means for you.` };
+      return { ...base, status: "room_to_add", text: `Room to add ${label} to your plan by the end of ${nth(check.grade)} grade (${results.length > 1 ? "they" : "it"} can come as late as 12th).` };
+    }
+    case "counts_unless": {
+      // Only while the requirement is what this rule set counts on.
       const r = leaves.find((l) => l.leaf.id === check.req);
-      if (!r) return { ...base, status: "ask_counselor", text: "Ask your counselor whether this is on schedule." };
-      const late = r.counted.filter((c) => c.item.grade > check.grade);
-      const label = r.leaf.label;
-      if (r.missing === 0 && late.length === 0) return { ...base, status: "ok", text: `${label} is on your plan by the end of ${nth(check.grade)} grade.` };
-      if (ctx.grade > check.grade) return { ...base, status: "ask_counselor", text: `${label} wasn't on your record by the end of ${nth(check.grade)} grade. Ask your counselor what this means for you.` };
-      return { ...base, status: "room_to_add", text: `Room to add ${label} by the end of ${nth(check.grade)} grade.` };
+      if (!r || r.counted.length === 0) return null;
+      const other = ctx.allRuleSets.get(check.unless.ruleSet);
+      const variant = other ? variantFor(other.rs, cohortValue(ctx.cohort, other.rs.cohortKey)).variant : null;
+      const reqs = new Map<string, Req>();
+      for (const q of walkLeaves(variant?.requirements ?? [])) reqs.set(q.id, q);
+      const met = check.unless.groups.some((group) => group.every((id) => {
+        const q = reqs.get(id);
+        return q ? reqMetBy(q, items) : false;
+      }));
+      if (met) return { ...base, status: "ask_counselor", text: `${check.text} Your plan meets those too, so this program may count for ${other?.rs.title ?? "that"} instead. Ask your counselor.` };
+      return { ...base, status: "ok", text: check.text };
     }
     case "senior_year_math": {
       if (ctx.choices[check.unlessChoice]) return { ...base, status: "ok", text: "You recorded meeting the college-ready math competency, so a senior-year math class isn't required." };
@@ -210,6 +232,24 @@ export function evaluateCheck(
       return { ...base, status: statuses.includes("ask_counselor") ? "ask_counselor" : "room_to_add", text: `This also needs one of: ${names.join(", ")}, finished or planned.` };
     }
   }
+}
+
+/** "Algebra II, a 4th math credit and a 4th science credit". */
+function listLabels(labels: string[]): string {
+  const words = labels.map((l, i) => (i > 0 && /^(A|An|The|One|Two|Three|Four) /.test(l) ? l.charAt(0).toLowerCase() + l.slice(1) : l));
+  return words.length <= 1 ? (words[0] ?? "") : `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+}
+
+function walkLeaves(reqs: readonly Req[]): Req[] {
+  return reqs.flatMap((r) => (r.kind === "all" || r.kind === "any" || r.kind === "choose" ? walkLeaves(r.of) : r.kind === "option" ? walkLeaves([r.on, r.off]) : [r]));
+}
+
+/** A leaf of another rule set, met by these classes on its own (whole classes, no sharing). */
+function reqMetBy(req: Req, items: Item[]): boolean {
+  const creditable = items.filter((i) => i.creditable);
+  if (req.kind === "credits") return creditable.filter((i) => matchesAny(i, req.select)).reduce((n, i) => n + i.units, 0) >= req.units;
+  if (req.kind === "count") return creditable.filter((i) => matchesAny(i, req.select)).length >= req.n;
+  return false;
 }
 
 function subjectWord(subject: Item["subject"]): string {
@@ -396,7 +436,7 @@ export function ruleSetAudit(
   const { rc, best } = e;
   const variant = rc.variant;
   const requirements = best ? best.leaves.filter((l) => l.leaf.own).map((l) => requirementAudit(ctx, rc, l, conflicts.get(`${rc.rs.id}/${l.leaf.id}`) ?? [], needsPlanNowKeys)) : [];
-  const checks = best && variant ? (variant.checks ?? []).map((c) => evaluateCheck(ctx, rc, c, best.leaves, items, statusOf)) : [];
+  const checks = best && variant ? (variant.checks ?? []).flatMap((c) => evaluateCheck(ctx, rc, c, best.leaves, items, statusOf) ?? []) : [];
   const checkStatuses: AuditStatus[] = checks.map((c) => (c.status === "ok" ? "done" : c.status));
   let status = variant ? worst([...requirements.map((r) => r.status), ...checkStatuses]) : "ask_counselor";
   if (rc.rs.strength === "info" && status === "room_to_add") status = "not_tracked";

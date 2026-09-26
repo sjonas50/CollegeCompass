@@ -29,7 +29,10 @@ export function ChildPathBlock({ childId, name, state }: { childId: string; name
             <p className="mt-1">
               {stateTitle(state.summary.state)}, class of {state.summary.classYear}. Graduation requirements: {state.summary.counts.done} done,{" "}
               {state.summary.counts.planned} planned, {state.summary.counts.roomToAdd} with room to add, {state.summary.counts.ask} to ask the counselor
-              about.
+              about
+              {state.summary.counts.confirmType > 0 &&
+                `, ${state.summary.counts.confirmType} waiting on ${name} to confirm what kind of class ${state.summary.counts.confirmType === 1 ? "a class is" : "some classes are"}`}
+              .
             </p>
           )}
           {state.summary.next && <p className="mt-1">Next: {state.summary.next}</p>}

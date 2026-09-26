@@ -495,6 +495,13 @@
       "kind": "institution_page",
       "checkedOn": "2026-09-25"
     },
+    "TX-S1": {
+      "title": "19 TAC Chapter 74, Subchapter B, Graduation Requirements (August 2026 update)",
+      "url": "https://tea.texas.gov/laws-and-rules/sboe-rules-tac/sboe-tac-currently-effect/ch074b.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
     "TX-S36": {
       "title": "High School Prerequisites",
       "url": "https://admissions.utexas.edu/apply/application-materials/high-school-prerequisites/",
@@ -525,6 +532,30 @@
     }
   },
   "citations": [
+    {
+      "id": "mp-tx-74-13-f6a",
+      "source": "TX-S1",
+      "pinpoint": "\u00a774.13(f)(6)(A)",
+      "quote": "(A) courses required to be designated a CTE completer in one of the following TEA-approved programs of study related to STEM: (i) biomedical sciences; (ii) civil engineering; (iii) cybersecurity; (iv) electrical engineering; (v) engineering foundations;"
+    },
+    {
+      "id": "mp-tx-74-13-f6a-2",
+      "source": "TX-S1",
+      "pinpoint": "\u00a774.13(f)(6)(A)",
+      "quote": "(vi) geospatial engineering and land surveying; (vii) mechanical and aerospace engineering; (viii) networking systems; (ix) nursing science; (x) programming and software development; (xi) renewable energy; (xii) robotics and automation technology; or (xiii) web development;"
+    },
+    {
+      "id": "mp-tx-74-13-f6b",
+      "source": "TX-S1",
+      "pinpoint": "\u00a774.13(f)(6)(B)",
+      "quote": "(B) three credits in mathematics by successfully completing Algebra II and two additional mathematics courses for which Algebra II is a prerequisite by selecting courses from subsection (e)(2) of this section;"
+    },
+    {
+      "id": "mp-tx-74-13-f6c",
+      "source": "TX-S1",
+      "pinpoint": "\u00a774.13(f)(6)(C)",
+      "quote": "(C) four credits in science by successfully completing chemistry, physics, and two additional science courses by selecting courses from subsection (e)(6) of this section; or"
+    },
     {
       "id": "mp-abet-eac-college-math",
       "source": "MP-ABET-EAC",
@@ -1085,6 +1116,7 @@
       "sciences": ["sci.phys", "sci.chem", "sci.bio"],
       "keyCourses": ["cs.prog1", "cte.engineering_design"],
       "rigorFirst": ["math.calc", "sci.phys", "sci.chem"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6a"] },
       "ctePathways": [
         {
           "state": "TX",
@@ -1141,6 +1173,7 @@
       "sciences": ["sci.phys", "sci.chem"],
       "keyCourses": ["cte.cad", "cte.digital_electronics"],
       "rigorFirst": ["sci.phys", "math.precalc"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6a", "mp-tx-74-13-f6a-2"] },
       "ctePathways": [
         {
           "state": "TX",
@@ -1171,6 +1204,7 @@
       "sciences": ["sci.phys"],
       "keyCourses": ["cs.principles", "cs.prog2", "math.discrete"],
       "rigorFirst": ["math.calc", "cs.prog2"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6a-2"] },
       "ctePathways": [
         {
           "state": "TX",
@@ -1224,6 +1258,7 @@
       "sciences": [],
       "keyCourses": ["cs.principles", "cs.cyber", "cs.prog1"],
       "rigorFirst": ["cs.principles", "cs.prog2"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6a", "mp-tx-74-13-f6a-2"] },
       "ctePathways": [
         { "state": "TX", "cluster": "it", "name": "Cybersecurity", "cite": ["mp-tea-pos-cyber"] },
         { "state": "UT", "cluster": "it", "name": "Cybersecurity", "cite": ["mp-usbe-pathway-cyber"] },
@@ -1252,6 +1287,7 @@
       "sciences": ["sci.chem", "sci.phys", "sci.bio", "sci.earth"],
       "keyCourses": ["cs.prog1", "math.stats"],
       "rigorFirst": ["math.calc", "sci.phys", "sci.chem"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6b", "mp-tx-74-13-f6c"] },
       "ctePathways": [],
       "gates": [
         {
@@ -1285,6 +1321,7 @@
       "sciences": ["sci.bio", "sci.chem", "sci.phys"],
       "keyCourses": ["math.stats", "sci.bio2"],
       "rigorFirst": ["sci.chem", "sci.bio", "math.calc"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6a", "mp-tx-74-13-f6c"] },
       "ctePathways": [
         { "state": "TX", "cluster": "health", "name": "Bio-Medical Science", "cite": ["mp-tea-pos-biomed"] },
         { "state": "UT", "cluster": "health", "name": "Health Science", "cite": ["mp-usbe-pathway-health"] }
@@ -1316,6 +1353,7 @@
       "sciences": ["sci.bio", "sci.chem", "sci.phys", "sci.anat"],
       "keyCourses": ["math.stats"],
       "rigorFirst": ["sci.chem", "sci.bio"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6a", "mp-tx-74-13-f6c"] },
       "ctePathways": [
         { "state": "TX", "cluster": "health", "name": "Bio-Medical Science", "cite": ["mp-tea-pos-biomed"] },
         {
@@ -1354,9 +1392,10 @@
       "summary": "Registered nursing programs start with biology, chemistry, anatomy and statistics. Algebra II plus statistics is the math target.",
       "path": "degree",
       "math": { "target": ["STATS"], "cite": ["mp-ut-nursing-prerequisites", "mp-bls-rn"] },
-      "sciences": ["sci.bio", "sci.chem", "sci.anat", "sci.microbio"],
+      "sciences": ["sci.bio", "sci.chem", "sci.anat"],
       "keyCourses": ["ss.psych", "math.stats"],
       "rigorFirst": ["sci.chem", "sci.bio", "math.stats"],
+      "txEndorsement": { "value": "public_services", "cite": ["mp-tea-pos-nursing-stem"] },
       "ctePathways": [
         { "state": "TX", "cluster": "health", "name": "Nursing Science", "cite": ["mp-tea-pos-nursing"] },
         { "state": "UT", "cluster": "health", "name": "Health Science", "cite": ["mp-usbe-pathway-health"] }

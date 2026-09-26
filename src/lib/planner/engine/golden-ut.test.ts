@@ -23,9 +23,9 @@ describe("UT-1: class of 2030, engineering, Secondary Math I in 8th", () => {
       [
         "Your path",
         "  9: [English I (9th grade English)] | [Secondary Math II] | [Earth and space science (geology)] | [Health] | [Fitness for life (lifetime fitness)] | [Introduction to computer science (Exploring Computer Science)] (5/7)",
-        "  10: Visual art | Engineering design | English II | Secondary Math III | Chemistry | U.S. history | Spanish I (7/7)",
-        "  11: Visual art | English III | Fitness for life | Precalculus | Physics (AP) | Personal financial literacy | American Constitutional Government and Citizenship | Spanish II (7/7)",
-        "  12: English IV | Fitness for life | Calculus (AP) | World or European history | Psychology (4/7)",
+        "  10: English II | Chemistry | American Constitutional Government and Citizenship | U.S. history | Secondary Math III | Spanish I | Your choice (6/7)",
+        "  11: Visual art | English III | Fitness for life | Physics (AP) | Personal financial literacy | Precalculus | Spanish II | Your choice (6/7)",
+        "  12: Visual art | Engineering design | English IV | Fitness for life | Psychology | World or European history | Calculus (AP) (6/7)",
       ]
     `);
   });
@@ -125,7 +125,8 @@ describe("P1 (Mia): grade 7, Utah, nursing", () => {
     expect(path.plans).toEqual([]);
     expect(path.gaps).toEqual([]);
     const ms = path.middleSchool!;
-    expect(ms.mathPlacement.text).toMatch(/Algebra I in 8th leaves room for calculus by 12th/);
+    // Utah's own name for the first high school math class.
+    expect(ms.mathPlacement.text).toMatch(/Secondary Mathematics I in 8th leaves room for calculus by 12th/);
     expect(ms.stateNotes[0].text).toMatch(/Utah gives high school math credit before 9th grade only in a few cases/);
     expect(ms.exploration.length).toBeGreaterThan(0);
     expect(ms.ninthGradeSketch?.grade).toBe(9);

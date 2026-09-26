@@ -122,31 +122,47 @@ export async function getPlanPrefs(db: Db, userId: string): Promise<PlanPrefs> {
   return prefsFromRow(row);
 }
 
-/** A change to the stored prefs. `null` clears a field (a choice back to "not sure yet"). */
+/** A change to the stored prefs. `null` clears a field (a choice back to "not sure yet", a limit or cohort back to the default). */
 export type PlanPrefsPatch = {
   path?: PathKind | null;
   familyId?: FamilyId | null;
   choices?: { [K in keyof PlannerChoices]?: PlannerChoices[K] | null };
-  limits?: Partial<PlannerLimits>;
+  limits?: { [K in keyof PlannerLimits]?: PlannerLimits[K] | null };
+  /** "You started 9th grade in fall 2026 (class of 2030). Is that right?": a repeated or skipped grade, a move, early graduation. */
+  cohort?: { [K in keyof CohortOverrides]?: CohortOverrides[K] | null };
   dismissed?: SuggestionKey[];
 };
 
+/** The stored JSON object as it is (defaults are applied when reading, never stored). */
+function rawObject(raw: unknown): Record<string, unknown> {
+  return raw && typeof raw === "object" && !Array.isArray(raw) ? { ...(raw as Record<string, unknown>) } : {};
+}
+
+/** `patch` applied to `base`: a value sets the field, `null` removes it, `undefined` leaves it. */
+function applyPatch(base: Record<string, unknown>, patch: Record<string, unknown> | undefined): Record<string, unknown> {
+  const out = { ...base };
+  for (const [key, value] of Object.entries(patch ?? {})) {
+    if (value === null) delete out[key];
+    else if (value !== undefined) out[key] = value;
+  }
+  return out;
+}
+
 /** Applies a patch to the student's prefs (creating the row on first save) and returns the result. */
 export async function updatePlanPrefs(db: Db, userId: string, patch: PlanPrefsPatch, now = new Date()): Promise<PlanPrefs> {
-  const current = await getPlanPrefs(db, userId);
-  const choices: Record<string, unknown> = { ...current.choices };
-  for (const [key, value] of Object.entries(patch.choices ?? {})) {
-    if (value === null || value === undefined) delete choices[key];
-    else choices[key] = value;
-  }
+  const [row] = await db.select().from(studentPlanPrefs).where(eq(studentPlanPrefs.userId, userId));
+  const current = prefsFromRow(row);
+  const choices = applyPatch(current.choices, patch.choices);
   const path = "path" in patch ? patch.path : current.path;
   const familyId = "familyId" in patch ? patch.familyId : current.familyId;
   const next = {
     targets: { ...(path ? { path } : {}), ...(familyId ? { familyId } : {}) },
     // Re-checked on the way in too: only valid values are ever stored.
     choices: parseChoices(choices),
-    limits: validFields(LIMIT_FIELDS, { ...current.limits, ...patch.limits }),
-    cohort: current.cohort,
+    // Only what the student set is stored, so a later change to a default reaches everyone who
+    // never chose (DEFAULT_LIMITS is applied when reading).
+    limits: validFields(LIMIT_FIELDS, applyPatch(rawObject(row?.limits), patch.limits)),
+    cohort: parseCohort(applyPatch(rawObject(row?.cohort), patch.cohort)),
     dismissed: (patch.dismissed ?? current.dismissed).filter(isSuggestionKey).slice(-MAX_DISMISSED),
     updatedAt: now,
   };

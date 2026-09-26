@@ -2,7 +2,7 @@ import type { PlannerState, SchoolGrade, SchoolYear } from "./common";
 import type { CourseTypeId, CourseTypeLevel, CteCluster } from "./course-types";
 import type { CipRoutingRule, FamilyId, MathTarget } from "./families";
 import type { RigorTier } from "./engine-io";
-import type { CitationId, ContentHeader, PathKind, RuleSetId } from "./rules";
+import type { CitationId, ContentHeader, PathKind, RuleSetId, TxEndorsement } from "./rules";
 
 // ---------------------------------------------------------------------------
 // The other reviewed content files the planner reads (design §4.4). Rule files are in rules.ts.
@@ -124,6 +124,12 @@ export type MajorFamilyContent = {
   /** Where honors, AP, IB or college credit should go first; 3 at most. */
   rigorFirst: CourseTypeId[];
   ctePathways: { state: PlannerState; cluster: CteCluster; name: string; cite: CitationId[] }[];
+  /**
+   * The Texas endorsement this goal usually fits, where the rule itself names it (STEM programs of
+   * study; nursing science counts for Public Services unless STEM's math and science are met). Plans
+   * only prefer it; the student picks. Other families follow their Texas pathway's cluster.
+   */
+  txEndorsement?: { value: TxEndorsement; cite: CitationId[] };
   /** Published program rules, quoted and scoped. Evidence grades A-D as in the research. */
   gates: {
     id: string;

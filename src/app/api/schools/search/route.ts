@@ -2,7 +2,7 @@ import * as z from "zod";
 import { getDb } from "@/db";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { consumeRateLimit } from "@/lib/rate-limit";
-import { SCHOOL_QUERY_MAX, SCHOOL_SEARCH_RATE, searchSchools } from "@/lib/schools/search";
+import { SCHOOL_QUERY_MAX, SCHOOL_SEARCH_RATE, searchSchoolsPage } from "@/lib/schools/search";
 
 // The school pickers' search (src/components/school-settings.tsx). POST so what a family types
 // (which can name a child's school) never lands in a URL, a server log line or browser history;
@@ -29,6 +29,6 @@ export async function POST(req: Request) {
   if (!(await consumeRateLimit(db, `school-search:${user.id}`, count, windowMs))) {
     return Response.json({ error: "rate_limited" }, { status: 429, headers: noStore });
   }
-  const results = await searchSchools(db, parsed.data);
-  return Response.json({ results }, { headers: noStore });
+  const { results, truncated } = await searchSchoolsPage(db, parsed.data);
+  return Response.json({ results, truncated }, { headers: noStore });
 }

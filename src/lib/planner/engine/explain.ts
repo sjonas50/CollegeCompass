@@ -28,9 +28,21 @@ export function reason(kind: ReasonKind, text: string, fields: Partial<Omit<Reas
   };
 }
 
-/** "Required by Texas", "Strongly encouraged by UT Knoxville" (the issuer's own strength word). */
-export function strengthPhrase(strength: Strength, issuer: string): string {
-  return strength === "info" ? `From ${issuer}` : `${STRENGTH_PHRASES[strength]} ${issuer}`;
+/**
+ * "Required by Texas", "Strongly encouraged by UT Knoxville" (the issuer's own strength word). When
+ * the quote behind a "strongly encouraged" strength says "strongly recommended" (UT Austin's "4
+ * Credits Strongly Recommended"), the phrase uses the source's own word.
+ */
+export function strengthPhrase(strength: Strength, issuer: string, quote?: string | null): string {
+  if (strength === "info") return `From ${issuer}`;
+  if (strength === "strongly_encouraged" && quote && /strongly recommended/i.test(quote)) return `Strongly recommended by ${issuer}`;
+  return `${STRENGTH_PHRASES[strength]} ${issuer}`;
+}
+
+/** The quote that sets a requirement's strength (its own, else the rule set's). */
+function strengthQuote(rc: RuleSetCtx, leaf: CLeaf): string | null {
+  const id = leaf.strengthCite ?? rc.rs.strengthCite;
+  return rc.file.citations.find((c) => c.id === id)?.quote ?? null;
 }
 
 export function leafCitations(rc: RuleSetCtx, leaf: CLeaf): CitationId[] {
@@ -48,7 +60,7 @@ function ruleSetAside(rc: RuleSetCtx): string {
 
 export function requirementReason(rc: RuleSetCtx, leaf: CLeaf): Reason {
   const where = ruleSetAside(rc);
-  return reason("requirement", `${strengthPhrase(leaf.strength, rc.rs.issuer.name)}${where}: ${leaf.label}.`, {
+  return reason("requirement", `${strengthPhrase(leaf.strength, rc.rs.issuer.name, strengthQuote(rc, leaf))}${where}: ${leaf.label}.`, {
     claim: "rule",
     strength: leaf.strength,
     ruleSetId: rc.rs.id,

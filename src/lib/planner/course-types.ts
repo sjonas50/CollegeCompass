@@ -182,6 +182,8 @@ type Def = {
   cte?: CteMode;
   cluster?: CteCluster;
   prereqs?: readonly (readonly string[])[];
+  /** Extra prerequisites for the AP, IB, Cambridge and college-credit levels (AP Statistics after Algebra II). */
+  collegePrereqs?: readonly (readonly string[])[];
   ladder?: readonly [LadderId, number];
   caps?: readonly Capability[];
   alt?: readonly CourseSubject[];
@@ -449,7 +451,9 @@ const CORE = {
     cte: "sometimes",
     cluster: "business",
     prereqs: [RANK1],
-    note: "Texas \"Statistics and Business Decision Making\" (CTE) maps here too.",
+    // The College Board expects a second-year algebra course before AP Statistics.
+    collegePrereqs: [RANK3],
+    note: "Texas \"Statistics and Business Decision Making\" (CTE) maps here too. AP, IB and college-credit statistics come after Algebra II.",
   },
   "math.adv_quant": {
     title: "Advanced quantitative reasoning",
@@ -1216,6 +1220,8 @@ export type CourseType = {
   grades: readonly [number, number];
   /** Every prerequisite must be met; each is met by any one of its types. */
   prereqs: readonly Prereq[];
+  /** More prerequisites for the college-level versions (AP, IB, Cambridge, college credit). */
+  collegePrereqs: readonly Prereq[];
   ladder: { id: LadderId; rank: number } | null;
   capabilities: readonly Capability[];
   /** The state's own name for the class, where it differs ("Secondary Mathematics III"). */
@@ -1232,7 +1238,7 @@ function build(): Map<CourseTypeId, CourseType> {
   const problems: string[] = [];
   const types = new Map<CourseTypeId, CourseType>();
   for (const [id, def] of entries) {
-    for (const group of def.prereqs ?? []) {
+    for (const group of [...(def.prereqs ?? []), ...(def.collegePrereqs ?? [])]) {
       for (const p of group) if (!ids.has(p)) problems.push(`${id}: unknown prerequisite ${p}`);
     }
     types.set(id, {
@@ -1246,6 +1252,7 @@ function build(): Map<CourseTypeId, CourseType> {
       units: def.units ?? 4,
       grades: def.grades,
       prereqs: (def.prereqs ?? []).map((group) => ({ anyOf: group as readonly CourseTypeId[] })),
+      collegePrereqs: (def.collegePrereqs ?? []).map((group) => ({ anyOf: group as readonly CourseTypeId[] })),
       ladder: def.ladder ? { id: def.ladder[0], rank: def.ladder[1] } : null,
       capabilities: def.caps ?? [],
       stateTitles: def.stateTitles ?? {},

@@ -16,7 +16,7 @@ Appendix A; sources: the research reports next to it.
 | `{ut,tn,tx}/aid.json` | Course parts of state aid (Utah Opportunity, TEXAS Grant priority) and information cards (Tennessee HOPE, GAMS, TEOG) |
 | `{ut,tn,tx}/facts.json` | Gap options the state verifies (college credit, online, summer, credit by exam, doubling up), middle-school math notes, and the state's words for college credit ("concurrent enrollment" in Utah, "dual credit" in Texas) |
 | `{ut,tn,tx}/generic-catalog.json` | "Classes most <State> high schools offer", used until a school's own list exists |
-| `major-prep/families.json` | The 32 major families: math target, sciences, key courses, rigor-first subjects, CTE pathways (Texas and Utah), published gates and cautions |
+| `major-prep/families.json` | The 32 major families: math target, sciences, key courses, rigor-first subjects, CTE pathways (Texas and Utah), the Texas endorsement a goal names (STEM programs; nursing's Public Services), published gates and cautions |
 | `major-prep/cip-routing.json` | CIP code to family, first match wins |
 | `major-prep/rigor.json` | Rigor tiers by selectivity, tier raises for program gates, and the load guardrails |
 
@@ -51,6 +51,20 @@ the folder, the manifest and the loader agree).
 - **Options extend graduation.** A Texas endorsement, the DLA or a Tennessee elective focus has one
   variant per graduation variant, with `extends` pointing at the graduation variant of the same
   cohort (a test checks it). Endorsement course sets are `shareable` (19 TAC §74.13(g)).
+- **Programs of study are one cluster.** A Texas endorsement's CTE route is "a CTE completer in one
+  of the following programs of study", so it's an `any` of one 3-credit leaf per career cluster,
+  never a flat list across clusters. A program that counts only under a condition gets a
+  `counts_unless` check (engineering and IT under Business and Industry, §74.13(f)(7)(B)).
+- **What only counts once done.** A leaf that finishes a requirement only when already passed
+  (Utah: calculus with a C finishes math) is `onlyWhenDone`: the planner never plans toward it or
+  shows it as the requirement until it's finished.
+- **Test routes name what they replace.** A test route without `reqIds` stands in for the rule
+  set's whole class route (UT Austin calculus readiness); with `reqIds` only for those requirements
+  or checks (Utah's math competency replaces the senior-year math class, not the CTE credit). A
+  dated route (`by`) is the default in the plan when the class route isn't planned.
+- **"On schedule" isn't "done by".** The DLA's Algebra II can be planned for 12th: by the end of
+  11th the plan must show it (TEC §51.803(d)), so it has no `deadlineGrade`; the `on_schedule_by`
+  check lists what must be on the plan (`req` and `with`).
 - **Colleges** are named by Scorecard UNITID; `check:rules` confirms they exist after
   `npm run data:load`.
 
@@ -59,8 +73,19 @@ the folder, the manifest and the loader agree).
 - Tennessee lists four required social studies classes for 3 credits without the split (only U.S.
   Government is known to be a half credit). Each class needs at least half a credit and the rest
   of the 3 credits can be any social studies; an "Ask your counselor" item explains.
-- Texas endorsement routes through a CTE program of study plan for three courses in the listed
-  clusters; how many make a "completer" isn't in the rule, so each says "Ask your counselor".
+- Texas endorsement routes through a CTE program of study plan for three courses in one of the
+  listed clusters; how many make a "completer" isn't in the rule, so each says "Ask your counselor".
+  Nursing and biomedical science count for Public Services only when STEM's math and science
+  aren't met; our clusters can't tell those programs from the other health science programs, so
+  the health leaf says so and asks the counselor.
+- Microbiology is "if offered" in the research, so nursing's sciences leave it out; any major-prep
+  class no remaining grade's list offers is never a gap.
+- Utah's R277-700-6(9) (a math class passed before 9th grade still leaves 3.0 more math credits)
+  is a shareable "3 math credits in grades 9-12" leaf inside the Secondary Math route; the rule's
+  list of which classes isn't quoted, so any high school math class counts toward it.
+- College admission "math units" count Algebra I and up (the math ladder, classes after Algebra II,
+  and statistics): not "Other math class" or foundations math (UT Austin: "All courses should be at
+  the level of Algebra I or higher").
 - Tennessee's elective focus is 3 credits beyond the core, checked when the student picks a focus
   (the graduation total of 22 credits covers it before then).
 - Tennessee's list of CTE programs of study wasn't verified, so no family names Tennessee pathways.

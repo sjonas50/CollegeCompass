@@ -57,13 +57,37 @@ export function rungName(family: LadderFamily, rank: number, state: PlannerState
   return type ? courseTypeTitle(type, state) : "math";
 }
 
-/** Highest rung reached by classes that can be built on (not failed or withdrawn), before `beforeGrade`. */
+/**
+ * The lowest math rung the student failed or withdrew from (F, W or I) with no other attempt at
+ * that rung that can be built on (a retake, or another class on the same rung), counting only
+ * classes before `beforeGrade`. Null when there's none.
+ */
+export function unresolvedFailedRank(items: Item[], beforeGrade = 13): number | null {
+  const passed = new Set<number>();
+  const failed = new Set<number>();
+  for (const i of items) {
+    if (i.grade >= beforeGrade) continue;
+    const r = mathRankOf(i.typeId);
+    if (r === null || r < 1) continue;
+    if (countsForSequence(i)) passed.add(r);
+    else failed.add(r);
+  }
+  const open = [...failed].filter((r) => !passed.has(r));
+  return open.length ? Math.min(...open) : null;
+}
+
+/**
+ * Highest rung reached by classes that can be built on (not failed or withdrawn), before
+ * `beforeGrade`. A failed rung with no retake caps it: a class above that rung doesn't count
+ * until the failed one is passed (an F in Algebra I and Geometry now starts from before Algebra I).
+ */
 export function startRank(items: Item[], beforeGrade: number): number {
+  const failed = unresolvedFailedRank(items, beforeGrade);
   let rank = 0;
   for (const i of items) {
     if (i.grade >= beforeGrade || !countsForSequence(i)) continue;
     const r = mathRankOf(i.typeId);
-    if (r !== null && r > rank) rank = r;
+    if (r !== null && r > rank && (failed === null || r < failed)) rank = r;
   }
   return rank;
 }
@@ -79,7 +103,12 @@ export type LadderConstraint = {
   label: string;
 };
 
-export type LadderMoves = { double: boolean; summer: boolean };
+/**
+ * double: two rungs in one school year (Algebra I with Geometry, Geometry with Algebra II);
+ * summer: a rung the summer after a grade; college: two college rungs in one year through college
+ * credit (a semester of precalculus or college algebra, then Calculus I), in the listed grades.
+ */
+export type LadderMoves = { double: boolean; summer: boolean; college?: readonly SchoolGrade[] };
 
 export type LadderProblem = {
   grades: SchoolGrade[];
@@ -90,9 +119,14 @@ export type LadderProblem = {
   available: (grade: SchoolGrade, rank: number) => boolean;
   constraints: LadderConstraint[];
   moves: LadderMoves;
+  /**
+   * The student's own classes on rungs above a failed one, by rank: the grade they're in. They
+   * count once the rung below them is reached (a Geometry class counts after the Algebra I retake).
+   */
+  deferred?: Map<number, SchoolGrade>;
 };
 
-export type LadderStep = { grade: SchoolGrade; rank: number; summer: boolean };
+export type LadderStep = { grade: SchoolGrade; rank: number; summer: boolean; college?: true };
 
 export type LadderSolution = {
   steps: LadderStep[];
@@ -112,6 +146,9 @@ const SUMMER_COST = 3;
 /** The highest rung that can be doubled up with the one below it. */
 const MAX_DOUBLE_RANK = 3;
 const DOUBLE_COST = 4;
+/** College credit math starts at precalculus or college algebra (design §5.6: dual costs 3). */
+const MIN_COLLEGE_RANK = 4;
+const COLLEGE_COST = 3;
 
 /** `year` is the rank at the end of the school year; `next` adds a summer class after it. */
 type Choice = { year: number; next: number; steps: LadderStep[]; cost: number };
@@ -130,6 +167,19 @@ function choices(p: LadderProblem, grade: SchoolGrade, rank: number): Choice[] {
     // §28.025(b-6)) or Geometry with Algebra II. Precalculus and calculus build on each other.
     if (p.moves.double && up1 && rank + 2 <= MAX_DOUBLE_RANK && p.available(grade, rank + 2)) {
       out.push({ year: rank + 2, next: rank + 2, steps: [{ grade, rank: rank + 1, summer: false }, { grade, rank: rank + 2, summer: false }], cost: DOUBLE_COST });
+    }
+    // Two college math classes in one year (a semester each), from precalculus up, where the state
+    // offers college credit in that grade.
+    if (p.moves.college?.includes(grade) && rank + 1 >= MIN_COLLEGE_RANK && rank + 2 <= MAX_RANK) {
+      out.push({
+        year: rank + 2,
+        next: rank + 2,
+        steps: [
+          { grade, rank: rank + 1, summer: false, college: true },
+          { grade, rank: rank + 2, summer: false, college: true },
+        ],
+        cost: COLLEGE_COST,
+      });
     }
   }
   // A summer class after this grade (never after 12th): it counts toward the next grade.
@@ -150,11 +200,18 @@ export function solveLadder(p: LadderProblem): LadderSolution {
   const target = Math.max(p.start, ...p.constraints.map((c) => c.rank));
   type Cell = { cost: number; steps: LadderStep[]; trail: number[] };
   let layer = new Map<number, Cell>([[p.start, { cost: 0, steps: [], trail: [] }]]);
+  // A deferred class of the student's counts once the rung below it is reached, in its grade or later.
+  const lift = (rank: number, grade: number) => {
+    let r = rank;
+    while (p.deferred?.has(r + 1) && p.deferred.get(r + 1)! <= grade) r++;
+    return r;
+  };
   for (const grade of p.grades) {
     const next = new Map<number, Cell>();
     for (const rank of [...layer.keys()].sort((a, b) => a - b)) {
       const cell = layer.get(rank)!;
-      for (const c of choices(p, grade, rank)) {
+      for (const raw of choices(p, grade, rank)) {
+        const c = p.deferred?.size ? { ...raw, year: lift(raw.year, grade), next: lift(raw.next, grade) } : raw;
         let cost = cell.cost + c.cost + (c.next === rank && rank < target ? IDLE : 0) + Math.max(0, c.next - Math.max(rank, target)) * BEYOND;
         // Checked at the end of the school year: a summer class after it is too late for this grade.
         for (const k of p.constraints) if (k.byGrade === grade && c.year < k.rank) cost += k.hard ? HARD : SOFT * (4 - Math.min(3, k.priority));

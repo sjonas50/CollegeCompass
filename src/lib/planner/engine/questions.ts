@@ -93,6 +93,12 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
       add(`test:${g.id}`, `Should I plan to show ${rs?.rs.title ?? "this"} with a test score or with a class, and when do scores need to be in?`, test.citations, rs?.rs.id ?? null);
     }
   }
+  // Dated test-score routes whose class route isn't planned (UT Austin calculus readiness).
+  for (const e of fill.evals) {
+    if (!e.best || !e.best.leaves.some((l) => l.missing > 0) || e.rc.rs.strength !== "required") continue;
+    const route = (e.rc.rs.testRoutes ?? []).find((t) => t.by);
+    if (route) add(`test:${e.rc.rs.id}`, `Should I plan to show ${e.rc.rs.title} with a test score or with a class, and when do scores need to be in?`, route.cite, e.rc.rs.id);
+  }
   // DLA on schedule (Texas).
   const dla = ctx.ruleSets.find((r) => r.rs.appliesWhen.choice?.key === "txAimDla");
   if (dla && ctx.grade <= 11) add("dla", "Is my plan on schedule for the Distinguished Level of Achievement by the end of 11th grade?", [dla.rs.strengthCite], dla.rs.id);

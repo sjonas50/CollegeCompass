@@ -29,6 +29,7 @@ import type { FamilyId } from "./families";
 import { northStarFamilyTargets } from "./north-stars";
 import { addDismissed, getPlanPrefs, isSuggestionKey, type PlanPrefs, removeDismissed, updatePlanPrefs, type PlanPrefsPatch } from "./prefs";
 import type { PathKind } from "./rules";
+import { confirmTypeText } from "./view";
 
 // "Your path" for one student (design §2.6-2.10, §5.3): gathers the planner's input from the
 // database (grade and cohort, state, recorded classes, north stars routed to major families, the
@@ -49,12 +50,16 @@ export type PathContext = {
   /** The kind of path planned for, and whether it was inferred (the student hasn't picked). */
   path: PathKind;
   pathInferred: boolean;
+  /** What the student's goals point to, whether or not they picked another. */
+  inferredPath: PathKind;
   /** Families the student's north stars route to (whether or not they chose another). */
   northStarFamilies: FamilyTarget[];
   courses: Course[];
   /** For the student's or parent's own "Built from" line only. Never sent anywhere else. */
   school: SchoolSettings | null;
   cohort: StudentCohort | null;
+  /** The cohort from the grade alone (before the student's corrections), for "Is that right?". */
+  cohortDefault: StudentCohort | null;
 };
 
 export type StudentPath =
@@ -156,7 +161,8 @@ export async function studentPath(db: Db, userId: string, now = new Date()): Pro
     schoolSettings(db, userId),
   ]);
   const families = familyTargets(prefs.familyId, northStarFamilies);
-  const path = prefs.path ?? inferPath(families, targets);
+  const inferredPath = inferPath(families, targets);
+  const path = prefs.path ?? inferredPath;
   const schoolYear = schoolYearOf(now);
   const cohort = isSchoolGrade(grade) ? deriveCohort(grade, schoolYear, prefs.cohort) : null;
   const ctx: PathContext = {
@@ -166,10 +172,12 @@ export async function studentPath(db: Db, userId: string, now = new Date()): Pro
     prefs,
     path,
     pathInferred: prefs.path === null,
+    inferredPath,
     northStarFamilies,
     courses,
     school,
     cohort,
+    cohortDefault: isSchoolGrade(grade) ? deriveCohort(grade, schoolYear) : null,
   };
   if (grade > 12) return { kind: "graduated", ctx };
   if (!isSchoolGrade(grade) || !cohort) return { kind: "no_grade" };
@@ -296,26 +304,32 @@ export type PathSummary = {
   state: PlannerState;
   stage: PlannedPath["stage"];
   classYear: number;
-  /** Requirements of the state's graduation rules, by status. */
-  counts: { done: number; planned: number; roomToAdd: number; ask: number };
+  /**
+   * Requirements of the state's graduation rules, by status. `confirmType`: requirements a class
+   * with a guessed kind would likely meet once its kind is set ("What kind of class is this?"),
+   * left out of "room to add".
+   */
+  counts: { done: number; planned: number; roomToAdd: number; ask: number; confirmType: number };
   /** The next thing to do: a choice to make, else the first gap, else the soonest deadline. */
   next: string | null;
 };
 
 /** The short line a parent sees on their dashboard ("4 done, 3 planned, 2 to add, 1 to ask about"). */
 export function summarizePath(result: PlannedPath, cohort: StudentCohort): PathSummary {
-  const counts = { done: 0, planned: 0, roomToAdd: 0, ask: 0 };
+  const counts = { done: 0, planned: 0, roomToAdd: 0, ask: 0, confirmType: 0 };
   for (const rs of result.audit.filter((r) => r.kind === "state_graduation")) {
     for (const req of rs.requirements) {
-      if (req.status === "done") counts.done++;
+      if (req.status === "room_to_add" && req.modifiers.includes("guessed_type")) counts.confirmType++;
+      else if (req.status === "done") counts.done++;
       else if (req.status === "planned") counts.planned++;
       else if (req.status === "room_to_add") counts.roomToAdd++;
       else if (req.status === "ask_counselor") counts.ask++;
     }
   }
-  const next = result.decisions[0]?.text ?? result.gaps[0]?.text ?? result.deadlines[0]?.text ?? null;
+  const next = result.decisions[0]?.text ?? (counts.confirmType ? confirmTypeText(counts.confirmType) : null) ?? result.gaps[0]?.text ?? result.deadlines[0]?.text ?? null;
   return { state: result.state, stage: result.stage, classYear: cohort.classYear, counts, next };
 }
+
 
 export type PathOverview =
   | { kind: "planned"; summary: PathSummary }
