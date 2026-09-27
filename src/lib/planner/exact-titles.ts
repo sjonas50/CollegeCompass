@@ -1,5 +1,5 @@
 import type { CourseSubject } from "@/db/schema";
-import type { PlannerState } from "./common";
+import type { PlannerState, SchoolYear } from "./common";
 import {
   allCourseTypes,
   type CourseType,
@@ -28,7 +28,11 @@ import {
 //   (the school's printed prerequisite decides, course-types.ts);
 // - the row's own level must agree (a row left at "Regular" takes the marker's level).
 // A title never counts as exact when it joins two classes' names ("Gov/Econ", "Personal Financial
-// Literacy and Economics", any "/" or "+"), or when two kinds share it in the state.
+// Literacy and Economics", any "/" or "+"), when two kinds share it in the state, or when the
+// state's schools use it for another kind of class too (`otherKindsInState`: Tennessee's "Health",
+// Utah's "U.S. Government" from 2027-28, Utah's college-credit "English 11"). The guesser then
+// lists that other kind as well (course-type-guess.ts), so "Confirm your classes" asks about the
+// row and nothing the other kind would decide is claimed before the student answers.
 //
 // The names come from the vocabulary (each type's title where it's a class's name, its state
 // titles), plus the common names below and each state's official titles from its sources.
@@ -62,8 +66,8 @@ const COMMON_NAMES: Partial<Record<CourseTypeId, readonly string[]>> = {
  * - Tennessee: Policy 3.205, approved high school courses (TN-S6B).
  * - Utah: USBE, "Current Courses Meeting the Criteria for Graduation Requirements 2026-2027" (UT-S3).
  * Only titles whose kind is certain: never a catch-all ("Physical Education"), a title the state
- * uses for more than one kind (Tennessee's "Wellness"), or a class whose level in a career cluster
- * isn't in a saved source.
+ * uses for more than one kind (Tennessee's "Wellness" and "Health", SHARED_NAMES), or a class whose
+ * level in a career cluster isn't in a saved source.
  */
 const OFFICIAL_TITLES: Record<PlannerState, Partial<Record<CourseTypeId, readonly string[]>>> = {
   TX: {
@@ -147,6 +151,39 @@ const NOT_CANONICAL: ReadonlySet<CourseTypeId> = new Set([
   "sci.phys2",
   "cs.advanced",
 ]);
+
+/**
+ * Kinds whose general names (the vocabulary's title and common names) a state's schools also use
+ * for another kind, and that kind. There, only the state's own titles for the kind are exact:
+ * - Tennessee: the required Lifetime Wellness (Policy 2.103 I(14), "one (1) credit in wellness") is
+ *   usually called "Health" or "Wellness" at school. The state's health class is "Health Education"
+ *   (Policy 3.205 6.2, TN-S6B), which is sure.
+ */
+const SHARED_NAMES: Partial<Record<PlannerState, Partial<Record<CourseTypeId, CourseTypeId>>>> = {
+  TN: { "health.health": "health.wellness" },
+};
+
+/**
+ * Kinds a state stops offering, from the school year their replacement starts: a class with one of
+ * the kind's titles from then on (or in a school year that isn't known) may be the replacement.
+ * - Utah: "American Constitutional Government and Citizenship will be available to students in the
+ *   2027-2028 school year" and "The U.S. Government and Citizenship course is being replaced by the
+ *   American Constitutional Government and Citizenship course" (UT-S4 p. 1).
+ */
+const REPLACED: Partial<Record<PlannerState, Partial<Record<CourseTypeId, { from: SchoolYear; by: CourseTypeId }>>>> = {
+  UT: { "ss.us_gov": { from: 2027, by: "ss.ut_acgc" } },
+};
+
+/**
+ * Kinds whose college-credit version in a state is usually another kind:
+ * - Utah: concurrent enrollment English 11 is ENGL 1010, college composition (ela.lang_comp).
+ *   "Students who took ENGL 1010* to fulfill their level 11 ELA requirement before the 2026-2027
+ *   school year or who are participating in an approved ENGL 1010 pilot, may apply that credit to
+ *   the level 11 ELA requirement" (UT-S3 p. 2), so which one it is decides level 11.
+ */
+const COLLEGE_LEVEL_MAY_BE: Partial<Record<PlannerState, Partial<Record<CourseTypeId, CourseTypeId>>>> = {
+  UT: { "ela.11": "ela.lang_comp" },
+};
 
 /**
  * First-year classes whose AP, IB or college-credit version may be the second-year type (AP Biology
@@ -244,9 +281,11 @@ export type ExactTitle = { title: string; typeId: CourseTypeId; source: "vocabul
 /** Every exact title in a state, with its kind (for reviews of the tables, and tests). */
 export function exactTitlesFor(state: PlannerState): ExactTitle[] {
   const out: ExactTitle[] = [];
+  // A kind whose general names the state's schools use for another kind has only its state titles.
+  const general = (typeId: CourseTypeId) => SHARED_NAMES[state]?.[typeId] === undefined;
   for (const t of allCourseTypes()) {
     const name = titleName(t);
-    if (name) out.push({ title: name, typeId: t.id, source: "vocabulary" });
+    if (name && general(t.id)) out.push({ title: name, typeId: t.id, source: "vocabulary" });
     const stateTitle = t.stateTitles[state];
     if (stateTitle) out.push({ title: stateTitle, typeId: t.id, source: "state title" });
   }
@@ -255,7 +294,10 @@ export function exactTitlesFor(state: PlannerState): ExactTitle[] {
     [COMMON_NAMES, "common"],
     [OFFICIAL_TITLES[state], "official"],
   ] as const) {
-    for (const [typeId, titles] of Object.entries(table) as [CourseTypeId, readonly string[]][]) for (const title of titles) out.push({ title, typeId, source });
+    for (const [typeId, titles] of Object.entries(table) as [CourseTypeId, readonly string[]][]) {
+      if (source === "common" && !general(typeId)) continue;
+      for (const title of titles) out.push({ title, typeId, source });
+    }
   }
   return out;
 }
@@ -300,20 +342,61 @@ function joinsTwoClasses(index: TitleIndex, words: readonly string[]): boolean {
   });
 }
 
+/** The level a title's one marker names ("English 11 CE" is dual enrollment), or null without one. */
+export function titleMarkerLevel(name: string): CourseTypeLevel | null {
+  return splitMarker(titleWords(name))?.level ?? null;
+}
+
+/** Whether a typed title, without its marker, is one of the state's own titles for the kind. */
+function isStateTitle(name: string, typeId: CourseTypeId, state: PlannerState): boolean {
+  const split = splitMarker(titleWords(name));
+  if (!split) return false;
+  const key = keyOf(split.words);
+  const own = [getCourseType(typeId).stateTitles[state], ...(OFFICIAL_TITLES[state][typeId] ?? [])];
+  return own.some((t) => t !== undefined && keyOf(titleWords(t)) === key);
+}
+
+/** What's known about a row besides its name: its level, and its school year (null: not known). */
+export type RowFacts = { level: CourseTypeLevel; schoolYear: SchoolYear | null };
+
+/**
+ * Other kinds a row named `name`, read as `typeId`, may really be in the state's schools, where they
+ * use the kind's name for another kind: a general name of a kind whose names they share
+ * (Tennessee's "Health" may be Lifetime Wellness), a retired kind from the year its replacement
+ * starts (Utah's U.S. Government from 2027-28 may be ACGC), and a college-credit version that's
+ * usually another kind (Utah's CE English 11 may be ENGL 1010). The level is the row's, or its
+ * name's marker. Such a title is never exact, and the guesser lists these kinds too.
+ */
+export function otherKindsInState(typeId: CourseTypeId, name: string, state: PlannerState, row: RowFacts): CourseTypeId[] {
+  const out: CourseTypeId[] = [];
+  const shared = SHARED_NAMES[state]?.[typeId];
+  if (shared && !isStateTitle(name, typeId, state)) out.push(shared);
+  const replaced = REPLACED[state]?.[typeId];
+  if (replaced && (row.schoolYear === null || row.schoolYear >= replaced.from)) out.push(replaced.by);
+  const college = COLLEGE_LEVEL_MAY_BE[state]?.[typeId];
+  if (college) {
+    const marked = titleMarkerLevel(name);
+    if (isCollegeLevel(row.level) || (marked !== null && isCollegeLevel(marked))) out.push(college);
+  }
+  return out;
+}
+
 export type ExactCourseType = { typeId: CourseTypeId; level: CourseTypeLevel };
 
 /**
  * The kind a typed title names exactly in the student's state, and its level (the row's, or the
  * title's marker when the row is left at regular), or null when it isn't exact: no single kind has
- * that title in the state, it joins two classes, the kind doesn't fit the row's subject, or the
- * level could change the kind (see the header). `titles` stands in for the state's list (tests).
+ * that title in the state, it joins two classes, the kind doesn't fit the row's subject, the level
+ * could change the kind, or the state's schools use the title for another kind too, in the row's
+ * school year (`otherKindsInState`; null: not known, so a retired kind is never exact). See the
+ * header. `titles` stands in for the state's list (tests).
  */
 export function exactCourseType(
   name: string,
   subject: CourseSubject,
   rowLevel: CourseTypeLevel,
   state: PlannerState,
-  titles?: readonly ExactTitle[],
+  { schoolYear = null, titles }: { schoolYear?: SchoolYear | null; titles?: readonly ExactTitle[] } = {},
 ): ExactCourseType | null {
   const index = titles ? indexTitles(titles) : indexFor(state);
   const words = titleWords(name);
@@ -333,5 +416,6 @@ export function exactCourseType(
   }
   if (!type.levels.includes(level)) return null;
   if (isCollegeLevel(level) && COLLEGE_LEVEL_MAY_BE_SECOND_YEAR.has(typeId)) return null;
+  if (otherKindsInState(typeId, name, state, { level, schoolYear }).length > 0) return null;
   return { typeId, level };
 }

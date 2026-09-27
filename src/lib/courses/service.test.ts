@@ -4,7 +4,9 @@ import { type Db, createTestDb, schema } from "@/db";
 import { registerStudent } from "../accounts";
 import { addNorthStar } from "../goals";
 import { deleteStudent } from "../privacy";
-import { MAX_COURSES, addCourse, deleteCourse, getCourse, listCourses, planSummary, splitCombinedCourse, updateCourse } from "./service";
+import { resolveRowCourseType } from "../planner/course-type-guess";
+import { NOT_SURE } from "./kinds";
+import { MAX_COURSES, addCourse, deleteCourse, getCourse, listCourses, planSummary, setCourseType, splitCombinedCourse, updateCourse } from "./service";
 import { type CourseInputRaw, CourseInputSchema } from "./validation";
 
 const now = new Date("2026-09-23T12:00:00Z");
@@ -64,6 +66,19 @@ describe("course CRUD", () => {
     expect(guessed).toMatchObject({ courseTypeId: null, courseTypeSource: null });
     const cleared = await updateCourse(db, ana, chem.id, input({ name: "Chem", courseTypeId: "" }));
     expect(cleared.ok && cleared.value).toMatchObject({ courseTypeId: null, courseTypeSource: null });
+  });
+
+  it("stores the forms' \"Not sure\" as no kind, source \"unsure\", so the planner still asks about it", async () => {
+    const alg = await add(ana, { name: "Algebra I", subject: "math", courseTypeId: NOT_SURE });
+    expect(alg).toMatchObject({ courseTypeId: null, courseTypeSource: "unsure" });
+    // An exact title the student said they aren't sure about stays a guess to confirm.
+    expect(resolveRowCourseType(alg, "TX")).toMatchObject({ typeId: "math.alg1", source: "guess", assumed: true });
+    const picked = await updateCourse(db, ana, alg.id, input({ name: "Algebra I", subject: "math", courseTypeId: "math.alg1" }));
+    expect(picked.ok && picked.value).toMatchObject({ courseTypeId: "math.alg1", courseTypeSource: "student" });
+    const unsureAgain = await updateCourse(db, ana, alg.id, input({ name: "Algebra I", subject: "math", courseTypeId: NOT_SURE }));
+    expect(unsureAgain.ok && unsureAgain.value).toMatchObject({ courseTypeId: null, courseTypeSource: "unsure" });
+    // "Confirm your classes" then records the kind as theirs.
+    expect(await setCourseType(db, ana, alg.id, "math.alg1")).toMatchObject({ ok: true, value: { courseTypeId: "math.alg1", courseTypeSource: "student" } });
   });
 
   it("keeps a kind of class from the school's list when the student doesn't change it", async () => {

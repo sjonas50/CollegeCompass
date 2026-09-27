@@ -8,6 +8,7 @@ import { combinedHalves } from "../planner/course-type-guess";
 import { isCourseTypeId } from "../planner/course-types";
 import { type Checklist, CHECKLIST_CAVEAT, CHECKLIST_FRAMING, CTE_NOTE, collegePrepChecklist } from "./checklist";
 import { GPA_CAVEAT, type GpaSummary, computeGpa } from "./gpa";
+import { NOT_SURE } from "./kinds";
 import { type CareerSuggestion, SUGGESTIONS_NOTE, courseSuggestions } from "./suggestions";
 import { type CourseInput, courseTypeFitsSubject } from "./validation";
 
@@ -26,15 +27,18 @@ const isUuid = (v: string) => z.uuid().safeParse(v).success;
 
 /**
  * Only finished courses carry a final grade. A kind of class the student picked is theirs
- * ("student"); none means the planner guesses from the name, and guesses are never stored.
+ * ("student"); none means the planner guesses from the name, and guesses are never stored. The
+ * forms' "Not sure" (NOT_SURE) is no kind with source "unsure": the planner keeps it a guess to
+ * confirm, even when the name is an exact title.
  */
 function values(input: CourseInput) {
-  const courseTypeId = input.courseTypeId ?? null;
+  const unsure = input.courseTypeId === NOT_SURE;
+  const courseTypeId = unsure ? null : (input.courseTypeId ?? null);
   return {
     ...input,
     finalGrade: input.status === "completed" ? input.finalGrade : null,
     courseTypeId,
-    courseTypeSource: courseTypeId ? ("student" as const) : null,
+    courseTypeSource: courseTypeId ? ("student" as const) : unsure ? ("unsure" as const) : null,
   };
 }
 
@@ -83,7 +87,7 @@ export async function updateCourse(
       // Unchanged, a type from the school's class list stays "catalog".
       courseTypeSource: next.courseTypeId
         ? sql`case when ${studentCourses.courseTypeId} = ${next.courseTypeId} and ${studentCourses.courseTypeSource} = 'catalog' then 'catalog' else 'student' end`
-        : null,
+        : next.courseTypeSource,
       updatedAt: now,
     })
     .where(and(eq(studentCourses.id, courseId), eq(studentCourses.userId, userId)))

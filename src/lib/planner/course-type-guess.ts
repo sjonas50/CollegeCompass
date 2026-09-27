@@ -1,5 +1,5 @@
 import type { CourseLevel, CourseSubject } from "@/db/schema";
-import type { PlannerState } from "./common";
+import type { PlannerState, SchoolYear } from "./common";
 import {
   COURSE_LEVEL_TO_TYPE_LEVEL,
   type CourseType,
@@ -14,7 +14,7 @@ import {
   type LanguageLevel,
   SUBJECT_FALLBACK_TYPE,
 } from "./course-types";
-import { type ExactCourseType, exactCourseType } from "./exact-titles";
+import { type ExactCourseType, exactCourseType, otherKindsInState } from "./exact-titles";
 
 // ---------------------------------------------------------------------------
 // From a `student_courses` row to a course type (design §2.5, §5.2).
@@ -35,7 +35,13 @@ import { type ExactCourseType, exactCourseType } from "./exact-titles";
 // Confirm first: a guess is also what the student is asked to confirm ("Algebra II?" Yes / Something
 // else). `guessCourseType` says how sure the guess is (`confident`: the add and edit forms pre-select
 // it) and every kind the row might be (`candidates`): the engine never claims a requirement is
-// missing, or adds a "Required by" class, where the row might be that class.
+// missing, or adds a "Required by" class, where the row might be that class. The candidates include
+// the kinds the state's schools also use the name for, for the row's level and school year
+// (exact-titles.ts `otherKindsInState`: Tennessee's "Health" may be Lifetime Wellness, Utah's
+// "U.S. Government" from 2027-28 may be ACGC, Utah's "English 11 CE" may be ENGL 1010).
+//
+// A row the student saved with "Not sure" (source "unsure") is never taken as an exact title: they
+// said they don't know what kind it is, so it's a guess they're asked to confirm.
 // ---------------------------------------------------------------------------
 
 export type CourseTypeSource = "catalog" | "student" | "exact" | "guess";
@@ -54,7 +60,8 @@ export type CourseRowForType = {
   level: CourseLevel;
   /** `student_courses.course_type_id` (null or unknown ids fall through to a guess). */
   courseTypeId?: string | null;
-  courseTypeSource?: "catalog" | "student" | null;
+  /** `student_courses.course_type_source`. "unsure": saved as "Not sure" (no kind), so an exact title doesn't settle it. */
+  courseTypeSource?: "catalog" | "student" | "unsure" | null;
 };
 
 type Pattern = {
@@ -523,7 +530,23 @@ function combinedName(name: string, hits: readonly Hit[]): CombinedName | null {
   return null;
 }
 
-export function guessCourseType(name: string, subject: CourseSubject, state: PlannerState | null = null): TypeGuess {
+/** What the guesser knows about a row besides its name: its level, and its school year (null: not known). */
+export type RowContext = { level?: CourseTypeLevel; schoolYear?: SchoolYear | null };
+
+/**
+ * A guess from a typed name (`guessFromName`), with the kinds the state's schools also use the name
+ * for, for the row's level (regular when not given) and school year (not known when not given):
+ * those make the guess unsure and are candidates too (exact-titles.ts `otherKindsInState`).
+ */
+export function guessCourseType(name: string, subject: CourseSubject, state: PlannerState | null = null, row: RowContext = {}): TypeGuess {
+  const guess = guessFromName(name, subject, state);
+  if (!state) return guess;
+  const facts = { level: row.level ?? "regular", schoolYear: row.schoolYear ?? null };
+  const others = guess.candidates.flatMap((t) => otherKindsInState(t, name, state, facts)).filter((t) => !guess.candidates.includes(t) && fitsSubject(t, subject));
+  return others.length > 0 ? { ...guess, confident: false, candidates: uniq([...guess.candidates, ...others]) } : guess;
+}
+
+function guessFromName(name: string, subject: CourseSubject, state: PlannerState | null): TypeGuess {
   if (subject === "world_language") return guessLanguage(name);
   const hits: Hit[] = [];
   for (const p of PATTERNS) {
@@ -566,7 +589,7 @@ export function guessCourseType(name: string, subject: CourseSubject, state: Pla
  * name that joins full-credit classes ("Speech and Debate") or a half-credit row.
  */
 export function combinedHalves(name: string, subject: CourseSubject, units: number, state: PlannerState | null = null): CombinedName | null {
-  const combined = guessCourseType(name, subject, state).combined;
+  const combined = guessFromName(name, subject, state).combined;
   return combined && units >= 4 && combined.parts.every((t) => getCourseType(t).units <= 2) ? combined : null;
 }
 
@@ -576,29 +599,31 @@ export function combinedHalves(name: string, subject: CourseSubject, units: numb
  * "Math 2" (Utah's Secondary Math II there).
  */
 export function guessCourseTypeId(name: string, subject: CourseSubject, state: PlannerState | null = null): CourseTypeId {
-  return guessCourseType(name, subject, state).typeId;
+  return guessFromName(name, subject, state).typeId;
 }
 
 /**
- * A typed title that names one kind of class exactly in the student's state (exact-titles.ts),
- * never a name the guesser reads as two classes ("Algebra II/Trigonometry", "Gov/Econ").
+ * A typed title that names one kind of class exactly in the student's state, in the row's school
+ * year (null: not known; exact-titles.ts), never a name the guesser reads as two classes ("Algebra
+ * II/Trigonometry", "Gov/Econ").
  */
-export function exactRowType(name: string, subject: CourseSubject, level: CourseTypeLevel, state: PlannerState): ExactCourseType | null {
-  const exact = exactCourseType(name, subject, level, state);
-  return exact && !guessCourseType(name, subject, state).combined ? exact : null;
+export function exactRowType(name: string, subject: CourseSubject, level: CourseTypeLevel, state: PlannerState, schoolYear: SchoolYear | null = null): ExactCourseType | null {
+  const exact = exactCourseType(name, subject, level, state, { schoolYear });
+  return exact && !guessFromName(name, subject, state).combined ? exact : null;
 }
 
 /**
  * A `student_courses` row's course type and level. A stored type (from the school's list or the
- * student's pick) is used as is; then a title that's exact in the student's state is that kind
- * (source "exact"); otherwise the name is guessed and the result is `assumed`.
+ * student's pick) is used as is; then a title that's exact in the student's state, in the row's
+ * school year (null: not known), is that kind (source "exact"), unless the student saved the row
+ * as "Not sure"; otherwise the name is guessed and the result is `assumed`.
  */
-export function resolveRowCourseType(row: CourseRowForType, state: PlannerState | null = null): ResolvedCourseType {
+export function resolveRowCourseType(row: CourseRowForType, state: PlannerState | null = null, schoolYear: SchoolYear | null = null): ResolvedCourseType {
   const level = COURSE_LEVEL_TO_TYPE_LEVEL[row.level];
-  if (row.courseTypeId && isCourseTypeId(row.courseTypeId) && row.courseTypeSource) {
+  if (row.courseTypeId && isCourseTypeId(row.courseTypeId) && (row.courseTypeSource === "catalog" || row.courseTypeSource === "student")) {
     return { typeId: row.courseTypeId, level, source: row.courseTypeSource, assumed: false };
   }
-  const exact = state ? exactRowType(row.name, row.subject, level, state) : null;
+  const exact = state && row.courseTypeSource !== "unsure" ? exactRowType(row.name, row.subject, level, state, schoolYear) : null;
   if (exact) return { typeId: exact.typeId, level: exact.level, source: "exact", assumed: false };
   return { typeId: guessCourseTypeId(row.name, row.subject, state), level, source: "guess", assumed: true };
 }

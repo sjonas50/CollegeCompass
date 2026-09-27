@@ -84,12 +84,14 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
   const suggestions = planned ? [] : await courseSuggestions(db, student.id, courses);
   const checklist = collegePrepChecklist(courses);
   const planCourses: PlanCourse[] = courses.map(
-    ({ id, name, subject, level, gradeLevel, term, credits, status, finalGrade, highSchoolCredit, courseTypeId }) => ({
-      id, name, subject, level, gradeLevel, term, credits, status, finalGrade, highSchoolCredit, courseTypeId,
+    ({ id, name, subject, level, gradeLevel, term, credits, status, finalGrade, highSchoolCredit, courseTypeId, courseTypeSource }) => ({
+      id, name, subject, level, gradeLevel, term, credits, status, finalGrade, highSchoolCredit, courseTypeId, courseTypeSource,
     }),
   );
-  // Utah, Tennessee and Texas name some kinds of class their own way ("Secondary Mathematics III").
+  // Utah, Tennessee and Texas name some kinds of class their own way ("Secondary Mathematics III"),
+  // and a few names depend on the class's school year (from the cohort the path plans with).
   const plannerState = isPlannerState(student.homeState) ? student.homeState : null;
+  const grade9EntryYear = path && path.kind !== "no_grade" ? (path.ctx.cohort?.grade9EntryYear ?? null) : null;
   const planId = planParam === "B" ? "B" : "A";
 
   const gpaCard = <GpaCard gpa={gpa} middleSchool={middleSchool} />;
@@ -175,7 +177,7 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
             Your classes by grade
           </h2>
         )}
-        <PlannerStateProvider state={plannerState}>
+        <PlannerStateProvider state={plannerState} grade9EntryYear={grade9EntryYear}>
           <GradeSections current={current} courses={planCourses} gpa={gpa} />
         </PlannerStateProvider>
       </section>

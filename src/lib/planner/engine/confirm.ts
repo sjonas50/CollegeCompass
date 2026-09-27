@@ -21,8 +21,10 @@ import { matchesAny } from "./select";
 // A row "might count" toward a requirement when one of the kinds it might be would count there,
 // while the row as a guess (by its subject alone) wouldn't. The kinds it might be come from the
 // guesser (course-type-guess.ts `candidates`): its guess, another rung its name also names, the
-// family a catch-all name stands for ("PE" is any PE class), or, for a name the guesser couldn't
-// place, any kind of class in its subject that usually comes in or next to its grade.
+// family a catch-all name stands for ("PE" is any PE class), a kind the state's schools also use
+// the name for in the row's year and at its level (Tennessee's "Health" may be Lifetime Wellness),
+// or, for a name the guesser couldn't place, any kind of class in its subject that usually comes
+// in or next to its grade.
 // ---------------------------------------------------------------------------
 
 /**
@@ -32,7 +34,7 @@ import { matchesAny } from "./select";
  */
 export function mightBeKinds(fact: CourseFact, state: PlannerState): { kinds: CourseTypeId[]; open: boolean } | undefined {
   if (!fact.assumed) return undefined;
-  const guess = guessCourseType(fact.name, fact.subject, state);
+  const guess = guessCourseType(fact.name, fact.subject, state, { level: fact.level, schoolYear: fact.schoolYear });
   const open = getCourseType(fact.typeId).fallback || getCourseType(guess.typeId).fallback;
   if (!open) return { kinds: [...new Set([fact.typeId, ...guess.candidates])], open };
   const nearby = courseTypesForSubject(fact.subject)

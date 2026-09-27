@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as z from "zod";
+import { NOT_SURE } from "./kinds";
 import { CourseInputSchema, courseFormInput } from "./validation";
 
 const valid = { name: "Biology", subject: "science", level: "honors", gradeLevel: 10, term: "full_year", credits: 1, status: "planned" };
@@ -115,6 +116,8 @@ describe("what kind of class it is", () => {
     // Empty means "let the planner guess from the name".
     expect(CourseInputSchema.parse({ ...valid, courseTypeId: "" }).courseTypeId).toBeNull();
     expect(CourseInputSchema.parse(valid).courseTypeId ?? null).toBeNull();
+    // The forms' "Not sure": kept for the service to store as no kind, source "unsure".
+    expect(CourseInputSchema.parse({ ...valid, courseTypeId: NOT_SURE }).courseTypeId).toBe(NOT_SURE);
     expect(errorsFor({ ...valid, courseTypeId: "sci.unobtainium" }).courseTypeId).toEqual(["Choose a kind of class from the list."]);
   });
 

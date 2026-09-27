@@ -13,6 +13,7 @@ import {
   MIN_CREDITS,
   defaultHighSchoolCredit,
 } from "./catalog";
+import { NOT_SURE } from "./kinds";
 
 const emptyToNull = (v: unknown) => (v === "" || v === undefined ? null : v);
 
@@ -43,13 +44,14 @@ export const CourseInputSchema = z
     status: z.enum(COURSE_STATUSES, { error: "Choose planned, taking now or finished." }).default("planned"),
     finalGrade: z.preprocess(emptyToNull, z.enum(LETTER_GRADES, { error: "Choose a grade from the list." }).nullable()),
     highSchoolCredit: z.boolean().optional(),
-    // "What kind of class is this?": a course-type id from the planner's vocabulary, or null to
-    // let the planner guess from the name (a guess is never stored).
+    // "What kind of class is this?": a course-type id from the planner's vocabulary, NOT_SURE (the
+    // forms' "Not sure": stored as no kind, source "unsure"), or null to let the planner guess from
+    // the name (a guess is never stored).
     courseTypeId: z.preprocess(
       emptyToNull,
       z
         .string()
-        .refine((id) => isCourseTypeId(id), "Choose a kind of class from the list.")
+        .refine((id) => id === NOT_SURE || isCourseTypeId(id), "Choose a kind of class from the list.")
         .nullable()
         .optional(),
     ),

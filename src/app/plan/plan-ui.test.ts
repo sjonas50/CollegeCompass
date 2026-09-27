@@ -7,7 +7,7 @@ import { ideasForCareer } from "@/lib/courses/suggestions";
 import { AddCourse } from "./add-course";
 import { ChecklistCard, GpaCard, SuggestionsCard } from "./cards";
 import { type CourseDefaults, CourseFields } from "./course-fields";
-import { CourseRow, type PlanCourse } from "./course-row";
+import { CourseRow, type PlanCourse, savedKind } from "./course-row";
 import { GradeSections } from "./grade-section";
 import { ConfirmClasses, type ConfirmRow } from "./path/confirm-classes";
 import { PlannerStateProvider } from "./planner-state";
@@ -102,19 +102,27 @@ describe("course fields", () => {
     // A confident guess from the name is selected, so saving confirms it (round 9); "Not sure" stays.
     expect(chem).toContain('<option value="sci.chem" selected="">Chemistry</option>');
     expect(chem).toContain("We picked it from the name. Change it if that&#x27;s not right.");
-    expect(chem).toContain('<option value="">Not sure (we&#x27;ll guess Chemistry)</option>');
+    expect(chem).toContain('<option value="unsure">Not sure (we&#x27;ll guess Chemistry)</option>');
     expect(chem).not.toContain('value="math.alg2"');
     // A name that doesn't say which class (a catch-all "PE", or nothing the guesser knows) isn't picked for the student.
     const pe = fields({ defaults: { ...defaults, name: "PE", subject: "health_pe", level: "regular" } });
-    expect(pe).toContain('<option value="" selected="">Not sure (we&#x27;ll guess Physical education)</option>');
+    expect(pe).toContain('<option value="unsure" selected="">Not sure (we&#x27;ll guess Physical education)</option>');
     const lab = fields({ defaults: { ...defaults, name: "Math Lab", subject: "math", level: "regular" } });
-    expect(lab).toContain('<option value="" selected="">Not sure (we&#x27;ll guess Other math class)</option>');
+    expect(lab).toContain('<option value="unsure" selected="">Not sure (we&#x27;ll guess Other math class)</option>');
     // The known misses: "Algebra II/Trigonometry" is Algebra II, "Pre-AP English Language Arts I" is English I.
     expect(fields({ defaults: { ...defaults, name: "Algebra II/Trigonometry", subject: "math", level: "regular" } })).toContain('<option value="math.alg2" selected="">Algebra II</option>');
     expect(fields({ defaults: { ...defaults, name: "Pre-AP English Language Arts I", subject: "english", level: "honors" } })).toContain('<option value="ela.9" selected="">English I (9th grade English)</option>');
     // After a failed save, what the student submitted stays, even "Not sure".
-    const kept = fields({ values: { name: "Honors Chem", subject: "science", level: "honors", courseTypeId: "" }, errors: { name: ["x"] } });
-    expect(kept).toContain('<option value="" selected="">Not sure (we&#x27;ll guess Chemistry)</option>');
+    for (const courseTypeId of ["unsure", ""]) {
+      const kept = fields({ values: { name: "Honors Chem", subject: "science", level: "honors", courseTypeId }, errors: { name: ["x"] } });
+      expect(kept).toContain('<option value="unsure" selected="">Not sure (we&#x27;ll guess Chemistry)</option>');
+    }
+    // A class saved as "Not sure" stays "Not sure" in the edit form, even with an exact title.
+    expect(savedKind({ ...course, courseTypeId: null, courseTypeSource: "unsure" })).toBe("unsure");
+    expect(savedKind({ ...course, courseTypeId: null, courseTypeSource: null })).toBe("");
+    expect(savedKind({ ...course, courseTypeId: "sci.bio", courseTypeSource: "student" })).toBe("sci.bio");
+    const unsure = fields({ defaults: { ...defaults, name: "Algebra I", subject: "math", courseTypeId: savedKind({ ...course, courseTypeId: null, courseTypeSource: "unsure" }) } });
+    expect(unsure).toContain('<option value="unsure" selected="">Not sure (we&#x27;ll guess Algebra I)</option>');
 
     // A saved choice is selected; an AP class lists only kinds with an AP version.
     const ap = fields({ defaults: { ...defaults, name: "AP Bio", subject: "science", level: "ap", courseTypeId: "sci.bio" } });
@@ -131,6 +139,32 @@ describe("course fields", () => {
       ),
     );
     expect(html).toContain("we&#x27;ll guess Secondary Mathematics III");
+  });
+
+  it("selects an exact title's kind, but not for a name the state's schools also use for another kind (exact-titles.ts)", () => {
+    const inState = (state: "UT" | "TN" | "TX", over: Partial<CourseDefaults>, grade9EntryYear: number | null = null) =>
+      renderToStaticMarkup(
+        createElement(
+          PlannerStateProvider,
+          { state, grade9EntryYear },
+          createElement(CourseFields, { values: {}, errors: undefined, defaults: { ...defaults, ...over } }),
+        ),
+      );
+    // Tennessee's own "Health Education" is its health class; a "Health" may be Lifetime Wellness.
+    expect(inState("TN", { name: "Health Education", subject: "health_pe" })).toContain('<option value="health.health" selected="">Health</option>');
+    const health = inState("TN", { name: "Health", subject: "health_pe" });
+    expect(health).toContain('<option value="unsure" selected="">Not sure (we&#x27;ll guess Health)</option>');
+    expect(health).toContain("we&#x27;ll treat it as Health for now.");
+    // Utah's U.S. Government is replaced by ACGC in 2027-28: sure for a class of 2027 senior (2026-27),
+    // not for a class of 2029 senior (2028-29), nor when the class's school year isn't known.
+    const gov = { name: "U.S. Government", subject: "social_studies", gradeLevel: 12 };
+    expect(inState("UT", gov, 2023)).toContain('<option value="ss.us_gov" selected="">U.S. Government and Citizenship</option>');
+    expect(inState("UT", gov, 2025)).toContain('<option value="unsure" selected="">Not sure (we&#x27;ll guess U.S. Government and Citizenship)</option>');
+    expect(inState("UT", gov)).toContain('<option value="unsure" selected="">');
+    // Utah's college-credit English 11 may be ENGL 1010.
+    expect(inState("UT", { name: "English 11", subject: "english", level: "regular" })).toContain('<option value="ela.11" selected="">');
+    expect(inState("UT", { name: "English 11", subject: "english", level: "dual_enrollment" })).toContain('<option value="unsure" selected="">');
+    expect(inState("UT", { name: "English 11 CE", subject: "english", level: "regular" })).toContain('<option value="unsure" selected="">');
   });
 
   it("lets the edit form move a course to another grade", () => {

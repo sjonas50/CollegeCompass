@@ -388,6 +388,31 @@ describe("Confirm your classes", () => {
     expect(card).not.toMatch(/more class/);
   });
 
+  it("asks about a Tennessee \"Health\" (it may be Lifetime Wellness), and about a class the student saved as \"Not sure\" even with an exact title", async () => {
+    await student({
+      grade: 10,
+      homeState: "TN",
+      rows: [
+        { name: "Health", subject: "health_pe", grade: 9, type: "" },
+        { name: "Geometry", subject: "math", grade: 10, type: "" },
+      ],
+    });
+    // Added through the form with "What kind of class is this?" left at "Not sure".
+    const { addCourseAction } = await import("@/app/actions/plan");
+    const form = new FormData();
+    for (const [k, v] of Object.entries({ name: "Algebra I", subject: "math", level: "regular", gradeLevel: "9", term: "full_year", credits: "1", status: "completed", finalGrade: "A", highSchoolCredit: "on", courseTypeId: "unsure" })) form.set(k, v);
+    expect(await addCourseAction(undefined, form)).toMatchObject({ ok: true });
+    const [saved] = await db.select().from(schema.studentCourses).where(eq(schema.studentCourses.name, "Algebra I"));
+    expect(saved).toMatchObject({ courseTypeId: null, courseTypeSource: "unsure" });
+
+    const t = text(await render(PlanPage(props<PageProps<"/plan">>())));
+    const card = t.slice(t.indexOf("Confirm your classes"), t.indexOf(DRAFT_NOTICE));
+    expect(card).toContain("Health · Health?");
+    expect(card).toContain("Algebra I · Algebra I?");
+    expect(card).not.toContain("Geometry");
+    expect(t).not.toMatch(/Required by Tennessee: Lifetime Wellness/);
+  });
+
   it("lists six typed classes at a time with one-tap guesses, grouped by year, and confirming stores the kind", async () => {
     const id = await student({ grade: 10, homeState: "TX", rows: TYPED });
     const html = await render(PlanPage(props<PageProps<"/plan">>()));

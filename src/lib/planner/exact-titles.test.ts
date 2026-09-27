@@ -11,8 +11,11 @@ import { exactCourseType, exactTitlesFor, titleWords } from "./exact-titles";
 
 const STATES = ["TX", "TN", "UT"] as const;
 
-const exact = (name: string, subject: CourseSubject, state: PlannerState, level: CourseTypeLevel = "regular") => exactRowType(name, subject, level, state);
-const exactId = (name: string, subject: CourseSubject, state: PlannerState, level: CourseTypeLevel = "regular") => exact(name, subject, state, level)?.typeId ?? null;
+/** In 2026-27 unless another school year is given (null: not known). */
+const exact = (name: string, subject: CourseSubject, state: PlannerState, level: CourseTypeLevel = "regular", schoolYear: number | null = 2026) =>
+  exactRowType(name, subject, level, state, schoolYear);
+const exactId = (name: string, subject: CourseSubject, state: PlannerState, level: CourseTypeLevel = "regular", schoolYear: number | null = 2026) =>
+  exact(name, subject, state, level, schoolYear)?.typeId ?? null;
 /** The level a class of this kind is usually recorded at: regular, or its only level (AP Seminar). */
 const usualLevel = (typeId: CourseTypeId): CourseTypeLevel => (getCourseType(typeId).levels.includes("regular") ? "regular" : getCourseType(typeId).levels[0]);
 
@@ -69,7 +72,7 @@ describe("each state's official and canonical titles", () => {
         const key = titleWords(title).join(" ");
         kinds.set(key, (kinds.get(key) ?? new Set()).add(typeId));
         // The add form pre-selects a confident guess, so it must agree with the exact kind.
-        const guess = guessCourseType(title, getCourseType(typeId).subject, state);
+        const guess = guessCourseType(title, getCourseType(typeId).subject, state, { level: usualLevel(typeId), schoolYear: 2026 });
         if (guess.confident) expect(guess.typeId, `${title} (${state})`).toBe(typeId);
       }
       expect([...kinds].filter(([, v]) => v.size > 1)).toEqual([]);
@@ -152,6 +155,31 @@ describe("each state's official and canonical titles", () => {
     expect(resolveRowCourseType({ name: "Biology", subject: "science", level: "regular" })).toMatchObject({ source: "guess", assumed: true });
   });
 
+  it("a name the state's schools also use for another kind is never exact there (otherKindsInState)", () => {
+    // Tennessee's required Lifetime Wellness is usually called "Health": only the state's own
+    // "Health Education" (Policy 3.205 6.2) is its health class for sure.
+    expect(exactId("Health", "health_pe", "TN")).toBeNull();
+    expect(exactId("Health H", "health_pe", "TN")).toBeNull();
+    expect(exactId("Health Education", "health_pe", "TN")).toBe("health.health");
+    expect(exactTitlesFor("TN").filter((t) => t.typeId === "health.health").map((t) => t.title)).toEqual(["Health Education"]);
+    expect(exactId("Health", "health_pe", "TX")).toBe("health.health");
+    expect(exactId("Health", "health_pe", "UT")).toBe("health.health");
+    // Utah's U.S. Government and Citizenship is replaced by ACGC in 2027-28 (UT-S4): its titles are
+    // exact only before then, and never when the class's school year isn't known.
+    for (const name of ["U.S. Government", "United States Government", "U.S. Government and Citizenship"]) {
+      expect(exactId(name, "social_studies", "UT", "regular", 2026), name).toBe("ss.us_gov");
+      expect(exactId(name, "social_studies", "UT", "regular", 2027), name).toBeNull();
+      expect(exactId(name, "social_studies", "UT", "regular", 2030), name).toBeNull();
+      expect(exactId(name, "social_studies", "UT", "regular", null), name).toBeNull();
+    }
+    expect(exactId("U.S. Government", "social_studies", "TX", "regular", 2028)).toBe("ss.us_gov");
+    expect(exactId("American Constitutional Government and Citizenship", "social_studies", "UT", "regular", 2028)).toBe("ss.ut_acgc");
+    // Utah's college-credit English 11 is ENGL 1010, college composition (UT-S3 p. 2).
+    expect(exactId("English 11", "english", "UT", "dual_enrollment")).toBeNull();
+    expect(exactId("English 11", "english", "UT")).toBe("ela.11");
+    expect(exactId("English III Dual Credit", "english", "TX")).toBe("ela.11");
+  });
+
   it("the kind must fit the row's subject", () => {
     expect(exactId("Chemistry", "career_technical", "TX")).toBeNull();
     expect(exactId("Accounting II", "math", "UT")).toBe("cte.accounting2");
@@ -165,8 +193,8 @@ describe("titles that aren't exact stay guesses to confirm", () => {
       { title: "Integrated Science", typeId: "sci.ipc", source: "official" },
       { title: "Integrated Science", typeId: "sci.earth", source: "official" },
     ] as const;
-    expect(exactCourseType("Integrated Science", "science", "regular", "TX", shared)).toBeNull();
-    expect(exactCourseType("Integrated Science", "science", "regular", "TX", shared.slice(0, 1))).toEqual({ typeId: "sci.ipc", level: "regular" });
+    expect(exactCourseType("Integrated Science", "science", "regular", "TX", { titles: shared })).toBeNull();
+    expect(exactCourseType("Integrated Science", "science", "regular", "TX", { titles: shared.slice(0, 1) })).toEqual({ typeId: "sci.ipc", level: "regular" });
     // Names that stand for a family of classes, or for different classes in different schools.
     for (const [name, subject, state] of [
       ["Wellness", "health_pe", "TN"],
@@ -251,6 +279,11 @@ describe("level markers only set the level", () => {
       ["English III AP", "english", "TX", "regular"],
       ["Spanish I AP", "world_language", "TX", "regular"],
       ["Algebra I AP", "math", "TX", "regular"],
+      // Utah's CE or dual-credit English 11 is usually ENGL 1010, college composition.
+      ["English 11 CE", "english", "UT", "regular"],
+      ["CE English 11", "english", "UT", "regular"],
+      ["English III Dual Credit", "english", "UT", "regular"],
+      ["English 11 Concurrent Enrollment", "english", "UT", "regular"],
       // A marker that disagrees with the row's level, or two markers.
       ["Biology H", "science", "TX", "ap"],
       ["U.S. History AP", "social_studies", "TX", "honors"],

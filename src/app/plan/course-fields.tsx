@@ -21,10 +21,10 @@ import {
   highSchoolCreditChecked,
   highSchoolCreditHint,
 } from "@/lib/courses/catalog";
-import { courseTypeOptions, isCourseSubject as isSubject } from "@/lib/courses/kinds";
-import { guessCourseType } from "@/lib/planner/course-type-guess";
+import { NOT_SURE, courseTypeOptions, isCourseSubject as isSubject, typeLevelOf } from "@/lib/courses/kinds";
+import { exactRowType, guessCourseType } from "@/lib/planner/course-type-guess";
 import { type CourseTypeId, courseTypeTitle } from "@/lib/planner/course-types";
-import { usePlannerState } from "./planner-state";
+import { usePlannerState, useSchoolYearOf } from "./planner-state";
 
 type Errors = Record<string, string[] | undefined> | undefined;
 
@@ -39,22 +39,28 @@ export type CourseDefaults = {
   status: CourseStatus;
   finalGrade: string;
   highSchoolCredit: boolean;
-  /** The kind of class the student picked, if any ("" or missing: we guess from the name). */
+  /**
+   * The kind of class the student picked, if any: NOT_SURE for a class saved as "Not sure", "" or
+   * missing when never asked (we guess from the name).
+   */
   courseTypeId?: string;
 };
 
 /**
- * "What kind of class is this?": the planner's course types for the subject, or "let us guess"
- * (stored as nothing: a guess only ever counts toward subject totals, never a specific class).
- * When the name makes the guess confident ("Algebra II"), the guess is selected, so saving the form
- * confirms it; it follows the name until the student picks something themselves. A saved choice,
- * or what was just submitted, is kept as is.
+ * "What kind of class is this?": the planner's course types for the subject, or "Not sure"
+ * (NOT_SURE, stored as no kind with source "unsure": a guess only ever counts toward subject totals,
+ * never a specific class, and the class stays one the student is asked to confirm on the path, even
+ * when its name is an exact title). When the name is an exact title in the student's state for the
+ * class's level and school year ("Algebra I"), or makes the guess confident ("Algebra II"), that
+ * kind is selected, so saving the form confirms it; it follows the name until the student picks
+ * something themselves. A saved choice (even "Not sure"), or what was just submitted, is kept as is.
  */
 function CourseTypeField({
   id,
   name,
   subject,
   level,
+  gradeLevel,
   defaultValue,
   keepChoice,
   errors,
@@ -63,21 +69,26 @@ function CourseTypeField({
   name: string;
   subject: string;
   level: string;
+  gradeLevel: number;
   defaultValue: string;
   /** The value is a choice (saved, or just submitted), not a default for the guess to replace. */
   keepChoice: boolean;
   errors?: string[];
 }) {
   const state = usePlannerState();
-  // Null: nothing picked yet, so a confident guess from the name is the selection.
+  const schoolYear = useSchoolYearOf(gradeLevel);
+  // Null: nothing picked yet, so an exact title's kind or a confident guess from the name is the selection.
   const [picked, setPicked] = useState<string | null>(keepChoice || defaultValue ? defaultValue : null);
-  const guessed = isSubject(subject) && name.trim() ? guessCourseType(name, subject, state) : null;
+  const typeLevel = typeLevelOf(level);
+  const named = name.trim() !== "";
+  const exact = state && named && isSubject(subject) ? exactRowType(name, subject, typeLevel, state, schoolYear) : null;
+  const guessed = named && isSubject(subject) ? guessCourseType(name, subject, state, { level: typeLevel, schoolYear }) : null;
   const guess = guessed?.typeId ?? null;
-  const preselect = picked === null && guessed?.confident ? guessed.typeId : null;
-  const value = picked ?? preselect ?? "";
+  const preselect = picked === null ? (exact?.typeId ?? (guessed?.confident ? guessed.typeId : null)) : null;
+  const value = picked ?? preselect ?? NOT_SURE;
   const options = courseTypeOptions(subject, level, value);
   // A type that doesn't fit the subject now is dropped (the student changed the subject).
-  const selected = options.includes(value as CourseTypeId) ? value : "";
+  const selected = options.includes(value as CourseTypeId) ? value : NOT_SURE;
   const hintId = `${id}-hint`;
   if (!isSubject(subject)) {
     return (
@@ -110,7 +121,7 @@ function CourseTypeField({
         aria-describedby={describedBy(hintId, errors?.length && `${id}-error`)}
         className={control}
       >
-        <option value="">{guess ? `Not sure (we'll guess ${courseTypeTitle(guess, state)})` : "Not sure (we'll guess from the name)"}</option>
+        <option value={NOT_SURE}>{guess ? `Not sure (we'll guess ${courseTypeTitle(guess, state)})` : "Not sure (we'll guess from the name)"}</option>
         {options.map((t) => (
           <option key={t} value={t}>
             {courseTypeTitle(t, state)}
@@ -312,6 +323,7 @@ export function CourseFields({
         name={name}
         subject={subject}
         level={level}
+        gradeLevel={gradeLevel}
         defaultValue={initialType}
         keepChoice={submitted}
         errors={errors?.courseTypeId}

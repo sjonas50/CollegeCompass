@@ -84,8 +84,9 @@ type), and optionally a ladder rank, capabilities and state display names.
   or capabilities, so Secondary Math III, Integrated Math III and Algebra II are equal only where a
   rule says so.
 - **From a student row**: a linked school-list row's type, else the student's pick, else an exact
-  title, else a name guess within the row's subject. A guess is *assumed*: it only matches
-  `subjects` selectors, so it counts toward "3 science credits" but never makes "Chemistry" done.
+  title (not for a row the student saved as "Not sure": source `unsure`), else a name guess within
+  the row's subject. A guess is *assumed*: it only matches `subjects` selectors, so it counts toward
+  "3 science credits" but never makes "Chemistry" done.
 - **Exact titles** (`exact-titles.ts`): a typed name that, after normalizing case, spaces,
   punctuation, numerals ("Algebra 1" is "Algebra I") and one H, Honors, AP, Pre-AP, CE or dual
   credit marker at its start or end, is the official or canonical title of exactly one kind in the
@@ -95,18 +96,26 @@ type), and optionally a ladder rank, capabilities and state display names.
   each state's official titles from its saved sources (TEKS and TEA programs of study, Tennessee
   Policy 3.205, USBE's course list), all listed by `exactTitlesFor`. Never exact: a title two kinds
   share, a title joining two classes ("Gov/Econ", "Alg 2/Trig", "Personal Financial Literacy and
-  Economics"), a catch-all ("Physical Education"), a kind outside the row's subject, and a level
-  that could change the kind (Pre-AP is honors, never AP; the level must be one the kind is offered
-  at and agree with the row's; an AP, IB or college-credit Biology, Chemistry, Physics or Calculus
-  may be the second-year class). A marker sets the level of a row left at regular. Applied when rows
+  Economics"), a catch-all ("Physical Education"), a kind outside the row's subject, a level that
+  could change the kind (Pre-AP is honors, never AP; the level must be one the kind is offered at
+  and agree with the row's; an AP, IB or college-credit Biology, Chemistry, Physics or Calculus may
+  be the second-year class), and a name the state's schools also use for another kind
+  (`otherKindsInState`): Tennessee's "Health" (its required Lifetime Wellness is usually called
+  that; only "Health Education" is sure), Utah's U.S. Government titles from 2027-28, when ACGC
+  replaces the class (and whenever the row's school year isn't known), and Utah's college-credit
+  English 11 ("English 11 CE", an English 11 row at dual enrollment: usually ENGL 1010). The guesser
+  lists those other kinds as candidates, for the row's level and school year, so confirm first
+  holds what they would decide. A marker sets the level of a row left at regular. Applied when rows
   are read, so nothing is stored or migrated.
 - **Confirm first**: a guess never creates a claim by itself (a requirement missing, "doesn't
   fit", "needs a plan now", a "Required by" class the row might already be, or a different route).
   Requirements a guess decides read "Waiting on you to confirm a class", and "Confirm your classes"
   at the top of the path asks for each unconfirmed row's kind with the guess as one tap
   (`engine/confirm.ts`); exact titles aren't guesses and aren't asked about. The add and edit forms
-  pre-select a confident guess (the exact kind, for an exact title: a test keeps the two in step),
-  so saving confirms it.
+  pre-select an exact title's kind (for the class's level, and its school year from the student's
+  cohort) or a confident guess (a test keeps the two in step), so saving confirms it. Their "Not
+  sure" is stored as source `unsure` with no kind: the row stays a guess to confirm, even when its
+  name is an exact title, as the form's "we'll treat it as … for now" says.
 - **Names the guesser reads carefully**: a name joining two classes ("Gov/Econ", "Economics &
   Personal Finance") is never a sure guess, and has both kinds as candidates; when both are
   half-credit kinds on a full-credit row, "Confirm your classes" offers it as two half-credit

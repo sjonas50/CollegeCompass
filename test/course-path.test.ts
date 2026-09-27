@@ -85,7 +85,19 @@ const SOFTWARE_DEVELOPER_MAJORS: [string, string][] = [
   ["15.1204", "Computer Software Technology/Technician"],
 ];
 
-type Row = { name: string; subject: CourseSubject; grade: number; type?: string; level?: CourseLevel; status?: CourseStatus; letter?: string; credits?: number; hsCredit?: boolean };
+type Row = {
+  name: string;
+  subject: CourseSubject;
+  grade: number;
+  type?: string;
+  level?: CourseLevel;
+  status?: CourseStatus;
+  letter?: string;
+  credits?: number;
+  hsCredit?: boolean;
+  /** Saved with the forms' "Not sure". */
+  unsure?: boolean;
+};
 
 async function student({ grade, state, rows = [], stars = [], colleges = [] }: { grade: number; state: string | null; rows?: Row[]; stars?: string[]; colleges?: number[] }) {
   const [household] = await db.insert(schema.households).values({}).returning();
@@ -106,7 +118,7 @@ async function student({ grade, state, rows = [], stars = [], colleges = [] }: {
       finalGrade: status === "completed" ? (r.letter ?? "A") : null,
       highSchoolCredit: r.hsCredit ?? (r.grade >= 9 || r.type === "math.alg1"),
       courseTypeId: r.type ?? null,
-      courseTypeSource: r.type ? "student" : null,
+      courseTypeSource: r.type ? "student" : r.unsure ? "unsure" : null,
     });
   }
   for (const code of stars) expect((await addNorthStar(db, user.id, code)).ok).toBe(true);
@@ -329,6 +341,47 @@ describe("classes recorded without choosing their kind", () => {
     for (const reqId of ["ela.1", "math.alg1", "math.geom", "sci.bio"]) {
       expect(tx.requirements.find((r) => r.reqId === reqId)?.status, reqId).toMatch(/^(done|planned)$/);
     }
+  });
+
+  it("names the state's schools also use for another kind still ask, and so does a class saved as \"Not sure\"", async () => {
+    // Tennessee: "Health" may be the required Lifetime Wellness; the state's "Health Education" is sure.
+    const tn = await student({
+      grade: 10,
+      state: "TN",
+      rows: [
+        { name: "Health", subject: "health_pe", grade: 9 },
+        { name: "Health Education", subject: "health_pe", grade: 9, credits: 0.5 },
+        { name: "Algebra I", subject: "math", grade: 9, unsure: true },
+        { name: "Geometry", subject: "math", grade: 10 },
+      ],
+    });
+    const tnPath = planned(await studentPath(db, tn, NOW));
+    const tnRows = new Map(tnPath.input.courses.map((c) => [c.name, c]));
+    expect(tnRows.get("Health")).toMatchObject({ typeId: "health.health", typeSource: "guess", assumed: true });
+    expect(tnRows.get("Health Education")).toMatchObject({ typeId: "health.health", typeSource: "exact" });
+    expect(tnRows.get("Algebra I")).toMatchObject({ typeId: "math.alg1", typeSource: "guess", assumed: true });
+    expect(tnRows.get("Geometry")).toMatchObject({ typeSource: "exact" });
+    const tnConfirm = tnPath.result.confirm.map((c) => tnPath.input.courses.find((x) => x.id === c.courseId)?.name);
+    expect(tnConfirm.sort()).toEqual(["Algebra I", "Health"]);
+    expect(tnPath.result.audit.find((a) => a.ruleSetId === "tn.grad")!.requirements.find((r) => r.reqId === "wellness")?.status).toBe("waiting_confirm");
+
+    // Utah, class of 2029: U.S. Government and Citizenship is replaced by ACGC in 2027-28, so a
+    // 12th-grade (2028-29) "U.S. Government" asks; the U.S. History in 2027-28 doesn't.
+    const ut = await student({
+      grade: 10,
+      state: "UT",
+      rows: [
+        { name: "U.S. History", subject: "social_studies", grade: 11 },
+        { name: "U.S. Government", subject: "social_studies", grade: 12 },
+      ],
+    });
+    const utPath = planned(await studentPath(db, ut, NOW));
+    const utRows = new Map(utPath.input.courses.map((c) => [c.name, c]));
+    expect(utRows.get("U.S. History")).toMatchObject({ typeSource: "exact", schoolYear: 2027 });
+    expect(utRows.get("U.S. Government")).toMatchObject({ typeId: "ss.us_gov", typeSource: "guess", assumed: true, schoolYear: 2028 });
+    expect(utPath.result.confirm.map((c) => c.courseId)).toEqual([utRows.get("U.S. Government")!.id]);
+    const acgc = utPath.result.audit.find((a) => a.ruleSetId === "ut.grad")!.requirements.find((r) => r.reqId === "ss.acgc");
+    expect(acgc?.status).toBe("waiting_confirm");
   });
 });
 

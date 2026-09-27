@@ -72,7 +72,8 @@ export type StudentPath =
 export function courseFacts(courses: readonly Course[], cohort: StudentCohort, state: PlannerState | null): CourseFact[] {
   return courses.flatMap((row): CourseFact[] => {
     if (!isSchoolGrade(row.gradeLevel)) return [];
-    const resolved = resolveRowCourseType(row, state);
+    const schoolYear = schoolYearForGrade(cohort, row.gradeLevel);
+    const resolved = resolveRowCourseType(row, state, schoolYear);
     const type = getCourseType(resolved.typeId);
     const units = Math.max(1, Math.round(row.credits * UNITS_PER_CREDIT));
     return [
@@ -85,7 +86,7 @@ export function courseFacts(courses: readonly Course[], cohort: StudentCohort, s
         level: resolved.level,
         subject: resolved.assumed ? row.subject : type.subject,
         grade: row.gradeLevel,
-        schoolYear: schoolYearForGrade(cohort, row.gradeLevel),
+        schoolYear,
         term: row.term,
         units,
         status: row.status,

@@ -70,7 +70,11 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   "Algebra I", "Lifetime Fitness and Wellness Pursuits") reaches the engine confirmed (`typeSource:
   "exact"`), so it's neither a guess nor asked about. The `review-fixes` suites run their typed
   students again that way, against the right kinds confirmed, and none gains a claim
-  (`testing/exact.ts`).
+  (`testing/exact.ts`). Names a state's schools also use for another kind (Tennessee's "Health" for
+  Lifetime Wellness, Utah's "U.S. Government" from 2027-28 for ACGC, Utah's "English 11 CE" for
+  ENGL 1010) are never exact, and the guesser lists the other kind for the row's level and school
+  year; `review-fixes-exact.test.ts` runs such students against the real kind with no claim set
+  aside (`misreadClaims`).
 - Credits never double-count inside an exclusive rule set, except where a rule shares them
   (`shareable`, a substitution, shared same-language levels). A kind of class that may stand in
   only once (`substituteOnce`: Tennessee's computer science for "one (1) credit in mathematics,
@@ -338,4 +342,7 @@ validated by the contracts' validator), the golden scenarios (`scenarios.ts`, de
 seeded random input generator and a plan summarizer for readable snapshots. `claims.ts` lists the
 claims a guess must never create; `exact.ts` runs typed students again as the app reads their names
 (`withExactTitles`, `exactTitleClaims`), and `auditExactTitles`, last in a regression file, does
-that for every typed student the file built with `scenario`.
+that for every typed student the file built with `scenario`. Those compare with the kinds the test
+typed, so they can't catch an exact title read as the wrong kind: `misreadClaims` compares a
+student whose class isn't what its name says (from real state usage) with its real kind, and sets
+nothing aside, since a row read as exact is never asked about.

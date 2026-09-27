@@ -21,7 +21,7 @@ export function withExactTitles(input: PlannerInput): PlannerInput {
   let changed = false;
   const courses = input.courses.map((c) => {
     if (!c.assumed) return c;
-    const exact = exactRowType(c.name, c.subject, c.level, state);
+    const exact = exactRowType(c.name, c.subject, c.level, state, c.schoolYear);
     if (!exact) return c;
     changed = true;
     const type = getCourseType(exact.typeId);
@@ -46,7 +46,9 @@ function plannedPath(input: PlannerInput): PlannedPath {
  * What a typed student gains wrongly once the app counts its exact titles: claims the truth (the
  * same student with the right kinds confirmed; by default the kinds the test gave the rows) doesn't
  * make and claims about requirements waiting on a confirmation, that the student with every typed
- * kind guessed doesn't make already. Empty for a student with no exact title.
+ * kind guessed doesn't make already (a typed kind the guesser wouldn't give, as in the random
+ * students, can make a claim of its own). Empty for a student with no exact title. With the test's
+ * own kinds as the truth it can't see an exact title read as the wrong kind: `misreadClaims` does.
  */
 export function exactTitleClaims(input: PlannerInput, truth?: PlannedPath): Claim[] {
   const app = withExactTitles(input);
@@ -55,6 +57,20 @@ export function exactTitleClaims(input: PlannerInput, truth?: PlannedPath): Clai
   const wrong = (path: PlannedPath) => [...extraClaims(path, real), ...claimsOnWaiting(path).map((c) => `waiting ${c}`)];
   const before = new Set(wrong(plannedPath(input)));
   return wrong(plannedPath(app)).filter((c) => !before.has(c));
+}
+
+/**
+ * What the app claims wrongly about a student whose typed class isn't what its name says (`input`:
+ * the typed student, each typed row with the guesser's kind, as the app reads it; `truth`: the same
+ * student with the real kinds confirmed, such as a Tennessee "Health" that's Lifetime Wellness or a
+ * Utah "U.S. Government" in 2028-29 that's the new ACGC): claims the truth doesn't make, and claims
+ * about requirements waiting on a confirmation. Nothing the guessed run makes anyway is set aside
+ * (unlike `exactTitleClaims`): a row read as an exact title is never asked about, so a claim it
+ * makes, even one its guess made too, is one the student has no prompt to fix.
+ */
+export function misreadClaims(input: PlannerInput, truth: PlannedPath): Claim[] {
+  const app = plannedPath(withExactTitles(input));
+  return [...extraClaims(app, truth), ...claimsOnWaiting(app).map((c) => `waiting ${c}`)];
 }
 
 /**

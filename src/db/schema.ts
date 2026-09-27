@@ -594,9 +594,10 @@ export const studentCourses = pgTable(
     // What kind of class it is, as a course-type id from the planner's vocabulary
     // (src/lib/planner/course-types.ts), when the student picked one ("student") or it came from
     // their school's class list ("catalog"). Null: the planner guesses from the name, and a guess
-    // is never stored (see resolveRowCourseType).
+    // is never stored (see resolveRowCourseType). Source "unsure" with no id: the student saved it
+    // as "Not sure", so it stays a guess they're asked to confirm, even with an exact title.
     courseTypeId: text("course_type_id"),
-    courseTypeSource: text("course_type_source").$type<"catalog" | "student">(),
+    courseTypeSource: text("course_type_source").$type<"catalog" | "student" | "unsure">(),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
