@@ -315,6 +315,7 @@ export const GenericCatalogFileSchema = z.strictObject({
         units: Units.optional(),
         grades: z.array(Grade).min(1).optional(),
         firstSchoolYear: Year.optional(),
+        lastSchoolYear: Year.optional(),
         prereqs: z.array(z.array(CourseTypeIdSchema).min(1)).min(1).optional(),
         cite: CiteList.optional(),
       }),

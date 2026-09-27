@@ -33,6 +33,8 @@ export type GenericCatalogCourse = {
   grades?: SchoolGrade[];
   /** First school year the class exists (Utah ACGC: 2027). */
   firstSchoolYear?: SchoolYear;
+  /** Last school year the class is taught (Utah U.S. Government and Citizenship: 2026, retired in 2027-28). */
+  lastSchoolYear?: SchoolYear;
   /**
    * Prerequisites the state sets on top of the type's own, each group met by any one type (Utah:
    * the applied math classes that take Secondary Math III's place come after Secondary Math II).

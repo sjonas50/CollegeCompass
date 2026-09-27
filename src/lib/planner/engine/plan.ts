@@ -32,7 +32,7 @@ import { aimsAt, buildContext, type Ctx, type FamilyCtx, leafPriority, rowIsOffe
 import { algebra2Reason, leafNoteReason, loadReason, prepReason, reason, requirementReason, resolveCitations, retakeReason, seniorMathReason } from "./explain";
 import { type FillResult, isRepeatable, pastIntro, type PlanConfig, prereqsMetIn, runFill, sameContent } from "./fill";
 import { addedCreditTotal, buildGaps, freeUnits } from "./gaps";
-import { mathRankOf, rungName, startRank, unresolvedFailedRank } from "./ladder";
+import { mathRankOf, rungName, rungTypes, startRank, unresolvedFailedRank } from "./ladder";
 import { asConfirmed, type Item } from "./model";
 import { type Need, needUnits } from "./needs";
 import { counselorQuestions } from "./questions";
@@ -140,9 +140,17 @@ function targetSplit(ctx: Ctx, getA: () => FillResult, base: PlanConfig): Decisi
   const fillA = getA();
   const misfit = misfits(fillA);
   if (misfit.length === 0) return null;
-  // Each plan prepares for its own goal: the other goal's program rules aren't part of it.
-  const a = runFill(ctx, { ...base, families: [fams[0]], ruleSets: ruleSetsFor(ctx, fams[0]) });
-  const b = runFill(ctx, { ...base, id: "B", families: [fams[1]], ruleSets: ruleSetsFor(ctx, fams[1]) });
+  // Each plan prepares for its own goal: the other goal's program rules aren't part of it, and in
+  // Texas it plans with that goal's endorsement when the student hasn't named one (nursing's
+  // Public Services, engineering's STEM).
+  const own = (f: FamilyCtx) => {
+    const sub = goalEndorsement(ctx, f);
+    const fam = sub.families.find((g) => g.target.familyId === f.target.familyId) ?? f;
+    return { sub, fam };
+  };
+  const [pa, pb] = [own(fams[0]), own(fams[1])];
+  const a = runFill(pa.sub, { ...base, families: [pa.fam], ruleSets: ruleSetsFor(pa.sub, pa.fam) });
+  const b = runFill(pb.sub, { ...base, id: "B", families: [pb.fam], ruleSets: ruleSetsFor(pb.sub, pb.fam) });
   if (!realChoice(a, b)) return null;
   // Only a real choice: one goal's classes that didn't fit next to the other's fit in its own plan.
   // When they don't fit there either, the goals don't compete for room and one plan shows both.
@@ -225,11 +233,28 @@ function withDefaultEndorsement(ctx: Ctx): Ctx {
   if (ctx.state !== "TX" || ctx.choices.txEndorsements?.length || ctx.choices.txFoundationOnly || ctx.firstGrade <= 8 || ctx.grade >= 12) return ctx;
   const goalPathway = ctx.input.targets.path === "training" ? ctx.families[0]?.content?.ctePathways.find((p) => p.state === ctx.state)?.cluster : undefined;
   const clusters = [...(ctx.choices.ctePathway ? [ctx.choices.ctePathway.cluster] : []), ...ownCteClusters(ctx), ...(goalPathway ? [goalPathway] : [])];
-  const value = endorsementsForClusters(ctx, clusters)[0] ?? "multidisciplinary";
+  return withEndorsement(ctx, endorsementsForClusters(ctx, clusters)[0] ?? "multidisciplinary");
+}
+
+/** The context with an endorsement the student hasn't named, used for now (the audit says so). */
+function withEndorsement(ctx: Ctx, value: EndorsementValue): Ctx {
   const rs = [...ctx.allRuleSets.values()].find(({ rs }) => rs.appliesWhen.choice?.key === "txEndorsements" && rs.appliesWhen.choice.value === value)?.rs;
   if (!rs) return ctx;
   const sub = buildContext({ ...ctx.input, state: ctx.state, content: ctx.content, prefs: { ...ctx.input.prefs, choices: { ...ctx.input.prefs.choices, txEndorsements: [value] } } });
   return { ...sub, endorsementDefault: rs.title };
+}
+
+/**
+ * Where the two-plan endorsement choice applies but another decision (or none) makes the plans, a
+ * plan still needs an endorsement: a 9th or 10th grader can't graduate without one unless, after
+ * 10th grade, a parent signs (19 TAC §74.11(f)). The goal's own endorsement (families.json
+ * txEndorsement), else the one its pathway leads to, else Multidisciplinary Studies; the audit says
+ * it's used for now, and the pending decision still asks the student to name one.
+ */
+function goalEndorsement(ctx: Ctx, f?: FamilyCtx): Ctx {
+  if (!endorsementSplitApplies(ctx)) return ctx;
+  const value = f?.content?.txEndorsement?.value ?? preferredEndorsements(ctx)[0];
+  return value ? withEndorsement(ctx, value) : withDefaultEndorsement(ctx);
 }
 
 /** The two-plan endorsement choice: Texas, none named, 9th-10th grade, not the training path. */
@@ -319,6 +344,11 @@ function languageVsCte(ctx: Ctx, getA: () => FillResult, base: PlanConfig): Deci
 
 function yoursWarnings(ctx: Ctx, fill: FillResult, fact: PlannerInput["courses"][number]): SlotWarning[] {
   const out: SlotWarning[] = [];
+  // A typed class the name didn't place, planned as the class its grade says it is: say which.
+  const item = ctx.items.find((i) => i.key === `c:${fact.id}`);
+  if (item?.provisional) {
+    out.push({ kind: "guess", text: `We planned around this as ${courseTypeTitle(item.typeId, ctx.state)} because of its grade. Set "What kind of class is this?" on it to be sure it counts.` });
+  }
   // A math class above a rung the student failed or withdrew from and hasn't passed since (Geometry
   // after an F in Algebra I): it builds on that rung.
   const rank = mathRankOf(fact.typeId);
@@ -708,6 +738,8 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
         if (pastIntro(others, row.typeId, grade)) continue;
         const rank = mathRankOf(row.typeId);
         if (rank !== null && rank >= 1 && rank <= reached) continue;
+        // Never a switch of math sequence mid-way (Integrated Math III after Algebra I and Geometry).
+        if (rank !== null && rank >= 1 && rank <= 3 && reached >= 1 && row.typeId !== p.item.typeId && rungTypes(fill.ladder.family, rank)[0] !== row.typeId) continue;
         // Never a class the family opted out of in writing (Utah Secondary Math III).
         if (ctx.choices.utMath3OptOut && rank === 3) continue;
         if (!prereqsMetIn(others, row, grade, () => null, false, p.item.term === "spring")) continue;
@@ -876,10 +908,13 @@ function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
       });
       // Credit totals and electives are met by any class ("Your choice" slots), so they count
       // against a rule set here only when the years left can't hold them: an endorsement's 26
-      // credits (§74.13(c)) out of a senior's reach leaves the DLA without an endorsement.
+      // credits (§74.13(c)) out of a senior's reach leaves the DLA without an endorsement. A
+      // senior's shortfall counts until classes on the plan cover it: this year's open periods
+      // hold nothing yet.
       const totals = (e.best?.leaves ?? []).filter((l) => l.leaf.own && l.leaf.req.kind === "total_credits").map((l) => l.missing);
       const added = addedCreditTotal(e, fill.items);
-      const short = [...totals, added?.missing ?? 0].some((m) => m > free);
+      const limit = ctx.inProgressGrade === 12 ? 0 : free;
+      const short = [...totals, added?.missing ?? 0].some((m) => m > limit);
       return [e.rc.rs.id, worst([...courses.map((r) => r.status), ...(short ? (["room_to_add"] as const) : [])])] as const;
     }),
   );
@@ -892,12 +927,19 @@ function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
 
 // Entry point ----------------------------------------------------------------------------------------
 
-/** The context a plan is audited with: an endorsement plan includes the endorsement it plans with. */
+/**
+ * The context a plan is audited with: a plan includes the endorsement it plans with. One the
+ * student didn't name (a goal's endorsement in a two-goal plan) is labeled as used for now; the
+ * endorsement choice's own plans say why in the choice.
+ */
 function contextFor(ctx: Ctx, fill: FillResult, choice: PlanChoice | null): Ctx {
-  if (choice?.kind !== "endorsement" || ctx.endorsementDefault) return ctx;
-  const value = fill.config.ruleSets.find((r) => r.rs.appliesWhen.choice?.key === "txEndorsements")?.rs.appliesWhen.choice?.value as EndorsementValue | undefined;
-  if (!value) return ctx;
-  return buildContext({ ...ctx.input, state: ctx.state, content: ctx.content, prefs: { ...ctx.input.prefs, choices: { ...ctx.input.prefs.choices, txEndorsements: [value] } } });
+  const rs = fill.config.ruleSets.find((r) => r.rs.appliesWhen.choice?.key === "txEndorsements")?.rs;
+  const value = rs?.appliesWhen.choice?.value as EndorsementValue | undefined;
+  if (!rs || !value || ctx.ruleSets.some((r) => r.rs.id === rs.id)) return ctx;
+  if (choice?.kind === "endorsement") {
+    return buildContext({ ...ctx.input, state: ctx.state, content: ctx.content, prefs: { ...ctx.input.prefs, choices: { ...ctx.input.prefs.choices, txEndorsements: [value] } } });
+  }
+  return withEndorsement(ctx, value);
 }
 
 /** What each plan shows for itself: its years, audit, gaps, "by when" and counselor questions. */
@@ -920,17 +962,22 @@ export function plan(input: PlannerInput): PathResult {
   const own = buildContext(input as PlannerInput & { state: PlannerState; content: NonNullable<PlannerInput["content"]> });
   // Endorsement plans (Plan A and B) when the choice applies; otherwise a default endorsement.
   const ctx = endorsementSplitApplies(own) ? own : withDefaultEndorsement(own);
+  // Plans that don't come from the endorsement choice still plan with an endorsement.
+  let planCtx: Ctx | null = null;
+  const withGoal = () => (planCtx ??= goalEndorsement(ctx));
   const base: PlanConfig = { id: "A", ruleSets: ctx.ruleSets, families: ctx.families, accelerate: false, cteFirst: false };
+  const baseFor = (c: Ctx): PlanConfig => ({ ...base, ruleSets: c.ruleSets, families: c.families });
   // The single plan is built only when it's needed (an endorsement choice builds its own plans).
   let single: FillResult | null = null;
-  const getA = () => (single ??= runFill(ctx, base));
+  const getA = () => (single ??= runFill(withGoal(), baseFor(withGoal())));
   let fillA: FillResult | null = null;
   let fillB: FillResult | null = null;
   let planChoice: PlanChoice | null = null;
   let labels: [string, string] = ["Your path", ""];
   const middle = ctx.firstGrade <= 8;
   if (!middle && ctx.planGrades.length > 0) {
-    const decision = mathRoute(ctx, getA, base) ?? targetSplit(ctx, getA, base) ?? endorsementSplit(ctx, base) ?? languageVsCte(ctx, getA, base);
+    const decision =
+      mathRoute(withGoal(), getA, baseFor(withGoal())) ?? targetSplit(ctx, getA, base) ?? endorsementSplit(ctx, base) ?? languageVsCte(withGoal(), getA, baseFor(withGoal()));
     if (decision) {
       fillA = decision.a;
       fillB = decision.b;

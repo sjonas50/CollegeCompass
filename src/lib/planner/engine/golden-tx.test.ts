@@ -52,7 +52,8 @@ describe("TX-1: the design's worked example (§5.13)", () => {
     const test = path.deadlines.find((d) => d.kind === "test")!;
     expect(test.text).toMatch(/SAT Math score of 620/);
     expect(test.note).toBe(
-      "Or show it with a class: Calculus I with a B or higher by the end of 11th grade. From where you are, that would take a summer class or two math classes in one year. Only if you want that and your last math grade is a B or better.",
+      // Round 7: the moves named are the ones that reach it (one summer class here), found by re-solving the ladder.
+      "Or show it with a class: Calculus I with a B or higher by the end of 11th grade. From where you are, that would take a summer class. Only if you want that and your last math grade is a B or better.",
     );
     expect(path.askCounselor.map((q) => q.text)).toContain("Should I plan to show UT Austin calculus readiness with a test score or with a class, and when do scores need to be in?");
   });

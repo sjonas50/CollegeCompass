@@ -249,17 +249,49 @@ function byWhenFor(ctx: Ctx, grade: number): ByWhen | null {
   return { grade: Math.max(7, Math.min(12, grade)) as SchoolGrade, point: "end" };
 }
 
-function gapText(ctx: Ctx, need: Need, kind: Gap["kind"], block: BlockReason | null, needsPlanNow: boolean): string {
+/**
+ * A planned class in a year the need can use whose place another class could take and meet the
+ * need, keeping what the planned class was there for (Utah's senior-year math): "Precalculus in
+ * place of Statistics in 12th grade would meet this." Only in place of a suggestion placed for
+ * something that isn't ranked above the need, or that the other class also meets. Null when none.
+ */
+function swapHint(ctx: Ctx, fill: FillResult, need: Need): string | null {
+  const from = Math.max(need.fromGrade, 9);
+  const order = [...fill.placements].filter((p) => p.item.grade >= from && p.item.grade <= need.byGrade && p.kind !== "english" && p.item.term !== "summer").sort((a, b) => b.priority - a.priority || b.item.grade - a.item.grade || b.n - a.n);
+  for (const p of order) {
+    const grade = p.item.grade;
+    const sy = schoolYearOfGrade(ctx, grade);
+    const others = fill.items.filter((i) => i.key !== p.item.key && countsForSequence(i));
+    const reached = startRank(others, grade);
+    const rows = (ctx.catalogs.get(grade)?.rows ?? [])
+      .filter((r) => r.subject === p.item.subject && r.typeId !== p.item.typeId && r.defaultTerm !== "summer" && rowIsOffered(r, grade, sy))
+      .filter((r) => {
+        const it = probe(r, grade, sy);
+        if (!matchesAny(it, need.selectors)) return false;
+        if (p.primary && p.priority <= need.priority && !matchesAny(it, p.primary.selectors)) return false;
+        if (!isRepeatable(r.typeId) && others.some((i) => sameContent(i.typeId, r.typeId))) return false;
+        const rank = mathRankOf(r.typeId);
+        if (rank !== null && rank >= 1 && rank <= reached) return false;
+        return prereqsMetIn(others, r, grade, () => null, true);
+      })
+      .sort((a, b) => (mathRankOf(a.typeId) ?? 9) - (mathRankOf(b.typeId) ?? 9) || Number(a.collegeLevel) - Number(b.collegeLevel) || a.order - b.order);
+    if (rows[0]) return `${courseTypeTitle(rows[0].typeId, ctx.state)} in place of ${courseTypeTitle(p.item.typeId, ctx.state)} in ${nth(grade)} grade would meet this.`;
+  }
+  return null;
+}
+
+function gapText(ctx: Ctx, need: Need, kind: Gap["kind"], block: BlockReason | null, needsPlanNow: boolean, swap: string | null = null): string {
   const amount = need.measure === "units" && need.missing % 4 !== 0 ? ` (${toCredits(need.missing)} credit)` : "";
   const label = need.label;
   if (block === "ask") return `${label}: ask your counselor whether you've already shown college-ready math. If you haven't, plan a full year of math this year.`;
-  if (needsPlanNow) return `Needs a plan now: ${label}${amount}.`;
+  // Questions for the counselor come before "Needs a plan now": a class the student took may already count.
   if (block === "choice") return `${label}: your family opted out of the class this needs. Ask your counselor what that means for you.`;
   if (block === "equivalent") return `${label}: you've taken a class that may count the same way. Ask your counselor whether it does here.`;
   if (block === "hs_credit") {
     const early = earlyWithoutCredit(ctx.items, need.selectors);
     if (early) return `Your ${nth(early.grade)}-grade ${courseTypeTitle(early.typeId, ctx.state)} isn't marked for high school credit. Ask your counselor whether it counts.`;
   }
+  if (needsPlanNow) return `Needs a plan now: ${label}${amount}.`;
   switch (kind) {
     case "ladder_infeasible":
       return need.byGrade > ctx.grade || (need.byGrade === ctx.grade && ctx.inProgressGrade === null)
@@ -270,7 +302,9 @@ function gapText(ctx: Ctx, need: Need, kind: Gap["kind"], block: BlockReason | n
     case "doesnt_fit":
       return block === "load"
         ? `Room to add: ${label}. The classes that count are college-level, and your years are at your limit of ${ctx.limits.maxCollegeLevelPerYear}.`
-        : `Room to add: ${label}${amount}. It doesn't fit in the years you have left as planned.`;
+        : swap
+          ? `Room to add: ${label}${amount}. ${swap}`
+          : `Room to add: ${label}${amount}. It doesn't fit in the years you have left as planned.`;
     default:
       return `Room to add: ${label}${amount}.`;
   }
@@ -385,7 +419,10 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
         : block === "doesnt_fit" || block === "load" || block === "dismissed"
           ? "doesnt_fit"
           : "unmet";
-    const needsPlanNow = ctx.inProgressGrade === 12 && need.priority === 0 && block !== "ask";
+    // A class the student already took that may count (another state's math, a class from before
+    // 9th grade, one the family opted out of) is a question for the counselor, not a missing credit.
+    const counselorCall = block === "ask" || block === "equivalent" || block === "choice" || block === "hs_credit";
+    const needsPlanNow = ctx.inProgressGrade === 12 && need.priority === 0 && !counselorCall;
     const reasons = [...need.reasons];
     if (ctx.state === "TX" && need.selectors.some((s) => s.types?.includes("math.alg2"))) reasons.push(algebra2Reason());
     if (needsPlanNow) reasons.push(reason("gap", "This is a required credit. Summer school or credit recovery may work; ask your counselor soon.", { ruleSetId: need.rc?.rs.id ?? null }));
@@ -396,7 +433,9 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
       kind,
       priority: need.priority,
       demandId: need.id,
-      text: pathway ? `Room to add: ${need.label}. Ask your counselor about the next class in this pathway.` : gapText(ctx, need, kind, block, needsPlanNow),
+      text: pathway
+        ? `Room to add: ${need.label}. Ask your counselor about the next class in this pathway.`
+        : gapText(ctx, need, kind, block, needsPlanNow, kind === "doesnt_fit" && block === "doesnt_fit" && !needsPlanNow ? swapHint(ctx, fill, need) : null),
       decideBy: byWhenFor(ctx, need.byGrade),
       options: block === "choice" || block === "equivalent" || block === "hs_credit" || pathway ? [ASK] : block === "ask" ? askOptions(need) : optionsFor(ctx, fill, need, ladder),
       reasons: block === "hs_credit" ? [...reasons, ...earlyCreditNotes(ctx)] : reasons,
@@ -423,24 +462,34 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
       reasons: [requirementReason(rc, l.leaf)],
     });
   }
-  // Graduation totals the remaining years can't hold (this year only for its spring term).
+  // Graduation totals the remaining years can't hold (this year only for its spring term). A
+  // senior's only room is this year's open periods: any shortfall needs a plan now, even when those
+  // periods would cover it, since nothing is planned there yet.
   const free = freeUnits(fill);
   const whole = freeUnits(fill, true);
+  const senior = ctx.inProgressGrade === 12;
   const room = `Your plan has room for about ${toCredits(free)} more ${creditNoun(toCredits(free))}`;
+  const spring = (what: string, missing: number) =>
+    `Needs a plan now: ${what}. Add ${toCredits(missing)} ${creditNoun(toCredits(missing))} this spring (your open periods); ask your counselor.`;
+  const springReason = (ruleSetId: string) => reason("gap", "This is a required credit. Classes in your open periods this spring can cover it; ask your counselor soon.", { ruleSetId });
   for (const e of fill.evals) {
     if (!e.best || ctx.firstGrade <= 8) continue;
     if (e.rc.rs.kind === "state_graduation" || e.rc.rs.kind === "local_graduation") {
       for (const l of e.best.leaves) {
-        if (l.leaf.req.kind !== "total_credits" || l.missing <= 0 || free >= l.missing) continue;
+        if (l.leaf.req.kind !== "total_credits" || l.missing <= 0 || (free >= l.missing && !senior)) continue;
+        const what = `${l.leaf.label.toLowerCase()} needs ${toCredits(l.missing)} more`;
         gaps.push({
           id: `gap:${e.rc.rs.id}/${l.leaf.id}`,
           kind: "doesnt_fit",
           priority: 0,
           demandId: null,
-          text: roomText(room, `${l.leaf.label.toLowerCase()} needs ${toCredits(l.missing)} more`, whole >= l.missing),
+          text: free >= l.missing ? spring(what, l.missing) : roomText(room, what, whole >= l.missing),
           decideBy: byWhenFor(ctx, 12),
           options: creditOptions(ctx),
-          reasons: [reason("requirement", `${l.leaf.label}: ${toCredits(l.required)} credits.`, { ruleSetId: e.rc.rs.id, reqId: l.leaf.id, citations: l.leaf.cite })],
+          reasons: [
+            reason("requirement", `${l.leaf.label}: ${toCredits(l.required)} credits.`, { ruleSetId: e.rc.rs.id, reqId: l.leaf.id, citations: l.leaf.cite }),
+            ...(free >= l.missing ? [springReason(e.rc.rs.id)] : []),
+          ],
         });
       }
     }
@@ -449,19 +498,21 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
     // gap of its own, with the same options as the graduation total.
     const added = addedCreditTotal(e, fill.items);
     const priority = added ? leafPriority(e.rc, added.leaf.strength) : null;
-    if (!added || priority === null || free >= added.missing) continue;
-    const planNow = ctx.inProgressGrade === 12 && priority === 0;
+    if (!added || priority === null || added.missing <= 0 || (free >= added.missing && !senior)) continue;
+    const planNow = senior && priority === 0;
+    const what = `the ${e.rc.rs.title} needs at least ${toCredits(added.required)} credits in all (${toCredits(added.missing)} more)`;
+    const fits = free >= added.missing;
     gaps.push({
       id: `gap:${e.rc.rs.id}/${added.leaf.id}`,
       kind: "doesnt_fit",
       priority,
       demandId: null,
-      text: `${planNow ? "Needs a plan now: " : ""}${roomText(room, `the ${e.rc.rs.title} needs at least ${toCredits(added.required)} credits in all (${toCredits(added.missing)} more)`, whole >= added.missing)}`,
+      text: fits ? spring(what, added.missing) : `${planNow ? "Needs a plan now: " : ""}${roomText(room, what, whole >= added.missing)}`,
       decideBy: byWhenFor(ctx, 12),
       options: creditOptions(ctx),
       reasons: [
         reason("requirement", `${e.rc.rs.title}: at least ${toCredits(added.required)} credits.`, { ruleSetId: e.rc.rs.id, reqId: added.leaf.id, strength: added.leaf.strength, citations: added.leaf.cite }),
-        ...(planNow ? [reason("gap", "This is a required credit. Summer school or credit recovery may work; ask your counselor soon.", { ruleSetId: e.rc.rs.id })] : []),
+        ...(fits ? [springReason(e.rc.rs.id)] : planNow ? [reason("gap", "This is a required credit. Summer school or credit recovery may work; ask your counselor soon.", { ruleSetId: e.rc.rs.id })] : []),
       ],
     });
   }

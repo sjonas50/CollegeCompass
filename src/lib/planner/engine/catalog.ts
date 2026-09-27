@@ -108,6 +108,7 @@ export function genericCatalogView(file: GenericCatalogFile): CatalogView {
         lectureOnly: false,
         delivery: "unknown",
         firstSchoolYear: c.firstSchoolYear ?? null,
+        lastSchoolYear: c.lastSchoolYear ?? null,
         everyOtherYear: false,
       } satisfies CatalogCourse;
     }),

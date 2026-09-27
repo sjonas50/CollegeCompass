@@ -14,7 +14,7 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
 
 | Step | File | What it does |
 |---|---|---|
-| Context | `context.ts` | Plan years (the current grade during the school year, the next one in June-July), the class list per grade (school list, else generic; unconfirmed subjects fall back to the generic list), rule sets that apply (gates by family or by a goal's major CIP code, cohort variants, projected, stale, the labeled state default, the DLA default), major families, the rigor tier |
+| Context | `context.ts`, `guesses.ts` | Plan years (the current grade during the school year, the next one in June-July), the class list per grade (school list, else generic; unconfirmed subjects fall back to the generic list), rule sets that apply (gates by family or by a goal's major CIP code, cohort variants, projected, stale, the labeled state default, the DLA default), major families, the rigor tier, and typed rows the name didn't place taken as the class their grade says they are |
 | Compile | `compile.ts` | Requirement trees to flat alternatives (`all` multiplies, `any` adds, `choose` combines, `option` follows the family's choice, substitutions add alternatives), extended variants joined in, 256 cap |
 | Audit | `allocate.ts`, `flow.ts`, `audit.ts` | Min-cost max-flow in quarter-credit units; firm classes cost 1, planned 10, plus 0-5 for how broad a requirement is. Shareable requirements, counts and totals never use up credit; same-language requirements take their language classes first and share them. Statuses, modifiers, checks, conditions, diploma-vs-admission conflicts |
 | Needs | `needs.ts` | Unmet requirements and major-prep targets become demands P0-P3 with windows and exclusive groups |
@@ -156,7 +156,27 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   comes after the others for a student without one.
 - **Two goals that don't fit**: each plan follows only its own goal's program gates and admission
   rules (Texas A&M engineering's math isn't part of the nursing plan), and the split is offered
-  only when a goal's classes that didn't fit next to the other's fit in its own plan.
+  only when a goal's classes that didn't fit next to the other's fit in its own plan. In Texas,
+  when the student hasn't named an endorsement and the two-plan endorsement choice isn't what
+  separates the plans, each plan uses its goal's endorsement for now (nursing's Public Services,
+  engineering's STEM; 19 TAC §74.11(f)), and the audit says so.
+- **Recommendations over major prep** (design §5.6): a recommended (P2) class with no room takes
+  the place of a lower-priority suggestion in a year it can go in (Physics for a career pathway's
+  level 3), when everything ranked with or above it stays as met. Where a planned class that
+  can't give way holds the slot, the gap names the swap instead ("Precalculus in place of
+  Statistics in 12th grade would meet this").
+- **College-level load**: level changes for a requirement only AP or IB classes meet go in the
+  year with the fewest college-level classes, and a core class's AP version in its usual grade
+  (AP U.S. History not in 10th); a college-level class the fill places prefers the lighter year.
+- **Math below the student's**: applied, algebraic-reasoning, college-readiness and quantitative
+  reasoning classes are never suggested to a student who has reached precalculus.
+- **Math sequences**: Other choices never switch a student's sequence mid-way (Integrated Math III
+  after Algebra I and Geometry, or Algebra II after Integrated Math I and II).
+- **UT Austin's class route**: the note under the test date names the moves that would reach
+  Calculus I by the end of 11th grade (a summer class where the state has one, two math classes in
+  a year, two college-credit classes in a year), re-solving the ladder, and only when they reach
+  it; otherwise it says the class route can't be finished and that a fall 12th-grade college class
+  counts only if graded by December 10.
 - **Gap options** add load (summer, online, college credit, an exam) only for required needs and
   targets the student picked; a labeled default target's recommendation, a scholarship's course
   part or a career pathway's next level reads "Ask your counselor". For a math sequence, and for
@@ -175,7 +195,9 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   total, the gap says it fits only if classes are added this year. A total-credit shortfall lists
   the state's verified summer, online or exam options, and so does a program's own total on top
   of its base (a Texas endorsement's 26 credits, §74.13(c)) that the years left can't hold,
-  "Needs a plan now" for a senior. Such a total also counts against the rule set when another
+  "Needs a plan now" for a senior. A senior's only room is this spring's open periods, so any
+  shortfall is a gap ("Needs a plan now: … Add 1 credit this spring (your open periods)"), and
+  counts against the rule sets that require that program until classes on the plan cover it. Such a total also counts against the rule set when another
   one requires it (the DLA's endorsement). A class taken before 9th grade without high school
   credit (Algebra I in 8th) is one "ask your counselor whether it counts" gap, not a class to add.
 - **Texas endorsement plans**: the goal's endorsement first (families.json, or the endorsement whose
@@ -193,7 +215,16 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
 - **Utah Secondary Math III opt-out**: nothing from that rung is suggested; needs that depend on
   it become "your family opted out" gaps that only the counselor can settle.
 - **A class on the same math rung** (Integrated Math I for a Texas "Algebra I" requirement) isn't
-  suggested again; the requirement reads "Ask your counselor".
+  suggested again; the requirement reads "Ask your counselor", never "Needs a plan now" for a
+  senior (nor does a class from before 9th grade without high school credit, or one the family
+  opted out of). No class is added for a requirement those classes may meet (Secondary Math III
+  for Texas's 3rd math credit), and one counselor question names each of the student's classes
+  and the line it may stand for.
+- **Typed names the guesser can't place** (a row that fell to its subject's "Other" class) are
+  taken as the class their place says they are, still flagged as guesses: an "Other English
+  class" in 9th-12th with no English level that year is that grade's English, and an "Other math
+  class" in a year without a math rung is the next rung (I-III, in its usual grade or a year
+  later). The row shows "We planned around this as …", and the guessed-kinds question asks.
 - **Generic lists** allow a class later than its usual grades (catching up), never earlier; the
   fill still prefers the usual grades. School lists' printed grades always win.
 - **Career pathway levels** (`cte.<cluster>.<level>`) are never suggested twice, and a requirement
@@ -203,7 +234,11 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   own classes are in (two levels, or one on the training path). Levels go in order: a student who
   reached a level (Accounting II is level 3 in business) is never sent back to a lower one, and
   typed names carry their level (TEA's programs of study: Welding I is level 2, Instructional
-  Practices level 3, Practicum in Health Science level 4).
+  Practices level 3, Practicum in Health Science level 4, Electrical Technology I level 2,
+  Automotive Technology I level 3; Tennessee's Medical Therapeutics level 2). Where names can't
+  tell levels apart (Tennessee's Engineering Design I and II are one lab-science substitute type),
+  classes count one level a year: no level at or below the number of years the student has had
+  classes in the cluster is planned, and they meet a later level's prerequisite.
 - **Waived credits that expand a focus** (Tennessee, `expands`) are counted in the focus's joined
   allocation, beyond the focus's own classes, and never planned: a shortfall is a gap whose only
   option is the counselor. With no focus chosen they read "Ask your counselor".

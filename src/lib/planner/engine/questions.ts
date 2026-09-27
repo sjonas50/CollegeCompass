@@ -4,6 +4,7 @@ import type { CounselorQuestion, Gap, RuleSetAudit } from "../engine-io";
 import type { Ctx } from "./context";
 import { reason } from "./explain";
 import type { FillResult } from "./fill";
+import { mathRankOf } from "./ladder";
 
 // ---------------------------------------------------------------------------
 // 3 to 8 questions for the counselor meeting (design §2.8), from what the plan can't settle:
@@ -142,6 +143,25 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
   }
   // Keyed by position, never by the list's id (it points to one school's guide).
   [...cycles.values()].forEach((titles, i) => add(`cycle:${i + 1}`, `The class list shows ${listWords(titles)} each needing the other first. Which comes first?`));
+  // Math from another sequence (Algebra I, Geometry and Algebra II for Utah's Secondary Math I-III,
+  // or the other way): one question, naming each of the student's classes and the class it may
+  // stand for here.
+  const pairs = new Map<number, { mine: string; here: string }>();
+  for (const n of [...fill.needs].sort((a, b) => a.priority - b.priority)) {
+    if (n.missing <= 0 || fill.unmet.get(n.id) !== "equivalent") continue;
+    const named = n.selectors.flatMap((sel) => sel.types ?? []);
+    for (const t of named) {
+      const rank = mathRankOf(t);
+      if (rank === null || rank < 1 || rank > 3 || pairs.has(rank)) continue;
+      const mine = ctx.items.find((i) => i.own && !i.noCredit && mathRankOf(i.typeId) === rank && !named.includes(i.typeId));
+      if (mine) pairs.set(rank, { mine: getCourseType(mine.typeId).title, here: lowerArticle(n.label) });
+    }
+  }
+  if (pairs.size) {
+    const sorted = [...pairs.entries()].sort((a, b) => a[0] - b[0]).map(([, p]) => p);
+    const here = sorted.map((p) => p.here).filter((h, i, all) => all.indexOf(h) === i);
+    add("equivalent-math", `Do my ${listWords(sorted.map((p) => p.mine))} count as ${listWords(here)} here?`);
+  }
   // Moves.
   const moved = Object.values(ctx.cohort.overrides).includes("transferred");
   if (moved) add("transfer", "I changed schools. Will the classes I finished count the same way here?");

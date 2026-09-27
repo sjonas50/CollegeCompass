@@ -420,9 +420,12 @@ describe("generic catalogs", () => {
     }
   });
 
-  it("offers Utah's new government class only from 2027-28", () => {
+  it("offers Utah's new government class only from 2027-28, and the retiring U.S. Government only through 2026-27", () => {
     expect(plannerContentFor("UT").genericCatalog.courses.find((c) => c.typeId === "ss.ut_acgc")?.firstSchoolYear).toBe(2027);
-    expect(plannerContentFor("UT").genericCatalog.courses.some((c) => c.typeId === "ss.us_gov")).toBe(false);
+    // Round 7: seniors of 2026-27 still take U.S. Government and Citizenship (UT-S4: retired in 2027-28).
+    const gov = plannerContentFor("UT").genericCatalog.courses.find((c) => c.typeId === "ss.us_gov");
+    expect(gov?.lastSchoolYear).toBe(2026);
+    expect(gov?.cite).toContain("ut-ssfaq-usgov-retired");
   });
 });
 

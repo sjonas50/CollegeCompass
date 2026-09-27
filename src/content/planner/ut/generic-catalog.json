@@ -127,6 +127,18 @@
       "quote": "A total of two courses from two of the five areas of science on the Foundational Courses list plus one credit from the Foundation Courses list or Applied and Advanced Courses list."
     },
     {
+      "id": "ut-ssfaq-usgov-retired",
+      "source": "UT-S4",
+      "pinpoint": "p. 1",
+      "quote": "The U.S. Government and Citizenship course will be retired in the 2027-2028 school year, and a new 1.0 American Constitutional Government and Citizenship course will take its place."
+    },
+    {
+      "id": "ut-usbe-2627-usgov",
+      "source": "UT-S3",
+      "pinpoint": "p. 5",
+      "quote": "Applies only to 11th & 12th grade cohorts of 2026-27."
+    },
+    {
       "id": "ut-usbe-2627-ss",
       "source": "UT-S3",
       "pinpoint": "p. 5",
@@ -227,6 +239,12 @@
     { "typeId": "ss.world_geo", "levels": ["regular", "ap"], "units": 2, "cite": ["ut-usbe-2627-ss"] },
     { "typeId": "ss.world_hist", "levels": ["regular", "ap"], "units": 2, "cite": ["ut-usbe-2627-ss"] },
     { "typeId": "ss.us_hist", "levels": ["regular", "ap", "dual_enrollment"], "cite": ["ut-usbe-2627-ss"] },
+    {
+      "typeId": "ss.us_gov",
+      "levels": ["regular", "ap"],
+      "lastSchoolYear": 2026,
+      "cite": ["ut-ssfaq-usgov-retired", "ut-usbe-2627-usgov"]
+    },
     {
       "typeId": "ss.ut_acgc",
       "levels": ["regular"],

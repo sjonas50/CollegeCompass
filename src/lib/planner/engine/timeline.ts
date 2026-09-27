@@ -1,11 +1,12 @@
 import type { SchoolGrade } from "../common";
 import { courseTypeTitle, LANGUAGE_NAMES, type LanguageCode } from "../course-types";
 import type { ByWhen, Deadline, PendingDecision } from "../engine-io";
+import { byWhenText } from "../view";
 import { confirmedEval } from "./audit";
 import type { Ctx } from "./context";
 import { reason } from "./explain";
 import { type FillResult, ownCtePathway } from "./fill";
-import { mathRankOf, rungName, type LadderSolution } from "./ladder";
+import { mathRankOf, rungName, solveLadder, type LadderSolution } from "./ladder";
 import { atLeast, byWhenOrder, nth } from "./util";
 
 // ---------------------------------------------------------------------------
@@ -139,16 +140,23 @@ function testDeadlines(ctx: Ctx, fill: FillResult): Deadline[] {
       const text = `${e.rc.rs.title}, test-score route: ${route.text}`;
       const deadlines = open.map((l) => (l.leaf.req.kind === "credits" ? l.leaf.req.deadlineGrade : undefined)).filter((g): g is SchoolGrade => g !== undefined);
       const when = deadlines.length ? ` by the end of ${nth(Math.min(...deadlines))} grade` : "";
-      const unreachable = (fill.ladder.solution?.unmet ?? []).some((c) => open.some((l) => c.id === `${e.rc.rs.id}/${l.leaf.id}`));
+      const ids = open.map((l) => `${e.rc.rs.id}/${l.leaf.id}`);
+      const unreachable = (fill.ladder.solution?.unmet ?? []).some((c) => ids.includes(c.id));
       // The student who opted in with a B or better has already said they want to move faster.
       const optedIn = ctx.limits.accelerateMath && lastMathBOrBetter(ctx);
+      // What reaching it would take: the ladder again with a summer class (where the state has
+      // one), a second math class in a year, or two college-credit classes in a year (design
+      // §5.8's options), named only when those moves actually get there.
+      const moves = unreachable ? movesToReach(ctx, fill, ids) : null;
+      const deadline = deadlines.length ? Math.min(...deadlines) : 12;
       const note =
         `Or show it with a class: ${listLabels(open.map((l) => l.leaf.label))}${when}.` +
-        (unreachable
-          ? optedIn
-            ? " From where you are, that would take a summer class or two math classes in one year. Ask your counselor what your school offers."
-            : " From where you are, that would take a summer class or two math classes in one year. Only if you want that and your last math grade is a B or better."
-          : "");
+        (!unreachable
+          ? ""
+          : moves
+            ? ` From where you are, that would take ${moves}.${optedIn ? " Ask your counselor what your school offers." : " Only if you want that and your last math grade is a B or better."}`
+            : // UT Austin's FAQ: a course graded after December 10 doesn't count (tx-ut-faq-december-10).
+              ` From where you are, the class can't be finished by the end of ${nth(deadline)} grade. A college class in the fall of 12th grade counts only if its final grade is on your transcript ${byWhenText(by)}; ask your counselor whether that could work for you.`);
       out.push({
         id: `test:${e.rc.rs.id}/${route.id}`,
         kind: "test",
@@ -161,6 +169,34 @@ function testDeadlines(ctx: Ctx, fill: FillResult): Deadline[] {
     }
   }
   return out;
+}
+
+/**
+ * The extra math moves that would meet these ladder targets, in words ("a summer class and two
+ * math classes in one year"), or null when even those can't reach them in time.
+ */
+function movesToReach(ctx: Ctx, fill: FillResult, ids: string[]): string | null {
+  const problem = fill.ladder.problem;
+  if (!problem) return null;
+  // A first-time summer class only where the state allows it for this student (Tennessee keeps it
+  // for accelerated students, Policy 2.103 I(20)).
+  const summerFact = ctx.facts.options.find((o) => o.kind === "summer");
+  const summer = ctx.limits.allowSummer && !!summerFact && (!summerFact.firstAttemptAccelerated || ctx.limits.accelerateMath);
+  const college = ctx.facts.options.find((o) => o.kind === "college_credit");
+  const collegeGrades = ctx.limits.allowCollegeCredit && college ? (college.grades ?? problem.grades).filter((g) => g >= 9) : undefined;
+  const constraints = problem.constraints.filter((c) => ids.includes(c.id));
+  const sol = solveLadder({ ...problem, constraints, moves: { double: true, summer, college: collegeGrades } });
+  if (sol.unmet.some((c) => ids.includes(c.id))) return null;
+  const summers = sol.steps.filter((s) => s.summer).length;
+  const years = (college: boolean) => new Set(sol.steps.filter((s) => !s.summer && !!s.college === college && sol.steps.filter((t) => !t.summer && t.grade === s.grade && !!t.college === college).length > 1).map((s) => s.grade)).size;
+  const doubled = years(false);
+  const collegeYears = years(true);
+  const parts = [
+    ...(summers ? [summers === 1 ? "a summer class" : `${summers} summer classes`] : []),
+    ...(doubled ? [`two math classes in ${doubled === 1 ? "one year" : `each of ${doubled} years`}`] : []),
+    ...(collegeYears ? ["two college-credit math classes in one year"] : []),
+  ];
+  return parts.length ? listLabels(parts) : null;
 }
 
 export function buildDecisions(ctx: Ctx, fill: FillResult): PendingDecision[] {

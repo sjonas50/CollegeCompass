@@ -296,6 +296,8 @@ export type CatalogCourse = {
   lectureOnly: boolean;
   delivery: "in_person" | "virtual" | "summer" | "interactive_video" | "unknown";
   firstSchoolYear: SchoolYear | null;
+  /** Last school year the class is taught (a retired class); absent or null when it isn't retiring. */
+  lastSchoolYear?: SchoolYear | null;
   /** Taught only every other year (Texas allows that for required classes). */
   everyOtherYear: boolean;
 };
@@ -523,7 +525,7 @@ export type PlanYear = {
   };
 };
 
-export type SlotWarning = { kind: "prereq_missing" | "not_offered" | "grade_not_allowed" | "load" | "conflict"; text: string };
+export type SlotWarning = { kind: "prereq_missing" | "not_offered" | "grade_not_allowed" | "load" | "conflict" | "guess"; text: string };
 
 export type PlanSlot =
   | {

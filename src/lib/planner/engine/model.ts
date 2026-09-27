@@ -41,6 +41,11 @@ export type Item = {
    * the student confirmed would do as well, that one counts first.
    */
   guess?: true;
+  /**
+   * A guess that fell to its subject's "Other" class, taken as the class its place in the plan
+   * says it is (engine/guesses.ts): still a guess, flagged like any other.
+   */
+  provisional?: true;
 };
 
 export function itemFromFact(fact: CourseFact): Item {

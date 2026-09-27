@@ -21,6 +21,7 @@ import type { Citation, ContentHeader, Gate, RuleFile, RuleSet, Source, SourceKe
 import type { Allocation } from "./allocate";
 import { type CatalogRow, genericCatalogView, genericTitleFor, resolveCatalog, type ResolvedCatalog } from "./catalog";
 import { type Alternative, compileVariant } from "./compile";
+import { placeGuesses } from "./guesses";
 import { itemFromFact, type Item } from "./model";
 import { gradeRange } from "./util";
 
@@ -320,7 +321,8 @@ export function buildContext(input: PlannerInput & { state: PlannerState; conten
   const raise = programRaise(input, ruleSets);
   const files: ContentHeader[] = [...content.rules, content.genericCatalog, content.facts, ...(content.families ? [content.families] : [])];
   const fingerprints = new Map<string, string>(files.map((f) => [f.id, cachedFingerprint(f)]));
-  const items = input.courses.map(itemFromFact);
+  // Typed classes the name didn't place are taken as the class their place says they are (still guesses).
+  const items = placeGuesses(state, input.courses.map(itemFromFact));
 
   return {
     input,
@@ -437,6 +439,7 @@ export function leafPriority(rc: RuleSetCtx, strength: Strength): DemandPriority
 export function rowIsOffered(row: CatalogRow, grade: SchoolGrade, schoolYear: number): boolean {
   if (!row.gradesAllowed.includes(grade)) return false;
   if (row.firstSchoolYear !== null && schoolYear < row.firstSchoolYear) return false;
+  if (row.lastSchoolYear != null && schoolYear > row.lastSchoolYear) return false;
   return true;
 }
 

@@ -55,6 +55,9 @@ the folder, the manifest and the loader agree).
   of the following programs of study", so it's an `any` of one 3-credit leaf per career cluster,
   never a flat list across clusters. A program that counts only under a condition gets a
   `counts_unless` check (engineering and IT under Business and Industry, §74.13(f)(7)(B)).
+- **Classes that start or retire.** A generic-list class first taught in a school year gets
+  `firstSchoolYear`, one retired after a year `lastSchoolYear` (Utah: ACGC from 2027-28; U.S.
+  Government and Citizenship through 2026-27, for the seniors still on it).
 - **What only counts once done.** A leaf that finishes a requirement only when already passed
   (Utah: calculus with a C finishes math) is `onlyWhenDone`: the planner never plans toward it or
   shows it as the requirement until it's finished.

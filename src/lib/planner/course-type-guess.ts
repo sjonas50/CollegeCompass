@@ -51,8 +51,11 @@ type Pattern = { type: CourseTypeId; re: RegExp; states?: readonly PlannerState[
  * subject (or lists it in `altSubjects`), so "Chemistry" filed under CTE falls back to cte.other.
  */
 const PATTERNS: Pattern[] = [
-  // English
-  { type: "ela.lang_comp", re: /\bap\b.*\blang(uage)?\b|\b(english\s*1010|engl\s*1301|college (composition|writing))\b/i },
+  // English. A level can carry an honors or extended letter ("English 10H", "Eng 12").
+  // College writing classes (Utah CE ENGL 1010 and 2010, Texas ENGL 1301 and 1302) are college
+  // composition: Utah's level 12 list names "English Concurrent Enrollment" (UT-S3 p. 2), and Utah's
+  // writing courses are ENGL 1010, 2010 or 2015 (research-utah.md, general education).
+  { type: "ela.lang_comp", re: /\bap\b.*\blang(uage)?\b|\b(engl(ish)?\s*(1010|2010|2015|1301|1302)|college (composition|writing))\b|\b(ce|concurrent enrollment|dual (credit|enrollment))\s+engl(ish)?\b(?!\s*(i{1,3}|iv|9|10|11|12)\b)/i },
   { type: "ela.lit_comp", re: /\bap\b.*\blit(erature)?\b/i },
   { type: "ela.research", re: /\b(ap\s*research|research (and|&) technical writing|technical writing)\b/i },
   { type: "ela.seminar", re: /\bap\s*seminar\b/i },
@@ -64,36 +67,45 @@ const PATTERNS: Pattern[] = [
   { type: "ela.professional_comm", re: /\b(business|professional|technical) (english|communications?|writing)\b/i },
   { type: "ela.humanities", re: /\b(humanities|mythology|literary genres|world literature|shakespeare)\b/i },
   { type: "ela.college_prep", re: /\bcollege prep(aratory)? english\b/i },
-  { type: "ela.ms", re: /\b(english|ela|language arts)\s*(7|8)\b|\b(7th|8th)\s*grade (english|ela|language arts)\b/i },
-  { type: "ela.9", re: /\b(english|ela|language arts)\s*(i|1|9)\b|\b(9th|ninth)\s*grade (english|ela)\b/i },
-  { type: "ela.10", re: /\b(english|ela|language arts)\s*(ii|2|10)\b|\b(10th|tenth)\s*grade (english|ela)\b/i },
-  { type: "ela.11", re: /\b(english|ela|language arts)\s*(iii|3|11)\b|\b(11th|eleventh)\s*grade (english|ela)\b/i },
-  { type: "ela.12", re: /\b(english|ela|language arts)\s*(iv|4|12)\b|\b(12th|twelfth)\s*grade (english|ela)\b/i },
+  { type: "ela.ms", re: /\b(english|eng\.?|ela|language arts)\s*(7|8)\b|\b(7th|8th)\s*grade (english|ela|language arts)\b/i },
+  { type: "ela.9", re: /\b(english|eng\.?|ela|language arts)\s*(i|1|9)(h|e)?\b|\b(9th|ninth)\s*grade (english|ela)\b|\bfreshman english\b/i },
+  { type: "ela.10", re: /\b(english|eng\.?|ela|language arts)\s*(ii|2|10)(h|e)?\b|\b(10th|tenth)\s*grade (english|ela)\b|\bsophomore english\b/i },
+  // American literature is the usual 11th-grade English class, British literature the 12th-grade one.
+  { type: "ela.11", re: /\b(english|eng\.?|ela|language arts)\s*(iii|3|11)(h|e)?\b|\b(11th|eleventh)\s*grade (english|ela)\b|\bjunior english\b|\bamerican lit(erature)?\b/i },
+  { type: "ela.12", re: /\b(english|eng\.?|ela|language arts)\s*(iv|4|12)(h|e)?\b|\b(12th|twelfth)\s*grade (english|ela)\b|\bsenior english\b|\bbritish lit(erature)?\b/i },
 
-  // Math (order matters: pre-algebra before algebra, precalculus before calculus)
+  // Math (order matters: pre-algebra before algebra, precalculus before calculus). A level can
+  // carry an honors or extended letter: Utah's "Secondary Math IE", "IIE" and "IIIE" (the extended
+  // courses R277-700-6(6) counts: "the foundation or foundation extended courses"), "Sec Math 1H".
   { type: "math.ms", re: /\b(pre-?\s?algebra|math\s*(6|7|8)|(7th|8th)\s*grade math)\b/i },
   { type: "math.alg_reasoning", re: /\balgebraic reasoning\b/i },
   { type: "math.college_alg", re: /\b(college algebra|math\s*1050|math\s*1314)\b/i },
-  { type: "math.precalc", re: /\bpre-?\s?calc(ulus)?\b/i },
+  { type: "math.precalc", re: /\bpre-?\s?cal(c(ulus)?)?\b/i },
   { type: "math.calc2", re: /\b(multivariable|calc(ulus)?\s*(ii|2|iii|3)|linear algebra|differential equations)\b/i },
   { type: "math.calc", re: /\bcalc(ulus)?\b/i },
   { type: "math.trig", re: /\b(trig(onometry)?|math\s*1060)\b/i },
-  { type: "math.ut_sec1", re: /\bsec(ondary)?\.?\s*math(ematics)?\s*(i|1)\b/i },
-  { type: "math.ut_sec2", re: /\bsec(ondary)?\.?\s*math(ematics)?\s*(ii|2)\b/i },
-  { type: "math.ut_sec3", re: /\bsec(ondary)?\.?\s*math(ematics)?\s*(iii|3)\b/i },
-  { type: "math.int1", re: /\bintegrated\s*math(ematics)?\s*(i|1)\b/i },
-  { type: "math.int2", re: /\bintegrated\s*math(ematics)?\s*(ii|2)\b/i },
-  { type: "math.int3", re: /\bintegrated\s*math(ematics)?\s*(iii|3)\b/i },
+  { type: "math.ut_sec1", re: /\bsec(ondary)?\.?\s*math(ematics)?\s*(i|1)(h|e)?\b/i },
+  { type: "math.ut_sec2", re: /\bsec(ondary)?\.?\s*math(ematics)?\s*(ii|2)(h|e)?\b/i },
+  { type: "math.ut_sec3", re: /\bsec(ondary)?\.?\s*math(ematics)?\s*(iii|3)(h|e)?\b/i },
+  { type: "math.int1", re: /\bintegrated\s*math(ematics)?\s*(i|1)(h|e)?\b/i },
+  { type: "math.int2", re: /\bintegrated\s*math(ematics)?\s*(ii|2)(h|e)?\b/i },
+  { type: "math.int3", re: /\bintegrated\s*math(ematics)?\s*(iii|3)(h|e)?\b/i },
   // "Math 1/2/3" alone is Utah's Secondary Math there, and integrated math elsewhere.
-  { type: "math.ut_sec1", re: /\bmath(ematics)?\s*(i|1)\b/i, states: ["UT"] },
-  { type: "math.ut_sec2", re: /\bmath(ematics)?\s*(ii|2)\b/i, states: ["UT"] },
-  { type: "math.ut_sec3", re: /\bmath(ematics)?\s*(iii|3)\b/i, states: ["UT"] },
-  { type: "math.int1", re: /\bmath(ematics)?\s*(i|1)\b/i },
-  { type: "math.int2", re: /\bmath(ematics)?\s*(ii|2)\b/i },
-  { type: "math.int3", re: /\bmath(ematics)?\s*(iii|3)\b/i },
-  { type: "math.alg2", re: /\balgebra\s*(ii|2)\b/i },
-  { type: "math.alg1", re: /\balgebra(\s*(i|1))?\b/i },
-  { type: "math.geom", re: /\bgeometry\b/i },
+  { type: "math.ut_sec1", re: /\bmath(ematics)?\s*(i|1)(h|e)?\b/i, states: ["UT"] },
+  { type: "math.ut_sec2", re: /\bmath(ematics)?\s*(ii|2)(h|e)?\b/i, states: ["UT"] },
+  { type: "math.ut_sec3", re: /\bmath(ematics)?\s*(iii|3)(h|e)?\b/i, states: ["UT"] },
+  { type: "math.int1", re: /\bmath(ematics)?\s*(i|1)(h|e)?\b/i },
+  { type: "math.int2", re: /\bmath(ematics)?\s*(ii|2)(h|e)?\b/i },
+  { type: "math.int3", re: /\bmath(ematics)?\s*(iii|3)(h|e)?\b/i },
+  { type: "math.alg2", re: /\balg(ebra)?\.?\s*(ii|2)(h|e)?\b/i },
+  { type: "math.alg1", re: /\balg(ebra)?\.?(\s*(i|1)(h|e)?)?\b/i },
+  { type: "math.geom", re: /\bgeom(etry)?\b/i },
+  // Tennessee's senior-year applied math classes by their older names (Bridge Math, the SAILS
+  // math class, Applied Mathematical Concepts): the state's approved list now has Mathematical
+  // Reasoning for Decision Making as its applied 4th-year class (Policy 3.205, "8.14 Mathematical
+  // Reasoning for Decision Making", TN-S6B), and the 4th math is "another mathematics course beyond
+  // Algebra I" (Policy 2.103 I(10)). A guess the student confirms.
+  { type: "math.applied.decision", re: /\b(bridge math(ematics)?|sails|applied mathematical concepts)\b/i, states: ["TN"] },
   { type: "math.applied.models", re: /\b(math(ematical)? models|mma)\b/i },
   { type: "math.applied.finance", re: /\b(financial math(ematics)?|math(ematics)? of personal finance)\b/i },
   { type: "math.applied.business", re: /\b(business|small business) math\b/i },
@@ -135,7 +147,7 @@ const PATTERNS: Pattern[] = [
   // Utah's World Geography classes include Geography for Life and World/Cultural Geography CE [UT S3].
   { type: "ss.world_geo", re: /\b((world|human|cultural)\s*geo(graphy)?|geography for life)\b/i },
   { type: "ss.world_hist", re: /\b(world|european|ancient)\s*(hist(ory)?|civ(ilizations?)?)\b/i },
-  { type: "ss.us_gov", re: /\b(government|civics|gov)\b/i },
+  { type: "ss.us_gov", re: /\b(government|civics|govt?|gov't)\b/i },
   { type: "ss.econ", re: /\b(economics|econ|microeconomics|macroeconomics)\b/i },
   { type: "ss.psych", re: /\bpsych(ology)?\b/i },
   { type: "ss.soc", re: /\bsociology\b/i },
@@ -201,6 +213,38 @@ const PATTERNS: Pattern[] = [
   { type: "cte.manufacturing.4", re: /\bpracticum in manufacturing\b/i },
   { type: "cte.manufacturing.3", re: /\bwelding\s*(ii|2)\b/i },
   { type: "cte.manufacturing.2", re: /\bwelding\s*(i|1)\b/i },
+  // - Engineering Foundations (MP-TEA-POS-ENG-ENGINEERING-FOUNDATIONS): "Level 1 • Principles of
+  //   Applied Engineering", "Level 3 • Engineering Design and Presentation", "Level 4 • Advanced
+  //   Engineering Design and Presentation • Engineering Design and Problem Solving". The earlier
+  //   two-year names put Engineering Design and Presentation I between them (level 2) and II at
+  //   level 3.
+  // - Electrical (MP-TEA-POS-AC-ELECTRICAL): "Level 1 • Principles of Architecture • Principles of
+  //   Construction", "Level 2 • Electrical Technology I", "Level 3 • Electrical Technology II",
+  //   "Level 4 • ... Practicum in Construction Technology". Construction Technology I and II sit at
+  //   the same levels in the carpentry program.
+  // - Automotive (MP-TEA-POS-TDL-AUTOMOTIVE-AND-COLLISION-REPAIR): "Level 2• ... Automotive
+  //   Basics", "Level 3• ... Automotive Technology I: Maintenance and Light Repair", "Level 4•
+  //   Automotive Technology II: Automotive Service".
+  { type: "cte.engineering.4", re: /\b(advanced engineering design and presentation|engineering design and problem solving)\b/i },
+  { type: "cte.engineering.3", re: /\bengineering design and presentation\s*(ii|2)\b/i },
+  { type: "cte.engineering.2", re: /\bengineering design and presentation\s*(i|1)\b/i },
+  { type: "cte.engineering.3", re: /\bengineering design and presentation\b/i },
+  { type: "cte.architecture_construction.4", re: /\bpracticum in construction technology\b/i },
+  { type: "cte.architecture_construction.3", re: /\b(electrical|construction) technology\s*(ii|2)\b/i },
+  { type: "cte.architecture_construction.2", re: /\b(electrical|construction) technology(\s*(i|1))?\b/i },
+  { type: "cte.transportation.4", re: /\bautomotive technology\s*(ii|2)\b/i },
+  { type: "cte.transportation.3", re: /\bautomotive technology(\s*(i|1))?\b/i },
+  { type: "cte.transportation.2", re: /\bautomotive basics\b/i },
+  // Tennessee (course names from Policy 3.205, TN-S6B): Therapeutic Services runs Health Science
+  // Education, Medical Therapeutics, Anatomy and Physiology, then Nursing Education, which Policy
+  // 3.103 lists with the work-based learning courses (TN-S3 p. 6); Marketing runs Introduction to
+  // Business & Marketing, then Marketing & Management I: Principles and II. Engineering Design I
+  // and II stay one named type (they're 3rd lab science substitutes, TN-S3 p. 6): their order comes
+  // from the grades they're in (engine/context.ts).
+  { type: "cte.health.4", re: /\bnursing education\b/i },
+  { type: "cte.health.2", re: /\bmedical therapeutics\b/i },
+  { type: "cte.business.3", re: /\bmarketing (and|&) management\s*(ii|2)\b/i },
+  { type: "cte.business.2", re: /\bmarketing (and|&) management(\s*(i|1))?\b/i },
   // A second-year class is its own type (Texas counts only Accounting II and Robotics II as math).
   { type: "cte.accounting2", re: /\baccounting\s*(ii|2)\b/i },
   { type: "cte.accounting", re: /\baccounting\b/i },

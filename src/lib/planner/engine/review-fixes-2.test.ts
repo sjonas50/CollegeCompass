@@ -442,7 +442,9 @@ describe("UT Austin's calculus by 11th for a student who opted in with a B (math
   it("X11: the class-route note doesn't ask an opted-in student whether they want it", () => {
     const path = real(X11, SOFTWARE);
     const test = path.deadlines.find((d) => d.kind === "test")!;
-    expect(test.note).toMatch(/would take a summer class or two math classes in one year/);
+    // Round 7: Texas lists no summer option and the generic list no college precalculus, so no
+    // moves reach calculus by the end of 11th grade; the note says so instead of naming moves.
+    expect(test.note).toMatch(/the class can't be finished by the end of 11th grade/);
     expect(test.note).not.toMatch(/Only if you want that/);
   });
 
@@ -451,6 +453,8 @@ describe("UT Austin's calculus by 11th for a student who opted in with a B (math
     const path = real({ ...X11, catalogs: { 9: list, 10: list, 11: list, 12: list } }, SOFTWARE);
     expect(path.planChoice?.kind).toBe("math_route");
     expect(path.plans[1]!.label).toBe("Plan B: calculus by the end of 11th grade, adds two college-credit math classes in one year.");
+    // Plan A's class-route note names the moves that reach it.
+    expect(path.deadlines.find((d) => d.kind === "test")!.note).toMatch(/that would take two college-credit math classes in one year\. Ask your counselor what your school offers\.$/);
     const eleventh = suggestions(path, "B").filter((s) => s.grade === 11 && s.typeId.startsWith("math."));
     expect(eleventh.map((s) => [s.typeId, s.level, s.term])).toEqual([
       ["math.precalc", "dual_enrollment", "fall"],

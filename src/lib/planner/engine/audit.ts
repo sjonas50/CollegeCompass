@@ -513,10 +513,15 @@ function sameRef(a: Item["ref"], b: Item["ref"]): boolean {
  */
 export function requirementAudit(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, conflicts: AdmissionConflict[], needsPlanNowKeys: Set<string>, guessOnly = false): RequirementAudit {
   const priority = leafPriority(rc, r.leaf.strength);
+  // A class the student took that may count here (another state's math on the same rung, a class
+  // from before 9th grade without high school credit) is a question for the counselor, not a
+  // credit to plan now.
+  const req = r.leaf.req;
+  const counselorCall = req.kind === "credits" && (equivalentMath(ctx, req.select) || earlyWithoutCredit(ctx.items, req.select) !== null);
   const npn =
     ctx.inProgressGrade === 12 &&
     priority === 0 &&
-    ((r.missing > 0 && !guessOnly) || r.counted.some((c) => c.item.ref.kind === "suggestion" && needsPlanNowKeys.has(c.item.ref.key)));
+    ((r.missing > 0 && !guessOnly && !counselorCall) || r.counted.some((c) => c.item.ref.kind === "suggestion" && needsPlanNowKeys.has(c.item.ref.key)));
   const { status, modifiers } = leafStatus(ctx, rc, r, npn);
   return {
     reqId: r.leaf.id,
