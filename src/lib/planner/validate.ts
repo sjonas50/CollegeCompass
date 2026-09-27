@@ -138,6 +138,7 @@ function citedIds(ruleSet: RuleSet): string[] {
     for (const r of walkReqs(v.requirements)) {
       ids.push(...(r.cite ?? []));
       if (r.strengthCite) ids.push(r.strengthCite);
+      if (r.kind === "credits" && r.ask) ids.push(...r.ask.cite);
     }
     for (const c of v.checks ?? []) ids.push(...c.cite);
     for (const c of v.conditions ?? []) ids.push(...c.cite);

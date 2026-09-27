@@ -30,10 +30,10 @@ import { admissionConflicts, expandedResults, ruleSetAudit, waiverNotes, worst }
 import { type Alternative, type CLeaf, leafSignature } from "./compile";
 import { aimsAt, buildContext, type Ctx, type FamilyCtx, leafPriority, rowIsOffered, type RuleSetCtx, schoolYearOfGrade } from "./context";
 import { algebra2Reason, leafNoteReason, loadReason, prepReason, reason, requirementReason, resolveCitations, retakeReason, seniorMathReason } from "./explain";
-import { type FillResult, isRepeatable, pastIntro, type PlanConfig, prereqsMetIn, runFill, sameContent } from "./fill";
-import { addedCreditTotal, buildGaps, freeUnits } from "./gaps";
+import { belowPrecalculus, type FillResult, isRepeatable, pastIntro, type PlanConfig, prereqsMetIn, runFill, sameContent } from "./fill";
+import { addedCreditTotal, buildGaps, creditRoom } from "./gaps";
 import { mathRankOf, rungName, rungTypes, startRank, unresolvedFailedRank } from "./ladder";
-import { asConfirmed, type Item } from "./model";
+import { asPlanned, type Item } from "./model";
 import { type Need, needUnits } from "./needs";
 import { counselorQuestions } from "./questions";
 import { matchesAny } from "./select";
@@ -389,7 +389,7 @@ type Routes = {
 };
 
 function confirmedRoutes(fill: FillResult): Routes {
-  const items = asConfirmed(fill.items);
+  const items = asPlanned(fill.items);
   const routes = new Map<string, AltResult>();
   for (const e of fill.evals) if (e.best) routes.set(e.rc.rs.id, evaluateAlternative(e.best.alt, items, e.rc.allocation));
   return { items, routes, needed: new Map(), all: new Map() };
@@ -717,6 +717,9 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
       // The highest math rung reached before this year (passed or planned): never offer one at or
       // below it (Secondary Math I after Secondary Math III).
       const reached = startRank(others, grade);
+      // Applied, algebraic-reasoning, college-readiness and quantitative reasoning math is never an
+      // Other choice for a student who has reached precalculus (as for suggestions: fill.ts candidates).
+      const pastPrecalculus = startRank(others, 13) >= 4;
       const altSelectors = routeSelectors(primary);
       const required = requiredChecks(ctx, fill, routes, p.item);
       const retake = ctx.items.some((i) => i.own && i.noCredit && i.typeId === p.item.typeId);
@@ -736,6 +739,7 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
         if (retake && isCollegeLevel(row.level)) continue;
         if (!isRepeatable(row.typeId) && fill.items.some((i) => sameContent(i.typeId, row.typeId) && !i.noCredit && i.key !== p.item.key)) continue;
         if (pastIntro(others, row.typeId, grade)) continue;
+        if (pastPrecalculus && belowPrecalculus(row.typeId)) continue;
         const rank = mathRankOf(row.typeId);
         if (rank !== null && rank >= 1 && rank <= reached) continue;
         // Never a switch of math sequence mid-way (Integrated Math III after Algebra I and Geometry).
@@ -757,6 +761,8 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
     }
     const reasons = slotReasons(ctx, fill, routes, p.item, p.extraReasons, primary, p.priority);
     if (p.needsPlanNow) reasons.push(reason("gap", "A required credit you still need this year. Talk to your counselor soon.", { ruleSetId: primary?.rc?.rs.id ?? null }));
+    // This school year has started: a full-year class may no longer fit (a semester one goes in spring).
+    if (y.inProgress && p.item.term === "full_year") reasons.push(reason("gap", "This school year has already started, so ask your counselor whether you can still add this full-year class.", { ruleSetId: primary?.rc?.rs.id ?? null }));
     slots.push({
       kind: "suggested",
       key: p.key,
@@ -813,7 +819,11 @@ function middleSchool(ctx: Ctx, fill: FillResult): MiddleSchoolView {
   const wanted = new Set<string>();
   for (const f of ctx.families) {
     for (const t of f.content?.keyCourses ?? []) wanted.add(t);
-    for (const p of f.content?.ctePathways ?? []) if (p.state === ctx.state) wanted.add(`cte.${p.cluster}.1`);
+    // The goal's career cluster in this state, or where the state has no pathway listed for the goal
+    // (Tennessee), the cluster other states list for it: an exploration class, not a requirement.
+    const pathways = f.content?.ctePathways ?? [];
+    const here = pathways.filter((p) => p.state === ctx.state);
+    for (const p of here.length ? here : pathways) wanted.add(`cte.${p.cluster}.1`);
   }
   const grades = ctx.planGrades.filter((g) => g <= 9);
   const rows = grades.flatMap((g) => ctx.catalogs.get(g)?.rows.filter((r) => rowIsOffered(r, g, schoolYearOfGrade(ctx, g))) ?? []);
@@ -898,7 +908,7 @@ function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
   const waivers = waiverNotes(fill.evals);
   const npn = new Set(fill.placements.filter((p) => p.needsPlanNow).map((p) => p.key));
   const expanded = expandedResults(fill.evals, fill.items);
-  const free = freeUnits(fill);
+  const room = creditRoom(ctx, fill);
   const first = new Map(
     fill.evals.map((e) => {
       const a = ruleSetAudit(ctx, e, fill.items, conflicts, npn, () => null, expanded);
@@ -907,14 +917,13 @@ function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
         return leaf && leaf.req.kind !== "total_credits" && leaf.req.kind !== "remaining_electives";
       });
       // Credit totals and electives are met by any class ("Your choice" slots), so they count
-      // against a rule set here only when the years left can't hold them: an endorsement's 26
-      // credits (§74.13(c)) out of a senior's reach leaves the DLA without an endorsement. A
-      // senior's shortfall counts until classes on the plan cover it: this year's open periods
-      // hold nothing yet.
+      // against a rule set here only when the years after this one can't hold them: an
+      // endorsement's 26 credits (§74.13(c)) out of a senior's reach leaves the DLA without an
+      // endorsement. A shortfall this spring's open periods would have to hold counts until classes
+      // on the plan cover it: nothing is planned there yet.
       const totals = (e.best?.leaves ?? []).filter((l) => l.leaf.own && l.leaf.req.kind === "total_credits").map((l) => l.missing);
       const added = addedCreditTotal(e, fill.items);
-      const limit = ctx.inProgressGrade === 12 ? 0 : free;
-      const short = [...totals, added?.missing ?? 0].some((m) => m > limit);
+      const short = [...totals, added?.missing ?? 0].some((m) => m > room);
       return [e.rc.rs.id, worst([...courses.map((r) => r.status), ...(short ? (["room_to_add"] as const) : [])])] as const;
     }),
   );

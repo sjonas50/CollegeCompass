@@ -203,6 +203,13 @@ export type CreditsReq = Leaf & {
    * the route to plan).
    */
   onlyWhenDone?: true;
+  /**
+   * A counselor question for a class the student has that matches `select` but that this
+   * requirement doesn't count as the source states it (Utah: ENGL 1010 counts for level 11 before
+   * 2026-27 "or [for students] participating in an approved ENGL 1010 pilot"): asked whenever such
+   * a class is on the student's record, since only the counselor knows the exception.
+   */
+  ask?: { select: Selector[]; question: string; cite: CitationId[] };
 };
 
 /** At least `n` matching courses, whatever their credit (UT Opportunity: one AP/IB/CE math). */

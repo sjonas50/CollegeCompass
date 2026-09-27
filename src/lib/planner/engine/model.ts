@@ -122,6 +122,17 @@ export function asConfirmed(items: readonly Item[]): Item[] {
   return items.map((i) => (i.own && i.assumed ? { ...i, assumed: false, guess: true } : i));
 }
 
+/**
+ * The student's classes exactly as a student who confirmed every guessed kind would have them:
+ * what the fill plans against, so a typed class and the same class with its kind picked get the
+ * same plan (the same route through each rule set, the same classes added, the same reasons).
+ * Unlike `asConfirmed`, a guess here doesn't give way to a confirmed class: that preference is
+ * only for the audit, which asks to confirm a kind when it matters.
+ */
+export function asPlanned(items: readonly Item[]): Item[] {
+  return items.map((i) => (i.own && i.assumed ? { ...i, assumed: false } : i));
+}
+
 /** A class taken (or planned) that can still be built on: not failed or withdrawn. */
 export function countsForSequence(item: Item): boolean {
   return !item.noCredit;

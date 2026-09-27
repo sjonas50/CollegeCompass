@@ -7,9 +7,9 @@ import { earlyWithoutCredit, expandedResults, type RuleSetEval } from "./audit";
 import type { CLeaf } from "./compile";
 import { type Ctx, leafPriority, rowIsOffered, schoolYearOfGrade } from "./context";
 import { algebra2Reason, reason, requirementReason } from "./explain";
-import { type BlockReason, failedAttempt, type FillResult, isRepeatable, lateEnglish, pastIntro, prereqsMetIn, probe, sameContent } from "./fill";
+import { type BlockReason, failedAttempt, type FillResult, isRepeatable, lateEnglish, pastCteLevel, pastIntro, prereqsMetIn, probe, sameContent } from "./fill";
 import { type LadderMoves, type LadderSolution, mathRankOf, rungName, rungTypes, solveLadder, startRank } from "./ladder";
-import { countsForSequence, type Item } from "./model";
+import { countsForSequence, type Item, slotHalves } from "./model";
 import { isLadderish, type Need } from "./needs";
 import { matchesAny } from "./select";
 import { atLeast, creditNoun, nth } from "./util";
@@ -74,7 +74,7 @@ function typeForNeed(ctx: Ctx, fill: FillResult, need: Need): CourseTypeId | nul
       if (!rowIsOffered(r, grade, sy) || (retake && r.collegeLevel) || lateEnglish(fill.items, r.typeId, grade)) continue;
       if (!matchesAny(probe(r, grade, sy), need.selectors)) continue;
       if (!isRepeatable(r.typeId) && items.some((i) => sameContent(i.typeId, r.typeId))) continue;
-      if (pastIntro(items, r.typeId, grade)) continue;
+      if (pastIntro(items, r.typeId, grade) || pastCteLevel(fill.items, r.typeId)) continue;
       const rank = mathRankOf(r.typeId);
       if (rank !== null && rank >= 1 && rank <= reached) continue;
       // Never a class the family opted out of in writing (Utah Secondary Math III).
@@ -252,12 +252,30 @@ function byWhenFor(ctx: Ctx, grade: number): ByWhen | null {
 /**
  * A planned class in a year the need can use whose place another class could take and meet the
  * need, keeping what the planned class was there for (Utah's senior-year math): "Precalculus in
- * place of Statistics in 12th grade would meet this." Only in place of a suggestion placed for
- * something that isn't ranked above the need, or that the other class also meets. Null when none.
+ * place of Statistics in 12th grade would meet this." The swap is checked on the plan itself: with
+ * it applied, every rule set on its audit route (and the checks and major-prep targets) must miss
+ * less of this need, and nothing ranked with or above it, and no required (P0-P1) need, may miss
+ * more. So Statistics in place of a Texas student's only Algebra II (still three math credits, and
+ * the DLA's Algebra II gone), Personal Financial Literacy and Economics in place of Economics (both
+ * half a credit), or a class the family opted out of in writing, is never named. Null when none.
  */
 function swapHint(ctx: Ctx, fill: FillResult, need: Need): string | null {
   const from = Math.max(need.fromGrade, 9);
   const order = [...fill.placements].filter((p) => p.item.grade >= from && p.item.grade <= need.byGrade && p.kind !== "english" && p.item.term !== "summer").sort((a, b) => b.priority - a.priority || b.item.grade - a.item.grade || b.n - a.n);
+  if (order.length === 0) return null;
+  const before = fill.missingWith();
+  const missingBefore = before.get(need.id)?.missing ?? need.missing;
+  // Required credits are never traded away, nor anything ranked with or above this need.
+  const guard = Math.max(need.priority, 1);
+  const works = (p: (typeof order)[number], trial: Item): boolean => {
+    const after = fill.missingWith({ out: p.item, in: trial });
+    if ((after.get(need.id)?.missing ?? 0) >= missingBefore) return false;
+    for (const [id, a] of after) {
+      const b = before.get(id);
+      if (a.missing > (b?.missing ?? 0) && Math.min(a.priority, b?.priority ?? 3) <= guard) return false;
+    }
+    return true;
+  };
   for (const p of order) {
     const grade = p.item.grade;
     const sy = schoolYearOfGrade(ctx, grade);
@@ -265,17 +283,26 @@ function swapHint(ctx: Ctx, fill: FillResult, need: Need): string | null {
     const reached = startRank(others, grade);
     const rows = (ctx.catalogs.get(grade)?.rows ?? [])
       .filter((r) => r.subject === p.item.subject && r.typeId !== p.item.typeId && r.defaultTerm !== "summer" && rowIsOffered(r, grade, sy))
+      // The same slot: a full-year class doesn't take a semester's place.
+      .filter((r) => slotHalves(r.defaultTerm, r.units) <= slotHalves(p.item.term, p.item.units))
       .filter((r) => {
         const it = probe(r, grade, sy);
         if (!matchesAny(it, need.selectors)) return false;
         if (p.primary && p.priority <= need.priority && !matchesAny(it, p.primary.selectors)) return false;
         if (!isRepeatable(r.typeId) && others.some((i) => sameContent(i.typeId, r.typeId))) return false;
+        // Never a class the family opted out of in writing (Utah Secondary Math III), nor a second
+        // art or PE class of the same kind in a year.
         const rank = mathRankOf(r.typeId);
+        if (ctx.choices.utMath3OptOut && rank === 3) return false;
+        if (isRepeatable(r.typeId) && others.filter((i) => !i.own && i.grade === grade && i.typeId === r.typeId).length >= (r.units >= 4 ? 1 : 2)) return false;
         if (rank !== null && rank >= 1 && rank <= reached) return false;
         return prereqsMetIn(others, r, grade, () => null, true);
       })
       .sort((a, b) => (mathRankOf(a.typeId) ?? 9) - (mathRankOf(b.typeId) ?? 9) || Number(a.collegeLevel) - Number(b.collegeLevel) || a.order - b.order);
-    if (rows[0]) return `${courseTypeTitle(rows[0].typeId, ctx.state)} in place of ${courseTypeTitle(p.item.typeId, ctx.state)} in ${nth(grade)} grade would meet this.`;
+    for (const r of rows) {
+      const trial: Item = { ...probe(r, grade, sy, p.item.term), key: p.item.key, ref: p.item.ref };
+      if (works(p, trial)) return `${courseTypeTitle(r.typeId, ctx.state)} in place of ${courseTypeTitle(p.item.typeId, ctx.state)} in ${nth(grade)} grade would meet this.`;
+    }
   }
   return null;
 }
@@ -318,6 +345,27 @@ function gapText(ctx: Ctx, need: Need, kind: Gap["kind"], block: BlockReason | n
  */
 export function freeUnits(fill: FillResult, wholeYear = false): number {
   return [...fill.years.values()].reduce((n, y) => n + Math.max(0, y.capHalves - y.used) * (y.inProgress && !wholeYear ? 1 : 2), 0);
+}
+
+/**
+ * Room in the years after the one in progress, in units: what the plan can hold without adding
+ * classes this year (none for a senior).
+ */
+export function laterFreeUnits(fill: FillResult): number {
+  return [...fill.years.values()].reduce((n, y) => n + (y.inProgress ? 0 : Math.max(0, y.capHalves - y.used) * 2), 0);
+}
+
+/**
+ * The room a credit total can count on without a gap. A shortfall the years after this one can't
+ * hold needs this spring's open periods, and nothing is planned there yet: a gap for any grade (a
+ * junior with 2 open periods in 12th and half a credit more to go, H21). Only when the year in
+ * progress has two or more open periods, and the student isn't a senior, does its spring still
+ * count: this year's classes may not all be recorded yet (a 9th grader who has entered four).
+ */
+export function creditRoom(ctx: Ctx, fill: FillResult): number {
+  const now = ctx.inProgressGrade === null ? undefined : fill.years.get(ctx.inProgressGrade as SchoolGrade);
+  const openNow = now ? Math.floor(Math.max(0, now.capHalves - now.used) / 2) : 0;
+  return now && ctx.inProgressGrade !== 12 && openNow >= 2 ? freeUnits(fill) : laterFreeUnits(fill);
 }
 
 /**
@@ -426,8 +474,9 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
     const reasons = [...need.reasons];
     if (ctx.state === "TX" && need.selectors.some((s) => s.types?.includes("math.alg2"))) reasons.push(algebra2Reason());
     if (needsPlanNow) reasons.push(reason("gap", "This is a required credit. Summer school or credit recovery may work; ask your counselor soon.", { ruleSetId: need.rc?.rs.id ?? null }));
-    // A career pathway's next level the list doesn't show: the counselor knows the school's sequence.
-    const pathway = need.id.startsWith("cte:");
+    // A career pathway's next level the list doesn't show (for the pathway, or a program of study
+    // an endorsement counts): the counselor knows the school's sequence.
+    const pathway = need.id.startsWith("cte:") || (block === "not_offered" && fill.pastLevelsOnly(need));
     gaps.push({
       id: `gap:${need.id}`,
       kind,
@@ -462,28 +511,33 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
       reasons: [requirementReason(rc, l.leaf)],
     });
   }
-  // Graduation totals the remaining years can't hold (this year only for its spring term). A
-  // senior's only room is this year's open periods: any shortfall needs a plan now, even when those
-  // periods would cover it, since nothing is planned there yet.
+  // Graduation totals the years after this one can't hold (this year only for its spring term). The
+  // part past them needs this spring's open periods, and nothing is planned there yet: a gap for any
+  // grade, "needs a plan now" for a senior (whose only room is this spring).
   const free = freeUnits(fill);
   const whole = freeUnits(fill, true);
+  const later = laterFreeUnits(fill);
+  const limit = creditRoom(ctx, fill);
   const senior = ctx.inProgressGrade === 12;
   const room = `Your plan has room for about ${toCredits(free)} more ${creditNoun(toCredits(free))}`;
-  const spring = (what: string, missing: number) =>
-    `Needs a plan now: ${what}. Add ${toCredits(missing)} ${creditNoun(toCredits(missing))} this spring (your open periods); ask your counselor.`;
+  const spring = (what: string, missing: number, planNow: boolean) => {
+    const now = missing - later;
+    const after = later > 0 ? `, and the years after this one have room for about ${toCredits(later)}` : "";
+    return `${planNow ? "Needs a plan now" : "Room to add"}: ${what}${after}. Add ${toCredits(now)} ${creditNoun(toCredits(now))} this spring (your open periods); ask your counselor.`;
+  };
   const springReason = (ruleSetId: string) => reason("gap", "This is a required credit. Classes in your open periods this spring can cover it; ask your counselor soon.", { ruleSetId });
   for (const e of fill.evals) {
     if (!e.best || ctx.firstGrade <= 8) continue;
     if (e.rc.rs.kind === "state_graduation" || e.rc.rs.kind === "local_graduation") {
       for (const l of e.best.leaves) {
-        if (l.leaf.req.kind !== "total_credits" || l.missing <= 0 || (free >= l.missing && !senior)) continue;
+        if (l.leaf.req.kind !== "total_credits" || l.missing <= 0 || limit >= l.missing) continue;
         const what = `${l.leaf.label.toLowerCase()} needs ${toCredits(l.missing)} more`;
         gaps.push({
           id: `gap:${e.rc.rs.id}/${l.leaf.id}`,
           kind: "doesnt_fit",
           priority: 0,
           demandId: null,
-          text: free >= l.missing ? spring(what, l.missing) : roomText(room, what, whole >= l.missing),
+          text: free >= l.missing ? spring(what, l.missing, senior) : roomText(room, what, whole >= l.missing),
           decideBy: byWhenFor(ctx, 12),
           options: creditOptions(ctx),
           reasons: [
@@ -498,7 +552,7 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
     // gap of its own, with the same options as the graduation total.
     const added = addedCreditTotal(e, fill.items);
     const priority = added ? leafPriority(e.rc, added.leaf.strength) : null;
-    if (!added || priority === null || added.missing <= 0 || (free >= added.missing && !senior)) continue;
+    if (!added || priority === null || added.missing <= 0 || limit >= added.missing) continue;
     const planNow = senior && priority === 0;
     const what = `the ${e.rc.rs.title} needs at least ${toCredits(added.required)} credits in all (${toCredits(added.missing)} more)`;
     const fits = free >= added.missing;
@@ -507,7 +561,7 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
       kind: "doesnt_fit",
       priority,
       demandId: null,
-      text: fits ? spring(what, added.missing) : `${planNow ? "Needs a plan now: " : ""}${roomText(room, what, whole >= added.missing)}`,
+      text: fits ? spring(what, added.missing, planNow) : `${planNow ? "Needs a plan now: " : ""}${roomText(room, what, whole >= added.missing)}`,
       decideBy: byWhenFor(ctx, 12),
       options: creditOptions(ctx),
       reasons: [

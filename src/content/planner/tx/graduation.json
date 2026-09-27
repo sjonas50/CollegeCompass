@@ -205,6 +205,12 @@
       "quote": "(xviii) Physics for Engineering; (xix) Scientific Research and Design;"
     },
     {
+      "id": "tx-74-12-b3b-4",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(3)(B)",
+      "quote": "(xx) Engineering Design and Problem Solving; (xxi) Engineering Science;"
+    },
+    {
       "id": "tx-74-12-b3c",
       "source": "TX-S1",
       "pinpoint": "§74.12(b)(3)(C)",
@@ -485,12 +491,12 @@
                   "units": 4,
                   "select": [
                     {
-                      "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                      "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science", "cte.plant_soil_science", "cte.food_science", "cte.engineering_problem_solving", "cte.engineering_science"]
                     },
                     { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
                     { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
                   ],
-                  "cite": ["tx-74-12-b3b", "tx-74-12-b3b-2", "tx-74-12-b3b-3"]
+                  "cite": ["tx-74-12-b3b", "tx-74-12-b3b-2", "tx-74-12-b3b-3", "tx-74-12-b3b-4"]
                 }
               ],
               "area": "science"
@@ -829,12 +835,12 @@
                   "units": 4,
                   "select": [
                     {
-                      "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science"]
+                      "types": ["sci.chem", "sci.phys", "sci.aquatic", "sci.astronomy", "sci.earth", "sci.env", "sci.anat", "sci.microbio", "sci.forensic", "sci.biotech", "sci.phys_eng", "sci.research", "cte.animal_science", "cte.plant_soil_science", "cte.food_science", "cte.engineering_problem_solving", "cte.engineering_science"]
                     },
                     { "subjects": ["science"], "levels": ["ap", "ib"], "exclude": ["sci.ms"] },
                     { "capabilities": ["lab_science"], "levels": ["dual_enrollment"] }
                   ],
-                  "cite": ["tx-74-12-b3b", "tx-74-12-b3b-2", "tx-74-12-b3b-3"]
+                  "cite": ["tx-74-12-b3b", "tx-74-12-b3b-2", "tx-74-12-b3b-3", "tx-74-12-b3b-4"]
                 }
               ],
               "area": "science"

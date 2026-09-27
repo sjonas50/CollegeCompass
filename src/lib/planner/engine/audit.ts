@@ -159,7 +159,8 @@ function equivalentMath(ctx: Ctx, sels: readonly Selector[]): boolean {
  * English) never are.
  */
 export function earlyWithoutCredit(items: readonly Item[], sels: readonly Selector[]): Item | null {
-  return items.find((i) => i.own && i.grade < 9 && !i.hsCredit && !i.noCredit && i.units > 0 && getCourseType(i.typeId).grades[1] >= 9 && matchesAny(i, sels)) ?? null;
+  // A guessed kind counts as that kind, as the plan is built (asPlanned).
+  return items.find((i) => i.own && i.grade < 9 && !i.hsCredit && !i.noCredit && i.units > 0 && getCourseType(i.typeId).grades[1] >= 9 && matchesAny({ ...i, assumed: false }, sels)) ?? null;
 }
 
 export function leafStatus(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, needsPlanNow: boolean): LeafStatus {

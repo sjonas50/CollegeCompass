@@ -23,9 +23,9 @@ describe("UT-1: class of 2030, engineering, Secondary Math I in 8th", () => {
       [
         "Your path",
         "  9: [English I (9th grade English)] | [Secondary Math II] | [Earth and space science (geology)] | [Health] | [Fitness for life (lifetime fitness)] | [Introduction to computer science (Exploring Computer Science)] (5/7)",
-        "  10: Visual art | Engineering design | English II | Chemistry | American Constitutional Government and Citizenship | U.S. history | Secondary Math III (7/7)",
-        "  11: English III | Physics (AP) | Personal financial literacy | World or European history | Psychology | Precalculus | Spanish I | Your choice (6/7)",
-        "  12: Visual art | English IV | Fitness for life | Fitness for life | Calculus (AP) | Spanish II (5/7)",
+        "  10: Engineering design | English II | Chemistry | U.S. history | World or European history | Secondary Math III | Spanish I (7/7)",
+        "  11: Visual art | English III | Physics (AP) | Personal financial literacy | Psychology | Precalculus | Spanish II | Your choice (6/7)",
+        "  12: Visual art | English IV | Fitness for life | Fitness for life | American Constitutional Government and Citizenship | Calculus (AP) (5/7)",
       ]
     `);
   });

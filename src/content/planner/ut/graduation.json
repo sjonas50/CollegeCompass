@@ -456,7 +456,13 @@
                     { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] },
                     { "types": ["ela.lang_comp"], "levels": ["dual_enrollment"], "schoolYears": { "to": 2025 } }
                   ],
-                  "cite": ["ut-r277-700-6-5", "ut-usbe-2627-la11", "ut-usbe-2627-engl1010"]
+                  "cite": ["ut-r277-700-6-5", "ut-usbe-2627-la11", "ut-usbe-2627-engl1010"],
+                  "note": "ENGL 1010 taken in 2026-27 or later counts for level 11 only through an approved ENGL 1010 pilot. Ask your counselor whether your class is part of one.",
+                  "ask": {
+                    "select": [{ "types": ["ela.lang_comp"], "levels": ["dual_enrollment"], "grades": [11], "schoolYears": { "from": 2026 } }],
+                    "question": "Is my school's ENGL 1010 an approved pilot, so it counts for level 11 English?",
+                    "cite": ["ut-usbe-2627-engl1010"]
+                  }
                 },
                 {
                   "id": "ela.12",
@@ -870,7 +876,13 @@
                     { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] },
                     { "types": ["ela.lang_comp"], "levels": ["dual_enrollment"], "schoolYears": { "to": 2025 } }
                   ],
-                  "cite": ["ut-r277-700-6-5", "ut-usbe-2627-la11", "ut-usbe-2627-engl1010"]
+                  "cite": ["ut-r277-700-6-5", "ut-usbe-2627-la11", "ut-usbe-2627-engl1010"],
+                  "note": "ENGL 1010 taken in 2026-27 or later counts for level 11 only through an approved ENGL 1010 pilot. Ask your counselor whether your class is part of one.",
+                  "ask": {
+                    "select": [{ "types": ["ela.lang_comp"], "levels": ["dual_enrollment"], "grades": [11], "schoolYears": { "from": 2026 } }],
+                    "question": "Is my school's ENGL 1010 an approved pilot, so it counts for level 11 English?",
+                    "cite": ["ut-usbe-2627-engl1010"]
+                  }
                 },
                 {
                   "id": "ela.12",

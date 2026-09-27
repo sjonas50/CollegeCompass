@@ -126,6 +126,12 @@ export type LadderProblem = {
    * count once the rung below them is reached (a Geometry class counts after the Algebra I retake).
    */
   deferred?: Map<number, SchoolGrade>;
+  /**
+   * Rungs that may be doubled up with the one after them, where the state or the class list allows
+   * the pair (design §5.6): 1 for Texas's Algebra I with Geometry (TEC §28.025(b-6)), 2 for a list
+   * that prints Algebra 2 as taken with Geometry. Omitted: any pair up to Algebra II.
+   */
+  doublePairs?: readonly number[];
 };
 
 export type LadderStep = { grade: SchoolGrade; rank: number; summer: boolean; college?: true };
@@ -165,9 +171,11 @@ function choices(p: LadderProblem, grade: SchoolGrade, rank: number): Choice[] {
     const up1 = rank < MAX_RANK && p.available(grade, rank + 1);
     if (up1) out.push({ year: rank + 1, next: rank + 1, steps: [{ grade, rank: rank + 1, summer: false }], cost: 0 });
     out.push({ year: rank, next: rank, steps: [], cost: 0 });
-    // Two rungs in one year only where they can run side by side: Algebra I with Geometry (Texas
-    // §28.025(b-6)) or Geometry with Algebra II. Precalculus and calculus build on each other.
-    if (p.moves.double && up1 && rank + 2 <= MAX_DOUBLE_RANK && p.available(grade, rank + 2)) {
+    // Two rungs in one year only where they can run side by side and the state or the list allows
+    // the pair: Algebra I with Geometry (Texas §28.025(b-6)), or a printed concurrency. Precalculus
+    // and calculus build on each other.
+    const pairAllowed = !p.doublePairs || p.doublePairs.includes(rank + 1);
+    if (p.moves.double && up1 && rank + 2 <= MAX_DOUBLE_RANK && pairAllowed && p.available(grade, rank + 2)) {
       out.push({ year: rank + 2, next: rank + 2, steps: [{ grade, rank: rank + 1, summer: false }, { grade, rank: rank + 2, summer: false }], cost: DOUBLE_COST });
     }
     // Two college math classes in one year (a semester each), from precalculus up, where the state

@@ -118,6 +118,13 @@ const PATTERNS: Pattern[] = [
   { type: "math.college_prep", re: /\b(college prep(aratory)? math(ematics)?|math\s*1010)\b/i },
   { type: "math.stats", re: /\b(statistics|stats?|math\s*1040)\b/i },
 
+  // Texas's career classes on the lab-based science lists (19 TAC §74.12(b)(3)(B)(x), (xiv), (xx),
+  // (xxi); §74.13(e)(6)(J), (N), (T), (U)), whether filed under science or career and technical.
+  { type: "cte.engineering_problem_solving", re: /\bengineering design (and|&) problem solving\b/i },
+  { type: "cte.engineering_science", re: /\bengineering science\b/i },
+  { type: "cte.food_science", re: /\bfood science\b/i },
+  { type: "cte.plant_soil_science", re: /\badvanced plant (and|&) soil science\b/i },
+
   // Science. Integrated Physics and Chemistry (the TEKS course name) before physics and chemistry.
   { type: "sci.ipc", re: /\b(ipc|integrated physics|physical science|physical world)\b/i },
   { type: "sci.phys_eng", re: /\bphysics for engineering\b/i },
@@ -152,6 +159,15 @@ const PATTERNS: Pattern[] = [
   { type: "ss.psych", re: /\bpsych(ology)?\b/i },
   { type: "ss.soc", re: /\bsociology\b/i },
 
+  // Tennessee's Digital Arts & Design program (Policy 3.205 17.8-17.10): level I is one of the fine
+  // arts substitutes (Policy 3.103 III(3), TN-S3), II and III the program's next levels. Utah's
+  // Digital Media 1 and 2 are explorer courses in its Broadcasting & Digital Media and Graphic Design
+  // pathways (MP-USBE-CTE). Before the arts, so a career class stays one.
+  { type: "cte.arts_av.3", re: /\bdigital arts? (and|&) design\s*(iii|3)\b/i },
+  { type: "cte.arts_av.2", re: /\bdigital arts? (and|&) design\s*(ii|2)\b/i },
+  { type: "cte.digital_arts_design", re: /\bdigital arts? (and|&) design\b(?!\s*(ii|iii|iv|2|3|4)\b)/i },
+  { type: "cte.arts_av.1", re: /\bdigital media\b/i },
+
   // Arts
   { type: "arts.ms", re: /\b(art|music|band|choir)\s*(6|7|8)\b/i },
   { type: "arts.art_history", re: /\bart history\b/i },
@@ -159,7 +175,7 @@ const PATTERNS: Pattern[] = [
   { type: "arts.ensemble", re: /\b(band|choir|chorus|orchestra|ensemble|chamber singers|madrigals?)\b/i },
   { type: "arts.theatre", re: /\b(theat(er|re)|drama|acting|stagecraft)\b/i },
   { type: "arts.dance", re: /\bdance\b/i },
-  { type: "arts.media", re: /\b(digital art|animation|film|photography|media arts|graphic design|video production)\b/i },
+  { type: "arts.media", re: /\b(digital arts?|digital media|animation|film|photography|media arts|graphic design|video production)\b/i },
   { type: "arts.music", re: /\b(music|guitar|piano)\b/i },
   { type: "arts.visual", re: /\b(arts?|drawing|painting|ceramics|sculpture|studio)\b/i },
 
@@ -225,7 +241,7 @@ const PATTERNS: Pattern[] = [
   // - Automotive (MP-TEA-POS-TDL-AUTOMOTIVE-AND-COLLISION-REPAIR): "Level 2• ... Automotive
   //   Basics", "Level 3• ... Automotive Technology I: Maintenance and Light Repair", "Level 4•
   //   Automotive Technology II: Automotive Service".
-  { type: "cte.engineering.4", re: /\b(advanced engineering design and presentation|engineering design and problem solving)\b/i },
+  { type: "cte.engineering.4", re: /\badvanced engineering design and presentation\b/i },
   { type: "cte.engineering.3", re: /\bengineering design and presentation\s*(ii|2)\b/i },
   { type: "cte.engineering.2", re: /\bengineering design and presentation\s*(i|1)\b/i },
   { type: "cte.engineering.3", re: /\bengineering design and presentation\b/i },
@@ -235,6 +251,13 @@ const PATTERNS: Pattern[] = [
   { type: "cte.transportation.4", re: /\bautomotive technology\s*(ii|2)\b/i },
   { type: "cte.transportation.3", re: /\bautomotive technology(\s*(i|1))?\b/i },
   { type: "cte.transportation.2", re: /\bautomotive basics\b/i },
+  // - Transportation's programs (MP-TEA-POS-TDL-AUTOMOTIVE-AND-COLLISION-REPAIR, -AVIATION-*):
+  //   "Level 1• Principles of Transportation Systems", "Level 4• ... Practicum in Transportation
+  //   Systems". Education and Training (MP-TEA-POS-ET-TEACHING-AND-TRAINING, -EARLY-LEARNING):
+  //   "Level 1• Principles of Education and Training • Principles of Human Services".
+  { type: "cte.transportation.4", re: /\bpracticum in transportation\b/i },
+  { type: "cte.transportation.1", re: /\bprinciples of transportation\b/i },
+  { type: "cte.education.1", re: /\bprinciples of human services\b/i },
   // Tennessee (course names from Policy 3.205, TN-S6B): Therapeutic Services runs Health Science
   // Education, Medical Therapeutics, Anatomy and Physiology, then Nursing Education, which Policy
   // 3.103 lists with the work-based learning courses (TN-S3 p. 6); Marketing runs Introduction to
@@ -243,6 +266,16 @@ const PATTERNS: Pattern[] = [
   // from the grades they're in (engine/context.ts).
   { type: "cte.health.4", re: /\bnursing education\b/i },
   { type: "cte.health.2", re: /\bmedical therapeutics\b/i },
+  // Diagnostic Medicine follows Anatomy and Physiology in Diagnostic Services (Policy 3.205 24.19),
+  // and Clinical Internship is one of the work-based learning courses Policy 3.103 lists next to
+  // Nursing Education (TN-S3 p. 6): level 4. The IT one is Information Technology's. Maintenance &
+  // Light Repair I-IV (28.13-28.16) take their level from the numeral; Fundamentals of Education
+  // starts Education and Training. Levels from TDOE's programs of study (not saved): the year count
+  // covers a wrong level (engine/fill.ts cteYears).
+  { type: "cte.it.4", re: /\b(it|information technology)\b.*\bclinical internship\b/i },
+  { type: "cte.health.4", re: /\b(clinical internship|diagnostic medicine)\b/i },
+  { type: "cte.transportation.1", re: /\bmaintenance (and|&) light repair\b/i },
+  { type: "cte.education.1", re: /\bfundamentals of education\b/i },
   { type: "cte.business.3", re: /\bmarketing (and|&) management\s*(ii|2)\b/i },
   { type: "cte.business.2", re: /\bmarketing (and|&) management(\s*(i|1))?\b/i },
   // A second-year class is its own type (Texas counts only Accounting II and Robotics II as math).
@@ -261,16 +294,17 @@ const PATTERNS: Pattern[] = [
   { type: "cte.robotics", re: /\brobotics?\b/i },
   { type: "cte.biomed", re: /\b(biomedical|human body systems|medical interventions)\b/i },
   { type: "cte.medical_terminology", re: /\bmedical terminology\b/i },
-  { type: "cte.nurse_aide", re: /\b(cna|nurse aide|nursing assistant|patient care)\b/i },
+  // Utah's completer course is "Nurse Assistant (CNA)" (MP-USBE-CTE, Health Science).
+  { type: "cte.nurse_aide", re: /\b(cna|nurse aide|nurse assistant|nursing assistant|patient care)\b/i },
   { type: "cte.emt", re: /\b(emt|emergency medical)\b/i },
   // A health science class with a later-level cue ("Health Science II", "Advanced Health Science")
   // is the cluster's level, not Principles of Health Science.
   { type: "cte.health.1", re: /\bhealth science\b.*\b(ii|iii|iv|2|3|4|advanced|practicum|clinicals?|internship|capstone)\b|\b(advanced|practicum in)\b.*\bhealth science\b/i },
   { type: "cte.health_principles", re: /\bhealth science\b/i },
   { type: "cte.manufacturing.1", re: /\b(welding|machining|manufacturing|cnc)\b/i },
-  { type: "cte.hospitality.1", re: /\b(culinary|cooking|baking|hospitality|food science)\b/i },
+  { type: "cte.hospitality.1", re: /\b(culinary|cooking|baking|hospitality)\b/i },
   { type: "cte.transportation.1", re: /\b(auto(motive)?|diesel|aviation|aircraft|collision repair|small engines?)\b/i },
-  { type: "cte.architecture_construction.1", re: /\b(construction|carpentry|electrical|plumbing|hvac|woodworking|architecture)\b/i },
+  { type: "cte.architecture_construction.1", re: /\b(construction|carpentry|electrical|plumbing|hvac|woodworking|woods|cabinet(making|ry)?|architecture)\b/i },
   { type: "cte.education.1", re: /\b(child development|early childhood|teaching|education (and|&) training)\b/i },
   { type: "cte.law.1", re: /\b(criminal justice|law enforcement|fire science|public safety|legal studies|pre-?law)\b/i },
   { type: "cte.human_services.1", re: /\b(cosmetology|barbering|family (and|&) consumer|interpersonal)\b/i },

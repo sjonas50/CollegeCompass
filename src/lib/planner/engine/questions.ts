@@ -5,6 +5,8 @@ import type { Ctx } from "./context";
 import { reason } from "./explain";
 import type { FillResult } from "./fill";
 import { mathRankOf } from "./ladder";
+import { asPlanned } from "./model";
+import { matchesAny } from "./select";
 
 // ---------------------------------------------------------------------------
 // 3 to 8 questions for the counselor meeting (design §2.8), from what the plan can't settle:
@@ -89,6 +91,15 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
         const option = /You chose the (.+?), but/.exec(reasonLine.text)?.[1] ?? "waiver";
         if (college) add(`waiver:${reasonLine.ruleSetId}:${option}`, `If I use the ${option}, will ${college} still admit me?`, reasonLine.citations, reasonLine.ruleSetId);
       }
+    }
+  }
+  // A class of the student's that a requirement counts only on an exception the plan can't see
+  // (Utah's ENGL 1010 from 2026-27, only in an approved pilot): the requirement's own question.
+  const own = asPlanned(fill.items).filter((i) => i.own && !i.noCredit);
+  for (const e of fill.evals) {
+    for (const l of e.best?.leaves ?? []) {
+      const ask = l.leaf.req.kind === "credits" ? l.leaf.req.ask : undefined;
+      if (ask && own.some((i) => matchesAny(i, ask.select))) add(`ask:${e.rc.rs.id}/${l.leaf.id}`, ask.question, ask.cite, e.rc.rs.id);
     }
   }
   // Test-score routes still open for a required course route.

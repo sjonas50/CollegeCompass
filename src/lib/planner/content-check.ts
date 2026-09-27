@@ -41,6 +41,7 @@ export function citedThings(content: ValidatedContent): CitedThing[] {
       for (const v of rs.variants) {
         for (const r of walkReqs(v.requirements)) {
           if (isLeaf(r) || r.kind === "option") out.push({ where: `${v.id} ${r.id}`, cite: r.cite ?? [] });
+          if (r.kind === "credits" && r.ask) out.push({ where: `${v.id} ${r.id} question`, cite: r.ask.cite });
         }
         for (const x of v.checks ?? []) out.push({ where: `${v.id} check ${x.id}`, cite: x.cite });
         for (const x of v.conditions ?? []) out.push({ where: `${v.id} condition ${x.id}`, cite: x.cite });

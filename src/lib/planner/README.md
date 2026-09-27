@@ -109,6 +109,10 @@ and `citations` (verbatim quotes of 300 characters or fewer).
   `reqIds` limit a route to the requirements or checks it stands in for.
 - **Only when done**: a credits leaf with `onlyWhenDone` (Utah calculus with a C) counts once
   finished and is never planned toward or reported as the route before that.
+- **A question for an exception**: a credits leaf's `ask` (`select`, `question`, `cite`) is asked
+  of the counselor whenever the student has a class matching `select` that the leaf doesn't count
+  as the source states it (Utah: ENGL 1010 from 2026-27 counts for level 11 only "for students
+  participating in an approved ENGL 1010 pilot").
 - **Not course requirements**: `conditions` show as "We don't track this"; `unverified` shows once
   as "Ask your counselor"; `checks` run after allocation (math in 3 years, DLA on schedule by the
   end of 11th: the plan shows `req` and `with`, in any grade; Utah senior math, no Texas

@@ -61,6 +61,10 @@ the folder, the manifest and the loader agree).
 - **What only counts once done.** A leaf that finishes a requirement only when already passed
   (Utah: calculus with a C finishes math) is `onlyWhenDone`: the planner never plans toward it or
   shows it as the requirement until it's finished.
+- **Exceptions only the counselor knows.** A leaf whose source makes an exception the plan can't
+  check gets `ask`: its question goes to the counselor list when the student has a matching class
+  (Utah's level 11: ENGL 1010 taken in 2026-27 or later, only "in an approved ENGL 1010 pilot",
+  ut-usbe-2627-engl1010), and its `note` says the same on the requirement.
 - **Test routes name what they replace.** A test route without `reqIds` stands in for the rule
   set's whole class route (UT Austin calculus readiness); with `reqIds` only for those requirements
   or checks (Utah's math competency replaces the senior-year math class, not the CTE credit). A
@@ -145,6 +149,17 @@ the folder, the manifest and the loader agree).
   speech, debate and journalism don't count toward it; the note sends the student to the counselor.
 - Texas's generic list offers Transportation levels 1-3 (a Business and Industry program of study),
   like the other career clusters most high schools offer (19 TAC §74.3(b)(2)(G)).
+- Texas's science lists name career classes: Advanced Plant and Soil Science, Food Science,
+  Engineering Design and Problem Solving and Engineering Science ((B)(x), (xiv), (xx), (xxi) of
+  §74.12(b)(3); (J), (N), (T), (U) of §74.13(e)(6)). They have their own course types, in their
+  career cluster at their TEA program-of-study level, and every Texas list of lab-based sciences
+  (the 3rd lab science, each endorsement's 4th, STEM's two routes, the DLA's) names them. Like
+  Tennessee's Agriscience they aren't marked as a lab science in general: another state's or a
+  college's "lab science" doesn't count them unless it lists them, and the diploma-vs-admission
+  question asks (Texas A&M's science doesn't list them).
+- Tennessee's fine arts credit lists Digital Arts & Design I, the first of Policy 3.103's CTE
+  substitutions (III(3)); Digital Arts & Design II and III are the Arts/A-V cluster's next levels
+  and don't substitute.
 - Utah's "Modern Mathematics" (a Secondary Math III opt-out choice) has no course type; it's named
   in a note rather than mapped to "Other math class".
 

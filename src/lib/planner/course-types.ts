@@ -1057,6 +1057,17 @@ const CORE = {
     cluster: "ag",
     ladder: ["cte.ag", 2],
   },
+  "cte.digital_arts_design": {
+    title: "Digital arts and design I",
+    subject: "career_technical",
+    grades: [9, 11],
+    cte: "always",
+    cluster: "arts_av",
+    ladder: ["cte.arts_av", 1],
+    alt: ["arts"],
+    stateTitles: { TN: "Digital Arts & Design I" },
+    note: "The first class of Tennessee's Digital Arts & Design program (Policy 3.205 17.8); Policy 3.103 lists it first among the CTE substitutions for fine arts [TN S3 III(3)]. Digital Arts & Design II and III map to the cluster's levels 2 and 3.",
+  },
   "cte.design_foundations": {
     title: "Fashion or interior design",
     subject: "career_technical",
@@ -1132,6 +1143,52 @@ const CORE = {
     cluster: "engineering",
     ladder: ["cte.engineering", 3],
     alt: ["math"],
+  },
+  // Texas lists these career classes among the lab-based courses for the 3rd science credit and an
+  // endorsement's 4th ("(x) Advanced Plant and Soil Science", "(xiv) Food Science", "(xx)
+  // Engineering Design and Problem Solving; (xxi) Engineering Science", 19 TAC §74.12(b)(3)(B);
+  // the same as (J), (N), (T) and (U) in §74.13(e)(6)). Like Tennessee's Agriscience, they aren't
+  // marked `lab_science`: state rules list them by type. Levels from TEA's programs of study
+  // (Engineering Foundations: Engineering Science level 3, Engineering Design and Problem Solving
+  // level 4; Culinary Arts: Food Science level 4).
+  "cte.engineering_science": {
+    title: "Engineering science",
+    subject: "career_technical",
+    grades: [10, 12],
+    cte: "always",
+    cluster: "engineering",
+    ladder: ["cte.engineering", 3],
+    alt: ["science"],
+    stateTitles: { TX: "Engineering Science" },
+  },
+  "cte.engineering_problem_solving": {
+    title: "Engineering design and problem solving",
+    subject: "career_technical",
+    grades: [11, 12],
+    cte: "always",
+    cluster: "engineering",
+    ladder: ["cte.engineering", 4],
+    alt: ["science"],
+    stateTitles: { TX: "Engineering Design and Problem Solving" },
+  },
+  "cte.food_science": {
+    title: "Food science",
+    subject: "career_technical",
+    grades: [11, 12],
+    cte: "always",
+    cluster: "hospitality",
+    ladder: ["cte.hospitality", 4],
+    alt: ["science"],
+    stateTitles: { TX: "Food Science" },
+  },
+  "cte.plant_soil_science": {
+    title: "Advanced plant and soil science",
+    subject: "career_technical",
+    grades: [10, 12],
+    cte: "always",
+    cluster: "ag",
+    alt: ["science"],
+    stateTitles: { TX: "Advanced Plant and Soil Science" },
   },
   "cte.biomed": {
     title: "Biomedical science (principles of biomedical science, human body systems)",

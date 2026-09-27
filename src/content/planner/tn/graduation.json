@@ -669,7 +669,7 @@
                 "units": 4,
                 "select": [
                   { "subjects": ["arts"], "exclude": ["arts.ms"] },
-                  { "types": ["cte.floral_design", "cte.landscape_design", "cte.design_foundations", "cs.web"] }
+                  { "types": ["cte.digital_arts_design", "cte.floral_design", "cte.landscape_design", "cte.design_foundations", "cs.web"] }
                 ],
                 "cite": ["tn-2103-i-17", "tn-3103-iii-3"],
                 "note": "Some career and technical classes (such as Floral Design) can count for the diploma, but some universities may not count them for admission."
@@ -1053,7 +1053,7 @@
                 "units": 4,
                 "select": [
                   { "subjects": ["arts"], "exclude": ["arts.ms"] },
-                  { "types": ["cte.floral_design", "cte.landscape_design", "cte.design_foundations", "cs.web"] }
+                  { "types": ["cte.digital_arts_design", "cte.floral_design", "cte.landscape_design", "cte.design_foundations", "cs.web"] }
                 ],
                 "cite": ["tn-2103-i-17", "tn-3103-iii-3"],
                 "note": "Some career and technical classes (such as Floral Design) can count for the diploma, but some universities may not count them for admission."

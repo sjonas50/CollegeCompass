@@ -46,8 +46,10 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   cancel each other out: the class the route counts carries the requirement. Projected rules read
   "Expected by". A suggestion nothing needs any more is taken out, and one with nothing behind it
   reads as an idea for an open slot (never one placed for a required credit).
-- A class typed with a name only (a guessed type) is planned around as if the guess were right:
-  the fill never adds a second class of a kind the student probably has. The audit, its checks,
+- A class typed with a name only (a guessed type) is planned around as if the guess were right,
+  exactly as for a student who picked that kind (`asPlanned`): the same routes, the same classes
+  added and the same reasons (pinned over random students), and the fill never adds a second class
+  of a kind the student probably has. The audit, its checks,
   the "by when" strip and diploma-vs-admission questions all read that same route (a Physics added
   for the 3rd lab science shows there; a typed "Algebra 2" being taken now isn't a deadline), and
   a requirement a guess meets by kind reads "Room to add" with "Guessed class type" (confirm the
@@ -122,7 +124,14 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   for a transfer past that rung stays an "ask your counselor" line, and a route whose only open
   line counts once calculus is passed is never the one reported when another is open.
 - **Spread across years**: inside a class's usual grades, a year without a class in the same core
-  subject (science, math, social studies) comes first, so junior year isn't stacked. A
+  subject (science, math, social studies) comes first, so junior year isn't stacked. Required
+  classes with the fewest years inside their usual grades are placed first (World History's 9th-10th
+  before U.S. History's 10th-11th before ACGC's 10th-12th), a required class stays in its usual
+  grades before it pairs with another semester class, and one that would land outside them moves
+  an elective-type class (art, PE, a career class) or a lower-priority career pathway level (a year
+  later, levels still in order) out of a usual year first (U.S. History, with its end-of-course
+  exam, in 11th rather than senior spring). A last pass moves a required class back into its usual
+  grades when a year there has room by the end. A
   recommended class that would land outside its usual grades or make a third lab science in a
   year may use the "Your choice" slot, or move an elective-type class (the arts, PE, a career
   class) to another year. Moving classes to make room for a language never moves a core class a
@@ -164,7 +173,11 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   the place of a lower-priority suggestion in a year it can go in (Physics for a career pathway's
   level 3), when everything ranked with or above it stays as met. Where a planned class that
   can't give way holds the slot, the gap names the swap instead ("Precalculus in place of
-  Statistics in 12th grade would meet this").
+  Statistics in 12th grade would meet this"), only after checking it on the plan: with the swap
+  applied, every rule set on its audit route, the checks and the goals' targets must miss less of
+  that need, and nothing ranked with or above it, and no required (P0-P1) need, may miss more (so
+  never Statistics in place of a Texas student's only Algebra II, a half credit for another half
+  credit, or a class the family opted out of).
 - **College-level load**: level changes for a requirement only AP or IB classes meet go in the
   year with the fewest college-level classes, and a core class's AP version in its usual grade
   (AP U.S. History not in 10th); a college-level class the fill places prefers the lighter year.
@@ -192,7 +205,11 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   when two college classes in a year would actually close the gap. Credit totals count the year
   in progress only for its spring term (half a credit per open period: its schedule is mostly set,
   and an open period may earn no credit); when only the whole year's open periods would hold the
-  total, the gap says it fits only if classes are added this year. A total-credit shortfall lists
+  total, the gap says it fits only if classes are added this year. A shortfall the years after
+  this one can't hold is a gap for any grade ("Room to add: total credits needs 3 more, and the
+  years after this one have room for about 2.5. Add 0.5 credits this spring (your open periods)"),
+  unless a non-senior's year in progress has two or more open periods (its classes may not all be
+  recorded yet). A total-credit shortfall lists
   the state's verified summer, online or exam options, and so does a program's own total on top
   of its base (a Texas endorsement's 26 credits, §74.13(c)) that the years left can't hold,
   "Needs a plan now" for a senior. A senior's only room is this spring's open periods, so any
@@ -227,7 +244,10 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   later). The row shows "We planned around this as …", and the guessed-kinds question asks.
 - **Generic lists** allow a class later than its usual grades (catching up), never earlier; the
   fill still prefers the usual grades. School lists' printed grades always win.
-- **Career pathway levels** (`cte.<cluster>.<level>`) are never suggested twice, and a requirement
+- **Career pathway levels** (`cte.<cluster>.<level>`) are never suggested twice, and no level at or
+  below where the student is in a cluster (`pastCteLevel`) is suggested for any need (an
+  endorsement's program of study included; where only such levels are listed, the next level is a
+  question for the counselor, and the endorsement doesn't switch programs for it). A requirement
   met by CTE classes (a Texas endorsement's program of study) continues a pathway already in the
   plan before starting another, preferring the goal's own pathway and then clusters whose later
   levels the class list offers. A student who hasn't picked a pathway is planned in the one their
@@ -243,7 +263,8 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   allocation, beyond the focus's own classes, and never planned: a shortfall is a gap whose only
   option is the counselor. With no focus chosen they read "Ask your counselor".
 - **Counselor questions**: guessed class kinds are one question, asked last, and only for guessed
-  rows a requirement counts. A college-credit class brings up only family notes marked
+  rows a requirement counts. A requirement's `ask` (Utah's ENGL 1010 pilot) is asked when the
+  student has a class it names. A college-credit class brings up only family notes marked
   `collegeCredit`, a college's own only when it's on the list.
 - **Prerequisites of a cheaper level**: a college-level class isn't added when a regular or honors
   version of it could go in that grade, with its own prerequisites met (AP Computer Science A
@@ -251,6 +272,15 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   class to place is tried once more after the next placement, which may add its prerequisite.
 - **Middle school**: when the "by when" strip starts a rung in 8th, the 9th-grade sketch's math
   reads as the path without it ("If you don't take Algebra I in 8th: ...").
+- **Doubling up** only for a pair the state or the list allows (design §5.6): Texas's Algebra I
+  with Geometry (a `double_up` fact), or a list that prints a rung as taken with the one below it.
+- **First classes of their kind**: a first Biology or Chemistry, and a student's first art or music
+  theory class (Art I and II come before AP Art and Design), stay regular or honors: no rigor level
+  change or AP/IB focus credit makes them AP.
+- **The year in progress**: a semester class added to it goes in spring, and a full-year one says
+  to ask the counselor whether it can still be added.
+- **Middle school**: the exploration list starts with the goal's career cluster, from another
+  state's pathway where the state lists none for the goal (Tennessee).
 - **"Not for me"** holds everywhere a class can be placed, including English each year and the math
   ladder: another level of the same class is suggested instead, or the need becomes a gap.
 
