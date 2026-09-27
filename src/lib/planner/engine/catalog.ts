@@ -2,8 +2,8 @@ import type { CourseSubject, CourseTerm } from "@/db/schema";
 import type { LetterGrade } from "@/lib/courses/catalog";
 import { type PlannerState, type SchoolGrade, schoolYearLabel } from "../common";
 import type { GenericCatalogFile } from "../content-types";
-import { COURSE_TYPE_IDS, courseTypeTitle, type CourseTypeId, type CourseTypeLevel, getCourseType, isCollegeLevel } from "../course-types";
-import type { CatalogCourse, CatalogRef, CatalogView } from "../engine-io";
+import { COURSE_TYPE_IDS, courseTypeTitle, type CourseTypeId, type CourseTypeLevel, getCourseType, isCollegeLevel, LANGUAGE_LEVELS, type LanguageCode } from "../course-types";
+import type { CatalogCourse, CatalogRef, CatalogView, CourseFact } from "../engine-io";
 import { gradeRange } from "./util";
 
 // ---------------------------------------------------------------------------
@@ -125,6 +125,57 @@ export function genericCatalogView(file: GenericCatalogFile): CatalogView {
     confirmedSubjects: "all",
     courses,
   };
+}
+
+const ROMAN_LEVELS = ["I", "II", "III", "IV"] as const;
+
+/**
+ * The generic list with every level of each language the student takes, where the state's list
+ * doesn't name them (Vietnamese as "another language", French III where the list stops at French
+ * II): the next level of the student's own language is what a language requirement asks of them,
+ * never a new language or another route. Whether their school offers it is the counselor's to say
+ * (the suggestion says so: `ownLanguageRow`). Guessed kinds count: the plan follows the language
+ * the name says.
+ */
+export function withOwnLanguages(view: CatalogView, courses: readonly CourseFact[]): CatalogView {
+  const listed = new Set(view.courses.map((c) => c.typeId));
+  const codes = new Set<LanguageCode>();
+  for (const c of courses) {
+    const ladder = getCourseType(c.typeId).ladder;
+    if (ladder?.id.startsWith("lang.")) codes.add(ladder.id.slice(5) as LanguageCode);
+  }
+  const added: CatalogCourse[] = [];
+  for (const code of codes) {
+    for (const level of LANGUAGE_LEVELS) {
+      const typeId: CourseTypeId = `lang.${code}.${level}`;
+      if (listed.has(typeId)) continue;
+      const type = getCourseType(typeId);
+      added.push({
+        id: `generic:${typeId}:regular`,
+        typeId,
+        level: "regular",
+        subject: type.subject,
+        title: code === "other" ? `Your language, level ${ROMAN_LEVELS[level - 1]}${level === 4 ? " or higher" : ""}` : courseTypeTitle(typeId, view.state),
+        units: type.units,
+        grades: null,
+        terms: ["full_year"],
+        prereqs: [],
+        approvals: [],
+        cte: false,
+        lectureOnly: false,
+        delivery: "unknown",
+        firstSchoolYear: null,
+        lastSchoolYear: null,
+        everyOtherYear: false,
+      });
+    }
+  }
+  return added.length ? { ...view, courses: [...view.courses, ...added] } : view;
+}
+
+/** A row the generic list has only because it's a level of the student's own language (`withOwnLanguages`). */
+export function ownLanguageRow(row: CatalogRow, file: GenericCatalogFile): boolean {
+  return row.id.startsWith("generic:") && getCourseType(row.typeId).ladder?.id.startsWith("lang.") === true && !file.courses.some((c) => c.typeId === row.typeId);
 }
 
 export function catalogRef(view: CatalogView, genericTitle: string): CatalogRef {

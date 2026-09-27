@@ -1,4 +1,4 @@
-import { allCourseTypes, getCourseType } from "../course-types";
+import { allCourseTypes, courseTypeTitle, getCourseType } from "../course-types";
 import type {
   AdmissionConflict,
   AuditModifier,
@@ -9,13 +9,15 @@ import type {
   RuleSetAudit,
 } from "../engine-io";
 import { cohortValue } from "../cohort";
-import type { Check, OptionPref, Req, Selector } from "../rules";
+import type { PlannerState } from "../common";
+import type { Check, CitationId, OptionPref, Req, Selector } from "../rules";
 import { type AltResult, evaluateAlternative, languageProgress, leafAccepts, type LeafResult, pickAlternative, type PickOptions } from "./allocate";
 import type { CLeaf } from "./compile";
 import { guessState } from "./confirm";
 import type { Ctx, RuleSetCtx } from "./context";
 import { leafPriority, rowIsOffered, schoolYearOfGrade, variantFor } from "./context";
 import { leafNoteReason, reason, requirementReason, ruleSetNotes } from "./explain";
+import { mathRankOf } from "./ladder";
 import { asConfirmed, type Item } from "./model";
 import { matchesAny } from "./select";
 import { nth } from "./util";
@@ -166,6 +168,42 @@ export function earlyWithoutCredit(items: readonly Item[], sels: readonly Select
   return items.find((i) => i.own && i.grade < 9 && !i.hsCredit && !i.noCredit && i.units > 0 && getCourseType(i.typeId).grades[1] >= 9 && matchesAny({ ...i, assumed: false }, sels)) ?? null;
 }
 
+export type CounselorDecides = { text: string; question: string; cite: CitationId[] };
+
+/**
+ * A class of the student's that may meet this requirement, where only the counselor can say:
+ * - a requirement's `ask.decides` (Tennessee's JROTC III for Personal Finance and half of U.S.
+ *   Government, when the JROTC instructor took the Personal Finance training);
+ * - a math class the planner can't name (Finite Math, Algebra III), taken after the student's
+ *   Algebra II rung, for a "4th math" that lists named classes: Tennessee counts "another
+ *   mathematics course beyond Algebra I" (Policy 2.103 I(10)), so it may well count, as a class on
+ *   the same math rung may (equivalentMath).
+ * The requirement is then the counselor's call: "Ask your counselor", never a class to add or
+ * "Needs a plan now". A guessed kind counts as that kind, as the plan is built (asPlanned).
+ */
+export function counselorDecides(items: readonly Item[], leaf: CLeaf, state: PlannerState): CounselorDecides | null {
+  const req = leaf.req;
+  if (req.kind !== "credits") return null;
+  const own = items.filter((i) => i.own && !i.noCredit && i.creditable).map((i) => ({ ...i, assumed: false }));
+  const decides = req.ask?.decides;
+  if (req.ask && decides && own.filter((i) => matchesAny(i, req.ask!.select)).length >= (decides.classes ?? 1)) {
+    return { text: decides.text, question: req.ask.question, cite: req.ask.cite };
+  }
+  const named = req.select.flatMap((s) => s.types ?? []);
+  const ranks = named.map((t) => mathRankOf(t)).filter((r): r is number => r !== null);
+  if (!ranks.some((r) => r >= 4) || ranks.some((r) => r >= 1 && r <= 3)) return null;
+  const rungs = own.filter((i) => mathRankOf(i.typeId) === 3);
+  const after = (i: Item, rung: Item) => i.grade > rung.grade || (i.grade === rung.grade && i.term === "spring" && rung.term === "fall");
+  const other = own.find((i) => i.typeId === "math.other" && !leafAccepts(leaf, i) && rungs.some((r) => after(i, r)));
+  if (!other) return null;
+  const rung = courseTypeTitle(rungs.find((r) => after(other, r))!.typeId, state);
+  return {
+    text: `You have a math class after ${rung} that may count for this. Ask your counselor whether it does.`,
+    question: `Does my math class after ${rung} count as ${lowerArticle(leaf.label)}?`,
+    cite: leaf.cite,
+  };
+}
+
 export function leafStatus(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, needsPlanNow: boolean, waits = false): LeafStatus {
   const modifiers: AuditModifier[] = [];
   let status: AuditStatus;
@@ -190,8 +228,10 @@ export function leafStatus(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, needsPlanNow
     }
     // A class on the same math rung (Integrated Math I for "Algebra I") may count: the counselor decides.
     if (req.kind === "credits" && equivalentMath(ctx, req.select)) status = "ask_counselor";
-    // So may a class from before 9th grade that isn't marked for high school credit.
+    // So may a class from before 9th grade that isn't marked for high school credit, and a class
+    // only the counselor can say counts (JROTC III for Personal Finance, Finite Math as a 4th math).
     if (req.kind === "credits" && earlyWithoutCredit(ctx.items, req.select)) status = "ask_counselor";
+    if (counselorDecides(ctx.items, r.leaf, ctx.state)) status = "ask_counselor";
   }
   if (rc.projected) {
     modifiers.push("projected");
@@ -347,6 +387,12 @@ export function evaluateCheck(
       if (statuses.length === 0) return { ...base, status: "room_to_add", text: `This also needs one of: ${names.join(", ")}. Choose one to count it.` };
       // The one on the plan isn't all planned yet (an endorsement's 26 credits).
       const onPlan = check.anyOf.filter((id) => statusOf(id) !== null);
+      // It's short only of requirements a class the student hasn't confirmed decides: so is this
+      // (engine/confirm.ts), never "Room to add".
+      if (statuses.includes("waiting_confirm")) {
+        const needs = onPlan.length === 1 ? `the ${ctx.allRuleSets.get(onPlan[0])?.rs.title ?? onPlan[0]}` : `one of: ${names.join(", ")}`;
+        return { ...base, status: "waiting_confirm", text: `This also needs ${needs}. Whether it's on your plan is waiting on you to confirm a class.` };
+      }
       if (onPlan.length === 1 && statuses[0] === "room_to_add") {
         return { ...base, status: "room_to_add", text: `Room to add: this also needs the ${ctx.allRuleSets.get(onPlan[0])?.rs.title ?? onPlan[0]}, which isn't all on your plan yet.` };
       }
@@ -536,7 +582,8 @@ export function requirementAudit(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, confli
   // from before 9th grade without high school credit) is a question for the counselor, not a
   // credit to plan now.
   const req = r.leaf.req;
-  const counselorCall = req.kind === "credits" && (equivalentMath(ctx, req.select) || earlyWithoutCredit(ctx.items, req.select) !== null);
+  const decides = counselorDecides(ctx.items, r.leaf, ctx.state);
+  const counselorCall = req.kind === "credits" && (equivalentMath(ctx, req.select) || earlyWithoutCredit(ctx.items, req.select) !== null || decides !== null);
   const npn =
     !waits &&
     ctx.inProgressGrade === 12 &&
@@ -559,6 +606,7 @@ export function requirementAudit(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, confli
     reasons: [
       requirementReason(rc, r.leaf),
       ...[leafNoteReason(rc, r.leaf, ctx.items)].filter((x): x is Reason => x !== null),
+      ...(decides && r.missing > 0 && !waits ? [reason("gap", decides.text, { ruleSetId: rc.rs.id, reqId: r.leaf.id, citations: decides.cite })] : []),
       ...ruleSetNotes(rc).filter((n) => n.kind === "projected" || n.kind === "stale"),
     ],
     conflicts,
@@ -592,6 +640,35 @@ export function withGuesses(l: LeafResult, items: readonly Item[]): { result: Le
   return { result: { ...l, firm, planned, missing: l.required - firm - planned, guessed: true }, waits: true };
 }
 
+/** A credit total, or the credits left for electives: any class counts. */
+export function creditTotal(leaf: CLeaf): boolean {
+  return leaf.req.kind === "total_credits" || leaf.req.kind === "remaining_electives";
+}
+
+/**
+ * Some requirement on the rule set's route (its own or its base program's) waits on the student to
+ * confirm a class (engine/confirm.ts): classes the plan holds back for it aren't counted yet, so a
+ * credit total it's short of isn't a shortfall to claim.
+ */
+export function ruleSetWaits(e: RuleSetEval, items: readonly Item[], held: HeldFn = () => false): boolean {
+  const best = confirmedEval(e, items).best;
+  return (best?.leaves ?? []).some((l) => !creditTotal(l.leaf) && (withGuesses(l, items).waits || (l.missing > 0 && held(needIdOf(e.rc, l.leaf)))));
+}
+
+/**
+ * Whether the fill held a requirement's need for a confirmation (fill.ts `unmet` "guessed"): a
+ * class a held requirement's row might be would count here too (the rest of a program of study
+ * next to a math class that waits), so no class was added for it. By need id ("<rule set>/<req>").
+ */
+export type HeldFn = (needId: string) => boolean;
+
+/** The need id of a leaf on a rule set's route: a base program's leaf is the base's need. */
+export function needIdOf(rc: RuleSetCtx, leaf: CLeaf): string {
+  if (leaf.own) return `${rc.rs.id}/${leaf.id}`;
+  const base = rc.bases.find((b) => b.variant.requirements.some((q) => containsReqId(q, leaf.id)));
+  return `${base?.rs.id ?? rc.rs.id}/${leaf.id}`;
+}
+
 export function ruleSetAudit(
   ctx: Ctx,
   e: RuleSetEval,
@@ -600,6 +677,7 @@ export function ruleSetAudit(
   needsPlanNowKeys: Set<string>,
   statusOf: (id: string) => AuditStatus | null,
   expanded: ReadonlyMap<string, LeafResult> = new Map(),
+  held: HeldFn = () => false,
 ): RuleSetAudit {
   const { rc } = e;
   const variant = rc.variant;
@@ -613,17 +691,22 @@ export function ruleSetAudit(
   // science isn't shown under "IPC, chemistry or physics" while a typed IPC waits for its kind).
   const best = confirmedEval(e, items).best;
   const waiting = new Set<string>();
-  const requirements = best
-    ? best.leaves
-        .filter((l) => l.leaf.own)
-        .map((l) => {
-          const { result, waits } = withGuesses(ownResult(l), items);
-          if (waits) waiting.add(l.leaf.id);
-          return requirementAudit(ctx, rc, result, conflicts.get(`${rc.rs.id}/${l.leaf.id}`) ?? [], needsPlanNowKeys, waits);
-        })
-    : [];
+  // A requirement short while the fill held it for a confirmation waits too (`HeldFn`).
+  const heldShort = (l: LeafResult) => l.missing > 0 && !creditTotal(l.leaf) && held(needIdOf(rc, l.leaf));
+  const own = (best?.leaves ?? [])
+    .filter((l) => l.leaf.own)
+    .map((l) => {
+      const g = withGuesses(ownResult(l), items);
+      return { l, result: g.result, waits: g.waits || heldShort(g.result) };
+    });
+  for (const { l, waits } of own) if (waits) waiting.add(l.leaf.id);
   // A base program's requirements (the Foundation's Algebra II under the DLA) wait the same way.
-  for (const l of best?.leaves ?? []) if (!l.leaf.own && withGuesses(l, items).waits) waiting.add(l.leaf.id);
+  for (const l of best?.leaves ?? []) if (!l.leaf.own && (withGuesses(l, items).waits || heldShort(l))) waiting.add(l.leaf.id);
+  // A credit total (or "the rest in electives") short while requirements wait: the classes held
+  // back for them aren't on the plan yet, so the shortfall waits too (gaps.ts holds its gap).
+  const requirements = own.map(({ l, result, waits }) =>
+    requirementAudit(ctx, rc, result, conflicts.get(`${rc.rs.id}/${l.leaf.id}`) ?? [], needsPlanNowKeys, waits || (waiting.size > 0 && creditTotal(l.leaf) && result.missing > 0)),
+  );
   const checks = best && variant ? (variant.checks ?? []).flatMap((c) => evaluateCheck(ctx, rc, c, best.leaves, items, statusOf, (id) => waiting.has(id)) ?? []) : [];
   // A check that needs another rule set that's only planned (the Foundation program with classes
   // still to take this year) leaves this one planned, never done.

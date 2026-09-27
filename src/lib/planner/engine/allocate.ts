@@ -143,15 +143,23 @@ function languageOf(item: Item): { code: LanguageCode; rank: number } | null {
  * III are two levels, and heritage Spanish with Spanish III are two credits of one language. The
  * sources count levels or credits in one language, never consecutive ranks: Texas's "any two
  * levels in the same language" (19 TAC §74.12(b)(5)(A)(i)), Tennessee's "two (2) credits of the
- * same world language", Utah State's "2 years of one world language". Greedy lowest rank first,
- * which fills the most levels; a repeat of a level (two Spanish I classes) fills one.
+ * same world language", Utah State's "2 years of one world language". A repeat of a level (two
+ * Spanish I classes) fills one.
+ *
+ * As many levels as the classes can fill, the student's finished and in-progress classes first:
+ * Spanish II and an in-progress Spanish IV are two levels, and a planned Spanish III never takes
+ * the in-progress class's place. (A set of classes fills as many levels as it has classes when,
+ * lowest rank first, the k-th class is at least level k; adding classes in order of preference and
+ * keeping each one that still fits gives the most levels, with the most firm classes.)
  */
 export function languageLevelsFilled(list: readonly Item[], levels: number): Item[] {
-  const sorted = [...list].sort((a, b) => languageOf(a)!.rank - languageOf(b)!.rank || Number(b.firm) - Number(a.firm) || itemOrder(a, b));
-  const used: Item[] = [];
-  for (const item of sorted) {
+  const byRank = (a: Item, b: Item) => languageOf(a)!.rank - languageOf(b)!.rank || itemOrder(a, b);
+  const preferred = [...list].sort((a, b) => Number(b.firm) - Number(a.firm) || byRank(a, b));
+  let used: Item[] = [];
+  for (const item of preferred) {
     if (used.length >= levels) break;
-    if (languageOf(item)!.rank >= used.length + 1) used.push(item);
+    const next = [...used, item].sort(byRank);
+    if (next.every((x, k) => languageOf(x)!.rank >= k + 1)) used = next;
   }
   return used;
 }

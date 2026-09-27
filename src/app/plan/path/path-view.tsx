@@ -138,6 +138,7 @@ export function confirmRows(path: PlannedPath, ctx: PathContext): { rows: Confir
         grade: c.grade,
         gradeLabel: `${ordinal(c.grade)} grade`,
         guess: c.guess ? { typeId: c.guess, title: courseTypeTitle(c.guess, path.state) } : null,
+        halves: c.halves ? { titles: [courseTypeTitle(c.halves[0], path.state), courseTypeTitle(c.halves[1], path.state)] } : null,
         options: courseTypeOptions(course.subject, course.level, c.guess ?? "").map((t) => ({ value: t, label: courseTypeTitle(t, path.state) })),
         decides: c.decides,
       },

@@ -9,6 +9,7 @@ import { ChecklistCard, GpaCard, SuggestionsCard } from "./cards";
 import { type CourseDefaults, CourseFields } from "./course-fields";
 import { CourseRow, type PlanCourse } from "./course-row";
 import { GradeSections } from "./grade-section";
+import { ConfirmClasses, type ConfirmRow } from "./path/confirm-classes";
 import { PlannerStateProvider } from "./planner-state";
 
 // Server-rendered smoke tests for the planner UI (vitest runs in node, without a DOM).
@@ -262,5 +263,30 @@ describe("cards", () => {
     expect(html).toMatch(/Biology<\/span><span[^>]*><span aria-hidden="true">✓ <\/span>In your plan/);
     expect(html).toContain("Ask your school counselor");
     expect(render(SuggestionsCard, { suggestions: [] })).toContain("Pick a north star career");
+  });
+});
+
+describe("Confirm your classes", () => {
+  const row: ConfirmRow = {
+    courseId: "00000000-0000-4000-8000-000000000002",
+    name: "Gov/Econ",
+    grade: 12,
+    gradeLabel: "12th grade",
+    guess: { typeId: "ss.us_gov", title: "U.S. Government" },
+    halves: { titles: ["U.S. Government", "Economics"] },
+    options: [{ value: "ss.us_gov", label: "U.S. Government" }],
+    decides: 2,
+  };
+
+  it("offers a name that joins two half-credit classes as those two classes, with one kind as the other choice (round 10)", () => {
+    const html = render(ConfirmClasses, { rows: [row], more: 0, mode: "student" });
+    expect(html).toContain("U.S. Government and Economics, two half-credit classes?");
+    expect(html).toContain("Yes<span class=\"sr-only\">, Gov/Econ is U.S. Government and Economics, two half-credit classes</span>");
+    expect(html).toContain("Something else…");
+    expect(html).not.toContain("U.S. Government?");
+    const parent = render(ConfirmClasses, { rows: [row], more: 0, mode: "parent" });
+    expect(parent).toContain("we guessed two half-credit classes: U.S. Government and Economics");
+    // Without halves, the one-tap guess.
+    expect(render(ConfirmClasses, { rows: [{ ...row, halves: null }], more: 0, mode: "student" })).toContain("U.S. Government?");
   });
 });

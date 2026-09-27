@@ -69,6 +69,8 @@ const PE_FAMILY = (t: CourseType) => t.id.startsWith("pe.");
 const ARTS_FAMILY = (t: CourseType) => t.id.startsWith("arts.");
 const CS_FAMILY = (t: CourseType) => t.id.startsWith("cs.");
 const cluster = (c: string) => (t: CourseType) => t.ladder?.id === `cte.${c}` || t.cteCluster === c;
+/** A "… wellness" class: health, Tennessee's Lifetime Wellness, or a fitness PE class. */
+const WELLNESS_FAMILY = (t: CourseType) => t.id === "health.health" || t.id === "health.wellness" || t.id === "pe.fitness";
 
 /**
  * Name patterns, most specific first. A pattern is only tried when its type belongs to the row's
@@ -128,7 +130,8 @@ const PATTERNS: Pattern[] = [
   { type: "math.int2", re: /\bmath(ematics)?\s*(ii|2)(h|e)?\b/i },
   { type: "math.int3", re: /\bmath(ematics)?\s*(iii|3)(h|e)?\b/i },
   { type: "math.alg2", re: /\balg(ebra)?\.?\s*(ii|2)(h|e)?\b/i },
-  { type: "math.alg1", re: /\balg(ebra)?\.?(\s*(i|1)(h|e)?)?\b/i },
+  // Never "Algebra III" (a school's own class after Algebra II), which no pattern names.
+  { type: "math.alg1", re: /\balg(ebra)?\.?(\s*(i|1)(h|e)?)?\b(?!\s*(i{2,3}|iv|[2-4])\b)/i },
   { type: "math.geom", re: /\bgeom(etry)?\b/i },
   // Tennessee's senior-year applied math classes by their older names (Bridge Math, the SAILS
   // math class, Applied Mathematical Concepts): the state's approved list now has Mathematical
@@ -156,7 +159,7 @@ const PATTERNS: Pattern[] = [
   { type: "cte.plant_soil_science", re: /\badvanced plant (and|&) soil science\b/i },
 
   // Science. Integrated Physics and Chemistry (the TEKS course name) before physics and chemistry.
-  { type: "sci.ipc", re: /\b(ipc|integrated physics|physical science|physical world)\b/i },
+  { type: "sci.ipc", re: /\b(ipc|integrated physics( (and|&) chemistry)?|physical science|physical world)\b/i },
   { type: "sci.phys_eng", re: /\bphysics for engineering\b/i },
   { type: "sci.phys2", re: /\b(ap\s*physics\s*(2|ii|c)|physics\s*(ii|2)|physics c)\b/i },
   { type: "sci.phys", re: /\bphysics\b/i },
@@ -185,7 +188,8 @@ const PATTERNS: Pattern[] = [
   { type: "ss.world_geo", re: /\b((world|human|cultural)\s*geo(graphy)?|geography for life)\b/i },
   // Texas's and Utah's geography class is World Geography (TEKS "World Geography Studies"; Utah's
   // World Geography requirement), so a bare "Geography" there is that class.
-  { type: "ss.world_geo", re: /\bgeography\b/i, states: ["TX", "UT"] },
+  // (Tennessee's "World History and Geography" and "U.S. History and Geography" are one class each.)
+  { type: "ss.world_geo", re: /(?<!\bhistory\s*(and|&)\s*)\bgeography\b/i, states: ["TX", "UT"] },
   { type: "ss.world_hist", re: /\b(world|european|ancient)\s*(hist(ory)?|civ(ilizations?)?)\b/i },
   { type: "ss.us_gov", re: /\b(government|civics|govt?|gov't)\b/i },
   { type: "ss.econ", re: /\b(economics|econ|microeconomics|macroeconomics)\b/i },
@@ -201,7 +205,9 @@ const PATTERNS: Pattern[] = [
   { type: "cte.digital_arts_design", re: /\bdigital arts? (and|&) design\b(?!\s*(ii|iii|iv|2|3|4)\b)/i },
   { type: "cte.arts_av.1", re: /\bdigital media\b/i },
 
-  // Arts
+  // Arts. Marching band and drill team first (Texas counts them toward PE by district policy,
+  // 19 TAC §74.12(b)(6)(D); Tennessee Policy 2.103 I(15)), before band reads as a band class.
+  { type: "arts.marching", re: /\b(marching band|drill team)\b/i },
   { type: "arts.ms", re: /\b(art|music|band|choir)\s*(6|7|8)\b/i },
   { type: "arts.art_history", re: /\bart history\b/i },
   { type: "arts.music_theory", re: /\bmusic theory\b/i },
@@ -226,8 +232,21 @@ const PATTERNS: Pattern[] = [
   { type: "cs.prog1", re: /\b(computer science|programming|coding)\s*(i|1)\b/i },
   { type: "cs.prog1", re: /\b(computer science|programming|coding|python|java)\b/i, broad: CS_FAMILY },
 
-  // Health and PE
-  { type: "health.wellness", re: /\bwellness\b/i },
+  // Health and PE. Texas's PE courses by their TEKS names (19 TAC §74.12(b)(6)(A): "(i) Lifetime
+  // Fitness and Wellness Pursuits; (ii) Lifetime Recreation and Outdoor Pursuits; and (iii)
+  // Skill-Based Lifetime Activities"), before "wellness" reads as Tennessee's Lifetime Wellness.
+  { type: "pe.fitness", re: /\blifetime fitness (and|&) wellness\b/i },
+  { type: "pe.lifetime", re: /\blifetime recreation (and|&) outdoor\b/i },
+  { type: "pe.skills", re: /\bskill-?\s?based lifetime\b/i },
+  // "Lifetime Wellness" is Tennessee's required class (Policy 2.103 I(14)). Anywhere else, and any
+  // other "… wellness" title ("Health & Wellness", "Fitness and Wellness"), might be health, PE or
+  // wellness: a guess to confirm, never sure.
+  { type: "health.wellness", re: /\blifetime wellness\b/i, states: ["TN"] },
+  { type: "health.wellness", re: /\blifetime wellness\b/i, broad: WELLNESS_FAMILY },
+  { type: "pe.fitness", re: /\bfitness\b.*\bwellness\b|\bwellness\b.*\bfitness\b/i, broad: WELLNESS_FAMILY },
+  { type: "health.health", re: /\bhealth\b.*\bwellness\b|\bwellness\b.*\bhealth\b/i, broad: WELLNESS_FAMILY },
+  { type: "health.wellness", re: /\bwellness\b/i, states: ["TN"], broad: WELLNESS_FAMILY },
+  { type: "health.health", re: /\bwellness\b/i, broad: WELLNESS_FAMILY },
   { type: "health.health", re: /\bhealth\b(?!\s*science)/i },
   // Utah's Individualized Lifetime Activities classes by their usual names (weight training, yoga,
   // aerobics, conditioning), before "Walking Fitness" reads as Fitness for Life.
@@ -284,10 +303,10 @@ const PATTERNS: Pattern[] = [
   // - Automotive (MP-TEA-POS-TDL-AUTOMOTIVE-AND-COLLISION-REPAIR): "Level 2• ... Automotive
   //   Basics", "Level 3• ... Automotive Technology I: Maintenance and Light Repair", "Level 4•
   //   Automotive Technology II: Automotive Service".
-  { type: "cte.engineering.4", re: /\badvanced engineering design and presentation\b/i },
-  { type: "cte.engineering.3", re: /\bengineering design and presentation\s*(ii|2)\b/i },
-  { type: "cte.engineering.2", re: /\bengineering design and presentation\s*(i|1)\b/i },
-  { type: "cte.engineering.3", re: /\bengineering design and presentation\b/i },
+  { type: "cte.engineering.4", re: /\badvanced engineering design (and|&) presentation\b/i },
+  { type: "cte.engineering.3", re: /\bengineering design (and|&) presentation\s*(ii|2)\b/i },
+  { type: "cte.engineering.2", re: /\bengineering design (and|&) presentation\s*(i|1)\b/i },
+  { type: "cte.engineering.3", re: /\bengineering design (and|&) presentation\b/i },
   { type: "cte.architecture_construction.4", re: /\bpracticum in construction technology\b/i },
   { type: "cte.architecture_construction.3", re: /\b(electrical|construction) technology\s*(ii|2)\b/i },
   { type: "cte.architecture_construction.2", re: /\b(electrical|construction) technology(\s*(i|1))?\b/i },
@@ -301,6 +320,20 @@ const PATTERNS: Pattern[] = [
   { type: "cte.transportation.4", re: /\bpracticum in transportation\b/i },
   { type: "cte.transportation.1", re: /\bprinciples of transportation\b/i },
   { type: "cte.education.1", re: /\bprinciples of human services\b/i },
+  // - Culinary Arts (MP-TEA-POS-HT-CULINARY-ARTS): "Level 1• Principles of Hospitality and Tourism
+  //   • Introduction to Culinary Arts", "Level 2• Culinary Arts", "Level 3• Advanced Culinary
+  //   Arts", "Level 4• ... Practicum in Culinary Arts". Early Learning
+  //   (MP-TEA-POS-ET-EARLY-LEARNING): "Level 2• Child Development", "Level 3• Child Guidance",
+  //   "Level 4• ... Practicum in Early Learning". Texas's plain "Culinary Arts" and "Child
+  //   Development" are level 2 there (Utah's Child Development is an introductory class): still a
+  //   guess to confirm, with the cluster's other levels as candidates.
+  { type: "cte.hospitality.4", re: /\bpracticum in culinary arts\b/i },
+  { type: "cte.hospitality.3", re: /\badvanced culinary arts\b/i },
+  { type: "cte.hospitality.1", re: /\b(introduction to culinary arts|principles of hospitality)\b/i },
+  { type: "cte.hospitality.2", re: /\bculinary arts\b(?!\s*(i{1,3}|iv|[1-4])\b)/i, states: ["TX"], broad: cluster("hospitality") },
+  { type: "cte.education.4", re: /\bpracticum in early learning\b/i },
+  { type: "cte.education.3", re: /\bchild guidance\b/i },
+  { type: "cte.education.2", re: /\bchild development\b(?!\s*(i{1,3}|iv|[1-4])\b)/i, states: ["TX"], broad: cluster("education") },
   // Tennessee (course names from Policy 3.205, TN-S6B): Therapeutic Services runs Health Science
   // Education, Medical Therapeutics, Anatomy and Physiology, then Nursing Education, which Policy
   // 3.103 lists with the work-based learning courses (TN-S3 p. 6); Marketing runs Introduction to
@@ -357,12 +390,12 @@ const PATTERNS: Pattern[] = [
   { type: "cte.engineering.1", re: /\b(engineering|stem)\b/i, broad: cluster("engineering") },
   { type: "cte.health.1", re: /\b(medical|nursing|pharmacy|sports medicine|dental)\b/i, broad: cluster("health") },
   { type: "cte.arts_av.1", re: /\b(audio|video|broadcast|a\/v)\b/i, broad: cluster("arts_av") },
-  { type: "cte.energy.1", re: /\b(energy|oil and gas|solar)\b/i, broad: cluster("energy") },
+  { type: "cte.energy.1", re: /\b(energy|oil (and|&) gas|solar)\b/i, broad: cluster("energy") },
 ];
 
 const LANGUAGE_PATTERNS: [LanguageCode, RegExp][] = [
   ["es", /\b(spanish|espa[nñ]ol)\b/i],
-  ["fr", /\bfrench\b/i],
+  ["fr", /\b(french|fran[cç]ais)\b/i],
   ["de", /\bgerman\b/i],
   ["la", /\blatin\b/i],
   ["zh", /\b(chinese|mandarin)\b/i],
@@ -375,11 +408,17 @@ const LANGUAGE_PATTERNS: [LanguageCode, RegExp][] = [
   ["asl", /\b(asl|american sign language|sign language)\b/i],
 ];
 
+/**
+ * A language class's level: its numeral first ("Pre-AP Spanish II" and "Spanish II Pre-AP" are level
+ * 2), and only without one a college-level or advanced cue ("AP Spanish Language" is level 4).
+ * "Pre-AP" is a school's own honors-style label, never AP.
+ */
 const LANGUAGE_LEVEL_PATTERNS: [LanguageLevel, RegExp][] = [
-  [4, /\b(iv|4|v|5|vi|6|ap|ib|advanced|literature)\b/i],
+  [4, /\b(iv|4|v|5|vi|6)\b/i],
   [3, /\b(iii|3)\b/i],
   [2, /\b(ii|2)\b/i],
   [1, /\b(i|1)\b/i],
+  [4, /(?<!pre-?\s?)\b(ap|ib)\b|\b(advanced|literature)\b/i],
 ];
 
 function fitsSubject(type: CourseTypeId, subject: CourseSubject) {
@@ -438,11 +477,50 @@ function cteLevelFromName(type: CourseTypeId, name: string): CourseTypeId {
  *   the name also matches, the family a catch-all stands for, or for a name no pattern knows, every
  *   kind of class in the subject (the engine narrows those by grade).
  */
-export type TypeGuess = { typeId: CourseTypeId; confident: boolean; candidates: CourseTypeId[] };
+export type TypeGuess = {
+  typeId: CourseTypeId;
+  confident: boolean;
+  candidates: CourseTypeId[];
+  /** A name joining two classes ("Gov/Econ"): see `combinedName`. */
+  combined?: CombinedName;
+};
+
+/**
+ * Two classes in one name ("Gov/Econ", "Economics & Personal Finance", "U.S. Government and
+ * Economics"): a "/", "&", "+" or "and" with a different kind of class named on each side, and no
+ * single class's name spanning it ("Personal Financial Literacy and Economics" is one Texas class,
+ * "Anatomy and Physiology" one science class). The row might be either kind, or two half-credit
+ * classes recorded as one: never a sure guess. `names` are the two sides of the name, as typed.
+ */
+export type CombinedName = { parts: [CourseTypeId, CourseTypeId]; names: [string, string] };
+
+type Hit = { type: CourseTypeId; broad?: (t: CourseType) => boolean; from: number; to: number };
+
+const JOINER = /\s*[/&+]\s*|\s+and\s+/gi;
+
+function combinedName(name: string, hits: readonly Hit[]): CombinedName | null {
+  for (const j of name.matchAll(JOINER)) {
+    const at = j.index;
+    const end = at + j[0].length;
+    if (hits.some((h) => h.from < at && h.to > at)) continue;
+    const left = hits.find((h) => h.to <= at);
+    const right = hits.find((h) => h.from >= end && h.type !== left?.type);
+    if (!left || !right) continue;
+    // Two rungs of one sequence ("Algebra I/Geometry") or two classes of one family ("Art & Music")
+    // are one class the student confirms, not two.
+    const ladder = getCourseType(left.type).ladder?.id;
+    if (ladder !== undefined && getCourseType(right.type).ladder?.id === ladder) continue;
+    if ((left.broad && left.broad(getCourseType(right.type))) || (right.broad && right.broad(getCourseType(left.type)))) continue;
+    const names: [string, string] = [name.slice(0, at).trim(), name.slice(end).trim()];
+    if (!names[0] || !names[1]) continue;
+    return { parts: [left.type, right.type], names };
+  }
+  return null;
+}
 
 export function guessCourseType(name: string, subject: CourseSubject, state: PlannerState | null = null): TypeGuess {
   if (subject === "world_language") return guessLanguage(name);
-  const hits: { type: CourseTypeId; broad?: (t: CourseType) => boolean; from: number; to: number }[] = [];
+  const hits: Hit[] = [];
   for (const p of PATTERNS) {
     if (p.states && (!state || !p.states.includes(state))) continue;
     if (!fitsSubject(p.type, subject)) continue;
@@ -454,6 +532,12 @@ export function guessCourseType(name: string, subject: CourseSubject, state: Pla
   if (!first) {
     const fallback = SUBJECT_FALLBACK_TYPE[subject];
     return { typeId: fallback, confident: false, candidates: uniq([fallback, ...inSubject.map((t) => t.id)]) };
+  }
+  const familyOf = (h: Hit) => (h.broad ? inSubject.filter((t) => h.broad!(t)).map((t) => t.id) : []);
+  const combined = combinedName(name, hits);
+  if (combined) {
+    const [left, right] = combined.parts.map((t) => hits.find((h) => h.type === t)!);
+    return { typeId: left.type, confident: false, candidates: uniq([left.type, right.type, ...familyOf(left), ...familyOf(right)]), combined };
   }
   if (first.broad) {
     const family = first.broad;
@@ -468,6 +552,17 @@ export function guessCourseType(name: string, subject: CourseSubject, state: Pla
   const others = same.filter((h) => h.type !== first.type && !covered(h)).map((h) => h.type);
   const candidates = uniq([first.type, ...others]);
   return { typeId: first.type, confident: candidates.length === 1, candidates };
+}
+
+/**
+ * The two half-credit classes a row's name joins ("Gov/Econ", "Economics/Personal Finance"), for a
+ * row of a full credit or more (`units` in quarter credits): its kinds and the two sides of its
+ * name, so "Confirm your classes" can offer to record it as two half-credit classes. Null for a
+ * name that joins full-credit classes ("Speech and Debate") or a half-credit row.
+ */
+export function combinedHalves(name: string, subject: CourseSubject, units: number, state: PlannerState | null = null): CombinedName | null {
+  const combined = guessCourseType(name, subject, state).combined;
+  return combined && units >= 4 && combined.parts.every((t) => getCourseType(t).units <= 2) ? combined : null;
 }
 
 /**

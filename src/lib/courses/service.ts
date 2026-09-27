@@ -1,8 +1,10 @@
 import { and, asc, count, eq, getTableColumns, sql } from "drizzle-orm";
 import * as z from "zod";
 import type { Db } from "@/db";
-import { studentCourses, users } from "@/db/schema";
+import { type CourseTerm, studentCourses, users } from "@/db/schema";
 import { scrubPii } from "../ai/privacy";
+import { UNITS_PER_CREDIT, type PlannerState } from "../planner/common";
+import { combinedHalves } from "../planner/course-type-guess";
 import { isCourseTypeId } from "../planner/course-types";
 import { type Checklist, CHECKLIST_CAVEAT, CHECKLIST_FRAMING, CTE_NOTE, collegePrepChecklist } from "./checklist";
 import { GPA_CAVEAT, type GpaSummary, computeGpa } from "./gpa";
@@ -108,6 +110,55 @@ export async function setCourseType(db: Db, userId: string, courseId: string, ty
     .where(and(eq(studentCourses.id, courseId), eq(studentCourses.userId, userId)))
     .returning(courseColumns);
   return row ? { ok: true, value: row } : { ok: false, error: "not_found" };
+}
+
+export type SplitCourseResult = { ok: true; value: [Course, Course] } | { ok: false; error: "not_found" | "not_combined" | "limit" };
+
+/**
+ * "Confirm your classes" on the path: a class whose name joins two half-credit classes ("Gov/Econ",
+ * "Economics/Personal Finance") becomes the two classes it names, each with half its credits and
+ * its kind as the student's choice (a full-year row becomes a fall and a spring class). Everything
+ * else about the class (grade, level, status, final grade) stays. Only the student's own class,
+ * and only when its name joins two half-credit kinds of its subject (`combinedHalves`, decided
+ * here from the stored row: the browser sends only its id).
+ */
+export async function splitCombinedCourse(db: Db, userId: string, courseId: string, state: PlannerState | null, now = new Date()): Promise<SplitCourseResult> {
+  if (!isUuid(courseId)) return { ok: false, error: "not_found" };
+  const course = await getCourse(db, userId, courseId);
+  if (!course) return { ok: false, error: "not_found" };
+  const halves = combinedHalves(course.name, course.subject, Math.round(course.credits * UNITS_PER_CREDIT), state);
+  // Half the credits in the form's steps (a quarter credit).
+  if (!halves || !Number.isInteger(course.credits * 2)) return { ok: false, error: "not_combined" };
+  const [{ n }] = await db.select({ n: count() }).from(studentCourses).where(eq(studentCourses.userId, userId));
+  if (n >= MAX_COURSES) return { ok: false, error: "limit" };
+  const credits = course.credits / 2;
+  const [first, second]: [CourseTerm, CourseTerm] = course.term === "full_year" ? ["fall", "spring"] : [course.term, course.term];
+  const rows = await db.transaction(async (tx) => {
+    const [a] = await tx
+      .update(studentCourses)
+      .set({ name: halves.names[0], credits, term: first, courseTypeId: halves.parts[0], courseTypeSource: "student", updatedAt: now })
+      .where(and(eq(studentCourses.id, courseId), eq(studentCourses.userId, userId)))
+      .returning(courseColumns);
+    const [b] = await tx
+      .insert(studentCourses)
+      .values({
+        userId,
+        name: halves.names[1],
+        subject: course.subject,
+        level: course.level,
+        gradeLevel: course.gradeLevel,
+        term: second,
+        credits,
+        status: course.status,
+        finalGrade: course.finalGrade,
+        highSchoolCredit: course.highSchoolCredit,
+        courseTypeId: halves.parts[1],
+        courseTypeSource: "student",
+      })
+      .returning(courseColumns);
+    return [a, b] as const;
+  });
+  return rows[0] && rows[1] ? { ok: true, value: [rows[0], rows[1]] } : { ok: false, error: "not_found" };
 }
 
 /** Deletes a course only if it belongs to `userId`. */

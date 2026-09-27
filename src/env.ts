@@ -55,7 +55,7 @@ const EnvSchema = z
     STRIPE_PRICE_ANNUAL: z.string().optional(),
 
     // Who sees the class planner's "Your path" (/plan, its print view, a parent's read-only path):
-    // "beta" (households staff mark with npm run beta:planner, plus staff) or "everyone".
+    // "beta" (households staff mark with npm run beta:planner) or "everyone".
     PLANNER_PATH: z.enum(["beta", "everyone"]).default("beta"),
   })
   .superRefine((env, ctx) => {

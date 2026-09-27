@@ -7,23 +7,24 @@ import { assertAdmin } from "../admin/access";
 import { audit } from "../audit";
 
 // The class planner's "Your path" is in beta. It shows (on /plan, its print view and a parent's
-// read-only path) only for households staff mark with `npm run beta:planner`, for staff, or for
-// everyone when PLANNER_PATH=everyone. Everyone else keeps today's checklist and course ideas. The
-// free /graduation pages and the state and school settings aren't part of it.
+// read-only path) only for households staff mark with `npm run beta:planner`, or for everyone when
+// PLANNER_PATH=everyone. Everyone else keeps today's checklist and course ideas. The free
+// /graduation pages and the state and school settings aren't part of it. Staff accounts have no
+// page that shows a path (/plan is for students, the parent pages for parents, and /admin has no
+// path view), so staff preview it by putting a test household in the beta.
 
 /**
  * Whether "Your path" shows for this account's household: a student's own, or the child a parent is
- * looking at (pass the child's id). Staff (admin) accounts preview it.
+ * looking at (pass the child's id).
  */
 export async function plannerPathEnabled(db: Db, userId: string): Promise<boolean> {
   if (env().PLANNER_PATH === "everyone") return true;
   const [row] = await db
-    .select({ role: users.role, beta: households.plannerBeta })
+    .select({ beta: households.plannerBeta })
     .from(users)
-    .leftJoin(households, eq(households.id, users.householdId))
+    .innerJoin(households, eq(households.id, users.householdId))
     .where(eq(users.id, userId));
-  if (!row) return false;
-  return row.role === "admin" || row.beta === true;
+  return row?.beta === true;
 }
 
 export type SetPlannerBetaResult = { ok: true; householdId: string; on: boolean } | { ok: false; error: "household_not_found" };

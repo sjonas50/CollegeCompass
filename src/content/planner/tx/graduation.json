@@ -283,6 +283,12 @@
       "quote": "In accordance with local district policy, credit for any of the courses listed in subparagraph (A) of this paragraph may be earned through participation in the following activities: (i) Athletics; (ii) Junior Reserve Officer Training Corps (JROTC); and"
     },
     {
+      "id": "tx-74-12-b6d",
+      "source": "TX-S1",
+      "pinpoint": "§74.12(b)(6)(D)",
+      "quote": "In accordance with local district policy, up to one credit for any one of the courses listed in subparagraph (A) of this paragraph may be earned through participation in any of the following activities: (i) Drill Team; (ii) Marching Band; and (iii) Cheerleading."
+    },
+    {
       "id": "tx-74-12-b7",
       "source": "TX-S1",
       "pinpoint": "§74.12(b)(7)(A)",
@@ -598,10 +604,10 @@
               "units": 4,
               "select": [
                 {
-                  "types": ["pe.general", "pe.fitness", "pe.skills", "pe.lifetime", "pe.athletics", "pe.other", "other.jrotc"]
+                  "types": ["pe.general", "pe.fitness", "pe.skills", "pe.lifetime", "pe.athletics", "pe.other", "other.jrotc", "arts.marching"]
                 }
               ],
-              "cite": ["tx-74-12-b6", "tx-74-12-b6c"],
+              "cite": ["tx-74-12-b6", "tx-74-12-b6c", "tx-74-12-b6d"],
               "area": "health_pe",
               "note": "By district policy, athletics, JROTC, marching band, drill team or cheerleading can earn this credit."
             },
@@ -946,10 +952,10 @@
               "units": 4,
               "select": [
                 {
-                  "types": ["pe.general", "pe.fitness", "pe.skills", "pe.lifetime", "pe.athletics", "pe.other", "other.jrotc"]
+                  "types": ["pe.general", "pe.fitness", "pe.skills", "pe.lifetime", "pe.athletics", "pe.other", "other.jrotc", "arts.marching"]
                 }
               ],
-              "cite": ["tx-74-12-b6", "tx-74-12-b6c"],
+              "cite": ["tx-74-12-b6", "tx-74-12-b6c", "tx-74-12-b6d"],
               "area": "health_pe",
               "note": "By district policy, athletics, JROTC, marching band, drill team or cheerleading can earn this credit."
             },

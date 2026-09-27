@@ -16,7 +16,7 @@ import {
 import { type DemandPriority, type Reason, suggestionKey } from "../engine-io";
 import { MATH_TARGET_DEFS } from "../families";
 import { advancedOnly, type AltResult, evaluateAlternative, languageLevelsFilled, leafAccepts, pickAlternative, type PickOptions } from "./allocate";
-import { earlyWithoutCredit, evaluateCheck, evaluateRuleSet, type RuleSetEval } from "./audit";
+import { counselorDecides, earlyWithoutCredit, evaluateCheck, evaluateRuleSet, type HeldFn, type RuleSetEval } from "./audit";
 import type { CatalogRow } from "./catalog";
 import { type Alternative, type CLeaf, leafSignature } from "./compile";
 import { type Ctx, type FamilyCtx, leafPriority, levelOrder, rowIsOffered, type RuleSetCtx, schoolYearOfGrade } from "./context";
@@ -82,7 +82,7 @@ export type Placement = {
   upgradedFrom: CourseTypeLevel | null;
 };
 
-export type BlockReason = "not_offered" | "doesnt_fit" | "past" | "load" | "guessed" | "dismissed" | "choice" | "equivalent" | "ask" | "hs_credit";
+export type BlockReason = "not_offered" | "doesnt_fit" | "past" | "load" | "guessed" | "dismissed" | "choice" | "equivalent" | "ask" | "hs_credit" | "may_count";
 
 export type YearState = {
   grade: SchoolGrade;
@@ -486,8 +486,9 @@ export class Filler {
     const own = new Set(
       this.items
         .filter((i) => i.own && i.subject === "world_language" && !i.noCredit)
-        .map((i) => getCourseType(i.typeId).ladder?.id.slice(5))
-        .filter((c): c is string => !!c && c !== "other"),
+        .map((i) => getCourseType(i.typeId).ladder?.id ?? "")
+        .filter((l) => l.startsWith("lang."))
+        .map((l) => l.slice(5)),
     );
     const codes = this.ctx.choices.worldLanguage ? [this.ctx.choices.worldLanguage] : own.size ? [...own] : LANGUAGES.filter((c) => c !== "other");
     return codes.some((code) => {
@@ -843,7 +844,7 @@ export class Filler {
       const cat = this.ctx.catalogs.get(grade)!;
       const sy = schoolYearOfGrade(this.ctx, grade);
       for (const row of cat.rows) {
-        if (row.defaultTerm === "summer" || !rowIsOffered(row, grade, sy) || pastCteLevel(this.ctx.items, row.typeId)) continue;
+        if (row.defaultTerm === "summer" || !rowIsOffered(row, grade, sy) || pastCteLevel(this.ctx.items, row.typeId) || pastLanguageLevel(this.ctx.items, row.typeId)) continue;
         if (matchesAny(probe(row, grade, sy), need.selectors)) out.push({ row, grade });
       }
     }
@@ -885,8 +886,11 @@ export class Filler {
     // are never added for it: rigor is a level choice on classes already planned (design §5.7).
     if (advancedOnly(need.selectors)) return [];
     // A requirement the student's own class on the same math rung may meet (Utah's Secondary Math
-    // III for Texas's 3rd math): the counselor decides, and no class is added for it.
+    // III for Texas's 3rd math), or a class only the counselor can say counts (JROTC III for
+    // Tennessee's Personal Finance, Finite Math as a 4th math): the counselor decides, and no class
+    // is added for it.
     if (this.equivalentTaken(need)) return [];
+    if (need.leaf && counselorDecides(this.ctx.items, need.leaf, this.ctx.state)) return [];
     const senior = need.seniorMath ? this.seniorMathOrder(startRank(this.items, 13)) : null;
     // A retake is the class itself, never its AP or college version (AP Seminar for a failed English 10).
     const retake = failedAttempt(this.items, need.selectors) !== null;
@@ -1622,16 +1626,25 @@ export class Filler {
    */
   private chooseLanguage(levels: number, avoid: LanguageCode | null = null): LanguageCode | null {
     if (this.ctx.choices.worldLanguage && this.ctx.choices.worldLanguage !== avoid) return this.ctx.choices.worldLanguage;
-    // The language the student already takes (guesses count for sequencing).
-    const own = this.items.filter((i) => i.own && i.subject === "world_language" && !i.noCredit);
-    for (const i of own.sort((a, b) => b.grade - a.grade)) {
-      const l = getCourseType(i.typeId).ladder;
-      if (l?.id.startsWith("lang.") && !l.id.endsWith(".other") && l.id.slice(5) !== avoid) return l.id.slice(5) as LanguageCode;
-    }
+    // The language the student already takes (guesses count for sequencing), including one the
+    // vocabulary doesn't name (Vietnamese is "another language"): its next level is what they need,
+    // never a new language (the generic list has their language's levels: catalog.ts withOwnLanguages).
+    const own = this.ownLanguage(avoid);
+    if (own) return own;
     for (const code of LANGUAGES) {
       if (code === "other" || code === avoid) continue;
       const offered = [1, 2].slice(0, levels).every((lv) => this.ctx.planGrades.some((g) => (this.ctx.catalogs.get(g)!.byType.get(`lang.${code}.${lv}` as CourseTypeId) ?? []).length > 0));
       if (offered) return code;
+    }
+    return null;
+  }
+
+  /** The language of the student's latest language class (not `avoid`), or null. */
+  private ownLanguage(avoid: LanguageCode | null = null): LanguageCode | null {
+    const own = this.items.filter((i) => i.own && i.subject === "world_language" && !i.noCredit);
+    for (const i of own.sort((a, b) => b.grade - a.grade)) {
+      const l = getCourseType(i.typeId).ladder;
+      if (l?.id.startsWith("lang.") && l.id.slice(5) !== avoid) return l.id.slice(5) as LanguageCode;
     }
     return null;
   }
@@ -1656,8 +1669,10 @@ export class Filler {
       }
       if (result === "doesnt_fit" && this.ctx.inProgressGrade !== null) result = this.placeLanguageLevels(need, code, true);
       // Another route that doesn't need these language years (five social studies credits for Arts
-      // and Humanities, programming for Texas's language credits), if the rule has one.
-      if (result === "doesnt_fit") this.trySwitch(need);
+      // and Humanities, programming for Texas's language credits), if the rule has one. Never away
+      // from a language the student already takes: its next level is theirs to plan, and a route
+      // they didn't choose (a senior's two computer programming credits) isn't the plan's to pick.
+      if (result === "doesnt_fit" && code !== this.ownLanguage()) this.trySwitch(need);
       this.refreshNeeds();
     }
   }
@@ -1741,7 +1756,7 @@ export class Filler {
         // with the classes moved for it.
         for (const p of placedNow.reverse()) this.uncommit(p);
         for (const undo of moves.reverse()) undo();
-        if (!offered) this.trySwitch(need);
+        if (!offered && code !== this.ownLanguage()) this.trySwitch(need);
         return offered ? "doesnt_fit" : "not_offered";
       }
     }
@@ -1913,6 +1928,7 @@ export class Filler {
     // The student took the class before 9th grade without high school credit (Algebra I in 8th):
     // whether it counts is the counselor's question, not a class to add again.
     if (earlyWithoutCredit(this.items, need.selectors)) return "hs_credit";
+    if (need.leaf && counselorDecides(this.ctx.items, need.leaf, this.ctx.state)) return "may_count";
     if (this.equivalentTaken(need) || this.staticCandidates(need).some(({ row, grade }) => this.repeatsMathRung(row.typeId, grade))) return "equivalent";
     if (need.byGrade < this.ctx.firstGrade && need.byGrade < 12) return "past";
     const inWindow = this.staticCandidates(need).filter(({ row, grade }) => grade >= this.window(need)[0] && grade <= this.window(need)[1] && !this.alreadyHas(row.typeId));
@@ -2964,6 +2980,24 @@ export function cteReached(items: readonly Item[], cluster: string): number {
 export function pastCteLevel(items: readonly Item[], typeId: CourseTypeId): boolean {
   const l = getCourseType(typeId).ladder;
   return !!l && l.id.startsWith("cte.") && l.rank <= cteReached(items, l.id.slice(4));
+}
+
+/** Needs the fill held for a class to be confirmed (`unmet` "guessed"), by need id (audit.ts `HeldFn`). */
+export function heldByFill(fill: Pick<FillResult, "unmet">): HeldFn {
+  return (id) => fill.unmet.get(id) === "guessed";
+}
+
+/**
+ * A language level below the student's highest in that language, or at it (except "IV or higher",
+ * which can come again: AP Spanish after Spanish IV): never planned, for any need. The next level
+ * is always the one up from the student's highest (Spanish III isn't a humanities focus credit
+ * for a student in Spanish IV).
+ */
+export function pastLanguageLevel(items: readonly Item[], typeId: CourseTypeId): boolean {
+  const l = getCourseType(typeId).ladder;
+  if (!l?.id.startsWith("lang.")) return false;
+  const reached = Math.max(0, ...items.filter((i) => i.own && countsForSequence(i) && getCourseType(i.typeId).ladder?.id === l.id).map((i) => getCourseType(i.typeId).ladder!.rank));
+  return l.rank < reached || (l.rank === reached && l.rank < 4);
 }
 
 /** Classes on a CTE cluster's ladder at a level: the generic level type and named classes there. */

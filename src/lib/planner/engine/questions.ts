@@ -1,6 +1,7 @@
 import { toCredits } from "../common";
 import { getCourseType } from "../course-types";
 import type { CounselorQuestion, Gap, RuleSetAudit } from "../engine-io";
+import { counselorDecides } from "./audit";
 import type { Ctx } from "./context";
 import { reason } from "./explain";
 import type { FillResult } from "./fill";
@@ -100,11 +101,15 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
   }
   // A class of the student's that a requirement counts only on an exception the plan can't see
   // (Utah's ENGL 1010 from 2026-27, only in an approved pilot): the requirement's own question.
+  // A class only the counselor can say counts for a requirement it's short of (JROTC III for
+  // Tennessee's Personal Finance, a math class after Algebra II as the 4th math): its question.
   const own = asPlanned(fill.items).filter((i) => i.own && !i.noCredit);
   for (const e of fill.evals) {
     for (const l of e.best?.leaves ?? []) {
       const ask = l.leaf.req.kind === "credits" ? l.leaf.req.ask : undefined;
-      if (ask && own.some((i) => matchesAny(i, ask.select))) add(`ask:${e.rc.rs.id}/${l.leaf.id}`, ask.question, ask.cite, e.rc.rs.id);
+      if (ask && !ask.decides && own.some((i) => matchesAny(i, ask.select))) add(`ask:${e.rc.rs.id}/${l.leaf.id}`, ask.question, ask.cite, e.rc.rs.id);
+      const decides = l.missing > 0 ? counselorDecides(fill.items, l.leaf, ctx.state) : null;
+      if (decides) add(`ask:${e.rc.rs.id}/${l.leaf.id}`, decides.question, decides.cite, e.rc.rs.id);
     }
   }
   // Test-score routes still open for a required course route.

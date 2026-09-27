@@ -839,6 +839,16 @@ const CORE = {
     grades: [9, 12],
     levels: ["regular", "honors", "ib"],
   },
+  // Its own kind because Texas lets districts count it toward PE (19 TAC §74.12(b)(6)(D)) and
+  // Tennessee lets schools count its physical activity for PE (Policy 2.103 I(15)): a concert band
+  // or choir never does. It's a fine arts class too, but one credit counts for one requirement.
+  "arts.marching": {
+    title: "Marching band or drill team",
+    subject: "arts",
+    grades: [9, 12],
+    units: 2,
+    alt: ["health_pe"],
+  },
   "arts.music_theory": {
     title: "Music theory",
     subject: "arts",

@@ -19,7 +19,7 @@ import { type FamilyId, type MathTarget, getFamily } from "../families";
 import { contentFingerprint, isStale } from "../review";
 import type { Citation, ContentHeader, Gate, RuleFile, RuleSet, Source, SourceKey, Strength, Variant } from "../rules";
 import type { Allocation } from "./allocate";
-import { type CatalogRow, genericCatalogView, genericTitleFor, resolveCatalog, type ResolvedCatalog } from "./catalog";
+import { type CatalogRow, genericCatalogView, genericTitleFor, resolveCatalog, type ResolvedCatalog, withOwnLanguages } from "./catalog";
 import { type Alternative, compileVariant } from "./compile";
 import { mightBeKinds } from "./confirm";
 import { placeGuesses } from "./guesses";
@@ -259,7 +259,7 @@ export function buildContext(input: PlannerInput & { state: PlannerState; conten
   const summer = input.asOf.month === 6 || input.asOf.month === 7;
   const firstGrade = summer ? grade + 1 : grade;
   const planGrades = gradeRange(firstGrade, 12);
-  const genericView = genericCatalogView(content.genericCatalog);
+  const genericView = withOwnLanguages(genericCatalogView(content.genericCatalog), input.courses);
   const genericTitle = genericTitleFor(content.genericCatalog, state);
   const catalogs = new Map<SchoolGrade, ResolvedCatalog>();
   const genericResolved = resolveCatalog(genericView, genericView, genericTitle);

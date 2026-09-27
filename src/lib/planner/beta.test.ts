@@ -6,8 +6,9 @@ import { registerStudent } from "@/lib/accounts";
 import { AdminRequiredError } from "@/lib/admin/access";
 import { BETA_PLANNER_USAGE, parseBetaPlannerArgs, plannerPathEnabled, runBetaPlanner, setPlannerBeta } from "./beta";
 
-// The class planner's "Your path" is in beta: households staff mark with `npm run beta:planner`,
-// staff, or everyone with PLANNER_PATH=everyone.
+// The class planner's "Your path" is in beta: households staff mark with `npm run beta:planner`, or
+// everyone with PLANNER_PATH=everyone. Staff accounts have no page that shows a path, so the flag
+// isn't on for them either (round 10): staff preview it with a test household.
 
 const NOW = new Date("2026-09-25T18:00:00Z");
 let db: Db;
@@ -52,10 +53,10 @@ describe("beta:planner arguments", () => {
 });
 
 describe("who sees \"Your path\"", () => {
-  it("a household staff marked, and staff; not everyone else", async () => {
+  it("a household staff marked; not everyone else, and not staff accounts (no page shows them a path)", async () => {
     const ana = await teen();
     expect(await plannerPathEnabled(db, ana)).toBe(false);
-    expect(await plannerPathEnabled(db, adminId)).toBe(true);
+    expect(await plannerPathEnabled(db, adminId)).toBe(false);
     await db.update(schema.households).set({ plannerBeta: true }).where(eq(schema.households.id, await householdOf(ana)));
     expect(await plannerPathEnabled(db, ana)).toBe(true);
     expect(await plannerPathEnabled(db, "00000000-0000-4000-8000-000000000000")).toBe(false);

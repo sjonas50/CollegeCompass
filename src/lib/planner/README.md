@@ -10,7 +10,7 @@ proof-of-concept decisions override the design where they differ; see the end of
 | `common.ts` | `PlannerState` (UT, TN, TX), `SchoolGrade`, quarter-credit units (`toUnits`, `toCredits`), ISO dates, school-year labels |
 | `course-types.ts` | The course-type vocabulary: ids, levels, CTE, ladders, prerequisites, capabilities, state titles |
 | `course-type-guess.ts` | From a `student_courses` row (subject, level, typed name) to a type; guesses are *assumed*, with how sure they are and every kind the row might be (`guessCourseType`) |
-| `beta.ts` | "Your path" is in beta: `plannerPathEnabled` (households marked by staff, staff, or `PLANNER_PATH=everyone`) and `npm run beta:planner` |
+| `beta.ts` | "Your path" is in beta: `plannerPathEnabled` (households marked by staff, or `PLANNER_PATH=everyone`) and `npm run beta:planner` |
 | `families.ts` | The 32 major-family ids, math targets (CALC … APPLIED), the CIP routing type and `routeCip` |
 | `rules.ts` | The rule language: rule files, rule sets, variants, requirements, selectors, checks, conditions, gates, review |
 | `content-types.ts` | The other content files: generic catalog, state facts (gap options), families, CIP routing |
@@ -36,8 +36,10 @@ proof-of-concept decisions override the design where they differ; see the end of
 
 "Your path" and everything below that shows it (the print views, the parent's read-only path and
 dashboard block, the roadmap's "Open your path" links, the path's actions) is in beta: only for
-households staff mark with `npm run beta:planner`, for staff, or for everyone with
-`PLANNER_PATH=everyone` (`beta.ts`). Everyone else keeps today's checklist and course ideas.
+households staff mark with `npm run beta:planner`, or for everyone with
+`PLANNER_PATH=everyone` (`beta.ts`). Everyone else keeps today's checklist and course ideas. Staff
+accounts have no page that shows a path (`/plan` is for students, the parent pages for parents, and
+`/admin` has no path view), so staff preview it with a test household in the beta.
 
 - `/plan` "Your path" (`src/app/plan/path/`): full access. Suggestions are looked up by key in
   today's plan before anything is added, so the browser never decides what's added.
@@ -59,7 +61,7 @@ households staff mark with `npm run beta:planner`, for staff, or for everyone wi
 
 ## Course types (`course-types.ts`)
 
-237 ids: 129 written out, plus `lang.<code>.<1-4>` for 13 languages and `cte.<cluster>.<1-4>` for 14
+243 ids: 135 written out, plus `lang.<code>.<1-4>` for 13 languages and `cte.<cluster>.<1-4>` for 14
 career clusters. Each type has a generic title, one of the app's 10 subjects (plus `altSubjects`
 students often use), default units, a usual grade window, prerequisites (each met by any one listed
 type), and optionally a ladder rank, capabilities and state display names.
@@ -88,6 +90,15 @@ type), and optionally a ladder rank, capabilities and state display names.
   Requirements a guess decides read "Waiting on you to confirm a class", and "Confirm your classes"
   at the top of the path asks for each unconfirmed row's kind with the guess as one tap
   (`engine/confirm.ts`). The add and edit forms pre-select a confident guess, so saving confirms it.
+- **Names the guesser reads carefully**: a name joining two classes ("Gov/Econ", "Economics &
+  Personal Finance") is never a sure guess, and has both kinds as candidates; when both are
+  half-credit kinds on a full-credit row, "Confirm your classes" offers it as two half-credit
+  classes (`combinedHalves`; the row is split in two by `splitCombinedCourse` in
+  `lib/courses/service.ts`). One class's own name that contains "and" (Integrated Physics and
+  Chemistry, Personal Financial Literacy and Economics, U.S. History and Geography) stays one.
+  Texas's PE courses by their TEKS names come before "wellness"; "Lifetime Wellness" is sure only
+  in Tennessee, and any other wellness title is a guess among health, PE and wellness. A language
+  class's level comes from its numeral first ("Pre-AP" is never AP).
 
 To add a type, add an entry to `CORE` and run the tests (acyclic prerequisites, every ladder rung
 reachable, and the coverage list for UT, TN, TX and the 32 families).
@@ -123,7 +134,10 @@ and `citations` (verbatim quotes of 300 characters or fewer).
 - **A question for an exception**: a credits leaf's `ask` (`select`, `question`, `cite`) is asked
   of the counselor whenever the student has a class matching `select` that the leaf doesn't count
   as the source states it (Utah: ENGL 1010 from 2026-27 counts for level 11 only "for students
-  participating in an approved ENGL 1010 pilot").
+  participating in an approved ENGL 1010 pilot"). With `decides` (`classes`, `text`), such a class
+  may meet the requirement, but only the counselor can say (Tennessee's JROTC III for Personal
+  Finance, when the JROTC instructor took the training): while the student has `classes` of them, a
+  shortfall reads `text` and "Ask your counselor", never a class to add or "Needs a plan now".
 - **Not course requirements**: `conditions` show as "We don't track this"; `unverified` shows once
   as "Ask your counselor"; `checks` run after allocation (math in 3 years, DLA on schedule by the
   end of 11th: the plan shows `req` and `with`, in any grade; Utah senior math, no Texas

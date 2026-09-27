@@ -276,14 +276,14 @@ describe("classes recorded without choosing their kind", () => {
     ];
     const id = await student({ grade: 11, state: "TX", rows: guessed });
     const path = planned(await studentPath(db, id, NOW));
-    const guessedLines = path.result.audit
-      .filter((a) => a.kind === "state_graduation")
-      .flatMap((a) => a.requirements)
-      .filter((r) => r.status === "waiting_confirm" && r.modifiers.includes("guessed_type"));
+    const waitingLines = path.result.audit.filter((a) => a.kind === "state_graduation").flatMap((a) => a.requirements).filter((r) => r.status === "waiting_confirm");
+    const guessedLines = waitingLines.filter((r) => r.modifiers.includes("guessed_type"));
     expect(guessedLines.length).toBeGreaterThan(0);
+    // The rest wait with them: credit totals short of classes held for a confirmation (round 10).
+    for (const r of waitingLines.filter((x) => !guessedLines.includes(x))) expect(["total", "electives"]).toContain(r.reqId);
     const overview = await pathOverview(db, id, NOW);
     if (overview.kind !== "planned") throw new Error(overview.kind);
-    expect(overview.summary.counts.confirmType).toBe(guessedLines.length);
+    expect(overview.summary.counts.confirmType).toBe(waitingLines.length);
     const roomLines = path.result.audit.filter((a) => a.kind === "state_graduation").flatMap((a) => a.requirements).filter((r) => r.status === "room_to_add");
     expect(overview.summary.counts.roomToAdd).toBe(roomLines.length);
     // No language gap for the guessed Spanish I and II.

@@ -111,6 +111,28 @@ const CASES: [name: string, subject: CourseSubject, expected: CourseTypeId, stat
   ["Something Else", "career_technical", "cte.other"],
   // A name matching another subject's type falls back within the row's subject.
   ["Chemistry", "career_technical", "cte.other"],
+  // Round 10. Texas's PE courses (19 TAC §74.12(b)(6)(A)) before "wellness"; other wellness titles.
+  ["Lifetime Fitness and Wellness Pursuits", "health_pe", "pe.fitness", "TX"],
+  ["Lifetime Recreation and Outdoor Pursuits", "health_pe", "pe.lifetime", "TX"],
+  ["Skill-Based Lifetime Activities", "health_pe", "pe.skills", "TX"],
+  ["Health & Wellness", "health_pe", "health.health", "UT"],
+  ["Lifetime Wellness", "health_pe", "health.wellness", "TN"],
+  ["Marching Band", "arts", "arts.marching"],
+  ["Drill Team", "health_pe", "arts.marching"],
+  // Two classes in one name: the first, as a guess to confirm.
+  ["Gov/Econ", "social_studies", "ss.us_gov", "TX"],
+  ["Economics/Personal Finance", "social_studies", "ss.econ", "TN"],
+  ["US Government/Economics", "social_studies", "ss.us_gov", "TN"],
+  // A language class's numeral decides its level; "Pre-AP" isn't AP.
+  ["Pre-AP Spanish II", "world_language", "lang.es.2"],
+  ["Spanish I Pre-AP", "world_language", "lang.es.1"],
+  ["Français I", "world_language", "lang.fr.1"],
+  ["Algebra III", "math", "math.other"],
+  // TEA programs of study with "&", and Texas's level-2 names.
+  ["Engineering Design & Presentation I", "career_technical", "cte.engineering.2"],
+  ["Engineering Design & Presentation II", "career_technical", "cte.engineering.3"],
+  ["Culinary Arts", "career_technical", "cte.hospitality.2", "TX"],
+  ["Child Development", "career_technical", "cte.education.2", "TX"],
 ];
 
 describe("guessCourseTypeId", () => {

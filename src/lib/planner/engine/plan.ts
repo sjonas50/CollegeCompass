@@ -1,6 +1,7 @@
 import { US_STATES } from "@/lib/colleges/states";
 import type { PlannerState, SchoolGrade } from "../common";
 import { comingLaterNote, DRAFT_BANNER, STANDING_PLAN_NOTE } from "../copy";
+import { combinedHalves } from "../course-type-guess";
 import { courseTypeTitle, type CourseTypeId, getCourseType, isCollegeLevel } from "../course-types";
 import {
   COLLEGE_LEVEL_SOFT_WARNING_AT,
@@ -27,12 +28,13 @@ import {
 import { isStale, reviewLabel, staleLabel } from "../review";
 import type { Check, ContentHeader, Req, Selector } from "../rules";
 import { type AltResult, evaluateAlternative, type LeafResult } from "./allocate";
-import { admissionConflicts, confirmedEval, expandedResults, ruleSetAudit, waiverNotes, worst } from "./audit";
+import { admissionConflicts, confirmedEval, expandedResults, ruleSetAudit, ruleSetWaits, waiverNotes, worst } from "./audit";
+import { ownLanguageRow } from "./catalog";
 import { type Alternative, type CLeaf, leafSignature } from "./compile";
 import { guessState, mightBeRows } from "./confirm";
 import { aimsAt, buildContext, type Ctx, type FamilyCtx, leafPriority, rowIsOffered, type RuleSetCtx, schoolYearOfGrade } from "./context";
 import { algebra2Reason, leafNoteReason, loadReason, prepReason, reason, requirementReason, resolveCitations, retakeReason, seniorMathReason } from "./explain";
-import { belowPrecalculus, type FillResult, isRepeatable, pastIntro, type PlanConfig, prereqsMetIn, runFill, sameContent } from "./fill";
+import { belowPrecalculus, type FillResult, heldByFill, isRepeatable, pastIntro, pastLanguageLevel, type PlanConfig, prereqsMetIn, runFill, sameContent } from "./fill";
 import { addedCreditTotal, buildGaps, creditRoom } from "./gaps";
 import { mathRankOf, rungName, rungTypes, startRank, unresolvedFailedRank } from "./ladder";
 import { asPlanned, type Item } from "./model";
@@ -528,9 +530,7 @@ const namedLeaf = (l: LeafResult) => l.leaf.req.kind !== "total_credits" && l.le
 function neededLeaves(rc: RuleSetCtx, route: AltResult, key: string, rest: Item[]): CLeaf[] {
   const counting = route.leaves.filter((l) => namedLeaf(l) && l.counted.some((c) => c.item.key === key));
   if (counting.length === 0) return [];
-  const before = new Map(route.leaves.filter(namedLeaf).map((l) => [l.leaf.id, l.missing]));
-  const lost = (r: AltResult) => r.leaves.filter((l) => namedLeaf(l) && l.missing > (before.get(l.leaf.id) ?? 0)).map((l) => l.leaf.id);
-  const lessMet = (r: AltResult) => r.notDone > 0 || lost(r).length > 0;
+  const { lost, lessMet } = lessMetThan(route);
   const without = evaluateAlternative(route.alt, rest, rc.allocation);
   const lostHere = new Set(lost(without));
   if (lostHere.size === 0) return [];
@@ -548,10 +548,31 @@ function neededLeaves(rc: RuleSetCtx, route: AltResult, key: string, rest: Item[
       if (!lessMet(evaluateAlternative(alt, rest, rc.allocation))) return [];
     }
   }
+  // A route that differs only in what stands in for what (Tennessee's computer science credit as
+  // the 4th math, Policy 2.103 I(4)(b)1) and is met without the class: the rule doesn't require it
+  // (Precalculus next to a planned Computer Science Principles is there for what else placed it).
+  if (metBySubstitution(rc, route, rest, lessMet)) return [];
   // The requirements that would go short without it; when the others shift to cover those (one
   // pool of credit), the ones it counts toward.
   const short = counting.filter((l) => lostHere.has(l.leaf.id));
   return (short.length ? short : counting).map((l) => l.leaf);
+}
+
+/** Requirements a result misses more of than `route` does, and whether it's less met overall. */
+function lessMetThan(route: AltResult): { lost: (r: AltResult) => string[]; lessMet: (r: AltResult) => boolean } {
+  const before = new Map(route.leaves.filter(namedLeaf).map((l) => [l.leaf.id, l.missing]));
+  const lost = (r: AltResult) => r.leaves.filter((l) => namedLeaf(l) && l.missing > (before.get(l.leaf.id) ?? 0)).map((l) => l.leaf.id);
+  return { lost, lessMet: (r: AltResult) => r.notDone > 0 || lost(r).length > 0 };
+}
+
+/**
+ * Another of the rule set's routes with the same requirements, differing only in substitutions
+ * (which requirement a class stands in for), that isn't less met than `route` on these classes.
+ */
+function metBySubstitution(rc: RuleSetCtx, route: AltResult, rest: Item[], lessMet: (r: AltResult) => boolean): boolean {
+  const ids = (a: Alternative) => a.leaves.map((l) => l.id).sort().join("|");
+  const same = ids(route.alt);
+  return rc.alternatives.some((alt) => alt.index !== route.alt.index && ids(alt) === same && !lessMet(evaluateAlternative(alt, rest, rc.allocation)));
 }
 
 /** An option's own requirements (not its base program's) that go short without a class. */
@@ -646,8 +667,11 @@ function slotReasons(ctx: Ctx, fill: FillResult, routes: Routes, item: Item, ext
   if (primary?.source === "check") for (const r of primary.reasons) push(r);
   for (const r of extra) push(r);
   // A class placed for a required credit keeps what it was placed for; only a class nothing
-  // requires any more is an idea for an open slot, never "Required".
-  if (out.length === 0 && priority <= 1 && primary) for (const r of primary.reasons) push(r);
+  // requires any more is an idea for an open slot, never "Required". Nor is one a substitution
+  // route meets the requirement without (neededLeaves).
+  const substituted = (rc: RuleSetCtx) =>
+    neededFor(ctx, fill, routes, item).some((e) => e.rc === rc && e.route.leaves.some((l) => l.counted.some((c) => c.item.key === item.key)) && metBySubstitution(rc, e.route, e.rest, lessMetThan(e.route).lessMet));
+  if (out.length === 0 && priority <= 1 && primary && !(primary.rc && substituted(primary.rc))) for (const r of primary.reasons) push(r);
   if (out.length === 0) push(reason("choice", "An idea for an open slot. It's your choice.", { claim: "suggestion" }));
   if (ctx.items.some((i) => i.own && i.noCredit && i.typeId === item.typeId)) {
     push(retakeReason());
@@ -759,6 +783,7 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
         if (retake && isCollegeLevel(row.level)) continue;
         if (!isRepeatable(row.typeId) && fill.items.some((i) => sameContent(i.typeId, row.typeId) && !i.noCredit && i.key !== p.item.key)) continue;
         if (pastIntro(others, row.typeId, grade)) continue;
+        if (pastLanguageLevel(ctx.items, row.typeId)) continue;
         if (pastPrecalculus && belowPrecalculus(row.typeId)) continue;
         const rank = mathRankOf(row.typeId);
         if (rank !== null && rank >= 1 && rank <= reached) continue;
@@ -785,6 +810,9 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
     if (needsPlanNow) reasons.push(reason("gap", "A required credit you still need this year. Talk to your counselor soon.", { ruleSetId: primary?.rc?.rs.id ?? null }));
     // This school year has started: a full-year class may no longer fit (a semester one goes in spring).
     if (y.inProgress && p.item.term === "full_year") reasons.push(reason("gap", "This school year has already started, so ask your counselor whether you can still add this full-year class.", { ruleSetId: primary?.rc?.rs.id ?? null }));
+    // The next level of a language the state's list doesn't name (Vietnamese, or French past the
+    // levels it lists): the student's own language, which only the counselor knows is offered.
+    if (ownLanguageRow(p.row, ctx.generic)) reasons.push(reason("gap", "The next level of the language you take. Ask your counselor whether your school offers it.", { ruleSetId: primary?.rc?.rs.id ?? null }));
     slots.push({
       kind: "suggested",
       key: p.key,
@@ -931,9 +959,10 @@ function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
   const npn = new Set(fill.placements.filter((p) => p.needsPlanNow).map((p) => p.key));
   const expanded = expandedResults(fill.evals, fill.items);
   const room = creditRoom(ctx, fill);
+  const held = heldByFill(fill);
   const first = new Map(
     fill.evals.map((e) => {
-      const a = ruleSetAudit(ctx, e, fill.items, conflicts, npn, () => null, expanded);
+      const a = ruleSetAudit(ctx, e, fill.items, conflicts, npn, () => null, expanded, held);
       const courses = a.requirements.filter((r) => {
         const leaf = e.best?.leaves.find((l) => l.leaf.id === r.reqId)?.leaf;
         return leaf && leaf.req.kind !== "total_credits" && leaf.req.kind !== "remaining_electives";
@@ -945,12 +974,14 @@ function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
       // on the plan cover it: nothing is planned there yet.
       const totals = (e.best?.leaves ?? []).filter((l) => l.leaf.own && l.leaf.req.kind === "total_credits").map((l) => l.missing);
       const added = addedCreditTotal(e, fill.items);
+      // (While requirements wait on a class to be confirmed, so does the total: gaps.ts.)
       const short = [...totals, added?.missing ?? 0].some((m) => m > room);
-      return [e.rc.rs.id, worst([...courses.map((r) => r.status), ...(short ? (["room_to_add"] as const) : [])])] as const;
+      const shortStatus = ruleSetWaits(e, fill.items, held) ? ("waiting_confirm" as const) : ("room_to_add" as const);
+      return [e.rc.rs.id, worst([...courses.map((r) => r.status), ...(short ? [shortStatus] : [])])] as const;
     }),
   );
   return fill.evals.map((e) => {
-    const audit = ruleSetAudit(ctx, e, fill.items, conflicts, npn, (id) => first.get(id) ?? null, expanded);
+    const audit = ruleSetAudit(ctx, e, fill.items, conflicts, npn, (id) => first.get(id) ?? null, expanded, held);
     for (const r of audit.requirements) r.reasons.push(...(waivers.get(`${audit.ruleSetId}/${r.reqId}`) ?? []));
     return audit;
   });
@@ -983,7 +1014,7 @@ function toConfirm(ctx: Ctx, fill: FillResult): ConfirmItem[] {
     const item = ctx.items.find((i) => i.key === `c:${fact.id}`);
     // The class the plan took it for (its name's guess, or the class its grade says it is).
     const kind = item?.typeId ?? fact.typeId;
-    out.push({ courseId: fact.id, grade: fact.grade, guess: getCourseType(kind).fallback ? null : kind, decides: decides.get(`c:${fact.id}`)?.size ?? 0 });
+    out.push({ courseId: fact.id, grade: fact.grade, guess: getCourseType(kind).fallback ? null : kind, halves: combinedHalves(fact.name, fact.subject, fact.units, ctx.state)?.parts ?? null, decides: decides.get(`c:${fact.id}`)?.size ?? 0 });
   }
   const order = new Map(ctx.input.courses.map((c, i) => [c.id, i]));
   return out.sort((a, b) => Number(b.decides > 0) - Number(a.decides > 0) || a.grade - b.grade || order.get(a.courseId)! - order.get(b.courseId)!);

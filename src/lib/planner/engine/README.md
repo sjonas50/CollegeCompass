@@ -43,7 +43,10 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   one way through a "choose" names the whole requirement ("Science (two of the five foundation
   science areas and one more science credit)"). Suggestions that could stand in for each other
   (Chemistry, and a Physics a college only recommends, for Utah's "one more science credit") don't
-  cancel each other out: the class the route counts carries the requirement. Projected rules read
+  cancel each other out: the class the route counts carries the requirement. A route that differs
+  only in what stands in for what (Tennessee's computer science credit as the 4th math) and is met
+  without the class means the rule doesn't require it (Precalculus next to a planned Computer
+  Science Principles reads as what else placed it). Projected rules read
   "Expected by". A suggestion nothing needs any more is taken out, and one with nothing behind it
   reads as an idea for an open slot (never one placed for a required credit).
 - **Confirm first** (`confirm.ts`): a class typed with a name only (a guessed type) never creates a
@@ -57,7 +60,10 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   only by counting it, or short while a row might count) reads "Waiting on you to confirm a class"
   (`waiting_confirm`: not met, not missing), gets no class added for it and no gap, and its "by
   when" line waits too. A requirement still short with its guesses counted, where no row might make
-  up the rest, is really short. Guessed kinds never add a claim the same kinds, confirmed, wouldn't
+  up the rest, is really short. While any requirement of a rule set (or of the program it builds
+  on) waits, so do its credit totals (the classes held back aren't on the plan yet: no total gap),
+  a check that needs it (the DLA's endorsement, the TEXAS Grant's Foundation program), and a
+  requirement the fill held because a class held for a confirmation would count there too. Guessed kinds never add a claim the same kinds, confirmed, wouldn't
   make (pinned over random and misguessed students, `review-fixes-9.test.ts`). The path lists the
   unconfirmed rows (`confirm`) for "Confirm your classes", and the counselor questions always keep
   one line about them.
@@ -247,7 +253,11 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   senior (nor does a class from before 9th grade without high school credit, or one the family
   opted out of). No class is added for a requirement those classes may meet (Secondary Math III
   for Texas's 3rd math credit), and one counselor question names each of the student's classes
-  and the line it may stand for.
+  and the line it may stand for. The same holds for a class only the counselor can say counts
+  (`counselorDecides`): a requirement's `ask.decides` (Tennessee's JROTC III for Personal Finance
+  and U.S. Government), and a math class the planner can't name taken after the student's Algebra II
+  rung, for a "4th math" that lists named classes (Tennessee's "another mathematics course beyond
+  Algebra I", Policy 2.103 I(10)).
 - **Typed names the guesser can't place** (a row that fell to its subject's "Other" class) are
   taken as the class their place says they are, still flagged as guesses: an "Other English
   class" in 9th-12th with no English level that year is that grade's English, and an "Other math
@@ -256,8 +266,16 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   planned around this as …", and the guessed-kinds question asks.
 - **Language levels** count levels filled, not exact ranks: each class fills one level at or below
   its own, so Spanish I and III (or heritage Spanish and Spanish III) are two levels, and a placed
-  Spanish III alone is one. The next level suggested is always the one up from the student's
-  highest (Spanish IV after Spanish III, "IV or higher" again past it), in the plan and in options.
+  Spanish III alone is one. The student's finished and in-progress classes fill levels first (a
+  planned Spanish III never takes an in-progress Spanish IV's place). The next level suggested is
+  always the one up from the student's highest (Spanish IV after Spanish III, "IV or higher" again
+  past it), in the plan and in options, and no level at or below it is suggested for any need
+  (`pastLanguageLevel`: no Spanish III for a humanities focus after Spanish IV).
+- **The student's own language** is the one planned, even one the vocabulary doesn't name
+  (Vietnamese is "another language"): the generic list gains the levels of each language the
+  student takes that it doesn't list (`withOwnLanguages`), each suggestion says to ask whether the
+  school offers it, and a requirement is never switched away from the student's language to another
+  route (a senior's two computer programming credits).
 - **A blocked class gets another try** once pruning frees room (a class placed for a route the plan
   gave up on), so "doesn't fit" is never said of a year that has room. A gap for a class the year in
   progress had room for says to ask about adding it now, not that it doesn't fit.

@@ -209,7 +209,20 @@ export type CreditsReq = Leaf & {
    * 2026-27 "or [for students] participating in an approved ENGL 1010 pilot"): asked whenever such
    * a class is on the student's record, since only the counselor knows the exception.
    */
-  ask?: { select: Selector[]; question: string; cite: CitationId[] };
+  ask?: {
+    select: Selector[];
+    question: string;
+    cite: CitationId[];
+    /**
+     * Such a class may meet the requirement, but only the counselor can say (Tennessee Policy
+     * 3.103 III note 8: "JROTC III may substitute for one-half (½) credit of U.S. Government and
+     * Civics and one-half (½) credit of Personal Finance if the JROTC instructor attends the
+     * Personal Finance training"): while the student has `classes` of them (default 1; three
+     * JROTC classes make JROTC III), a shortfall is the counselor's call, shown with `text`, never
+     * a class to add or "Needs a plan now".
+     */
+    decides?: { classes?: number; text: string };
+  };
 };
 
 /** At least `n` matching courses, whatever their credit (UT Opportunity: one AP/IB/CE math). */

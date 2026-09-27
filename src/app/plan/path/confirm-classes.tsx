@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState, useTransition } from "react";
-import { confirmCourseTypeAction } from "@/app/actions/path";
+import { confirmCourseTypeAction, splitCourseAction } from "@/app/actions/path";
 import { Button } from "@/components/ui";
 import { announcePath, focusPath } from "./announcer";
 import { afterAction } from "./suggestion-actions";
@@ -9,7 +9,9 @@ import { afterAction } from "./suggestion-actions";
 // "Confirm your classes" at the top of "Your path" (confirm first, engine/confirm.ts): each class
 // typed without its kind, with the planner's best guess as one tap ("Algebra II?" Yes) or "Something
 // else…" to pick the kind from the list. Confirming stores the kind (course_type_id) as the
-// student's choice. At most six at once, grouped by year; the rest come up as these are confirmed.
+// student's choice. A name that joins two half-credit classes ("Gov/Econ") offers them as two
+// classes instead ("U.S. government and Economics, two half-credit classes?" Yes splits the row).
+// At most six at once, grouped by year; the rest come up as these are confirmed.
 
 export type ConfirmRow = {
   courseId: string;
@@ -19,6 +21,8 @@ export type ConfirmRow = {
   gradeLabel: string;
   /** The one-tap guess, or null when the name gives no good guess (the list opens instead). */
   guess: { typeId: string; title: string } | null;
+  /** Two half-credit classes its name joins ("Gov/Econ"), offered as one tap instead of the guess. */
+  halves: { titles: [string, string] } | null;
   /** Kinds of class for its subject and level. */
   options: { value: string; label: string }[];
   /** Requirements that wait on it. */
@@ -31,7 +35,7 @@ function ConfirmOne({ row }: { row: ConfirmRow }) {
   const id = useId();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
-  const [choosing, setChoosing] = useState(row.guess === null);
+  const [choosing, setChoosing] = useState(row.guess === null && row.halves === null);
   const [picked, setPicked] = useState(row.guess?.typeId ?? "");
   const selectRef = useRef<HTMLSelectElement>(null);
 
@@ -42,23 +46,38 @@ function ConfirmOne({ row }: { row: ConfirmRow }) {
     });
   }
 
+  function split() {
+    setError(undefined);
+    startTransition(async () => {
+      afterAction(await splitCourseAction(row.courseId), CONFIRM_HEADING_ID, { setError, announce: announcePath, focus: focusPath });
+    });
+  }
+
+  const halves = row.halves ? `${row.halves.titles[0]} and ${row.halves.titles[1]}, two half-credit classes` : null;
+
   const selectId = `${id}-kind`;
   return (
     <li className="rounded-lg bg-background px-3 py-2">
       <p className="text-sm">
         <span className="font-medium">{row.name}</span>
-        {row.guess && !choosing && (
+        {(halves ?? row.guess) && !choosing && (
           <>
             {" "}
-            <span className="text-muted">·</span> {row.guess.title}?
+            <span className="text-muted">·</span> {halves ?? row.guess!.title}?
           </>
         )}
       </p>
-      {!choosing && row.guess ? (
+      {!choosing && (halves || row.guess) ? (
         <div className="mt-1 flex flex-wrap gap-2">
-          <Button type="button" disabled={pending} onClick={() => save(row.guess!.typeId)}>
-            Yes<span className="sr-only">, {row.name} is {row.guess.title}</span>
-          </Button>
+          {halves ? (
+            <Button type="button" disabled={pending} onClick={split}>
+              Yes<span className="sr-only">, {row.name} is {halves}</span>
+            </Button>
+          ) : (
+            <Button type="button" disabled={pending} onClick={() => save(row.guess!.typeId)}>
+              Yes<span className="sr-only">, {row.name} is {row.guess!.title}</span>
+            </Button>
+          )}
           <Button
             type="button"
             variant="secondary"
@@ -103,7 +122,7 @@ function ConfirmOne({ row }: { row: ConfirmRow }) {
           <Button type="submit" disabled={pending || !picked}>
             Save<span className="sr-only"> the kind of {row.name}</span>
           </Button>
-          {row.guess && (
+          {(row.halves || row.guess) && (
             <Button type="button" variant="secondary" disabled={pending} onClick={() => setChoosing(false)}>
               Back
             </Button>
@@ -151,7 +170,14 @@ export function ConfirmClasses({ rows, more, mode }: { rows: ConfirmRow[]; more:
                 ) : (
                   <li key={row.courseId} className="rounded-lg bg-background px-3 py-2 text-sm">
                     <span className="font-medium">{row.name}</span>
-                    {row.guess && <span className="text-muted"> · we guessed {row.guess.title}</span>}
+                    {row.halves ? (
+                      <span className="text-muted">
+                        {" "}
+                        · we guessed two half-credit classes: {row.halves.titles[0]} and {row.halves.titles[1]}
+                      </span>
+                    ) : (
+                      row.guess && <span className="text-muted"> · we guessed {row.guess.title}</span>
+                    )}
                   </li>
                 ),
               )}

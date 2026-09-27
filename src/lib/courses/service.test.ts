@@ -4,7 +4,7 @@ import { type Db, createTestDb, schema } from "@/db";
 import { registerStudent } from "../accounts";
 import { addNorthStar } from "../goals";
 import { deleteStudent } from "../privacy";
-import { MAX_COURSES, addCourse, deleteCourse, getCourse, listCourses, planSummary, updateCourse } from "./service";
+import { MAX_COURSES, addCourse, deleteCourse, getCourse, listCourses, planSummary, splitCombinedCourse, updateCourse } from "./service";
 import { type CourseInputRaw, CourseInputSchema } from "./validation";
 
 const now = new Date("2026-09-23T12:00:00Z");
@@ -119,6 +119,47 @@ describe("course CRUD", () => {
     await add(ben);
     expect(await deleteStudent(db, ana, ana)).toBe(true);
     expect(await db.select().from(schema.studentCourses)).toHaveLength(1);
+  });
+});
+
+describe("splitting a class whose name joins two half-credit classes (\"Confirm your classes\")", () => {
+  it("\"Gov/Econ\" becomes a fall Government and a spring Economics, half a credit each, with their kinds", async () => {
+    const row = await add(ana, { name: "Gov/Econ", subject: "social_studies", gradeLevel: 12, status: "completed", finalGrade: "B+", level: "honors" });
+    const later = new Date("2027-01-10T12:00:00Z");
+    const res = await splitCombinedCourse(db, ana, row.id, "TX", later);
+    expect(res.ok).toBe(true);
+    const courses = await listCourses(db, ana);
+    expect(courses.map((c) => [c.name, c.term, c.credits, c.courseTypeId, c.courseTypeSource, c.level, c.status, c.finalGrade, c.gradeLevel])).toEqual([
+      ["Gov", "fall", 0.5, "ss.us_gov", "student", "honors", "completed", "B+", 12],
+      ["Econ", "spring", 0.5, "ss.econ", "student", "honors", "completed", "B+", 12],
+    ]);
+    // The first half keeps the row's id.
+    expect(courses[0].id).toBe(row.id);
+    expect(courses[0].updatedAt.toISOString()).toBe(later.toISOString());
+  });
+
+  it("only for the student's own class, a name that joins two half-credit classes, and a full credit", async () => {
+    const gov = await add(ana, { name: "Economics/Personal Finance", subject: "social_studies", gradeLevel: 12 });
+    expect(await splitCombinedCourse(db, ben, gov.id, "TN")).toEqual({ ok: false, error: "not_found" });
+    expect(await splitCombinedCourse(db, ana, "not-a-uuid", "TN")).toEqual({ ok: false, error: "not_found" });
+    const bio = await add(ana);
+    expect(await splitCombinedCourse(db, ana, bio.id, "TN")).toEqual({ ok: false, error: "not_combined" });
+    const half = await add(ana, { name: "Gov/Econ", subject: "social_studies", gradeLevel: 12, credits: 0.5, term: "fall" });
+    expect(await splitCombinedCourse(db, ana, half.id, "TN")).toEqual({ ok: false, error: "not_combined" });
+    const debate = await add(ana, { name: "Speech and Debate", subject: "english", gradeLevel: 11 });
+    expect(await splitCombinedCourse(db, ana, debate.id, "TN")).toEqual({ ok: false, error: "not_combined" });
+    expect(await listCourses(db, ana)).toHaveLength(4);
+    const res = await splitCombinedCourse(db, ana, gov.id, "TN");
+    expect(res.ok && res.value.map((c) => [c.name, c.courseTypeId])).toEqual([["Economics", "ss.econ"], ["Personal Finance", "ss.pfl"]]);
+  });
+
+  it("not past the class limit", async () => {
+    const row = await add(ana, { name: "Gov/Econ", subject: "social_studies", gradeLevel: 12 });
+    await db.insert(schema.studentCourses).values(
+      Array.from({ length: MAX_COURSES - 1 }, (_, i) => ({ userId: ana, name: `Course ${i}`, subject: "other" as const, gradeLevel: 9 })),
+    );
+    expect(await splitCombinedCourse(db, ana, row.id, "TX")).toEqual({ ok: false, error: "limit" });
+    expect((await getCourse(db, ana, row.id))?.name).toBe("Gov/Econ");
   });
 });
 

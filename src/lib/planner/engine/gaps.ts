@@ -3,16 +3,16 @@ import { GAP_OPTION_KINDS, type GapOptionKind, type OptionFact } from "../conten
 import { courseTypeTitle, type CourseTypeId, getCourseType, levelLabel } from "../course-types";
 import type { ByWhen, Gap, GapOption, Reason, UpToThree } from "../engine-io";
 import { MATH_TARGET_DEFS } from "../families";
-import { earlyWithoutCredit, expandedResults, type RuleSetEval } from "./audit";
+import { counselorDecides, earlyWithoutCredit, expandedResults, ruleSetWaits, type RuleSetEval } from "./audit";
 import type { CLeaf } from "./compile";
 import { type Ctx, leafPriority, rowIsOffered, schoolYearOfGrade } from "./context";
 import { algebra2Reason, reason, requirementReason } from "./explain";
-import { type BlockReason, failedAttempt, type FillResult, isRepeatable, lateEnglish, pastCteLevel, pastIntro, prereqsMetIn, probe, sameContent } from "./fill";
+import { type BlockReason, failedAttempt, type FillResult, heldByFill, isRepeatable, lateEnglish, pastCteLevel, pastIntro, prereqsMetIn, probe, sameContent } from "./fill";
 import { type LadderMoves, type LadderSolution, mathRankOf, rungName, rungTypes, solveLadder, startRank } from "./ladder";
 import { countsForSequence, type Item, slotHalves } from "./model";
 import { isLadderish, type Need } from "./needs";
 import { matchesAny } from "./select";
-import { atLeast, creditNoun, nth } from "./util";
+import { atLeast, creditNoun, lowerFirstWord, nth } from "./util";
 import { toCredits } from "../common";
 
 // ---------------------------------------------------------------------------
@@ -336,6 +336,10 @@ function gapText(ctx: Ctx, need: Need, kind: Gap["kind"], block: BlockReason | n
   // Questions for the counselor come before "Needs a plan now": a class the student took may already count.
   if (block === "choice") return `${label}: your family opted out of the class this needs. Ask your counselor what that means for you.`;
   if (block === "equivalent") return `${label}: you've taken a class that may count the same way. Ask your counselor whether it does here.`;
+  if (block === "may_count" && need.leaf) {
+    const decides = counselorDecides(ctx.items, need.leaf, ctx.state);
+    if (decides) return `${label}: ${lowerFirstWord(decides.text)}`;
+  }
   if (block === "hs_credit") {
     const early = earlyWithoutCredit(ctx.items, need.selectors);
     if (early) return `Your ${nth(early.grade)}-grade ${courseTypeTitle(early.typeId, ctx.state)} isn't marked for high school credit. Ask your counselor whether it counts.`;
@@ -493,7 +497,7 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
           : "unmet";
     // A class the student already took that may count (another state's math, a class from before
     // 9th grade, one the family opted out of) is a question for the counselor, not a missing credit.
-    const counselorCall = block === "ask" || block === "equivalent" || block === "choice" || block === "hs_credit";
+    const counselorCall = block === "ask" || block === "equivalent" || block === "choice" || block === "hs_credit" || block === "may_count";
     const needsPlanNow = ctx.inProgressGrade === 12 && need.priority === 0 && !counselorCall;
     const reasons = [...need.reasons];
     if (ctx.state === "TX" && need.selectors.some((s) => s.types?.includes("math.alg2"))) reasons.push(algebra2Reason());
@@ -520,7 +524,7 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
             kind === "doesnt_fit" && block === "doesnt_fit" && !needsPlanNow && fill.fitsThisYear(need),
           ),
       decideBy: byWhenFor(ctx, need.byGrade),
-      options: block === "choice" || block === "equivalent" || block === "hs_credit" || pathway ? [ASK] : block === "ask" ? askOptions(need) : optionsFor(ctx, fill, need, ladder),
+      options: block === "choice" || block === "equivalent" || block === "hs_credit" || block === "may_count" || pathway ? [ASK] : block === "ask" ? askOptions(need) : optionsFor(ctx, fill, need, ladder),
       reasons: block === "hs_credit" ? [...reasons, ...earlyCreditNotes(ctx)] : reasons,
     });
   }
@@ -589,6 +593,10 @@ export function buildGaps(ctx: Ctx, fill: FillResult): Gap[] {
   };
   for (const e of fill.evals) {
     if (!e.best || ctx.firstGrade <= 8) continue;
+    // While a requirement of the rule set (or of the program it builds on) waits on the student to
+    // confirm a class, the classes held back for it aren't on the plan: a credit shortfall then is
+    // one a guess made, and it waits too (the audit's total reads "Waiting on you to confirm a class").
+    if (ruleSetWaits(e, fill.items, heldByFill(fill))) continue;
     if (e.rc.rs.kind === "state_graduation" || e.rc.rs.kind === "local_graduation") {
       for (const l of e.best.leaves) {
         if (l.leaf.req.kind !== "total_credits" || l.missing <= 0) continue;

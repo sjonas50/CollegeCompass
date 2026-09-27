@@ -5,7 +5,7 @@ import * as z from "zod";
 import { getDb } from "@/db";
 import { requireFullAccess } from "@/lib/access/guard";
 import { requireUser } from "@/lib/auth/dal";
-import { MAX_COURSES, setCourseType } from "@/lib/courses/service";
+import { MAX_COURSES, setCourseType, splitCombinedCourse } from "@/lib/courses/service";
 import { plannerPathEnabled } from "@/lib/planner/beta";
 import { isPlannerState } from "@/lib/planner/common";
 import { courseTypeTitle, isCourseTypeId, LANGUAGES } from "@/lib/planner/course-types";
@@ -72,6 +72,33 @@ export async function confirmCourseTypeAction(courseId: string, typeId: string):
   }
   const state = isPlannerState(student.homeState) ? student.homeState : null;
   return { ok: true, message: `Saved: ${res.value.name} is ${courseTypeTitle(typeId, state)}. Your path now counts it that way.` };
+}
+
+/**
+ * "Confirm your classes": a class whose name joins two half-credit classes ("Gov/Econ") is those two
+ * classes. The row becomes the two, each with half its credits and its kind as the student's choice.
+ * Whether the name joins two such classes is decided on the server from the stored row.
+ */
+export async function splitCourseAction(courseId: string): Promise<PathActionResult> {
+  const student = await requireUser(["student"]);
+  await requireFullAccess(student);
+  if (typeof courseId !== "string") return { ok: false, message: TRY_AGAIN };
+  const state = isPlannerState(student.homeState) ? student.homeState : null;
+  const res = await splitCombinedCourse(await getDb(), student.id, courseId, state);
+  revalidatePath("/plan");
+  if (!res.ok) {
+    return {
+      ok: false,
+      message:
+        res.error === "limit"
+          ? `You've added ${MAX_COURSES} classes, which is the most we can keep. Remove a few you don't need first.`
+          : res.error === "not_combined"
+            ? "We can't split that class. Choose what kind of class it is instead."
+            : "We couldn't find that class. It may have been removed; try refreshing the page.",
+    };
+  }
+  const [a, b] = res.value;
+  return { ok: true, message: `Saved: ${a.name} and ${b.name} are two half-credit classes now. Your path counts each one.` };
 }
 
 /** Brings back the suggestions the student set aside. */

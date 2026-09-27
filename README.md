@@ -122,8 +122,8 @@ College Scorecard notes:
 - `src/lib/planner/` — the class planner for Utah, Tennessee and Texas: rules content, the engine
   (`engine/`, pure code, no AI) and "Your path" on `/plan`. "Your path" (with its print view and a
   parent's read-only path) is in beta: it shows only for households staff mark with
-  `npm run beta:planner`, for staff, or for everyone with `PLANNER_PATH=everyone`
-  (`src/lib/planner/beta.ts`). Everyone else keeps the checklist and course ideas. The free
+  `npm run beta:planner`, or for everyone with `PLANNER_PATH=everyone`
+  (`src/lib/planner/beta.ts`). Staff preview it with a test household in the beta. Everyone else keeps the checklist and course ideas. The free
   `/graduation/[state]` pages and the state and school settings are public either way.
 
 ## Deploying to production
@@ -191,7 +191,7 @@ commercial, so move to Pro before you turn on Stripe checkout for real families.
 | `AI_MONTHLY_BUDGET_USD` | No | Monthly AI spending limit per student, in dollars (default 3). Safety checks are never blocked by it. |
 | `TRIAL_DAYS` | No | Length of every new household's free trial (default 14). |
 | `FREE_ACCESS_MONTHS` | No | How long a free-access grant lasts before the family renews it (default 12). |
-| `PLANNER_PATH` | No | Who sees the class planner's "Your path": `beta` (the default: households marked with `npm run beta:planner`, plus staff) or `everyone`. |
+| `PLANNER_PATH` | No | Who sees the class planner's "Your path": `beta` (the default: households marked with `npm run beta:planner`) or `everyone`. |
 | `STRIPE_SECRET_KEY` | No | Turns on paid checkout. Without Stripe keys, families use the trial and free access only. |
 | `STRIPE_WEBHOOK_SECRET` | With Stripe | Signing secret of the webhook endpoint (`whsec_...`). On your computer, use the one `stripe listen` prints (see [Payments](#7-payments-stripe)). |
 | `STRIPE_PRICE_MONTHLY` | With Stripe | Price id (`price_...`) of the monthly family plan. |

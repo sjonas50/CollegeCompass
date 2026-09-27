@@ -190,8 +190,8 @@ tickets.
 
 "Your path" on `/plan` (the class planner for Utah, Tennessee and Texas, with its print view and a
 parent's read-only view of their child's path) is in beta. It shows only for households staff put
-in the beta, and for staff accounts; everyone else keeps the college-prep checklist and course
-ideas. The free `/graduation/[state]` pages and the state and school settings are public either way.
+in the beta; everyone else keeps the college-prep checklist and course ideas. Staff accounts have
+no page that shows a path, so to preview it, put a test household in the beta. The free `/graduation/[state]` pages and the state and school settings are public either way.
 
 ```bash
 DATABASE_URL="postgres://..." npm run beta:planner -- --by <your staff email> --household <household id, or a student's email or username>

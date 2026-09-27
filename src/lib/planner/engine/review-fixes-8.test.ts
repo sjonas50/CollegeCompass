@@ -784,7 +784,8 @@ describe("Typed program-of-study titles land at their level (course-type-guess.t
     ["Automotive Basics", "career_technical", "TX", "cte.transportation.2"],
     ["Automotive Technology I: Maintenance and Light Repair", "career_technical", "TX", "cte.transportation.3"],
     ["Advanced Engineering Design and Presentation", "career_technical", "TX", "cte.engineering.4"],
-    ["Culinary Arts", "career_technical", "TX", "cte.hospitality.1"],
+    // Round 10: Texas's plain "Culinary Arts" is TEA's level 2 (MP-TEA-POS-HT-CULINARY-ARTS), a guess to confirm.
+    ["Culinary Arts", "career_technical", "TX", "cte.hospitality.2"],
     ["Medical Therapeutics", "career_technical", "TN", "cte.health.2"],
     ["Art I", "arts", "TN", "arts.visual"],
   ] as const)("%s (%s, %s) → %s", (name, subject, state, expected) => {

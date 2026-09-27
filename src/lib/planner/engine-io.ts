@@ -368,6 +368,13 @@ export type ConfirmItem = {
    * couldn't place, the class its place in the plan says it is. Null when there's no good guess.
    */
   guess: CourseTypeId | null;
+  /**
+   * A name joining two half-credit classes ("Gov/Econ", "Economics/Personal Finance": the
+   * guesser's `combined`) on a row of a full credit or more: the two kinds, so the student can say
+   * it's two half-credit classes (the row is split in two, lib/courses/service.ts
+   * `splitCombinedCourse`) rather than pick one kind. Null otherwise.
+   */
+  halves: [CourseTypeId, CourseTypeId] | null;
   /** How many requirements wait on it (it counts for them, or might). */
   decides: number;
 };

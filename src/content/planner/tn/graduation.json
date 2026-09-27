@@ -338,6 +338,24 @@
       "quote": "JROTC III may substitute for one-half (½) credit of U.S. Government and Civics and one-half (½) credit of Personal Finance if the JROTC instructor attends the Personal Finance training"
     },
     {
+      "id": "tn-3103-iii-jrotc-10",
+      "source": "TN-S3",
+      "pinpoint": "III note 10",
+      "quote": "Students who complete JROTC III may substitute that course for one-half (½) credit of Personal Finance and one-half (½) credit of U.S. Government and Civics."
+    },
+    {
+      "id": "tn-3103-iii-4",
+      "source": "TN-S3",
+      "pinpoint": "III(4)",
+      "quote": "The following list includes allowable course substitutions for the Lifetime Wellness course. JROTC I"
+    },
+    {
+      "id": "tn-3103-iii-6",
+      "source": "TN-S3",
+      "pinpoint": "III(6)",
+      "quote": "The following list includes allowable course substitutions for the Physical Education course. JROTC II"
+    },
+    {
       "id": "tn-utc-units-1",
       "source": "TN-S13",
       "quote": "4 units of English 4 units of math (algebra I and II, geometry and 1 additional unit) 3 units of lab science 1 unit of European history, world history, or world geography"
@@ -582,7 +600,13 @@
                   "units": 2,
                   "allowSplit": true,
                   "select": [{ "types": ["ss.us_gov"] }],
-                  "cite": ["tn-2103-i-12-courses", "tn-3103-iii-7"]
+                  "cite": ["tn-2103-i-12-courses", "tn-3103-iii-7"],
+                  "ask": {
+                    "select": [{ "types": ["other.jrotc"] }],
+                    "question": "Does my JROTC III count for U.S. Government and Civics?",
+                    "cite": ["tn-3103-iii-jrotc", "tn-3103-iii-jrotc-10"],
+                    "decides": { "classes": 3, "text": "Your JROTC III may count for this. Ask your counselor." }
+                  }
                 },
                 {
                   "id": "ss.rest",
@@ -604,27 +628,36 @@
               "units": 2,
               "select": [{ "types": ["ss.pfl"] }],
               "cite": ["tn-2103-i-13", "tn-3103-iii-jrotc"],
-              "area": "financial_literacy"
+              "area": "financial_literacy",
+              "ask": {
+                "select": [{ "types": ["other.jrotc"] }],
+                "question": "Does my JROTC III count for Personal Finance? It can when my JROTC instructor took the Personal Finance training.",
+                "cite": ["tn-2103-i-13", "tn-3103-iii-jrotc", "tn-3103-iii-jrotc-10"],
+                "decides": { "classes": 3, "text": "Your JROTC III may count for this if your JROTC instructor took the Personal Finance training. Ask your counselor." }
+              }
             },
             {
               "id": "wellness",
               "label": "Lifetime Wellness",
               "kind": "credits",
               "units": 4,
-              "select": [{ "types": ["health.wellness"] }],
-              "cite": ["tn-2103-i-14", "tn-2103-i-14-no-sub"],
+              "select": [{ "types": ["health.wellness"] }, { "types": ["other.jrotc"], "substitute": true }],
+              "cite": ["tn-2103-i-14", "tn-2103-i-14-no-sub", "tn-3103-iii-4"],
               "area": "health_pe",
-              "note": "Marching band and school sports can't stand in for Wellness."
+              "note": "JROTC I can stand in for Wellness. Marching band and school sports can't."
             },
             {
               "id": "pe",
               "label": "Physical education",
               "kind": "credits",
               "units": 2,
-              "select": [{ "types": ["pe.general", "pe.fitness", "pe.skills", "pe.lifetime", "pe.athletics", "pe.other"] }],
-              "cite": ["tn-2103-i-15"],
+              "select": [
+                { "types": ["pe.general", "pe.fitness", "pe.skills", "pe.lifetime", "pe.athletics", "pe.other"] },
+                { "types": ["other.jrotc", "arts.marching"], "substitute": true }
+              ],
+              "cite": ["tn-2103-i-15", "tn-3103-iii-6"],
               "area": "health_pe",
-              "note": "Your school may count time in marching band, JROTC, cheerleading, school sports or intramurals instead."
+              "note": "JROTC II can stand in for PE, and your school may count time in marching band, JROTC, cheerleading, school sports or intramurals instead."
             },
             {
               "id": "wl",
@@ -966,7 +999,13 @@
                   "units": 2,
                   "allowSplit": true,
                   "select": [{ "types": ["ss.us_gov"] }],
-                  "cite": ["tn-2103-i-12-courses", "tn-3103-iii-7"]
+                  "cite": ["tn-2103-i-12-courses", "tn-3103-iii-7"],
+                  "ask": {
+                    "select": [{ "types": ["other.jrotc"] }],
+                    "question": "Does my JROTC III count for U.S. Government and Civics?",
+                    "cite": ["tn-3103-iii-jrotc", "tn-3103-iii-jrotc-10"],
+                    "decides": { "classes": 3, "text": "Your JROTC III may count for this. Ask your counselor." }
+                  }
                 },
                 {
                   "id": "ss.rest",
@@ -988,27 +1027,36 @@
               "units": 2,
               "select": [{ "types": ["ss.pfl"] }],
               "cite": ["tn-2103-i-13", "tn-3103-iii-jrotc"],
-              "area": "financial_literacy"
+              "area": "financial_literacy",
+              "ask": {
+                "select": [{ "types": ["other.jrotc"] }],
+                "question": "Does my JROTC III count for Personal Finance? It can when my JROTC instructor took the Personal Finance training.",
+                "cite": ["tn-2103-i-13", "tn-3103-iii-jrotc", "tn-3103-iii-jrotc-10"],
+                "decides": { "classes": 3, "text": "Your JROTC III may count for this if your JROTC instructor took the Personal Finance training. Ask your counselor." }
+              }
             },
             {
               "id": "wellness",
               "label": "Lifetime Wellness",
               "kind": "credits",
               "units": 4,
-              "select": [{ "types": ["health.wellness"] }],
-              "cite": ["tn-2103-i-14", "tn-2103-i-14-no-sub"],
+              "select": [{ "types": ["health.wellness"] }, { "types": ["other.jrotc"], "substitute": true }],
+              "cite": ["tn-2103-i-14", "tn-2103-i-14-no-sub", "tn-3103-iii-4"],
               "area": "health_pe",
-              "note": "Marching band and school sports can't stand in for Wellness."
+              "note": "JROTC I can stand in for Wellness. Marching band and school sports can't."
             },
             {
               "id": "pe",
               "label": "Physical education",
               "kind": "credits",
               "units": 2,
-              "select": [{ "types": ["pe.general", "pe.fitness", "pe.skills", "pe.lifetime", "pe.athletics", "pe.other"] }],
-              "cite": ["tn-2103-i-15"],
+              "select": [
+                { "types": ["pe.general", "pe.fitness", "pe.skills", "pe.lifetime", "pe.athletics", "pe.other"] },
+                { "types": ["other.jrotc", "arts.marching"], "substitute": true }
+              ],
+              "cite": ["tn-2103-i-15", "tn-3103-iii-6"],
               "area": "health_pe",
-              "note": "Your school may count time in marching band, JROTC, cheerleading, school sports or intramurals instead."
+              "note": "JROTC II can stand in for PE, and your school may count time in marching band, JROTC, cheerleading, school sports or intramurals instead."
             },
             {
               "id": "wl",

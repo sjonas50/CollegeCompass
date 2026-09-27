@@ -168,7 +168,14 @@ export const ReqSchema: z.ZodType<Req> = z.lazy(() =>
       allowSplit: z.boolean().optional(),
       deadlineGrade: Grade.optional(),
       onlyWhenDone: z.literal(true).optional(),
-      ask: z.strictObject({ select: z.array(SelectorSchema).min(1), question: plain(TEXT_MAX), cite: CiteList }).optional(),
+      ask: z
+        .strictObject({
+          select: z.array(SelectorSchema).min(1),
+          question: plain(TEXT_MAX),
+          cite: CiteList,
+          decides: z.strictObject({ classes: z.number().int().min(1).max(4).optional(), text: plain(TEXT_MAX) }).optional(),
+        })
+        .optional(),
     }),
     z.strictObject({ ...leaf, kind: z.literal("count"), n: z.number().int().positive(), select: z.array(SelectorSchema).min(1) }),
     z.strictObject({
