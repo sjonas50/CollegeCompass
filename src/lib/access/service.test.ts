@@ -235,6 +235,10 @@ describe("export", () => {
     expect(Object.keys(data.grants[0]).sort()).toEqual(["endsAt", "kind", "startsAt"]);
     expect(data.subscription).toEqual({ status: "active", plan: "annual", currentPeriodEnd: periodEnd, cancelAtPeriodEnd: false });
     expect(JSON.stringify(data)).not.toMatch(/cus_|sub_|grantedBy/);
-    expect(await exportHouseholdAccess(db, null)).toEqual({ fullAccess: false, grants: [], subscription: null });
+    // Whether staff put the household in the class planner beta (households.planner_beta).
+    expect(data.plannerBeta).toBe(false);
+    await db.update(schema.households).set({ plannerBeta: true }).where(eq(schema.households.id, householdId));
+    expect((await exportHouseholdAccess(db, householdId, TODAY)).plannerBeta).toBe(true);
+    expect(await exportHouseholdAccess(db, null)).toEqual({ fullAccess: false, grants: [], subscription: null, plannerBeta: false });
   });
 });

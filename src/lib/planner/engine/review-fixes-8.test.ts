@@ -14,6 +14,7 @@ import { belowPrecalculus, pastCteLevel } from "./fill";
 import { plan } from "./index";
 import { solveLadder } from "./ladder";
 import { itemFromFact } from "./model";
+import { claimsOnWaiting, extraClaims } from "./testing/claims";
 import { planned, requirement, ruleSet, suggestions } from "./testing/helpers";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 import { randomInput } from "./testing/random";
@@ -338,7 +339,9 @@ describe("Typed and confirmed kinds of the same classes give the same plan (mode
     expect(typesAt(typedPath, 12)).toContain("math.precalc");
   });
 
-  it("the same for 120 random students: guessing every kind of their classes changes no suggestion", () => {
+  // Round 9 (confirm first, engine/confirm.ts): a guessed kind may differ from a picked one where
+  // the guess can't be trusted, but it never adds a claim the picked kinds wouldn't make.
+  it("120 random students: guessing every kind of their classes adds no \"doesn't fit\", \"needs a plan now\" or \"Required by\"", () => {
     let compared = 0;
     for (let k = 0; k < 120; k++) {
       const seed = 1000 + k * 7919;
@@ -349,7 +352,8 @@ describe("Typed and confirmed kinds of the same classes give the same plan (mode
       const a = plan(confirmed);
       const b = plan(guessed);
       if (a.mode === "no_state" || b.mode === "no_state") continue;
-      expect(signature(b), `seed ${seed}`).toBe(signature(a));
+      expect(extraClaims(b, a), `seed ${seed}`).toEqual([]);
+      expect(claimsOnWaiting(b), `seed ${seed}`).toEqual([]);
       compared++;
     }
     expect(compared).toBeGreaterThan(80);

@@ -896,7 +896,8 @@ describe("Smaller fixes from the fourth review", () => {
       { type: "ss.econ", grade: 12, units: 2 },
     ];
     const path = real({ state: "TN", grade: 12, courses: courses.map((c) => ({ ...c, assumed: true })) }, TEACHER);
-    const guessed = ruleSet(path, "tn.grad").requirements.filter((r) => r.modifiers.includes("guessed_type") && r.status === "room_to_add");
+    // Round 9: requirements a guessed class decides wait on the student to confirm it.
+    const guessed = ruleSet(path, "tn.grad").requirements.filter((r) => r.modifiers.includes("guessed_type") && r.status === "waiting_confirm");
     expect(guessed.length).toBeGreaterThan(10);
     for (const r of guessed) expect(r.modifiers, r.reqId).not.toContain("needs_plan_now");
   });

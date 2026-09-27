@@ -218,7 +218,8 @@ const FULL = ["regular", "honors", "ap", "ib", "cambridge", "dual_enrollment"] a
 const RANK1 = ["math.alg1", "math.int1", "math.ut_sec1"];
 const RANK2 = ["math.geom", "math.int2", "math.ut_sec2"];
 const RANK3 = ["math.alg2", "math.int3", "math.ut_sec3"];
-const RANK4 = ["math.precalc", "math.trig", "math.college_alg"];
+/** Calculus's prerequisite: precalculus or trigonometry (College Algebra, on the same rung, isn't one). */
+const PRECALCULUS = ["math.precalc", "math.trig"];
 const AFTER_ALG2 = ["alg2_or_beyond", "advanced_math_after_alg2"] as const;
 
 const CORE = {
@@ -447,7 +448,9 @@ const CORE = {
     subject: "math",
     grades: [11, 12],
     levels: FULL,
-    prereqs: [RANK4],
+    // After precalculus or trigonometry (Utah's Math 1060). College Algebra (Math 1050) alone,
+    // though on the same rung, doesn't prepare a student for calculus (engine/fill.ts prereqsMetIn).
+    prereqs: [PRECALCULUS],
     ladder: ["math", 5],
     caps: AFTER_ALG2,
     note: "AP Calculus AB or BC, IB Math HL, college Calculus I, or a school's introductory calculus.",
@@ -886,6 +889,8 @@ const CORE = {
     subject: "computer_science",
     grades: [9, 12],
     levels: ["regular", "honors", "ap", "dual_enrollment"],
+    // A way into programming (cs.prog2's sequencePrereqs): never suggested after it or beyond.
+    introTo: ["cs.prog2", "cs.advanced"],
   },
   "cs.prog1": {
     title: "Computer programming 1 (Computer Science I, Coding I)",

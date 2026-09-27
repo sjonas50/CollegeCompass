@@ -21,15 +21,9 @@ import {
   highSchoolCreditChecked,
   highSchoolCreditHint,
 } from "@/lib/courses/catalog";
-import { guessCourseTypeId } from "@/lib/planner/course-type-guess";
-import {
-  COURSE_LEVEL_TO_TYPE_LEVEL,
-  type CourseTypeId,
-  courseTypeTitle,
-  courseTypesForSubject,
-  isCourseTypeId,
-} from "@/lib/planner/course-types";
-import type { CourseLevel, CourseSubject } from "@/db/schema";
+import { courseTypeOptions, isCourseSubject as isSubject } from "@/lib/courses/kinds";
+import { guessCourseType } from "@/lib/planner/course-type-guess";
+import { type CourseTypeId, courseTypeTitle } from "@/lib/planner/course-types";
 import { usePlannerState } from "./planner-state";
 
 type Errors = Record<string, string[] | undefined> | undefined;
@@ -49,25 +43,12 @@ export type CourseDefaults = {
   courseTypeId?: string;
 };
 
-const isSubject = (s: string): s is CourseSubject => (COURSE_SUBJECTS as readonly string[]).includes(s);
-const isLevel = (s: string): s is CourseLevel => (COURSE_LEVELS as readonly string[]).includes(s);
-
-/**
- * The kinds of class offered under a subject, at the chosen level when any are (an AP class lists
- * only types with an AP version), always keeping `keep` (the saved choice) in the list.
- */
-export function courseTypeOptions(subject: string, level: string, keep: string): CourseTypeId[] {
-  if (!isSubject(subject)) return [];
-  const all = courseTypesForSubject(subject);
-  const typeLevel = isLevel(level) ? COURSE_LEVEL_TO_TYPE_LEVEL[level] : "regular";
-  const atLevel = all.filter((t) => t.levels.includes(typeLevel));
-  const shown = (atLevel.length ? atLevel : all).map((t) => t.id);
-  return isCourseTypeId(keep) && !shown.includes(keep) && all.some((t) => t.id === keep) ? [keep, ...shown] : shown;
-}
-
 /**
  * "What kind of class is this?": the planner's course types for the subject, or "let us guess"
  * (stored as nothing: a guess only ever counts toward subject totals, never a specific class).
+ * When the name makes the guess confident ("Algebra II"), the guess is selected, so saving the form
+ * confirms it; it follows the name until the student picks something themselves. A saved choice,
+ * or what was just submitted, is kept as is.
  */
 function CourseTypeField({
   id,
@@ -75,6 +56,7 @@ function CourseTypeField({
   subject,
   level,
   defaultValue,
+  keepChoice,
   errors,
 }: {
   id: string;
@@ -82,14 +64,20 @@ function CourseTypeField({
   subject: string;
   level: string;
   defaultValue: string;
+  /** The value is a choice (saved, or just submitted), not a default for the guess to replace. */
+  keepChoice: boolean;
   errors?: string[];
 }) {
   const state = usePlannerState();
-  const [value, setValue] = useState(defaultValue);
+  // Null: nothing picked yet, so a confident guess from the name is the selection.
+  const [picked, setPicked] = useState<string | null>(keepChoice || defaultValue ? defaultValue : null);
+  const guessed = isSubject(subject) && name.trim() ? guessCourseType(name, subject, state) : null;
+  const guess = guessed?.typeId ?? null;
+  const preselect = picked === null && guessed?.confident ? guessed.typeId : null;
+  const value = picked ?? preselect ?? "";
   const options = courseTypeOptions(subject, level, value);
   // A type that doesn't fit the subject now is dropped (the student changed the subject).
   const selected = options.includes(value as CourseTypeId) ? value : "";
-  const guess = isSubject(subject) && name.trim() ? guessCourseTypeId(name, subject, state) : null;
   const hintId = `${id}-hint`;
   if (!isSubject(subject)) {
     return (
@@ -107,13 +95,17 @@ function CourseTypeField({
       </label>
       <p id={hintId} className="text-sm text-muted">
         It helps your plan know which requirements the class counts for.{" "}
-        {guess ? `Not sure? Leave it, and we'll treat it as ${courseTypeTitle(guess, state)} for now.` : "Not sure? Leave it, and we'll guess from the name."}
+        {preselect && selected === preselect
+          ? "We picked it from the name. Change it if that's not right."
+          : guess
+            ? `Not sure? Leave it, and we'll treat it as ${courseTypeTitle(guess, state)} for now.`
+            : "Not sure? Leave it, and we'll guess from the name."}
       </p>
       <select
         id={id}
         name="courseTypeId"
         value={selected}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => setPicked(e.target.value)}
         aria-invalid={errors?.length ? true : undefined}
         aria-describedby={describedBy(hintId, errors?.length && `${id}-error`)}
         className={control}
@@ -315,12 +307,13 @@ export function CourseFields({
 
       <CourseTypeField
         // Remounted with the submitted choice after a validation error, like the selects.
-        key={initialType}
+        key={`${submitted}-${initialType}`}
         id={`${id}-courseType`}
         name={name}
         subject={subject}
         level={level}
         defaultValue={initialType}
+        keepChoice={submitted}
         errors={errors?.courseTypeId}
       />
 

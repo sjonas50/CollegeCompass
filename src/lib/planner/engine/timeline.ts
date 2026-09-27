@@ -3,6 +3,7 @@ import { courseTypeTitle, LANGUAGE_NAMES, type LanguageCode } from "../course-ty
 import type { ByWhen, Deadline, PendingDecision } from "../engine-io";
 import { byWhenText } from "../view";
 import { confirmedEval } from "./audit";
+import { guessState } from "./confirm";
 import type { Ctx } from "./context";
 import { reason } from "./explain";
 import { type FillResult, ownCtePathway } from "./fill";
@@ -85,6 +86,8 @@ function ruleDeadlines(ctx: Ctx, fill: FillResult): Deadline[] {
       if (leafResult.missing > 0 && (e.rc.rs.testRoutes ?? []).some((t) => t.by)) continue;
       // Already done: nothing to schedule.
       if (leafResult.firm >= leafResult.required) continue;
+      // Short only while a class the student hasn't confirmed might count: no deadline to add it.
+      if (leafResult.missing > 0 && guessState(leafResult.leaf, leafResult, fill.items).waits) continue;
       const by: ByWhen = { grade, point: "end" };
       if (!future(ctx, by)) continue;
       const at = leafResult.counted.length ? Math.max(...leafResult.counted.map((c) => c.item.grade)) : null;
@@ -131,7 +134,7 @@ function testDeadlines(ctx: Ctx, fill: FillResult): Deadline[] {
   const out: Deadline[] = [];
   for (const e of fill.evals.map((x) => confirmedEval(x, fill.items))) {
     if (!e.best) continue;
-    const open = e.best.leaves.filter((l) => l.missing > 0);
+    const open = e.best.leaves.filter((l) => l.missing > 0 && !guessState(l.leaf, l, fill.items).waits);
     if (open.length === 0) continue;
     for (const route of e.rc.rs.testRoutes ?? []) {
       if (!route.by) continue;

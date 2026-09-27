@@ -3,10 +3,11 @@ import * as z from "zod";
 import type { Db } from "@/db";
 import { studentCourses, users } from "@/db/schema";
 import { scrubPii } from "../ai/privacy";
+import { isCourseTypeId } from "../planner/course-types";
 import { type Checklist, CHECKLIST_CAVEAT, CHECKLIST_FRAMING, CTE_NOTE, collegePrepChecklist } from "./checklist";
 import { GPA_CAVEAT, type GpaSummary, computeGpa } from "./gpa";
 import { type CareerSuggestion, SUGGESTIONS_NOTE, courseSuggestions } from "./suggestions";
-import type { CourseInput } from "./validation";
+import { type CourseInput, courseTypeFitsSubject } from "./validation";
 
 /** Generous for six grades of classes; stops scripted floods. */
 export const MAX_COURSES = 120;
@@ -83,6 +84,27 @@ export async function updateCourse(
         : null,
       updatedAt: now,
     })
+    .where(and(eq(studentCourses.id, courseId), eq(studentCourses.userId, userId)))
+    .returning(courseColumns);
+  return row ? { ok: true, value: row } : { ok: false, error: "not_found" };
+}
+
+export type SetCourseTypeResult = { ok: true; value: Course } | { ok: false; error: "not_found" | "mismatch" };
+
+/**
+ * "Confirm your classes" on the path: records the kind of one of the student's classes as their own
+ * choice (course_type_id, source "student"), only if the class is theirs and the kind fits its
+ * subject (like the add and edit forms). Nothing else about the class changes.
+ */
+export async function setCourseType(db: Db, userId: string, courseId: string, typeId: string, now = new Date()): Promise<SetCourseTypeResult> {
+  if (!isUuid(courseId)) return { ok: false, error: "not_found" };
+  if (!isCourseTypeId(typeId)) return { ok: false, error: "mismatch" };
+  const course = await getCourse(db, userId, courseId);
+  if (!course) return { ok: false, error: "not_found" };
+  if (!courseTypeFitsSubject(typeId, course.subject)) return { ok: false, error: "mismatch" };
+  const [row] = await db
+    .update(studentCourses)
+    .set({ courseTypeId: typeId, courseTypeSource: "student", updatedAt: now })
     .where(and(eq(studentCourses.id, courseId), eq(studentCourses.userId, userId)))
     .returning(courseColumns);
   return row ? { ok: true, value: row } : { ok: false, error: "not_found" };

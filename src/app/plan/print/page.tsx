@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Card } from "@/components/ui";
 import { getDb } from "@/db";
 import { requireFullAccess } from "@/lib/access/guard";
 import { usToday, formatDate } from "@/lib/applications/dates";
 import { requireUser } from "@/lib/auth/dal";
+import { plannerPathEnabled } from "@/lib/planner/beta";
 import { studentPath } from "@/lib/planner/service";
 import { PrintView } from "../path/print-view";
 import "../print.css";
@@ -16,7 +18,10 @@ export default async function PlanPrintPage({ searchParams }: PageProps<"/plan/p
   const student = await requireUser(["student"]);
   await requireFullAccess(student);
   const { plan, name } = await searchParams;
-  const path = await studentPath(await getDb(), student.id);
+  const db = await getDb();
+  // Part of "Your path", which is in beta (lib/planner/beta.ts).
+  if (!(await plannerPathEnabled(db, student.id))) redirect("/plan");
+  const path = await studentPath(db, student.id);
   const planId = plan === "B" ? "B" : "A";
   if (path.kind !== "planned") {
     return (

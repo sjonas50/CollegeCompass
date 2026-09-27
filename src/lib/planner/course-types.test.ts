@@ -179,7 +179,9 @@ describe("ladders", () => {
 
   it("reaches calculus through Integrated Math and Utah's Secondary Math", () => {
     takeInOrder(["math.int1", "math.int2", "math.int3", "math.precalc", "math.calc"]);
-    takeInOrder(["math.ut_sec1", "math.ut_sec2", "math.ut_sec3", "math.college_alg", "math.calc"]);
+    // College Algebra (Math 1050) alone isn't a calculus prerequisite: Math 1060 (trigonometry) is.
+    takeInOrder(["math.ut_sec1", "math.ut_sec2", "math.ut_sec3", "math.college_alg", "math.trig", "math.calc"]);
+    expect(takeable(getCourseType("math.calc"), new Set<CourseTypeId>(["math.ut_sec1", "math.ut_sec2", "math.ut_sec3", "math.college_alg"]))).toBe(false);
     takeInOrder(["math.ut_sec1", "math.ut_sec2", "math.ut_sec3", "math.trig", "math.calc"]);
     expect(takeable(getCourseType("math.calc"), new Set<CourseTypeId>(["math.ut_sec1", "math.ut_sec2", "math.ut_sec3"]))).toBe(false);
   });

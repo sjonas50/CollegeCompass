@@ -82,6 +82,7 @@ describe("engine output", () => {
       audit: [],
       demands: [],
       askCounselor: [],
+      confirm: [],
       middleSchool: null,
       citations: {},
     };

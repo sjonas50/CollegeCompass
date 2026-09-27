@@ -11,6 +11,7 @@ import { computeGpa } from "@/lib/courses/gpa";
 import { isGraduated } from "@/lib/courses/plan-layout";
 import { listCourses } from "@/lib/courses/service";
 import { courseSuggestions } from "@/lib/courses/suggestions";
+import { plannerPathEnabled } from "@/lib/planner/beta";
 import { isPlannerState } from "@/lib/planner/common";
 import { comingLaterNote } from "@/lib/planner/copy";
 import { studentPath } from "@/lib/planner/service";
@@ -72,9 +73,11 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
   const band = gradeBand(current);
   const middleSchool = band === "explore";
 
-  const path = await studentPath(db, student.id);
-  const courses = path.kind === "no_grade" ? await listCourses(db, student.id) : path.ctx.courses;
-  const planned = path.kind === "planned" ? path : null;
+  // "Your path" is in beta (lib/planner/beta.ts): everyone else keeps the checklist and course ideas.
+  const pathOn = await plannerPathEnabled(db, student.id);
+  const path = pathOn ? await studentPath(db, student.id) : null;
+  const courses = path && path.kind !== "no_grade" ? path.ctx.courses : await listCourses(db, student.id);
+  const planned = path?.kind === "planned" ? path : null;
   const gpa = computeGpa(courses);
   // Utah, Tennessee and Texas get "Your path", which covers the checklist and course ideas; other
   // states keep them (and see what's coming).
@@ -152,9 +155,9 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
         </section>
       )}
 
-      {!planned && !graduated && (
+      {pathOn && !planned && !graduated && (
         <div id="path" className="scroll-mt-4">
-          <ComingLater homeState={path.kind === "no_state" ? path.ctx.homeState : student.homeState ?? null} />
+          <ComingLater homeState={path?.kind === "no_state" ? path.ctx.homeState : student.homeState ?? null} />
         </div>
       )}
 

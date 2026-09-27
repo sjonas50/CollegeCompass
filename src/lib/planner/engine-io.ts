@@ -348,9 +348,28 @@ export type PlannedPath = {
   demands: Demand[];
   /** 3 to 8 questions for the counselor meeting (print view). */
   askCounselor: CounselorQuestion[];
+  /**
+   * The student's classes whose kind is only guessed from the name, for "Confirm your classes":
+   * the ones a requirement waits on first, then by grade. Never names or school details: ids only.
+   */
+  confirm: ConfirmItem[];
   middleSchool: MiddleSchoolView | null;
   /** Every citation any reason, line or option refers to, resolved for "Why?". */
   citations: Record<CitationId, ResolvedCitation>;
+};
+
+/** A class to confirm the kind of (engine/confirm.ts). */
+export type ConfirmItem = {
+  /** `student_courses.id`. */
+  courseId: string;
+  grade: SchoolGrade;
+  /**
+   * The kind to offer as one tap ("Algebra II?"): the name's guess, or for a name the guesser
+   * couldn't place, the class its place in the plan says it is. Null when there's no good guess.
+   */
+  guess: CourseTypeId | null;
+  /** How many requirements wait on it (it counts for them, or might). */
+  decides: number;
 };
 
 // Reasons ------------------------------------------------------------------------------
@@ -593,7 +612,12 @@ export type GapOption = {
 
 // Audit -----------------------------------------------------------------------------------
 
-export const AUDIT_STATUSES = ["done", "planned", "room_to_add", "ask_counselor", "not_tracked"] as const;
+/**
+ * `waiting_confirm`: "Waiting on you to confirm a class". The requirement depends on a class whose
+ * kind is only guessed from its name (it counts one, or is short while one might count): not met,
+ * and not missing either, until the student confirms the class's kind (engine/confirm.ts).
+ */
+export const AUDIT_STATUSES = ["done", "planned", "room_to_add", "waiting_confirm", "ask_counselor", "not_tracked"] as const;
 export type AuditStatus = (typeof AUDIT_STATUSES)[number];
 
 export const AUDIT_MODIFIERS = ["projected", "sources_disagree", "guessed_type", "stale", "unverified", "needs_plan_now"] as const;
@@ -650,7 +674,7 @@ export type RequirementAudit = {
 export type CheckResult = {
   checkId: string;
   kind: CheckKind;
-  status: "ok" | "room_to_add" | "ask_counselor";
+  status: "ok" | "room_to_add" | "waiting_confirm" | "ask_counselor";
   text: string;
   citations: CitationId[];
 };

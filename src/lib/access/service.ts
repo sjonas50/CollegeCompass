@@ -186,14 +186,15 @@ export async function grantFreeAccess(db: Db, userId: string, now = new Date()):
 // ---------------------------------------------------------------------------
 
 /**
- * The household's access for a student's data export: each grant's kind and dates, and the
- * subscription's status, plan and period end. With `studentId`, each grant also says whether it was
- * given for that student (`forThisStudent`, see accessGrants.forUserId). Stripe ids and who granted
- * what, or whom else a grant is for, are left out.
+ * The household's access for a student's data export: each grant's kind and dates, the
+ * subscription's status, plan and period end, and whether the household is in the class planner
+ * beta. With `studentId`, each grant also says whether it was given for that student
+ * (`forThisStudent`, see accessGrants.forUserId). Stripe ids and who granted what, or whom else a
+ * grant is for, are left out.
  */
 export async function exportHouseholdAccess(db: Db, householdId: string | null, now = new Date(), studentId?: string) {
-  if (!householdId) return { fullAccess: false, grants: [], subscription: null };
-  const [rows, billing] = await Promise.all([
+  if (!householdId) return { fullAccess: false, grants: [], subscription: null, plannerBeta: false };
+  const [rows, billing, household] = await Promise.all([
     db
       .select({ kind: accessGrants.kind, startsAt: accessGrants.startsAt, endsAt: accessGrants.endsAt, forUserId: accessGrants.forUserId })
       .from(accessGrants)
@@ -208,10 +209,11 @@ export async function exportHouseholdAccess(db: Db, householdId: string | null, 
       })
       .from(billingAccounts)
       .where(eq(billingAccounts.householdId, householdId)),
+    db.select({ plannerBeta: households.plannerBeta }).from(households).where(eq(households.id, householdId)),
   ]);
   const grants = rows.map(({ forUserId, ...grant }) => (studentId ? { ...grant, forThisStudent: forUserId === studentId } : grant));
   const access = evaluateAccess({ householdId, grants, billing: billing[0] ?? null }, now);
-  return { fullAccess: access.full, grants, subscription: billing[0] ?? null };
+  return { fullAccess: access.full, grants, subscription: billing[0] ?? null, plannerBeta: household[0]?.plannerBeta ?? false };
 }
 
 /**

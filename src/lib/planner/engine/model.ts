@@ -46,6 +46,14 @@ export type Item = {
    * says it is (engine/guesses.ts): still a guess, flagged like any other.
    */
   provisional?: true;
+  /**
+   * The student's own row whose kind isn't confirmed: every kind it might be, its guess first
+   * (engine/confirm.ts). Kept through `asPlanned` and `asConfirmed`, so the audit and the reasons
+   * can tell a requirement that's missing from one that's waiting on the student to confirm a class.
+   */
+  unconfirmed?: readonly CourseTypeId[];
+  /** An unconfirmed row whose name the guesser couldn't place (any kind in its subject). */
+  unplaced?: true;
 };
 
 export function itemFromFact(fact: CourseFact): Item {

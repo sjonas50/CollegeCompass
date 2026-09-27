@@ -138,6 +138,25 @@ function languageOf(item: Item): { code: LanguageCode; rank: number } | null {
 }
 
 /**
+ * Levels of one language these classes fill: each class fills one level, at or below its own (a
+ * placed student's Spanish III fills a level as surely as Spanish I does), so Spanish I and Spanish
+ * III are two levels, and heritage Spanish with Spanish III are two credits of one language. The
+ * sources count levels or credits in one language, never consecutive ranks: Texas's "any two
+ * levels in the same language" (19 TAC §74.12(b)(5)(A)(i)), Tennessee's "two (2) credits of the
+ * same world language", Utah State's "2 years of one world language". Greedy lowest rank first,
+ * which fills the most levels; a repeat of a level (two Spanish I classes) fills one.
+ */
+export function languageLevelsFilled(list: readonly Item[], levels: number): Item[] {
+  const sorted = [...list].sort((a, b) => languageOf(a)!.rank - languageOf(b)!.rank || Number(b.firm) - Number(a.firm) || itemOrder(a, b));
+  const used: Item[] = [];
+  for (const item of sorted) {
+    if (used.length >= levels) break;
+    if (languageOf(item)!.rank >= used.length + 1) used.push(item);
+  }
+  return used;
+}
+
+/**
  * The language that gets furthest toward `levels`, and the classes that make up its levels.
  * `notCode`: a language another requirement already counts (one that asks for a different language).
  */
@@ -156,22 +175,14 @@ export function languageProgress(items: Item[], leaf: CLeaf, notCode: LanguageCo
   for (const code of LANGUAGES) {
     const list = byCode.get(code);
     if (!list) continue;
-    const firm = Math.min(req.levels, Math.max(0, ...list.filter((i) => i.firm).map((i) => languageOf(i)!.rank)));
-    const all = Math.min(req.levels, Math.max(...list.map((i) => languageOf(i)!.rank)));
+    const firm = languageLevelsFilled(list.filter((i) => i.firm), req.levels).length;
+    const all = languageLevelsFilled(list, req.levels).length;
     if (!best || firm > best.firm || (firm === best.firm && all > best.all)) best = { code, firm, all };
   }
   if (!best) return { code: null, counted: [] };
-  const list = byCode.get(best.code)!;
-  const counted: { item: Item; amount: number }[] = [];
-  let reached = 0;
-  for (let level = 1; level <= best.all; level++) {
-    const atLevel = list
-      .filter((i) => languageOf(i)!.rank === level)
-      .sort((a, b) => Number(b.firm) - Number(a.firm) || itemOrder(a, b))[0];
-    if (!atLevel) continue;
-    counted.push({ item: atLevel, amount: level - reached });
-    reached = level;
-  }
+  const counted = languageLevelsFilled(byCode.get(best.code)!, req.levels)
+    .sort(itemOrder)
+    .map((item) => ({ item, amount: 1 }));
   return { code: best.code, counted };
 }
 
@@ -191,12 +202,10 @@ function partnerCode(leaf: CLeaf, alt: Alternative, results: Map<CLeaf, LeafResu
 
 function languageResult(items: Item[], leaf: CLeaf, notCode: LanguageCode | null = null): LeafResult {
   const { counted } = languageProgress(items, leaf, notCode);
-  // Levels reached: firm counts only up to the highest firm level.
-  const firmLevel = Math.max(0, ...counted.filter((c) => c.item.firm).map((c) => languageOf(c.item)!.rank));
-  const allLevel = Math.max(0, ...counted.map((c) => languageOf(c.item)!.rank));
+  // Levels filled: finished and in-progress classes alone, then with the planned ones.
   const required = leaf.required;
-  const firm = Math.min(firmLevel, required);
-  const planned = Math.min(allLevel, required) - firm;
+  const firm = Math.min(required, languageLevelsFilled(counted.filter((c) => c.item.firm).map((c) => c.item), required).length);
+  const planned = Math.min(required, counted.length) - firm;
   const missing = required - firm - planned;
   const guessed = missing > 0 && items.some((i) => i.creditable && i.assumed && i.subject === "world_language");
   return { leaf, required, firm, planned, missing, counted, guessed };

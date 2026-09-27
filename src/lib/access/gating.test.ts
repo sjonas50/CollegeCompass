@@ -242,6 +242,10 @@ describe("gated actions", () => {
   it("“Your path” actions work with full access", async () => {
     const id = await signIn("full");
     await db.update(schema.users).set({ homeState: "TX" }).where(eq(schema.users.id, id));
+    // In the class planner beta (lib/planner/beta.ts): outside it they change nothing.
+    expect(await savePathSettingsAction(undefined, form({ path: "degree" }))).toMatchObject({ ok: false });
+    expect(await db.select().from(schema.studentPlanPrefs)).toHaveLength(0);
+    await db.update(schema.households).set({ plannerBeta: true }).where(eq(schema.households.id, state.user!.householdId!));
     expect(await savePathSettingsAction(undefined, form({ path: "degree", txEndorsement: "stem", maxCollegeLevelPerYear: "2" }))).toMatchObject({ ok: true });
     const { studentPath } = await import("@/lib/planner/service");
     const path = await studentPath(db, id);
@@ -333,6 +337,9 @@ describe("a parent's view of a child's path", () => {
     await expect(ChildPlanPrintPage(pageProps<PageProps<"/parent/children/[id]/plan/print">>({ id: stranger.id }))).rejects.toMatchObject({
       digest: expect.stringMatching(/;404$/),
     });
+    // Outside the class planner beta the parent goes back to the dashboard.
+    expect(await redirectOf(ChildPlanPrintPage(pageProps<PageProps<"/parent/children/[id]/plan/print">>({ id: child.id })))).toBe("/parent");
+    await db.update(schema.households).set({ plannerBeta: true }).where(eq(schema.households.id, state.user!.householdId!));
     const html = await render(ChildPlanPrintPage(pageProps<PageProps<"/parent/children/[id]/plan/print">>({ id: child.id })) as Promise<ReactNode>);
     expect(text(html)).toContain("Draft class plan, to talk over with my school counselor");
   });

@@ -279,13 +279,13 @@ describe("classes recorded without choosing their kind", () => {
     const guessedLines = path.result.audit
       .filter((a) => a.kind === "state_graduation")
       .flatMap((a) => a.requirements)
-      .filter((r) => r.status === "room_to_add" && r.modifiers.includes("guessed_type"));
+      .filter((r) => r.status === "waiting_confirm" && r.modifiers.includes("guessed_type"));
     expect(guessedLines.length).toBeGreaterThan(0);
     const overview = await pathOverview(db, id, NOW);
     if (overview.kind !== "planned") throw new Error(overview.kind);
     expect(overview.summary.counts.confirmType).toBe(guessedLines.length);
     const roomLines = path.result.audit.filter((a) => a.kind === "state_graduation").flatMap((a) => a.requirements).filter((r) => r.status === "room_to_add");
-    expect(overview.summary.counts.roomToAdd).toBe(roomLines.length - guessedLines.length);
+    expect(overview.summary.counts.roomToAdd).toBe(roomLines.length);
     // No language gap for the guessed Spanish I and II.
     expect(path.result.gaps.filter((g) => /language/i.test(g.text))).toEqual([]);
   });
@@ -338,9 +338,10 @@ describe("classes typed with a name only are planned around, never added again",
     for (const plan of path.result.plans) expect(suggestions(path.result, plan.id).map((s) => s.typeId)).not.toContain("sci.chem2");
     // The audit shows the language route the guesses meet, waiting on a confirmed type.
     const lote = path.result.audit.find((a) => a.ruleSetId === "tx.fhsp.grad")!.requirements.find((r) => r.reqId.startsWith("lote"))!;
-    expect(lote).toMatchObject({ reqId: "lote.same", status: "room_to_add" });
+    expect(lote).toMatchObject({ reqId: "lote.same", status: "waiting_confirm" });
     expect(lote.modifiers).toContain("guessed_type");
-    expect(path.result.gaps.filter((g) => g.priority <= 1)).toEqual([]);
+    // Only the credits the plan leaves for 12th's open periods (round 9): nothing missing or impossible.
+    expect(path.result.gaps.filter((g) => g.priority <= 1 && !/in 12th grade \(your open periods\)/.test(g.text))).toEqual([]);
   });
 
   it("S2: a Utah 11th grader's typed English 10 Honors, Health and Fitness for Life aren't doubled", async () => {

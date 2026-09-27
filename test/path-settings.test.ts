@@ -34,7 +34,8 @@ afterEach(() => {
 });
 
 async function signIn() {
-  const [h] = await db.insert(schema.households).values({}).returning();
+  // In the class planner beta (lib/planner/beta.ts), where "Your path" and its settings are.
+  const [h] = await db.insert(schema.households).values({ plannerBeta: true }).returning();
   await db.insert(schema.accessGrants).values(trialGrant(h.id, new Date(Date.now() - 86_400_000)));
   const [user] = await db
     .insert(schema.users)

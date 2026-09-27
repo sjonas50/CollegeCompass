@@ -16,6 +16,7 @@ export type AuditAction =
   | "access.trial_started"
   | "access.free_access_granted"
   | "access.granted_by_staff"
+  | "planner.beta_set_by_staff"
   | "billing.checkout_started"
   | "billing.subscription_changed"
   | "billing.customer_deleted"

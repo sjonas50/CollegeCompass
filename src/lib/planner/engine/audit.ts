@@ -12,6 +12,7 @@ import { cohortValue } from "../cohort";
 import type { Check, OptionPref, Req, Selector } from "../rules";
 import { type AltResult, evaluateAlternative, languageProgress, leafAccepts, type LeafResult, pickAlternative, type PickOptions } from "./allocate";
 import type { CLeaf } from "./compile";
+import { guessState } from "./confirm";
 import type { Ctx, RuleSetCtx } from "./context";
 import { leafPriority, rowIsOffered, schoolYearOfGrade, variantFor } from "./context";
 import { leafNoteReason, reason, requirementReason, ruleSetNotes } from "./explain";
@@ -82,7 +83,9 @@ function guessedKeys(items: readonly Item[]): Set<string> {
   return new Set(items.filter((i) => i.own && i.assumed).map((i) => i.key));
 }
 
-const SEVERITY: Record<AuditStatus, number> = { not_tracked: 0, done: 1, planned: 2, ask_counselor: 3, room_to_add: 4 };
+// Waiting on a class to be confirmed sits between planned and "ask your counselor": it isn't
+// missing, and the student can settle it themselves.
+const SEVERITY: Record<AuditStatus, number> = { not_tracked: 0, done: 1, planned: 2, waiting_confirm: 3, ask_counselor: 4, room_to_add: 5 };
 
 export function worst(statuses: AuditStatus[]): AuditStatus {
   return statuses.reduce<AuditStatus>((w, s) => (SEVERITY[s] > SEVERITY[w] ? s : w), statuses.length ? "done" : "not_tracked");
@@ -163,11 +166,14 @@ export function earlyWithoutCredit(items: readonly Item[], sels: readonly Select
   return items.find((i) => i.own && i.grade < 9 && !i.hsCredit && !i.noCredit && i.units > 0 && getCourseType(i.typeId).grades[1] >= 9 && matchesAny({ ...i, assumed: false }, sels)) ?? null;
 }
 
-export function leafStatus(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, needsPlanNow: boolean): LeafStatus {
+export function leafStatus(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, needsPlanNow: boolean, waits = false): LeafStatus {
   const modifiers: AuditModifier[] = [];
   let status: AuditStatus;
   const req = r.leaf.req;
-  if (req.kind === "total_credits" && req.source === "state" && !localTotalKnown(ctx)) {
+  if (waits) {
+    // A class whose kind is only guessed decides it (engine/confirm.ts): not met, not missing.
+    status = "waiting_confirm";
+  } else if (req.kind === "total_credits" && req.source === "state" && !localTotalKnown(ctx)) {
     // The state minimum; the district may require more (design §3.1). Never Done.
     status = r.missing > 0 ? "room_to_add" : "ask_counselor";
   } else if (req.kind === "remaining_electives" && req.expands !== undefined) {
@@ -222,6 +228,8 @@ export function evaluateCheck(
   leaves: LeafResult[],
   items: Item[],
   statusOf: (ruleSetId: string) => AuditStatus | null,
+  /** Requirements waiting on the student to confirm a class (never reported as missing here). */
+  waits: (reqId: string) => boolean = () => false,
 ): CheckResult | null {
   const base = { checkId: check.id, kind: check.kind, citations: check.cite };
   switch (check.kind) {
@@ -260,8 +268,18 @@ export function evaluateCheck(
           text: `${label}: ask your counselor whether your transcript showed you on schedule at the end of ${nth(check.grade)} grade.`,
         };
       }
-      // Only what's still missing: a planned Algebra II isn't listed as something to add.
-      const missing = results.filter((r) => r.missing > 0);
+      // Only what's still missing: a planned Algebra II isn't listed as something to add. A
+      // requirement a class the student hasn't confirmed might meet isn't missing: it waits on them.
+      const short = results.filter((r) => r.missing > 0);
+      const missing = short.filter((r) => !waits(r.leaf.id));
+      if (missing.length === 0) {
+        const waitingLabel = listLabels(short.map((r) => r.leaf.label));
+        return {
+          ...base,
+          status: "waiting_confirm",
+          text: `${waitingLabel}: waiting on you to confirm a class. Once you confirm what kind of class it is, the plan can tell whether you're on schedule by the end of ${nth(check.grade)} grade.`,
+        };
+      }
       const missingLabel = listLabels(missing.map((r) => r.leaf.label));
       if (past) return { ...base, status: "ask_counselor", text: `${missingLabel} ${missing.length > 1 ? "weren't" : "wasn't"} on your plan by the end of ${nth(check.grade)} grade. Ask your counselor what this means for you.` };
       return { ...base, status: "room_to_add", text: `Room to add ${lowerArticle(missingLabel)} to your plan by the end of ${nth(check.grade)} grade (${missing.length > 1 ? "they" : "it"} can come as late as 12th).` };
@@ -509,10 +527,10 @@ function sameRef(a: Item["ref"], b: Item["ref"]): boolean {
 // Output ----------------------------------------------------------------------------------------
 
 /**
- * `guessOnly`: the requirement is unmet only because some of the student's classes have a guessed
- * kind (confirmed, they'd meet it). That's a "confirm the class type" prompt, never "Needs a plan now".
+ * `waits`: the requirement depends on a class whose kind is only guessed (it counts one, or it's
+ * short while one might count): "Waiting on you to confirm a class", never "Needs a plan now".
  */
-export function requirementAudit(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, conflicts: AdmissionConflict[], needsPlanNowKeys: Set<string>, guessOnly = false): RequirementAudit {
+export function requirementAudit(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, conflicts: AdmissionConflict[], needsPlanNowKeys: Set<string>, waits = false): RequirementAudit {
   const priority = leafPriority(rc, r.leaf.strength);
   // A class the student took that may count here (another state's math on the same rung, a class
   // from before 9th grade without high school credit) is a question for the counselor, not a
@@ -520,10 +538,11 @@ export function requirementAudit(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, confli
   const req = r.leaf.req;
   const counselorCall = req.kind === "credits" && (equivalentMath(ctx, req.select) || earlyWithoutCredit(ctx.items, req.select) !== null);
   const npn =
+    !waits &&
     ctx.inProgressGrade === 12 &&
     priority === 0 &&
-    ((r.missing > 0 && !guessOnly && !counselorCall) || r.counted.some((c) => c.item.ref.kind === "suggestion" && needsPlanNowKeys.has(c.item.ref.key)));
-  const { status, modifiers } = leafStatus(ctx, rc, r, npn);
+    ((r.missing > 0 && !counselorCall) || r.counted.some((c) => c.item.ref.kind === "suggestion" && needsPlanNowKeys.has(c.item.ref.key)));
+  const { status, modifiers } = leafStatus(ctx, rc, r, npn, waits);
   return {
     reqId: r.leaf.id,
     label: r.leaf.label,
@@ -547,32 +566,30 @@ export function requirementAudit(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, confli
 }
 
 /**
- * A requirement on the confirmed route. A class whose kind is a guess never makes a requirement
- * that names a kind of class (Biology, Algebra II) done: it shows as counted, the requirement
- * reads "Room to add" with "Guessed class type" (confirm the kind), and it's `guessOnly` when
- * confirming would meet it. A guess counted by subject alone ("3 science credits") counts as usual.
+ * A requirement on the confirmed route, and whether it waits on the student to confirm a class
+ * (engine/confirm.ts). A class whose kind is a guess never makes a requirement that names a kind
+ * of class (Biology, Algebra II) done: it shows as counted, and the requirement waits on the
+ * student. So does a requirement that's short (or met only by a suggestion repeating what the row
+ * might be) while a row the student hasn't confirmed might count there. A guess counted by
+ * subject alone ("3 science credits") counts as usual, flagged "Guessed class type".
  */
-function withGuesses(l: LeafResult, items: readonly Item[], guessed: Set<string>): { result: LeafResult; guessOnly: boolean } {
+export function withGuesses(l: LeafResult, items: readonly Item[]): { result: LeafResult; waits: boolean } {
   const kind = l.leaf.req.kind;
   // Totals and "the rest in electives" count any class.
-  if (guessed.size === 0 || (kind !== "credits" && kind !== "count" && kind !== "same_language")) return { result: l, guessOnly: false };
-  const original = new Map(items.map((i) => [i.key, i]));
-  // A language level is never counted from a guess (allocate.ts languageOf).
-  const accepts = (i: Item) => kind !== "same_language" && leafAccepts(l.leaf, i);
-  const shaky = l.counted.filter((c) => guessed.has(c.item.key) && !accepts(original.get(c.item.key)!));
-  const usesGuess = l.counted.some((c) => guessed.has(c.item.key));
-  if (shaky.length === 0) return { result: { ...l, guessed: l.guessed || usesGuess }, guessOnly: false };
+  if (kind !== "credits" && kind !== "count" && kind !== "same_language") return { result: l, waits: false };
+  const usesGuess = l.counted.some((c) => c.item.own && c.item.unconfirmed !== undefined);
+  const state = guessState(l.leaf, l, items);
+  if (!state.waits) return { result: { ...l, guessed: l.guessed || usesGuess }, waits: false };
   let firm = 0;
   let planned = 0;
   for (const c of l.counted) {
-    if (shaky.includes(c)) continue;
+    if (state.shaky.includes(c)) continue;
     if (c.item.firm) firm += c.amount;
     else planned += c.amount;
   }
   firm = Math.min(firm, l.required);
   planned = Math.min(planned, l.required - firm);
-  const missing = l.required - firm - planned;
-  return { result: { ...l, firm, planned, missing, guessed: true }, guessOnly: l.missing === 0 && missing > 0 };
+  return { result: { ...l, firm, planned, missing: l.required - firm - planned, guessed: true }, waits: true };
 }
 
 export function ruleSetAudit(
@@ -595,16 +612,19 @@ export function ruleSetAudit(
   // class shows under the requirement the plan counts it for (a Physics added for the 3rd lab
   // science isn't shown under "IPC, chemistry or physics" while a typed IPC waits for its kind).
   const best = confirmedEval(e, items).best;
-  const guessed = guessedKeys(items);
+  const waiting = new Set<string>();
   const requirements = best
     ? best.leaves
         .filter((l) => l.leaf.own)
         .map((l) => {
-          const { result, guessOnly } = withGuesses(ownResult(l), items, guessed);
-          return requirementAudit(ctx, rc, result, conflicts.get(`${rc.rs.id}/${l.leaf.id}`) ?? [], needsPlanNowKeys, guessOnly);
+          const { result, waits } = withGuesses(ownResult(l), items);
+          if (waits) waiting.add(l.leaf.id);
+          return requirementAudit(ctx, rc, result, conflicts.get(`${rc.rs.id}/${l.leaf.id}`) ?? [], needsPlanNowKeys, waits);
         })
     : [];
-  const checks = best && variant ? (variant.checks ?? []).flatMap((c) => evaluateCheck(ctx, rc, c, best.leaves, items, statusOf) ?? []) : [];
+  // A base program's requirements (the Foundation's Algebra II under the DLA) wait the same way.
+  for (const l of best?.leaves ?? []) if (!l.leaf.own && withGuesses(l, items).waits) waiting.add(l.leaf.id);
+  const checks = best && variant ? (variant.checks ?? []).flatMap((c) => evaluateCheck(ctx, rc, c, best.leaves, items, statusOf, (id) => waiting.has(id)) ?? []) : [];
   // A check that needs another rule set that's only planned (the Foundation program with classes
   // still to take this year) leaves this one planned, never done.
   const checkStatuses: AuditStatus[] = checks.map((c) => {

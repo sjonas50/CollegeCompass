@@ -45,6 +45,7 @@ export const AUDIT_STATUS_LABELS = {
   done: "Done",
   planned: "Planned",
   room_to_add: "Room to add",
+  waiting_confirm: "Waiting on you to confirm a class",
   ask_counselor: "Ask your counselor",
   not_tracked: "We don't track this",
 } as const satisfies Record<AuditStatus, string>;

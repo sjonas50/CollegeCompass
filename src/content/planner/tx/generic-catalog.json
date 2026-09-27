@@ -162,7 +162,7 @@
     { "typeId": "lang.es.1", "levels": ["regular"], "cite": ["tx-74-3-b2-hij"] },
     { "typeId": "lang.es.2", "levels": ["regular"], "cite": ["tx-74-3-b2-hij"] },
     { "typeId": "lang.es.3", "levels": ["regular", "honors"], "cite": ["tx-74-3-b2-hij"] },
-    { "typeId": "lang.es.4", "levels": ["ap"] },
+    { "typeId": "lang.es.4", "levels": ["regular", "honors", "ap"], "cite": ["tx-74-3-b2-hij"] },
     { "typeId": "lang.fr.1", "levels": ["regular"] },
     { "typeId": "lang.fr.2", "levels": ["regular"] },
     { "typeId": "cs.prog1", "levels": ["regular"], "cite": ["tx-74-3-b2-hij"] },

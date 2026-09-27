@@ -127,6 +127,13 @@
       "when": 1790371863258,
       "tag": "0017_plan_prefs",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790480755979,
+      "tag": "0018_planner_beta",
+      "breakpoints": true
     }
   ]
 }

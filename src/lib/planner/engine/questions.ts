@@ -50,6 +50,11 @@ function lowerArticle(text: string): string {
   return /^(A|An|The|One|Two|Three|Four) /.test(text) ? text.charAt(0).toLowerCase() + text.slice(1) : text;
 }
 
+/** A question that starts with a name ("the University of Memphis's pages …") starts with a capital. */
+function upperFirst(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function listWords(names: string[]): string {
   return names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
@@ -107,9 +112,20 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
     const test = g.options.find((o) => o.kind === "test_score");
     if (test && g.priority <= 1) {
       const rs = ctx.ruleSets.find((r) => g.demandId?.startsWith(`${r.rs.id}/`));
+      const need = fill.needs.find((n) => n.id === g.demandId);
+      // A route that stands in for the whole program (Texas's test-score route to automatic
+      // admission, TEC 51.803(a)(2)(B), in place of the DLA's classes) never shows one of its classes:
+      // the question is about the program. Only a route for one requirement (Utah's college-ready
+      // math) is asked about as that requirement.
+      const route = need?.testRoutes.find((t) => t.cite.every((c) => test.citations.includes(c)));
+      if (rs && route && !route.reqIds && !route.by) {
+        const to = rs.rs.appliesWhen.choice?.key === "txAimDla" ? " to automatic admission" : "";
+        const program = rs.rs.title.replace(/ \(.*\)$/, "");
+        add(`test:program:${rs.rs.id}`, `Should I aim for the test-score route${to} instead of the ${program}'s classes? Which scores count now?`, test.citations, rs.rs.id);
+        continue;
+      }
       // The need itself, not the rule set's title ("Utah high school graduation requirements" can't
       // be shown with a test score; college-ready math can).
-      const need = fill.needs.find((n) => n.id === g.demandId);
       const what = need?.seniorMath ? `college-ready math (${rs?.rs.issuer.name ?? "the state"}'s senior-year math)` : need ? lowerArticle(need.label) : (rs?.rs.title ?? "this");
       add(`test:${g.id}`, `Should I plan to show ${what} with a test score or with a class, and when do scores need to be in?`, test.citations, rs?.rs.id ?? null);
     }
@@ -126,7 +142,7 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
   // Projected and conflicting rules.
   for (const rs of audit) {
     if (rs.projected) add(`projected:${rs.ruleSetId}`, `The ${rs.title} rules for my class aren't final yet. Which ones apply to me?`, [], rs.ruleSetId);
-    if (rs.confidence === "conflicting") add(`conflicting:${rs.ruleSetId}`, `${rs.issuer.name}'s pages don't agree. Which courses does it expect from me?`, [], rs.ruleSetId);
+    if (rs.confidence === "conflicting") add(`conflicting:${rs.ruleSetId}`, `${upperFirst(rs.issuer.name)}'s pages don't agree. Which courses does it expect from me?`, [], rs.ruleSetId);
   }
   // Classes the list may not offer, or offers every other year.
   for (const g of gaps.filter((x) => x.kind === "not_offered").slice(0, 2)) {
@@ -171,7 +187,7 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
   if (pairs.size) {
     const sorted = [...pairs.entries()].sort((a, b) => a[0] - b[0]).map(([, p]) => p);
     const here = sorted.map((p) => p.here).filter((h, i, all) => all.indexOf(h) === i);
-    add("equivalent-math", `Do my ${listWords(sorted.map((p) => p.mine))} count as ${listWords(here)} here?`);
+    add("equivalent-math", `${sorted.length === 1 ? "Does" : "Do"} my ${listWords(sorted.map((p) => p.mine))} count as ${listWords(here)} here?`);
   }
   // Moves.
   const moved = Object.values(ctx.cohort.overrides).includes("transferred");
@@ -194,25 +210,27 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
   if (total && !ctx.ruleSets.some((r) => r.rs.kind === "local_graduation")) add("district-total", `Does our district require more than the state's ${toCredits(total.required)} credits?`);
   // Unverified items, shown once.
   for (const rs of audit) for (const u of rs.unverified.slice(0, 1)) add(`unverified:${rs.ruleSetId}:${u.id}`, unverifiedQuestion(u.text), [], rs.ruleSetId);
-  // Guessed class types, last and as one question: only the guessed rows a requirement counts (the
-  // student can also settle a guess in the app by picking the class's kind). Generic titles only:
-  // the student's typed names stay out of anything that could be shared.
-  const guessedIds = new Set(ctx.input.courses.filter((f) => f.assumed).map((f) => f.id));
-  const guessedTitles: string[] = [];
-  for (const rs of audit) {
-    for (const r of rs.requirements) {
-      if (!r.modifiers.includes("guessed_type")) continue;
-      for (const c of r.counted) {
-        if (c.ref.kind !== "course" || !guessedIds.has(c.ref.courseId)) continue;
-        const title = titleOf(c.ref);
-        if (!guessedTitles.includes(title)) guessedTitles.push(title);
-      }
+  // Classes whose kind the student hasn't confirmed: one line, last, whenever any remain (the
+  // student can also settle them in the app, "Confirm your classes"). Generic titles only: the
+  // student's typed names stay out of anything that could be shared.
+  const unconfirmed = [...fill.items].filter((i) => i.own && i.unconfirmed).sort((a, b) => a.grade - b.grade);
+  let guessLine: string | null = null;
+  if (unconfirmed.length) {
+    const titles: string[] = [];
+    for (const i of unconfirmed) {
+      const type = getCourseType(i.typeId);
+      const title = type.title.replace(/ \(.*\)$/, "");
+      if (!type.fallback && !titles.includes(title)) titles.push(title);
     }
-  }
-  if (guessedTitles.length === 1) add("guess", `One of my classes looks like ${guessedTitles[0]}, but its kind is a guess. Does it count as that for graduation?`);
-  else if (guessedTitles.length > 1) {
-    const names = guessedTitles.length > 4 ? [...guessedTitles.slice(0, 3), `${guessedTitles.length - 3} others`] : guessedTitles;
-    add("guess", `Some of my classes' kinds are guesses: they look like ${listWords(names)}. Do they count that way for graduation?`);
+    titles.sort((a, b) => a.localeCompare(b));
+    const unplaced = unconfirmed.filter((i) => getCourseType(i.typeId).fallback).length;
+    const names = titles.length > 4 ? [...titles.slice(0, 3), `${titles.length - 3 + unplaced} others`] : unplaced ? [...titles, `${unplaced} ${unplaced === 1 ? "class" : "classes"} we couldn't place`] : titles;
+    guessLine =
+      titles.length === 0
+        ? `I haven't confirmed what kind of class ${unplaced === 1 ? "one of my classes is" : `${unplaced} of my classes are`}. Can you help me check how ${unplaced === 1 ? "it counts" : "they count"} for graduation?`
+        : unconfirmed.length === 1
+          ? `One of my classes looks like ${titles[0]}, but its kind is a guess. Does it count as that for graduation?`
+          : `Some of my classes' kinds are guesses: they look like ${listWords(names)}. Do they count that way for graduation?`;
   }
 
   const fillers = [
@@ -220,6 +238,10 @@ export function counselorQuestions(ctx: Ctx, fill: FillResult, audit: RuleSetAud
     ["general:offered", "Which classes on this draft does our school offer, and in which grades?"],
     ["general:change", "Is there anything in this draft you'd change for me?"],
   ] as const;
-  for (const [id, text] of fillers) if (out.length < MIN) add(id, text);
-  return out.slice(0, MAX);
+  // The guessed-kinds line always makes the printed list (in place of the last other question).
+  const kept = out.slice(0, guessLine ? MAX - 1 : MAX);
+  if (guessLine && !kept.some((q) => q.text === guessLine)) kept.push({ id: "guess", text: guessLine, reasons: [reason("state_note", guessLine, {})] });
+  const result = kept;
+  for (const [id, text] of fillers) if (result.length < MIN && !result.some((q) => q.id === id || q.text === text)) result.push({ id, text, reasons: [reason("state_note", text, {})] });
+  return result;
 }

@@ -1,5 +1,6 @@
 import type { PlannerState, SchoolGrade } from "../common";
 import { courseTypeTitle, type CourseTypeId, getCourseType } from "../course-types";
+import type { Selector } from "../rules";
 import type { Item } from "./model";
 import { countsForSequence } from "./model";
 
@@ -271,4 +272,25 @@ export function solveLadder(p: LadderProblem): LadderSolution {
     return { step, latest, binding };
   });
   return { steps: cell.steps, rankAfter, cost: cell.cost, unmet, slack };
+}
+
+/** The lowest math rung that meets every selector (types on the math ladder or the math capabilities), or null. */
+export function isLadderish(sels: readonly Selector[]): number | null {
+  // The lowest rung that meets every selector: types on the math ladder, or the math capabilities.
+  let rank: number | null = null;
+  for (const s of sels) {
+    let r: number | null = null;
+    if (s.types) {
+      const ranks = s.types.map((t) => getCourseType(t).ladder).map((l) => (l && l.id === "math" && l.rank >= 1 ? l.rank : null));
+      if (ranks.some((x) => x === null)) return null;
+      r = Math.min(...(ranks as number[]));
+    } else if (s.capabilities) {
+      if (s.capabilities.includes("alg2_or_beyond")) r = 3;
+      else if (s.capabilities.includes("advanced_math_after_alg2")) r = 4;
+      else return null;
+    } else return null;
+    if (s.levels) return null;
+    rank = rank === null ? r : Math.min(rank, r);
+  }
+  return rank;
 }

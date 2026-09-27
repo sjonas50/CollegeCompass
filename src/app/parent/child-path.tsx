@@ -8,12 +8,13 @@ import { stateTitle } from "@/lib/planner/view";
 // 3 planned, 2 room to add, 1 to ask about. Next: …", with a link to the read-only path. The
 // school isn't part of it; the parent sees that in the child's settings.
 
-export type ChildPathState = PathOverview | { kind: "locked" };
+/** `off`: the class planner beta isn't on for the child's household (lib/planner/beta.ts). */
+export type ChildPathState = PathOverview | { kind: "locked" } | { kind: "off" };
 
 const link = "inline-flex min-h-11 items-center font-medium underline underline-offset-2";
 
 export function ChildPathBlock({ childId, name, state }: { childId: string; name: string; state: ChildPathState }) {
-  if (state.kind === "graduated") return null;
+  if (state.kind === "graduated" || state.kind === "off") return null;
   const href = `/parent/children/${childId}/plan`;
   return (
     <div className="mt-4 rounded-lg border border-border p-4 text-sm">

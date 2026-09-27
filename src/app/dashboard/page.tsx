@@ -17,6 +17,7 @@ import { strengthsSummary } from "@/lib/assessments/descriptions";
 import { type InstrumentStatus, instrumentStatuses, latestResult } from "@/lib/assessments/service";
 import { gradeBand } from "@/lib/auth/age";
 import { requireUser } from "@/lib/auth/dal";
+import { plannerPathEnabled } from "@/lib/planner/beta";
 import { computeGpa } from "@/lib/courses/gpa";
 import { listCourses } from "@/lib/courses/service";
 import { listNorthStars } from "@/lib/goals";
@@ -80,6 +81,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     listLinkedParents(db, user),
     schoolSettings(db, user.id),
   ]);
+  // Class-choosing milestones open "Your path" only where the class planner beta is on.
+  const pathLinks = await plannerPathEnabled(db, user.id);
   const roadmap = buildRoadmap(MILESTONES, grade, new Date(), progress);
   const timely = [...roadmap.now, ...roadmap.catchUp].slice(0, 3);
   const gpa = computeGpa(courses);
@@ -157,7 +160,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             <ul className="mt-3 space-y-2">
               {timely.map((m) => (
                 <li key={m.id}>
-                  <Link href={milestonePathLink(m.id)?.href ?? "/roadmap"} className="block rounded-xl border border-border bg-surface p-4 hover:border-accent">
+                  <Link href={(pathLinks && milestonePathLink(m.id)?.href) || "/roadmap"} className="block rounded-xl border border-border bg-surface p-4 hover:border-accent">
                     <span className="font-medium">{m.title}</span>
                     <span className="mt-1 block text-sm text-muted">{m.detail}</span>
                   </Link>

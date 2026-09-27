@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ChecklistCard } from "@/app/plan/cards";
 import { PathView } from "@/app/plan/path/path-view";
 import { Card, PageHeading } from "@/components/ui";
@@ -10,6 +10,7 @@ import { requireFullAccess } from "@/lib/access/guard";
 import { requireUser } from "@/lib/auth/dal";
 import { stateName } from "@/lib/colleges/states";
 import { collegePrepChecklist } from "@/lib/courses/checklist";
+import { plannerPathEnabled } from "@/lib/planner/beta";
 import { comingLaterNote } from "@/lib/planner/copy";
 import { studentPath } from "@/lib/planner/service";
 
@@ -28,6 +29,8 @@ export default async function ChildPlanPage({ params, searchParams }: PageProps<
   const db = await getDb();
   const child = (await listChildren(db, parent.id)).find((c) => c.id === id);
   if (!child) notFound();
+  // "Your path" is in beta for the child's household (lib/planner/beta.ts).
+  if (!(await plannerPathEnabled(db, child.id))) redirect("/parent");
   const path = await studentPath(db, child.id);
   const planId = plan === "B" ? "B" : "A";
   const base = `/parent/children/${child.id}/plan`;

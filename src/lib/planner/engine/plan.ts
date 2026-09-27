@@ -5,6 +5,7 @@ import { courseTypeTitle, type CourseTypeId, getCourseType, isCollegeLevel } fro
 import {
   COLLEGE_LEVEL_SOFT_WARNING_AT,
   type BuiltFrom,
+  type ConfirmItem,
   type Demand,
   type MiddleSchoolView,
   type NoStatePath,
@@ -26,8 +27,9 @@ import {
 import { isStale, reviewLabel, staleLabel } from "../review";
 import type { Check, ContentHeader, Req, Selector } from "../rules";
 import { type AltResult, evaluateAlternative, type LeafResult } from "./allocate";
-import { admissionConflicts, expandedResults, ruleSetAudit, waiverNotes, worst } from "./audit";
+import { admissionConflicts, confirmedEval, expandedResults, ruleSetAudit, waiverNotes, worst } from "./audit";
 import { type Alternative, type CLeaf, leafSignature } from "./compile";
+import { guessState, mightBeRows } from "./confirm";
 import { aimsAt, buildContext, type Ctx, type FamilyCtx, leafPriority, rowIsOffered, type RuleSetCtx, schoolYearOfGrade } from "./context";
 import { algebra2Reason, leafNoteReason, loadReason, prepReason, reason, requirementReason, resolveCitations, retakeReason, seniorMathReason } from "./explain";
 import { belowPrecalculus, type FillResult, isRepeatable, pastIntro, type PlanConfig, prereqsMetIn, runFill, sameContent } from "./fill";
@@ -88,10 +90,12 @@ function lastMathBOrBetter(ctx: Ctx): boolean {
 function mathRoute(ctx: Ctx, getA: () => FillResult, base: PlanConfig): Decision | null {
   if (!ctx.limits.accelerateMath || !lastMathBOrBetter(ctx)) return null;
   const fillA = getA();
-  const unmet = fillA.ladder.solution?.unmet ?? [];
+  // A requirement waiting on the student to confirm a class never makes a Plan B.
+  const settled = (fill: FillResult) => (fill.ladder.solution?.unmet ?? []).filter((c) => fill.unmet.get(c.id) !== "guessed" && !fill.needs.some((n) => n.id === c.id && (n.waiting || n.guessedPast)));
+  const unmet = settled(fillA);
   if (unmet.length === 0) return null;
   const fillB = runFill(ctx, { ...base, id: "B", accelerate: true });
-  const unmetB = fillB.ladder.solution?.unmet ?? [];
+  const unmetB = settled(fillB);
   if (unmetB.length >= unmet.length || !realChoice(fillA, fillB)) return null;
   const solved = unmet.find((c) => !unmetB.some((k) => k.id === c.id))!;
   const need = fillA.needs.find((n) => n.id === solved.id);
@@ -195,12 +199,15 @@ function preferredEndorsements(ctx: Ctx): EndorsementValue[] {
   return out;
 }
 
-/** Career clusters of the student's own career and technical classes (not failed). */
+/**
+ * Career clusters of the student's own career and technical classes (not failed). Only classes
+ * whose kind the student confirmed: a guessed kind never picks the plan's endorsement.
+ */
 function ownCteClusters(ctx: Ctx): string[] {
   const out: string[] = [];
   for (const i of ctx.items) {
     const cluster = getCourseType(i.typeId).cteCluster;
-    if (i.own && !i.noCredit && cluster && i.cte && !out.includes(cluster)) out.push(cluster);
+    if (i.own && !i.unconfirmed && !i.noCredit && cluster && i.cte && !out.includes(cluster)) out.push(cluster);
   }
   return out;
 }
@@ -595,6 +602,12 @@ function slotReasons(ctx: Ctx, fill: FillResult, routes: Routes, item: Item, ext
   };
   for (const { rc, route, leaves: neededList, rest } of neededFor(ctx, fill, routes, item)) {
     for (const needed of neededList) {
+      // Never "Required by" a requirement a row the student hasn't confirmed might meet (Algebra II,
+      // or a 3rd math credit, next to a typed "Algebra II/Trig" read as Trigonometry): if the row is
+      // that class, this one isn't needed there. The requirement waits on the student instead
+      // (engine/confirm.ts).
+      const onRoute = route.leaves.find((l) => l.leaf.id === needed.id);
+      if (mightBeRows(needed, onRoute, routes.items).length > 0) continue;
       const base = needed.own ? null : (ctx.ruleSets.find((r) => rc.bases.some((b) => b.rs.id === r.rs.id)) ?? null);
       // A requirement of the program an option builds on (Tennessee's 4th math under an elective
       // focus) is named only as the audit shows it: the base program's own route counts the class
@@ -688,6 +701,13 @@ function findReq(reqs: readonly Req[], id: string): Req | null {
   return null;
 }
 
+/** The requirement a class was placed for waits on the student to confirm a class (on the audit's route). */
+function waitsOnConfirm(routes: Routes, need: Need | null): boolean {
+  if (!need?.rc || !need.leaf) return false;
+  const leaf = routes.routes.get(need.rc.rs.id)?.leaves.find((l) => l.leaf.id === need.leaf!.id);
+  return leaf ? guessState(leaf.leaf, leaf, routes.items).waits : need.waiting === true;
+}
+
 function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles: boolean, routes: Routes = confirmedRoutes(fill)): PlanYear {
   const y = fill.years.get(grade)!;
   const cat = ctx.catalogs.get(grade)!;
@@ -760,7 +780,9 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
       }
     }
     const reasons = slotReasons(ctx, fill, routes, p.item, p.extraReasons, primary, p.priority);
-    if (p.needsPlanNow) reasons.push(reason("gap", "A required credit you still need this year. Talk to your counselor soon.", { ruleSetId: primary?.rc?.rs.id ?? null }));
+    // "Needs a plan now" only for a required credit that doesn't wait on a class to be confirmed.
+    const needsPlanNow = p.needsPlanNow && !waitsOnConfirm(routes, primary);
+    if (needsPlanNow) reasons.push(reason("gap", "A required credit you still need this year. Talk to your counselor soon.", { ruleSetId: primary?.rc?.rs.id ?? null }));
     // This school year has started: a full-year class may no longer fit (a semester one goes in spring).
     if (y.inProgress && p.item.term === "full_year") reasons.push(reason("gap", "This school year has already started, so ask your counselor whether you can still add this full-year class.", { ruleSetId: primary?.rc?.rs.id ?? null }));
     slots.push({
@@ -775,7 +797,7 @@ function buildYear(ctx: Ctx, fill: FillResult, grade: SchoolGrade, genericTitles
       units: p.item.units,
       priority: p.priority,
       collegeLevel: isCollegeLevel(p.item.level),
-      needsPlanNow: p.needsPlanNow,
+      needsPlanNow,
       alternatives,
       approvals: [...p.row.approvals],
       reasons,
@@ -934,6 +956,39 @@ function audits(ctx: Ctx, fill: FillResult): RuleSetAudit[] {
   });
 }
 
+// Confirm your classes ------------------------------------------------------------------------------
+
+/**
+ * The student's classes whose kind is only guessed (engine/confirm.ts), for "Confirm your classes":
+ * each with the kind to offer as one tap and how many requirements wait on it (it counts for them
+ * as a guess, or might count), those first, then by grade.
+ */
+function toConfirm(ctx: Ctx, fill: FillResult): ConfirmItem[] {
+  const decides = new Map<string, Set<string>>();
+  for (const e of fill.evals) {
+    const best = confirmedEval(e, fill.items).best;
+    for (const l of best?.leaves ?? []) {
+      const state = guessState(l.leaf, l, fill.items);
+      if (!state.waits) continue;
+      for (const row of [...state.shaky.map((c) => c.item), ...state.waiting]) {
+        const set = decides.get(row.key) ?? new Set<string>();
+        set.add(`${e.rc.rs.id}/${l.leaf.id}`);
+        decides.set(row.key, set);
+      }
+    }
+  }
+  const out: ConfirmItem[] = [];
+  for (const fact of ctx.input.courses) {
+    if (!fact.assumed) continue;
+    const item = ctx.items.find((i) => i.key === `c:${fact.id}`);
+    // The class the plan took it for (its name's guess, or the class its grade says it is).
+    const kind = item?.typeId ?? fact.typeId;
+    out.push({ courseId: fact.id, grade: fact.grade, guess: getCourseType(kind).fallback ? null : kind, decides: decides.get(`c:${fact.id}`)?.size ?? 0 });
+  }
+  const order = new Map(ctx.input.courses.map((c, i) => [c.id, i]));
+  return out.sort((a, b) => Number(b.decides > 0) - Number(a.decides > 0) || a.grade - b.grade || order.get(a.courseId)! - order.get(b.courseId)!);
+}
+
 // Entry point ----------------------------------------------------------------------------------------
 
 /**
@@ -1018,6 +1073,7 @@ export function plan(input: PlannerInput): PathResult {
     audit: optionA.audit,
     demands: demands(fillA),
     askCounselor: optionA.askCounselor,
+    confirm: toConfirm(auditCtx, fillA),
     middleSchool: middle ? middleSchool(ctx, fillA) : null,
   };
   return { ...path, citations: resolveCitations(auditCtx, path) };

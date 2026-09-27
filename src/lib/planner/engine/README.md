@@ -46,14 +46,21 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   cancel each other out: the class the route counts carries the requirement. Projected rules read
   "Expected by". A suggestion nothing needs any more is taken out, and one with nothing behind it
   reads as an idea for an open slot (never one placed for a required credit).
-- A class typed with a name only (a guessed type) is planned around as if the guess were right,
-  exactly as for a student who picked that kind (`asPlanned`): the same routes, the same classes
-  added and the same reasons (pinned over random students), and the fill never adds a second class
-  of a kind the student probably has. The audit, its checks,
-  the "by when" strip and diploma-vs-admission questions all read that same route (a Physics added
-  for the 3rd lab science shows there; a typed "Algebra 2" being taken now isn't a deadline), and
-  a requirement a guess meets by kind reads "Room to add" with "Guessed class type" (confirm the
-  kind), never Done. Where a confirmed class does as well, it counts before a guess.
+- **Confirm first** (`confirm.ts`): a class typed with a name only (a guessed type) never creates a
+  claim by itself: no requirement shortfall, "doesn't fit" or "needs a plan now" gap, no "Required
+  by" class that repeats what the row might be, and no different route (an endorsement from guessed
+  career classes, a pathway, a Plan B). Each unconfirmed row knows every kind it might be (the
+  guesser's `candidates`: its guess, another rung its name names, the family a catch-all stands for,
+  or any kind in its subject near its grade for a name the guesser can't place). The engine uses the
+  guess only where it can't make a false claim: to pick the next math rung, and (planning with
+  `asPlanned`) never to add a class the student probably has. A requirement a guess decides (met
+  only by counting it, or short while a row might count) reads "Waiting on you to confirm a class"
+  (`waiting_confirm`: not met, not missing), gets no class added for it and no gap, and its "by
+  when" line waits too. A requirement still short with its guesses counted, where no row might make
+  up the rest, is really short. Guessed kinds never add a claim the same kinds, confirmed, wouldn't
+  make (pinned over random and misguessed students, `review-fixes-9.test.ts`). The path lists the
+  unconfirmed rows (`confirm`) for "Confirm your classes", and the counselor questions always keep
+  one line about them.
 - Credits never double-count inside an exclusive rule set, except where a rule shares them
   (`shareable`, a substitution, shared same-language levels). A kind of class that may stand in
   only once (`substituteOnce`: Tennessee's computer science for "one (1) credit in mathematics,
@@ -110,9 +117,13 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
 - **Utah's senior-year math** (R277-700-9) is conditional: it reads "Utah asks college-bound students
   to show college-ready math or take a full year of math in 12th grade". A senior who passed
   calculus or hasn't said whether they met the competency is asked, not given a class flagged
-  "Needs a plan now". The class chosen is the next rung or the goal's math (Statistics for
-  nursing), never college-preparatory math after precalculus or for a goal of precalculus or
-  calculus; for such a goal the next rung may be its AP or concurrent enrollment version (Utah's
+  "Needs a plan now", and so is a student taking a concurrent enrollment math class that meets the
+  college quantitative literacy requirement (a C in it may already show college-ready math), in any
+  grade. The class chosen is the goal's math (Statistics for nursing) or the next rung; past
+  precalculus's rung, calculus only for a goal that asks for it (statistics or quantitative
+  reasoning first), and never calculus after College Algebra alone (it needs precalculus or
+  trigonometry, Utah's Math 1060). Never college-preparatory math after precalculus or for a goal
+  of precalculus or calculus; for such a goal the next rung may be its AP or concurrent enrollment version (Utah's
   generic list has precalculus only as AP or CE 1050/1060). The ladder's top rung is left to a
   regular class from the fill (College Prep Math for Utah State's "one class beyond Secondary
   Math III") only when nothing but a recommendation needs it; then no rung's reason or "by when"
@@ -241,7 +252,18 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   taken as the class their place says they are, still flagged as guesses: an "Other English
   class" in 9th-12th with no English level that year is that grade's English, and an "Other math
   class" in a year without a math rung is the next rung (I-III, in its usual grade or a year
-  later). The row shows "We planned around this as …", and the guessed-kinds question asks.
+  later), never a rung the family opted out of (Utah's Secondary Math III). The row shows "We
+  planned around this as …", and the guessed-kinds question asks.
+- **Language levels** count levels filled, not exact ranks: each class fills one level at or below
+  its own, so Spanish I and III (or heritage Spanish and Spanish III) are two levels, and a placed
+  Spanish III alone is one. The next level suggested is always the one up from the student's
+  highest (Spanish IV after Spanish III, "IV or higher" again past it), in the plan and in options.
+- **A blocked class gets another try** once pruning frees room (a class placed for a route the plan
+  gave up on), so "doesn't fit" is never said of a year that has room. A gap for a class the year in
+  progress had room for says to ask about adding it now, not that it doesn't fit.
+- **Credits left for 12th grade**: a graduation or endorsement total that fits only with classes in
+  12th's open periods (where the plan shows no "Your choice" slot) is a gap that says how many to plan
+  there ("a shorter senior day could leave you short").
 - **Generic lists** allow a class later than its usual grades (catching up), never earlier; the
   fill still prefers the usual grades. School lists' printed grades always win.
 - **Career pathway levels** (`cte.<cluster>.<level>`) are never suggested twice, and no level at or
@@ -255,10 +277,13 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   reached a level (Accounting II is level 3 in business) is never sent back to a lower one, and
   typed names carry their level (TEA's programs of study: Welding I is level 2, Instructional
   Practices level 3, Practicum in Health Science level 4, Electrical Technology I level 2,
-  Automotive Technology I level 3; Tennessee's Medical Therapeutics level 2). Where names can't
-  tell levels apart (Tennessee's Engineering Design I and II are one lab-science substitute type),
-  classes count one level a year: no level at or below the number of years the student has had
-  classes in the cluster is planned, and they meet a later level's prerequisite.
+  Automotive Technology I level 3; Tennessee's Medical Therapeutics level 2). The next level is the
+  student's highest level plus one (two level-1 classes lead to level 2, never level 3 without it).
+  Only where names can't tell levels apart (Tennessee's Engineering Design I and II are one
+  lab-science substitute type, a career class off the ladder) do classes count one level a year: no
+  level at or below the number of years the student has had classes in the cluster is planned, and
+  they meet a later level's prerequisite. Only classes whose kind the student confirmed set the
+  pathway or a Texas endorsement.
 - **Waived credits that expand a focus** (Tennessee, `expands`) are counted in the focus's joined
   allocation, beyond the focus's own classes, and never planned: a shortfall is a gap whose only
   option is the counselor. With no focus chosen they read "Ask your counselor".

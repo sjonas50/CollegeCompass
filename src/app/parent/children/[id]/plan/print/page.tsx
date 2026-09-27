@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PrintView } from "@/app/plan/path/print-view";
 import { Card } from "@/components/ui";
 import { getDb } from "@/db";
@@ -8,6 +8,7 @@ import { listChildren } from "@/lib/accounts";
 import { requireFullAccess } from "@/lib/access/guard";
 import { formatDate, usToday } from "@/lib/applications/dates";
 import { requireUser } from "@/lib/auth/dal";
+import { plannerPathEnabled } from "@/lib/planner/beta";
 import { studentPath } from "@/lib/planner/service";
 import "@/app/plan/print.css";
 
@@ -22,6 +23,7 @@ export default async function ChildPlanPrintPage({ params, searchParams }: PageP
   const db = await getDb();
   const child = (await listChildren(db, parent.id)).find((c) => c.id === id);
   if (!child) notFound();
+  if (!(await plannerPathEnabled(db, child.id))) redirect("/parent");
   const path = await studentPath(db, child.id);
   const back = `/parent/children/${child.id}/plan`;
   if (path.kind !== "planned") {

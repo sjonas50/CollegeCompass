@@ -15,7 +15,8 @@ import { cohortLine, COURSE_STATUS_WORDS, PATH_LABELS, planParts, stateTitle, ye
 function slotRow(slot: PlanSlot, state: PlannedPath["state"]): { name: string; level: string; status: string } | null {
   if (slot.kind === "your_choice") return { name: "Your choice", level: "", status: "Room for a class you pick" };
   const level = slot.level === "regular" ? "" : levelLabel(slot.level, state);
-  if (slot.kind === "yours") return { name: slot.title, level, status: COURSE_STATUS_WORDS[slot.status] };
+  // A class whose kind is only guessed says so: the counselor can confirm what it is.
+  if (slot.kind === "yours") return { name: slot.title, level, status: `${COURSE_STATUS_WORDS[slot.status]}${slot.assumed ? " (kind not confirmed)" : ""}` };
   return { name: slot.title, level, status: slot.needsPlanNow ? "Suggested (needs a plan now)" : slot.term === "summer" ? "Suggested (summer)" : "Suggested" };
 }
 

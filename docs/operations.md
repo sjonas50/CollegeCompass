@@ -186,6 +186,29 @@ DATABASE_URL="postgres://..." npm run access:grant -- --by <your staff email> --
 The script prints the household id. Don't write the family's name or email next to it in notes or
 tickets.
 
+### The class planner beta
+
+"Your path" on `/plan` (the class planner for Utah, Tennessee and Texas, with its print view and a
+parent's read-only view of their child's path) is in beta. It shows only for households staff put
+in the beta, and for staff accounts; everyone else keeps the college-prep checklist and course
+ideas. The free `/graduation/[state]` pages and the state and school settings are public either way.
+
+```bash
+DATABASE_URL="postgres://..." npm run beta:planner -- --by <your staff email> --household <household id, or a student's email or username>
+DATABASE_URL="postgres://..." npm run beta:planner -- --by <your staff email> --household <household id, or a student's email or username> --off
+```
+
+- `--by` is your staff account (`npm run admin:create`). The change is audited as
+  `planner.beta_set_by_staff` with only "on" or "off": no names, emails or ids.
+- `--household` with a student's email or username puts that student's whole household in (their
+  parents see the path too). `--off` takes it out; the family's classes and choices stay, and come
+  back if they rejoin.
+- To open it to every family, set `PLANNER_PATH=everyone` in Vercel's environment settings and
+  redeploy. Back to `beta` (the default) hides it again for households not marked.
+
+The script prints the household id. Don't write the family's name or email next to it in notes or
+tickets. The flag is part of the family's data download and is deleted with the household.
+
 ### Refilling career matches
 
 Each student's career matches are saved when they finish an activity. When a deploy changes which

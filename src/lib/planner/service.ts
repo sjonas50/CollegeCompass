@@ -319,7 +319,7 @@ export function summarizePath(result: PlannedPath, cohort: StudentCohort): PathS
   const counts = { done: 0, planned: 0, roomToAdd: 0, ask: 0, confirmType: 0 };
   for (const rs of result.audit.filter((r) => r.kind === "state_graduation")) {
     for (const req of rs.requirements) {
-      if (req.status === "room_to_add" && req.modifiers.includes("guessed_type")) counts.confirmType++;
+      if (req.status === "waiting_confirm") counts.confirmType++;
       else if (req.status === "done") counts.done++;
       else if (req.status === "planned") counts.planned++;
       else if (req.status === "room_to_add") counts.roomToAdd++;

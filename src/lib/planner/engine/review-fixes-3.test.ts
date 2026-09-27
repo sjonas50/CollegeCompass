@@ -348,7 +348,11 @@ describe("An endorsement's 26 credits count for the DLA, with a gap a senior can
     const path = real({ state: "TX", grade: 9, colleges: [UT_AUSTIN], courses: [{ type: "ela.9", grade: 9 }, { type: "math.alg1", grade: 9 }, { type: "sci.bio", grade: 9 }, { type: "ss.world_geo", grade: 9 }] }, SOFTWARE);
     for (const p of path.plans) {
       expect(p.audit.find((a) => a.ruleSetId === "tx.dla")!.checks.find((c) => c.checkId === "dla.endorsement")!.status, p.label).toBe("ok");
-      expect(p.gaps.filter((g) => g.id.endsWith("/e.electives")), p.label).toEqual([]);
+      // Room enough: never "doesn't fit", only the credits the plan leaves for 12th's open periods.
+      for (const g of p.gaps.filter((x) => x.id.endsWith("/e.electives"))) {
+        expect(g.kind, p.label).toBe("unmet");
+        expect(g.text, p.label).toMatch(/^Room to add: the .+ endorsement needs at least 26 credits in all \([\d.]+ more\)\. (Besides your "Your choice" slots, plan|Plan) [\d.]+ more credits? in 12th grade \(your open periods\)\./);
+      }
     }
   });
 });

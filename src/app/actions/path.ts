@@ -5,8 +5,10 @@ import * as z from "zod";
 import { getDb } from "@/db";
 import { requireFullAccess } from "@/lib/access/guard";
 import { requireUser } from "@/lib/auth/dal";
-import { MAX_COURSES } from "@/lib/courses/service";
-import { LANGUAGES } from "@/lib/planner/course-types";
+import { MAX_COURSES, setCourseType } from "@/lib/courses/service";
+import { plannerPathEnabled } from "@/lib/planner/beta";
+import { isPlannerState } from "@/lib/planner/common";
+import { courseTypeTitle, isCourseTypeId, LANGUAGES } from "@/lib/planner/course-types";
 import { COHORT_OVERRIDE_REASONS, MAX_COLLEGE_LEVEL_PER_YEAR } from "@/lib/planner/engine-io";
 import { FAMILY_IDS } from "@/lib/planner/families";
 import type { PlanPrefsPatch } from "@/lib/planner/prefs";
@@ -22,6 +24,7 @@ import { ordinal } from "@/lib/planner/view";
 export type PathActionResult = { ok: true; message?: string } | { ok: false; message: string };
 
 const TRY_AGAIN = "We couldn't save that. Please try again.";
+const NOT_ON = "Your path isn't available for your account yet.";
 const GONE = "That suggestion changed since the page loaded. We refreshed your path; take another look.";
 
 /** "Add" on a suggestion (or one of its other choices): it becomes a planned class of the student's own. */
@@ -29,7 +32,9 @@ export async function acceptSuggestionAction(key: string): Promise<PathActionRes
   const student = await requireUser(["student"]);
   await requireFullAccess(student);
   if (typeof key !== "string") return { ok: false, message: TRY_AGAIN };
-  const res = await acceptSuggestion(await getDb(), student.id, key);
+  const db = await getDb();
+  if (!(await plannerPathEnabled(db, student.id))) return { ok: false, message: NOT_ON };
+  const res = await acceptSuggestion(db, student.id, key);
   revalidatePath("/plan");
   if (res.ok) return { ok: true, message: `Added ${res.name} to ${ordinal(res.grade)} grade. It's yours now; change or remove it anytime.` };
   if (res.error === "limit") return { ok: false, message: `You've added ${MAX_COURSES} classes, which is the most we can keep. Remove a few you don't need first.` };
@@ -42,16 +47,40 @@ export async function dismissSuggestionAction(key: string): Promise<PathActionRe
   const student = await requireUser(["student"]);
   await requireFullAccess(student);
   if (typeof key !== "string") return { ok: false, message: TRY_AGAIN };
-  const res = await dismissSuggestion(await getDb(), student.id, key);
+  const db = await getDb();
+  if (!(await plannerPathEnabled(db, student.id))) return { ok: false, message: NOT_ON };
+  const res = await dismissSuggestion(db, student.id, key);
   revalidatePath("/plan");
   return res.ok ? { ok: true, message: "Set aside. We'll suggest something else if there's another way to meet it." } : { ok: false, message: GONE };
+}
+
+/**
+ * "Confirm your classes": the student says what kind of class one of their typed classes is (one tap
+ * on the guess, or another kind from the list). It's stored as their choice, like the edit form's.
+ */
+export async function confirmCourseTypeAction(courseId: string, typeId: string): Promise<PathActionResult> {
+  const student = await requireUser(["student"]);
+  await requireFullAccess(student);
+  if (typeof courseId !== "string" || typeof typeId !== "string" || !isCourseTypeId(typeId)) return { ok: false, message: TRY_AGAIN };
+  const res = await setCourseType(await getDb(), student.id, courseId, typeId);
+  revalidatePath("/plan");
+  if (!res.ok) {
+    return {
+      ok: false,
+      message: res.error === "mismatch" ? "That kind of class doesn't fit the class's subject. Edit the class below to change its subject first." : "We couldn't find that class. It may have been removed; try refreshing the page.",
+    };
+  }
+  const state = isPlannerState(student.homeState) ? student.homeState : null;
+  return { ok: true, message: `Saved: ${res.value.name} is ${courseTypeTitle(typeId, state)}. Your path now counts it that way.` };
 }
 
 /** Brings back the suggestions the student set aside. */
 export async function restoreSuggestionsAction(): Promise<PathActionResult> {
   const student = await requireUser(["student"]);
   await requireFullAccess(student);
-  await restoreSuggestions(await getDb(), student.id);
+  const db = await getDb();
+  if (!(await plannerPathEnabled(db, student.id))) return { ok: false, message: NOT_ON };
+  await restoreSuggestions(db, student.id);
   revalidatePath("/plan");
   return { ok: true, message: "Brought back the suggestions you set aside." };
 }
@@ -96,6 +125,7 @@ function changedFields(formData: FormData): (name: string) => boolean {
 export async function savePathSettingsAction(_prev: PathSettingsState, formData: FormData): Promise<PathSettingsState> {
   const student = await requireUser(["student"]);
   await requireFullAccess(student);
+  if (!(await plannerPathEnabled(await getDb(), student.id))) return { ok: false, message: NOT_ON };
   const changed = changedFields(formData);
   const has = (name: string) => formData.has(name) && changed(name);
 

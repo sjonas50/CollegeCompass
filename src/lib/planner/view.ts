@@ -70,6 +70,7 @@ export const STATUS_ICONS: Record<AuditStatus, string> = {
   done: "✓",
   planned: "◔",
   room_to_add: "+",
+  waiting_confirm: "…",
   ask_counselor: "?",
   not_tracked: "–",
 };
@@ -181,18 +182,7 @@ export function cohortLabel(key: CohortKey, cohort: Variant["cohort"]): string {
   return "Every class";
 }
 
-/** "Set 'What kind of class is this?' … so 2 requirements can count them." */
+/** The parent dashboard's "Next" line while requirements wait on classes to confirm. */
 export function confirmTypeText(n: number): string {
-  return `Set "What kind of class is this?" on the classes with a guessed kind, so ${n === 1 ? "1 requirement" : `${n} requirements`} can count them.`;
-}
-
-/**
- * Graduation requirements waiting on a class's kind to be confirmed: a class with a guessed kind
- * never makes a specific requirement done, so these aren't really "room to add".
- */
-export function confirmTypeCount(result: PlannedPath): number {
-  return result.audit
-    .filter((r) => r.kind === "state_graduation")
-    .flatMap((r) => r.requirements)
-    .filter((req) => req.status === "room_to_add" && req.modifiers.includes("guessed_type")).length;
+  return `Confirm what kind of class some classes are ("Confirm your classes" on the Plan page), so ${n === 1 ? "1 requirement" : `${n} requirements`} can count them.`;
 }

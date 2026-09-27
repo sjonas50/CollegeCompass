@@ -4,6 +4,8 @@ import { type FamilyId, MATH_TARGET_DEFS, type MathTarget } from "../families";
 import type { ReqId, RuleSetId, Selector, TestRoute } from "../rules";
 import type { AltResult, LeafResult } from "./allocate";
 import type { CLeaf } from "./compile";
+import { leafAccepts } from "./allocate";
+import { mightBeRows, pastRungRows, waitingKinds } from "./confirm";
 import { type Ctx, type FamilyCtx, leafPriority, type RuleSetCtx } from "./context";
 import { prepReason, requirementReason, ruleSetNotes } from "./explain";
 import type { Item } from "./model";
@@ -48,7 +50,25 @@ export type Need = {
    * college-ready math. `askFirst`: a senior who passed calculus or hasn't said whether they met
    * the competency gets the question, not a class flagged "Needs a plan now".
    */
-  seniorMath?: { askFirst: boolean };
+  seniorMath?: { askFirst: boolean; ce?: boolean };
+  /**
+   * Waiting on the student to confirm a class (engine/confirm.ts): one of their unconfirmed rows
+   * might count here. Never a gap, and a requirement's class isn't added for it (the row might be
+   * that class); the next math rung still follows the guess.
+   */
+  waiting?: boolean;
+  /** The kinds a row it waits on might be that would meet it: what a class held for it would be. */
+  waitingKinds?: CourseTypeId[];
+  /**
+   * Short only because a guessed row puts the student past the rung it names: never a gap, but a
+   * class for it may still be added where one fits.
+   */
+  guessedPast?: boolean;
+  /**
+   * A key course the student is past: a later class in its sequence meets it (Computer Science
+   * Principles after Computer Science III or AP Computer Science A: course-types `introTo`).
+   */
+  metBy?: readonly CourseTypeId[];
 };
 
 export function needUnits(need: Need): number {
@@ -116,7 +136,7 @@ export function needFromLeaf(ctx: Ctx, rc: RuleSetCtx, r: LeafResult, baseRc?: R
  * requirement (Tennessee's computer science credit for the 4th math) is still missing, the
  * requirement it stands in for needs only what that class won't cover.
  */
-export function needsFromEval(ctx: Ctx, rc: RuleSetCtx, alt: AltResult): Need[] {
+export function needsFromEval(ctx: Ctx, rc: RuleSetCtx, alt: AltResult, items?: readonly Item[]): Need[] {
   const out: Need[] = [];
   const covered = new Map<string, number>();
   for (const r of alt.leaves) if (r.leaf.subFor && r.missing > 0) covered.set(r.leaf.subFor, (covered.get(r.leaf.subFor) ?? 0) + r.missing);
@@ -136,6 +156,12 @@ export function needsFromEval(ctx: Ctx, rc: RuleSetCtx, alt: AltResult): Need[] 
       if (!base) continue;
     }
     const need = needFromLeaf(ctx, rc, r, base);
+    const might = need && items ? mightBeRows(raw.leaf, raw, items) : [];
+    if (need && might.length > 0) {
+      need.waiting = true;
+      need.waitingKinds = waitingKinds(might, (probe) => raw.leaf.req.kind === "same_language" ? probe.subject === "world_language" : leafAccepts(raw.leaf, probe));
+    }
+    if (need && items && pastRungRows(raw.leaf, raw, items).length > 0) need.guessedPast = true;
     if (need) out.push(need);
   }
   return out;
@@ -215,13 +241,16 @@ export function familyNeeds(ctx: Ctx, f: FamilyCtx): Need[] {
     out.push(prepNeed(ctx, f, sci, [{ types: [sci] }], getCourseType(sci).units, { label: getCourseType(sci).title }, mathCite));
   }
   for (const key of fc.keyCourses) {
-    out.push(prepNeed(ctx, f, key, [{ types: [key] }], getCourseType(key).units, { label: getCourseType(key).title, soft: true }, mathCite));
+    const metBy = getCourseType(key).introTo;
+    out.push(prepNeed(ctx, f, key, [{ types: [key] }], getCourseType(key).units, { label: getCourseType(key).title, soft: true, ...(metBy.length ? { metBy } : {}) }, mathCite));
   }
   return out;
 }
 
 /** How much of a prep need the student's classes already cover (independent, whole classes). */
 export function evaluatePrep(need: Need, items: Item[]): { missing: number; counted: Item[] } {
+  const past = need.metBy ? items.find((i) => i.creditable && need.metBy!.includes(i.typeId)) : undefined;
+  if (past) return { missing: 0, counted: [past] };
   const matching = items
     .filter((i) => i.creditable && matchesAny(i, need.selectors))
     .sort((a, b) => Number(b.firm) - Number(a.firm) || a.grade - b.grade || (a.key < b.key ? -1 : 1));
@@ -235,22 +264,4 @@ export function evaluatePrep(need: Need, items: Item[]): { missing: number; coun
   return { missing: Math.max(0, need.required - have), counted };
 }
 
-export function isLadderish(sels: Selector[]): number | null {
-  // The lowest rung that meets every selector: types on the math ladder, or the math capabilities.
-  let rank: number | null = null;
-  for (const s of sels) {
-    let r: number | null = null;
-    if (s.types) {
-      const ranks = s.types.map((t) => getCourseType(t).ladder).map((l) => (l && l.id === "math" && l.rank >= 1 ? l.rank : null));
-      if (ranks.some((x) => x === null)) return null;
-      r = Math.min(...(ranks as number[]));
-    } else if (s.capabilities) {
-      if (s.capabilities.includes("alg2_or_beyond")) r = 3;
-      else if (s.capabilities.includes("advanced_math_after_alg2")) r = 4;
-      else return null;
-    } else return null;
-    if (s.levels) return null;
-    rank = rank === null ? r : Math.min(rank, r);
-  }
-  return rank;
-}
+export { isLadderish } from "./ladder";

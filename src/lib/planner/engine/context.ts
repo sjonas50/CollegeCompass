@@ -21,6 +21,7 @@ import type { Citation, ContentHeader, Gate, RuleFile, RuleSet, Source, SourceKe
 import type { Allocation } from "./allocate";
 import { type CatalogRow, genericCatalogView, genericTitleFor, resolveCatalog, type ResolvedCatalog } from "./catalog";
 import { type Alternative, compileVariant } from "./compile";
+import { mightBeKinds } from "./confirm";
 import { placeGuesses } from "./guesses";
 import { itemFromFact, type Item } from "./model";
 import { gradeRange } from "./util";
@@ -321,8 +322,17 @@ export function buildContext(input: PlannerInput & { state: PlannerState; conten
   const raise = programRaise(input, ruleSets);
   const files: ContentHeader[] = [...content.rules, content.genericCatalog, content.facts, ...(content.families ? [content.families] : [])];
   const fingerprints = new Map<string, string>(files.map((f) => [f.id, cachedFingerprint(f)]));
-  // Typed classes the name didn't place are taken as the class their place says they are (still guesses).
-  const items = placeGuesses(state, input.courses.map(itemFromFact));
+  // Typed classes the name didn't place are taken as the class their place says they are (still
+  // guesses), and every unconfirmed row knows the kinds it might be (engine/confirm.ts).
+  const items = placeGuesses(
+    state,
+    input.courses.map((fact) => {
+      const item = itemFromFact(fact);
+      const might = mightBeKinds(fact, state);
+      return might ? { ...item, unconfirmed: might.kinds, ...(might.open ? { unplaced: true as const } : {}) } : item;
+    }),
+    choices,
+  );
 
   return {
     input,

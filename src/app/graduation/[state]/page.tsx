@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Why } from "@/app/plan/path/why";
 import { ButtonLink, PageHeading } from "@/components/ui";
+import { getDb } from "@/db";
 import { getCurrentUser } from "@/lib/auth/dal";
+import { plannerPathEnabled } from "@/lib/planner/beta";
 import { SUBJECT_LABELS } from "@/lib/courses/catalog";
 import { isPlannerState, PLANNER_STATES, type PlannerState, schoolYearLabel } from "@/lib/planner/common";
 import { plannerContentFor, resolveContentCitations } from "@/lib/planner/content";
@@ -137,7 +139,9 @@ export default async function GraduationStatePage({ params }: PageProps<"/gradua
   const draft = [graduation, options].some((f) => f && f.review.status === "draft");
   const sources = Object.entries({ ...graduation.sources, ...(options?.sources ?? {}) });
   const user = await getCurrentUser();
-  const cta = user?.role === "student" ? "/plan#path" : user?.role === "parent" ? "/parent" : "/#get-started";
+  // A student in the class planner beta opens "Your path"; others go to their course plan.
+  const pathOn = user?.role === "student" ? await plannerPathEnabled(await getDb(), user.id) : false;
+  const cta = user?.role === "student" ? (pathOn ? "/plan#path" : "/plan") : user?.role === "parent" ? "/parent" : "/#get-started";
   const projected = projectedNote(main);
 
   return (
@@ -218,7 +222,7 @@ export default async function GraduationStatePage({ params }: PageProps<"/gradua
         </p>
         <div className="mt-3">
           <ButtonLink href={cta} variant="secondary">
-            {user?.role === "student" ? "Open your path" : user ? "Go to your dashboard" : "Get started"}
+            {user?.role === "student" ? (pathOn ? "Open your path" : "Go to your course plan") : user ? "Go to your dashboard" : "Get started"}
           </ButtonLink>
         </div>
       </section>

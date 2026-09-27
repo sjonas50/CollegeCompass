@@ -25,6 +25,7 @@ export function MilestoneCard({
   actions,
   showMonths = false,
   headingLevel = 3,
+  showPathLink = false,
 }: {
   milestone: Milestone;
   status: MilestoneStatus;
@@ -34,13 +35,15 @@ export function MilestoneCard({
   actions?: { week: WeekState; focusAfter: string };
   showMonths?: boolean;
   headingLevel?: 3 | 4;
+  /** Link class-choosing milestones to "Your path" (the class planner beta, lib/planner/beta.ts). */
+  showPathLink?: boolean;
 }) {
   const m = milestone;
   const Heading = headingLevel === 4 ? "h4" : "h3";
   const titleId = `m-${m.id}`;
   const links = officialLinks(m.sources);
-  // Class-choosing milestones open "Your path" on the Plan page.
-  const pathLink = milestonePathLink(m.id);
+  // Class-choosing milestones open "Your path" on the Plan page (only where the planner beta is on).
+  const pathLink = showPathLink ? milestonePathLink(m.id) : null;
   const months = monthsInSchoolYearOrder(m);
 
   return (

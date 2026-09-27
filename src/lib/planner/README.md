@@ -9,7 +9,8 @@ proof-of-concept decisions override the design where they differ; see the end of
 |---|---|
 | `common.ts` | `PlannerState` (UT, TN, TX), `SchoolGrade`, quarter-credit units (`toUnits`, `toCredits`), ISO dates, school-year labels |
 | `course-types.ts` | The course-type vocabulary: ids, levels, CTE, ladders, prerequisites, capabilities, state titles |
-| `course-type-guess.ts` | From a `student_courses` row (subject, level, typed name) to a type; guesses are *assumed* |
+| `course-type-guess.ts` | From a `student_courses` row (subject, level, typed name) to a type; guesses are *assumed*, with how sure they are and every kind the row might be (`guessCourseType`) |
+| `beta.ts` | "Your path" is in beta: `plannerPathEnabled` (households marked by staff, staff, or `PLANNER_PATH=everyone`) and `npm run beta:planner` |
 | `families.ts` | The 32 major-family ids, math targets (CALC … APPLIED), the CIP routing type and `routeCip` |
 | `rules.ts` | The rule language: rule files, rule sets, variants, requirements, selectors, checks, conditions, gates, review |
 | `content-types.ts` | The other content files: generic catalog, state facts (gap options), families, CIP routing |
@@ -32,6 +33,11 @@ proof-of-concept decisions override the design where they differ; see the end of
 | `view.ts` | Wording shared by "Your path", the print view, the parent view and `/graduation/[state]` |
 
 ### Where it shows
+
+"Your path" and everything below that shows it (the print views, the parent's read-only path and
+dashboard block, the roadmap's "Open your path" links, the path's actions) is in beta: only for
+households staff mark with `npm run beta:planner`, for staff, or for everyone with
+`PLANNER_PATH=everyone` (`beta.ts`). Everyone else keeps today's checklist and course ideas.
 
 - `/plan` "Your path" (`src/app/plan/path/`): full access. Suggestions are looked up by key in
   today's plan before anything is added, so the browser never decides what's added.
@@ -77,6 +83,11 @@ type), and optionally a ladder rank, capabilities and state display names.
 - **From a student row**: a linked school-list row's type, else the student's pick, else a name
   guess within the row's subject. A guess is *assumed*: it only matches `subjects` selectors, so it
   counts toward "3 science credits" but never makes "Chemistry" done.
+- **Confirm first**: a guess never creates a claim by itself (a requirement missing, "doesn't
+  fit", "needs a plan now", a "Required by" class the row might already be, or a different route).
+  Requirements a guess decides read "Waiting on you to confirm a class", and "Confirm your classes"
+  at the top of the path asks for each unconfirmed row's kind with the guess as one tap
+  (`engine/confirm.ts`). The add and edit forms pre-select a confident guess, so saving confirms it.
 
 To add a type, add an entry to `CORE` and run the tests (acyclic prerequisites, every ladder rung
 reachable, and the coverage list for UT, TN, TX and the 32 families).

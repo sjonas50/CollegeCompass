@@ -29,6 +29,9 @@ export const roleEnum = pgEnum("role", ["student", "parent", "counselor", "org_a
 /** Every student belongs to a household; parent export/deletion works at this level. */
 export const households = pgTable("households", {
   id: uuid("id").primaryKey().defaultRandom(),
+  // The class planner's "Your path" is in beta: only households staff mark (npm run beta:planner)
+  // see it, unless PLANNER_PATH=everyone. Everyone else keeps the checklist and course ideas.
+  plannerBeta: boolean("planner_beta").notNull().default(false),
   createdAt: createdAt(),
 });
 

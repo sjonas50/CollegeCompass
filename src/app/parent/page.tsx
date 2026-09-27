@@ -20,6 +20,7 @@ import { billingCardNote, describeAccess } from "@/lib/access/describe";
 import { accessFor } from "@/lib/access/guard";
 import { getStripe, paidPlansAvailable } from "@/lib/billing/stripe";
 import { pathOverview } from "@/lib/planner/service";
+import { plannerPathEnabled } from "@/lib/planner/beta";
 import { ChildPathBlock, type ChildPathState } from "./child-path";
 import { ChildProgressSummary } from "./child-progress";
 
@@ -63,7 +64,11 @@ export default async function ParentHome({ searchParams }: PageProps<"/parent">)
   // Each child's class path (full access, like the child's Plan page): computed, never stored.
   const paths = new Map<string, ChildPathState>(
     await Promise.all(
-      children.map(async (c): Promise<[string, ChildPathState]> => [c.id, access.full ? await pathOverview(db, c.id) : { kind: "locked" }]),
+      children.map(async (c): Promise<[string, ChildPathState]> => [
+        c.id,
+        // "Your path" is in beta for the child's household (lib/planner/beta.ts): otherwise no block.
+        !(await plannerPathEnabled(db, c.id)) ? { kind: "off" } : access.full ? await pathOverview(db, c.id) : { kind: "locked" },
+      ]),
     ),
   );
   const plan = describeAccess(access, "parent");

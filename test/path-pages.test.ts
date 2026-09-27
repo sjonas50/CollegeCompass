@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import GraduationIndexPage from "@/app/graduation/page";
 import GraduationStatePage, { generateStaticParams as graduationParams } from "@/app/graduation/[state]/page";
@@ -11,6 +12,7 @@ import PlanPrintPage from "@/app/plan/print/page";
 import { MilestoneCard } from "@/app/roadmap/milestone-card";
 import { type Db, createTestDb, schema } from "@/db";
 import type { CourseSubject } from "@/db/schema";
+import { resetEnvCache } from "@/env";
 import { trialGrant } from "@/lib/access/service";
 import type { SessionUser } from "@/lib/auth/sessions";
 import { comingLaterNote, DRAFT_NOTICE, graduationPageTitle, LOAD_WARNING, STANDING_PLAN_NOTE } from "@/lib/planner/copy";
@@ -26,6 +28,7 @@ const state = vi.hoisted(() => ({ db: null as Db | null, user: null as SessionUs
 
 vi.mock("@/db", async (original) => ({ ...(await original<typeof import("@/db")>()), getDb: async () => state.db }));
 vi.mock("@/lib/auth/dal", () => ({ requireUser: async () => state.user, getCurrentUser: async () => state.user }));
+vi.mock("next/cache", () => ({ revalidatePath: () => {}, refresh: () => {} }));
 
 let db: Db;
 
@@ -55,10 +58,12 @@ const text = (html: string) =>
 const render = async (node: Promise<ReactNode> | ReactNode) => renderToStaticMarkup(await node);
 const props = <T,>(params: object = {}, searchParams: object = {}) => ({ params: Promise.resolve(params), searchParams: Promise.resolve(searchParams) }) as T;
 
+/** `type: ""`: typed with a name only, its kind not picked (a guess until confirmed). */
 type Row = { name: string; subject: CourseSubject; grade: number; type: string; credits?: number };
 
-async function household() {
-  const [h] = await db.insert(schema.households).values({}).returning();
+/** A household with a running trial, in the class planner beta unless `beta` is false. */
+async function household(beta = true) {
+  const [h] = await db.insert(schema.households).values({ plannerBeta: beta }).returning();
   await db.insert(schema.accessGrants).values(trialGrant(h.id, new Date(Date.now() - 86_400_000)));
   return h.id;
 }
@@ -79,8 +84,8 @@ async function student({ grade, homeState, rows = [], signIn = true, householdId
       credits: r.credits ?? 1,
       status: r.grade < grade ? "completed" : r.grade === grade ? "in_progress" : "planned",
       finalGrade: r.grade < grade ? "A" : null,
-      courseTypeId: r.type,
-      courseTypeSource: "student",
+      courseTypeId: r.type || null,
+      courseTypeSource: r.type ? "student" : null,
     });
   }
   if (signIn) state.user = { id: user.id, role: "student", displayName: "Maya", username: null, householdId: hh, parentManaged: false, grade, homeState };
@@ -285,7 +290,115 @@ describe("roadmap milestones about choosing classes", () => {
   it("link to “Your path”; others don't", () => {
     const pick = MILESTONES.find((m) => m.id === "g9-pick-10th-grade-classes")!;
     const other = MILESTONES.find((m) => m.id !== pick.id && !/class/i.test(m.title))!;
-    expect(renderToStaticMarkup(MilestoneCard({ milestone: pick, status: "open" }))).toContain('href="/plan#path"');
-    expect(renderToStaticMarkup(MilestoneCard({ milestone: other, status: "open" }))).not.toContain('href="/plan#path"');
+    expect(renderToStaticMarkup(MilestoneCard({ milestone: pick, status: "open", showPathLink: true }))).toContain('href="/plan#path"');
+    expect(renderToStaticMarkup(MilestoneCard({ milestone: other, status: "open", showPathLink: true }))).not.toContain('href="/plan#path"');
+    // Outside the class planner beta, no link to a path the student doesn't have.
+    expect(renderToStaticMarkup(MilestoneCard({ milestone: pick, status: "open" }))).not.toContain('href="/plan#path"');
+  });
+});
+
+// Round 9: "Your path" is in beta (lib/planner/beta.ts). Only households staff mark with
+// `npm run beta:planner` (or everyone, with PLANNER_PATH=everyone) see it; everyone else keeps
+// today's checklist and course ideas. The graduation pages and state and school settings stay public.
+describe("the class planner beta", () => {
+  afterEach(() => {
+    delete process.env.PLANNER_PATH;
+    resetEnvCache();
+  });
+
+  it("outside it, a Texas student keeps the checklist and course ideas, with no path, print view or path links", async () => {
+    const hh = await household(false);
+    await student({ grade: 9, homeState: "TX", rows: TX_NINTH, householdId: hh });
+    const t = text(await render(PlanPage(props<PageProps<"/plan">>())));
+    expect(t).toContain("College-prep classes");
+    expect(t).toContain("Class ideas for your goals");
+    for (const s of ["Your path", "What counts toward what", DRAFT_NOTICE, "Confirm your classes", comingLaterNote("Texas")]) expect(t, s).not.toContain(s);
+    await expect(PlanPrintPage(props<PageProps<"/plan/print">>())).rejects.toMatchObject({ digest: expect.stringContaining("/plan;") });
+    // The free graduation page stays, and sends the student to their course plan.
+    const grad = await render(GraduationStatePage(props<PageProps<"/graduation/[state]">>({ state: "tx" })));
+    expect(grad).toContain('href="/plan"');
+    expect(text(grad)).toContain("Go to your course plan");
+  });
+
+  it("in it, the student sees the path and the graduation page opens it", async () => {
+    await student({ grade: 9, homeState: "TX", rows: TX_NINTH });
+    expect(text(await render(PlanPage(props<PageProps<"/plan">>())))).toContain("What counts toward what");
+    const grad = await render(GraduationStatePage(props<PageProps<"/graduation/[state]">>({ state: "tx" })));
+    expect(grad).toContain('href="/plan#path"');
+  });
+
+  it("PLANNER_PATH=everyone shows it to every household", async () => {
+    process.env.PLANNER_PATH = "everyone";
+    resetEnvCache();
+    const hh = await household(false);
+    await student({ grade: 9, homeState: "TX", rows: TX_NINTH, householdId: hh });
+    expect(text(await render(PlanPage(props<PageProps<"/plan">>())))).toContain("What counts toward what");
+  });
+
+  it("outside it, a parent sees no class path for their child, and the read-only path sends them back", async () => {
+    const hh = await household(false);
+    const childId = await student({ grade: 9, homeState: "TX", rows: TX_NINTH, signIn: false, householdId: hh });
+    const [parent] = await db.insert(schema.users).values({ role: "parent", householdId: hh, displayName: "Pat", passwordHash: "x", email: "pat@example.com" }).returning({ id: schema.users.id });
+    await db.insert(schema.parentStudentLinks).values({ parentUserId: parent.id, studentUserId: childId });
+    state.user = { id: parent.id, role: "parent", displayName: "Pat", username: null, householdId: hh, parentManaged: false, grade: null };
+    const home = await render(ParentHome(props<PageProps<"/parent">>()));
+    expect(text(home)).not.toContain("Class path");
+    expect(home).not.toContain(`/parent/children/${childId}/plan`);
+    await expect(ChildPlanPage(props<PageProps<"/parent/children/[id]/plan">>({ id: childId }))).rejects.toMatchObject({ digest: expect.stringContaining("/parent;") });
+    await expect(ChildPlanPrintPage(props<PageProps<"/parent/children/[id]/plan/print">>({ id: childId }))).rejects.toMatchObject({ digest: expect.stringContaining("/parent;") });
+  });
+});
+
+// Round 9, confirm first: classes typed with a name only are listed at the top of "Your path" with
+// the planner's guess as one tap, at most six at once, grouped by year.
+describe("Confirm your classes", () => {
+  const TYPED: Row[] = [
+    { name: "English I", subject: "english", grade: 9, type: "" },
+    { name: "Algebra I", subject: "math", grade: 9, type: "" },
+    { name: "Biology", subject: "science", grade: 9, type: "" },
+    { name: "World Geography", subject: "social_studies", grade: 9, type: "" },
+    { name: "Spanish I", subject: "world_language", grade: 9, type: "" },
+    { name: "English II", subject: "english", grade: 10, type: "" },
+    { name: "Geometry", subject: "math", grade: 10, type: "" },
+    { name: "Algebra II/Trigonometry", subject: "math", grade: 10, type: "" },
+    { name: "Math Lab", subject: "math", grade: 10, type: "" },
+  ];
+
+  it("lists six typed classes at a time with one-tap guesses, grouped by year, and confirming stores the kind", async () => {
+    const id = await student({ grade: 10, homeState: "TX", rows: TYPED });
+    const html = await render(PlanPage(props<PageProps<"/plan">>()));
+    const t = text(html);
+    expect(t).toContain("Confirm your classes");
+    const card = t.slice(t.indexOf("Confirm your classes"), t.indexOf(DRAFT_NOTICE));
+    // At the top of the path, before the draft notice.
+    expect(card.length).toBeGreaterThan(0);
+    expect(card).toMatch(/9th grade .* 10th grade/);
+    expect(card).toContain("3 more classes after these.");
+    const yes = card.match(/Yes, /g) ?? [];
+    expect(yes.length).toBeLessThanOrEqual(6);
+    expect(card).toContain("Something else…");
+    // Keyboard reachable: real buttons, each named for its class.
+    expect(html).toMatch(/<button[^>]*type="button"[^>]*>Yes<span class="sr-only">, English I is English I<\/span><\/button>/);
+
+    const { confirmCourseTypeAction } = await import("@/app/actions/path");
+    const [english] = await db.select().from(schema.studentCourses).where(eq(schema.studentCourses.name, "English I"));
+    expect(await confirmCourseTypeAction(english.id, "ela.9")).toMatchObject({ ok: true, message: expect.stringContaining("Saved: English I is English I.") });
+    const [saved] = await db.select().from(schema.studentCourses).where(eq(schema.studentCourses.id, english.id));
+    expect(saved).toMatchObject({ courseTypeId: "ela.9", courseTypeSource: "student", userId: id });
+    // A kind that doesn't fit the class's subject, or another student's class, changes nothing.
+    const [lab] = await db.select().from(schema.studentCourses).where(eq(schema.studentCourses.name, "Math Lab"));
+    expect(await confirmCourseTypeAction(lab.id, "sci.chem")).toMatchObject({ ok: false });
+    expect(await confirmCourseTypeAction("00000000-0000-4000-8000-000000000000", "math.alg2")).toMatchObject({ ok: false });
+    const after = text(await render(PlanPage(props<PageProps<"/plan">>())));
+    expect(after).toContain("2 more classes after these.");
+  });
+
+  it("a class the guesser can't place opens the list, and the printed questions ask about the unconfirmed classes", async () => {
+    // "Weight Training" names no Texas PE class the guesser knows.
+    await student({ grade: 10, homeState: "TX", rows: [{ name: "Weight Training", subject: "health_pe", grade: 10, type: "" }] });
+    const html = await render(PlanPage(props<PageProps<"/plan">>()));
+    expect(html).toMatch(/<label[^>]*>What kind of class is Weight Training\?<\/label>/);
+    const print = text(await render(PlanPrintPage(props<PageProps<"/plan/print">>())));
+    expect(print).toMatch(/I haven't confirmed what kind of class one of my classes is|One of my classes looks like .*, but its kind is a guess/);
   });
 });

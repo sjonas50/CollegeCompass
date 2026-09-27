@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { courseTypeOptions } from "@/lib/courses/kinds";
 import { graduationPageTitle, DRAFT_NOTICE, LOAD_WARNING, TX_DLA_DEFAULT_NOTE } from "@/lib/planner/copy";
-import { type CourseTypeLevel, LANGUAGE_NAMES, levelLabel } from "@/lib/planner/course-types";
+import { type CourseTypeLevel, courseTypeTitle, LANGUAGE_NAMES, levelLabel } from "@/lib/planner/course-types";
 import type { PlannedPath, PlanSlot, PlanYear } from "@/lib/planner/engine-io";
 import { getFamily } from "@/lib/planner/families";
 import { REVIEW_LABELS } from "@/lib/planner/review";
@@ -10,8 +11,6 @@ import {
   byWhenText,
   COURSE_STATUS_WORDS,
   cohortLine,
-  confirmTypeCount,
-  confirmTypeText,
   mainReason,
   ordinal,
   PATH_LABELS,
@@ -21,6 +20,7 @@ import {
   TX_ENDORSEMENT_LABELS,
   yearLabel,
 } from "@/lib/planner/view";
+import { ConfirmClasses, type ConfirmRow } from "./confirm-classes";
 import { Chip, PathSection } from "./parts";
 import { DecisionForm, PathSettings, type PathSettingsValues } from "./path-settings";
 import { OtherChoices, RestoreSuggestions, SuggestionActions } from "./suggestion-actions";
@@ -122,9 +122,32 @@ function decisionField(key: string): "txEndorsement" | "tnElectiveFocus" | "worl
   return null;
 }
 
+/** At most this many classes to confirm at once (the rest come up as these are confirmed). */
+const CONFIRM_AT_ONCE = 6;
+
+/** "Confirm your classes": the path's unconfirmed classes with the student's own names, the first six. */
+export function confirmRows(path: PlannedPath, ctx: PathContext): { rows: ConfirmRow[]; more: number } {
+  const byId = new Map(ctx.courses.map((c) => [c.id, c]));
+  const rows = path.confirm.flatMap((c): ConfirmRow[] => {
+    const course = byId.get(c.courseId);
+    if (!course) return [];
+    return [
+      {
+        courseId: c.courseId,
+        name: course.name,
+        grade: c.grade,
+        gradeLabel: `${ordinal(c.grade)} grade`,
+        guess: c.guess ? { typeId: c.guess, title: courseTypeTitle(c.guess, path.state) } : null,
+        options: courseTypeOptions(course.subject, course.level, c.guess ?? "").map((t) => ({ value: t, label: courseTypeTitle(t, path.state) })),
+        decides: c.decides,
+      },
+    ];
+  });
+  return { rows: rows.slice(0, CONFIRM_AT_ONCE), more: Math.max(0, rows.length - CONFIRM_AT_ONCE) };
+}
+
 function Decisions({ path, mode }: { path: PlannedPath; mode: PathViewMode }) {
-  const confirm = confirmTypeCount(path);
-  if (!path.decisions.length && !confirm) return null;
+  if (!path.decisions.length) return null;
   const labels: Record<string, string> = {
     txEndorsement: "Endorsement",
     tnElectiveFocus: "Elective focus",
@@ -134,19 +157,6 @@ function Decisions({ path, mode }: { path: PlannedPath; mode: PathViewMode }) {
   return (
     <PathSection id="path-decisions" title="Choices to make" lead="The rules depend on these. Nothing is final; you can change them later.">
       <ul className="space-y-3">
-        {confirm > 0 && (
-          <li className="rounded-xl border border-border bg-surface p-4 text-sm">
-            <p className="font-medium">{confirmTypeText(confirm)}</p>
-            <p className="text-muted">
-              We guessed the kind of some classes from their names. A guess never makes a specific requirement done.
-            </p>
-            {mode === "student" && (
-              <Link href="#classes" className="inline-flex min-h-11 items-center font-medium underline underline-offset-2">
-                Go to your classes
-              </Link>
-            )}
-          </li>
-        )}
         {path.decisions.map((d) => {
           const field = decisionField(d.key);
           return (
@@ -273,7 +283,11 @@ function YearCard({ year, path, mode, planId }: { year: PlanYear; path: PlannedP
               <span className="sr-only">{mode === "parent" ? "Their class" : "Your class"}: </span>
               {s.title}
               {levelShown(s.title, s.level, path.state) && <span className="text-muted"> · {levelLabel(s.level, path.state)}</span>}
-              {s.assumed && <span className="block text-xs text-muted">Guessed class type. Set “What kind of class is this?” on the class to be sure it counts.</span>}
+              {s.assumed && (
+                <span className="block text-xs text-muted">
+                  {mode === "parent" ? "Guessed class type, not confirmed yet." : "Guessed class type: confirm it under “Confirm your classes” at the top of your path."}
+                </span>
+              )}
               {s.warnings.map((w, i) => (
                 <span key={i} className="block text-xs text-muted">
                   {w.text}
@@ -525,8 +539,10 @@ export function PathView({
   printHref: string;
 }) {
   const dlaDefault = path.state === "TX" && ctx.prefs.choices.txAimDla === undefined && ctx.path === "degree";
+  const confirm = confirmRows(path, ctx);
   return (
     <div className="space-y-8">
+      <ConfirmClasses rows={confirm.rows} more={confirm.more} mode={mode} />
       <DraftNotice path={path} mode={mode} printHref={printHref} />
       <BuiltFrom path={path} ctx={ctx} mode={mode} />
       {dlaDefault && <p className="rounded-xl border border-border bg-surface p-4 text-sm">{TX_DLA_DEFAULT_NOTE}</p>}

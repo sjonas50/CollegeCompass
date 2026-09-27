@@ -98,10 +98,22 @@ describe("course fields", () => {
 
     const chem = fields({ defaults: { ...defaults, name: "Honors Chem", subject: "science", level: "honors" } });
     expect(chem).toMatch(/<label for="[^"]+-courseType"[^>]*>What kind of class is this\? \(optional\)<\/label>/);
-    // Nothing chosen: the planner treats it as its guess (never stored).
-    expect(chem).toContain('<option value="" selected="">Not sure (we&#x27;ll guess Chemistry)</option>');
-    expect(chem).toContain('<option value="sci.chem">Chemistry</option>');
+    // A confident guess from the name is selected, so saving confirms it (round 9); "Not sure" stays.
+    expect(chem).toContain('<option value="sci.chem" selected="">Chemistry</option>');
+    expect(chem).toContain("We picked it from the name. Change it if that&#x27;s not right.");
+    expect(chem).toContain('<option value="">Not sure (we&#x27;ll guess Chemistry)</option>');
     expect(chem).not.toContain('value="math.alg2"');
+    // A name that doesn't say which class (a catch-all "PE", or nothing the guesser knows) isn't picked for the student.
+    const pe = fields({ defaults: { ...defaults, name: "PE", subject: "health_pe", level: "regular" } });
+    expect(pe).toContain('<option value="" selected="">Not sure (we&#x27;ll guess Physical education)</option>');
+    const lab = fields({ defaults: { ...defaults, name: "Math Lab", subject: "math", level: "regular" } });
+    expect(lab).toContain('<option value="" selected="">Not sure (we&#x27;ll guess Other math class)</option>');
+    // The known misses: "Algebra II/Trigonometry" is Algebra II, "Pre-AP English Language Arts I" is English I.
+    expect(fields({ defaults: { ...defaults, name: "Algebra II/Trigonometry", subject: "math", level: "regular" } })).toContain('<option value="math.alg2" selected="">Algebra II</option>');
+    expect(fields({ defaults: { ...defaults, name: "Pre-AP English Language Arts I", subject: "english", level: "honors" } })).toContain('<option value="ela.9" selected="">English I (9th grade English)</option>');
+    // After a failed save, what the student submitted stays, even "Not sure".
+    const kept = fields({ values: { name: "Honors Chem", subject: "science", level: "honors", courseTypeId: "" }, errors: { name: ["x"] } });
+    expect(kept).toContain('<option value="" selected="">Not sure (we&#x27;ll guess Chemistry)</option>');
 
     // A saved choice is selected; an AP class lists only kinds with an AP version.
     const ap = fields({ defaults: { ...defaults, name: "AP Bio", subject: "science", level: "ap", courseTypeId: "sci.bio" } });

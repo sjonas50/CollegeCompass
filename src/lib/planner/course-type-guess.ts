@@ -2,11 +2,14 @@ import type { CourseLevel, CourseSubject } from "@/db/schema";
 import type { PlannerState } from "./common";
 import {
   COURSE_LEVEL_TO_TYPE_LEVEL,
+  type CourseType,
   type CourseTypeId,
   type CourseTypeLevel,
+  courseTypesForSubject,
   getCourseType,
   isCourseTypeId,
   LANGUAGE_LEVELS,
+  LANGUAGES,
   type LanguageCode,
   type LanguageLevel,
   SUBJECT_FALLBACK_TYPE,
@@ -23,6 +26,11 @@ import {
 //      specific-course requirement ("Chemistry") done or planned (design §5.4). Guesses are
 //      computed at render time and never stored.
 // The level always comes from the row (the student's choice), never from the name.
+//
+// Confirm first: a guess is also what the student is asked to confirm ("Algebra II?" Yes / Something
+// else). `guessCourseType` says how sure the guess is (`confident`: the add and edit forms pre-select
+// it) and every kind the row might be (`candidates`): the engine never claims a requirement is
+// missing, or adds a "Required by" class, where the row might be that class.
 // ---------------------------------------------------------------------------
 
 export type CourseTypeSource = "catalog" | "student" | "guess";
@@ -44,7 +52,23 @@ export type CourseRowForType = {
   courseTypeSource?: "catalog" | "student" | null;
 };
 
-type Pattern = { type: CourseTypeId; re: RegExp; states?: readonly PlannerState[] };
+type Pattern = {
+  type: CourseTypeId;
+  re: RegExp;
+  states?: readonly PlannerState[];
+  /**
+   * A catch-all for a family of classes (any PE class, any computer science class, a career
+   * cluster's classes at any level): the row might be any of `broad`'s kinds, so the guess is never
+   * confident and every kind in the family is a candidate.
+   */
+  broad?: (t: CourseType) => boolean;
+};
+
+/** Every PE class, every arts class, every computer science class, a career cluster's classes. */
+const PE_FAMILY = (t: CourseType) => t.id.startsWith("pe.");
+const ARTS_FAMILY = (t: CourseType) => t.id.startsWith("arts.");
+const CS_FAMILY = (t: CourseType) => t.id.startsWith("cs.");
+const cluster = (c: string) => (t: CourseType) => t.ladder?.id === `cte.${c}` || t.cteCluster === c;
 
 /**
  * Name patterns, most specific first. A pattern is only tried when its type belongs to the row's
@@ -55,10 +79,15 @@ const PATTERNS: Pattern[] = [
   // College writing classes (Utah CE ENGL 1010 and 2010, Texas ENGL 1301 and 1302) are college
   // composition: Utah's level 12 list names "English Concurrent Enrollment" (UT-S3 p. 2), and Utah's
   // writing courses are ENGL 1010, 2010 or 2015 (research-utah.md, general education).
-  { type: "ela.lang_comp", re: /\bap\b.*\blang(uage)?\b|\b(engl(ish)?\s*(1010|2010|2015|1301|1302)|college (composition|writing))\b|\b(ce|concurrent enrollment|dual (credit|enrollment))\s+engl(ish)?\b(?!\s*(i{1,3}|iv|9|10|11|12)\b)/i },
-  { type: "ela.lit_comp", re: /\bap\b.*\blit(erature)?\b/i },
+  // "AP" is the level, never "Pre-AP" (a school's own honors-style course), and "Language Arts" is
+  // English, not AP English Language: "Pre-AP English Language Arts I" is English I.
+  {
+    type: "ela.lang_comp",
+    re: /(?<!pre-?\s?)\bap\b.*\blang(uage)?\b(?!\s*arts)|\b(engl(ish)?\s*(1010|2010|2015|1301|1302)|college (composition|writing))\b|\b(ce|concurrent enrollment|dual (credit|enrollment))\s+engl(ish)?\b(?!\s*(i{1,3}|iv|9|10|11|12)\b)/i,
+  },
+  { type: "ela.lit_comp", re: /(?<!pre-?\s?)\bap\b.*\blit(erature)?\b/i },
   { type: "ela.research", re: /\b(ap\s*research|research (and|&) technical writing|technical writing)\b/i },
-  { type: "ela.seminar", re: /\bap\s*seminar\b/i },
+  { type: "ela.seminar", re: /(?<!pre-?\s?)\bap\s*seminar\b/i },
   { type: "ela.esol", re: /\b(esol|esl|ell|english (as a )?(second|new) language|english language (development|learners?))\b/i },
   { type: "ela.creative_writing", re: /\bcreative writing\b/i },
   { type: "ela.journalism", re: /\b(journalism|yearbook|newspaper|literary magazine|photojournalism)\b/i },
@@ -83,7 +112,8 @@ const PATTERNS: Pattern[] = [
   { type: "math.precalc", re: /\bpre-?\s?cal(c(ulus)?)?\b/i },
   { type: "math.calc2", re: /\b(multivariable|calc(ulus)?\s*(ii|2|iii|3)|linear algebra|differential equations)\b/i },
   { type: "math.calc", re: /\bcalc(ulus)?\b/i },
-  { type: "math.trig", re: /\b(trig(onometry)?|math\s*1060)\b/i },
+  // "Algebra II/Trigonometry", "Alg 2/Trig" and "Algebra 2 Trig Honors" are Algebra II courses.
+  { type: "math.trig", re: /^(?!.*\balg(ebra)?\.?\s*(ii|2)(h|e)?\b).*\b(trig(onometry)?|math\s*1060)\b/i },
   { type: "math.ut_sec1", re: /\bsec(ondary)?\.?\s*math(ematics)?\s*(i|1)(h|e)?\b/i },
   { type: "math.ut_sec2", re: /\bsec(ondary)?\.?\s*math(ematics)?\s*(ii|2)(h|e)?\b/i },
   { type: "math.ut_sec3", re: /\bsec(ondary)?\.?\s*math(ematics)?\s*(iii|3)(h|e)?\b/i },
@@ -153,6 +183,9 @@ const PATTERNS: Pattern[] = [
   { type: "ss.us_hist", re: /\b((us|u\.s\.|united states|american)\s*hist(ory)?|apush)\b/i },
   // Utah's World Geography classes include Geography for Life and World/Cultural Geography CE [UT S3].
   { type: "ss.world_geo", re: /\b((world|human|cultural)\s*geo(graphy)?|geography for life)\b/i },
+  // Texas's and Utah's geography class is World Geography (TEKS "World Geography Studies"; Utah's
+  // World Geography requirement), so a bare "Geography" there is that class.
+  { type: "ss.world_geo", re: /\bgeography\b/i, states: ["TX", "UT"] },
   { type: "ss.world_hist", re: /\b(world|european|ancient)\s*(hist(ory)?|civ(ilizations?)?)\b/i },
   { type: "ss.us_gov", re: /\b(government|civics|govt?|gov't)\b/i },
   { type: "ss.econ", re: /\b(economics|econ|microeconomics|macroeconomics)\b/i },
@@ -176,8 +209,8 @@ const PATTERNS: Pattern[] = [
   { type: "arts.theatre", re: /\b(theat(er|re)|drama|acting|stagecraft)\b/i },
   { type: "arts.dance", re: /\bdance\b/i },
   { type: "arts.media", re: /\b(digital arts?|digital media|animation|film|photography|media arts|graphic design|video production)\b/i },
-  { type: "arts.music", re: /\b(music|guitar|piano)\b/i },
-  { type: "arts.visual", re: /\b(arts?|drawing|painting|ceramics|sculpture|studio)\b/i },
+  { type: "arts.music", re: /\b(music|guitar|piano)\b/i, broad: ARTS_FAMILY },
+  { type: "arts.visual", re: /\b(arts?|drawing|painting|ceramics|sculpture|studio)\b/i, broad: ARTS_FAMILY },
 
   // Computer science
   { type: "cs.prog2", re: /\b(ap\s*(cs|computer science)\s*a|computer science a|(programming|coding|computer science)\s*(ii|2))\b/i },
@@ -188,16 +221,26 @@ const PATTERNS: Pattern[] = [
   { type: "cs.data_science", re: /\bdata science\b/i },
   { type: "cs.intro", re: /\b(exploring computer science|computer science (foundations|discoveries)|intro(duction)? to computer science)\b/i },
   { type: "cs.ms", re: /\b(digital literacy|creative coding)\b/i },
-  { type: "cs.prog1", re: /\b(computer science|programming|coding|python|java)\b/i },
+  // A first programming class by its level ("Computer Science I", "Coding 1") is that class; the
+  // bare words are a catch-all for any computer science class.
+  { type: "cs.prog1", re: /\b(computer science|programming|coding)\s*(i|1)\b/i },
+  { type: "cs.prog1", re: /\b(computer science|programming|coding|python|java)\b/i, broad: CS_FAMILY },
 
   // Health and PE
   { type: "health.wellness", re: /\bwellness\b/i },
   { type: "health.health", re: /\bhealth\b(?!\s*science)/i },
+  // Utah's Individualized Lifetime Activities classes by their usual names (weight training, yoga,
+  // aerobics, conditioning), before "Walking Fitness" reads as Fitness for Life.
+  {
+    type: "pe.lifetime",
+    re: /\b(weight (training|lifting|room)|weightlifting|weights|strength (training|(and|&) conditioning)|conditioning|yoga|pilates|aerobics|walking)\b/i,
+    states: ["UT"],
+  },
   { type: "pe.fitness", re: /\bfitness\b/i },
   { type: "pe.lifetime", re: /\blifetime (activities|recreation|sports)\b/i },
   { type: "pe.athletics", re: /\b(athletics|football|basketball|volleyball|soccer|baseball|softball|track|cross country|swim(ming)?|tennis|golf|wrestling|cheer)\b/i },
   { type: "pe.skills", re: /\b(participation skills|team sports|individual sports)\b/i },
-  { type: "pe.general", re: /\bp\.?e\.?(?=\s|$)|\b(physical education|gym)\b/i },
+  { type: "pe.general", re: /\bp\.?e\.?(?=\s|$)|\b(physical education|gym)\b/i, broad: PE_FAMILY },
 
   // Other
   { type: "other.jrotc", re: /\bjrotc\b/i },
@@ -301,20 +344,20 @@ const PATTERNS: Pattern[] = [
   // is the cluster's level, not Principles of Health Science.
   { type: "cte.health.1", re: /\bhealth science\b.*\b(ii|iii|iv|2|3|4|advanced|practicum|clinicals?|internship|capstone)\b|\b(advanced|practicum in)\b.*\bhealth science\b/i },
   { type: "cte.health_principles", re: /\bhealth science\b/i },
-  { type: "cte.manufacturing.1", re: /\b(welding|machining|manufacturing|cnc)\b/i },
-  { type: "cte.hospitality.1", re: /\b(culinary|cooking|baking|hospitality)\b/i },
-  { type: "cte.transportation.1", re: /\b(auto(motive)?|diesel|aviation|aircraft|collision repair|small engines?)\b/i },
-  { type: "cte.architecture_construction.1", re: /\b(construction|carpentry|electrical|plumbing|hvac|woodworking|woods|cabinet(making|ry)?|architecture)\b/i },
-  { type: "cte.education.1", re: /\b(child development|early childhood|teaching|education (and|&) training)\b/i },
-  { type: "cte.law.1", re: /\b(criminal justice|law enforcement|fire science|public safety|legal studies|pre-?law)\b/i },
-  { type: "cte.human_services.1", re: /\b(cosmetology|barbering|family (and|&) consumer|interpersonal)\b/i },
-  { type: "cte.it.1", re: /\b(networking|information technology|comptia)\b/i },
-  { type: "cte.business.1", re: /\b(business|marketing|entrepreneurship|finance)\b/i },
-  { type: "cte.ag.1", re: /\b(agri\w*|ag science|horticulture|ffa)\b/i },
-  { type: "cte.engineering.1", re: /\b(engineering|stem)\b/i },
-  { type: "cte.health.1", re: /\b(medical|nursing|pharmacy|sports medicine|dental)\b/i },
-  { type: "cte.arts_av.1", re: /\b(audio|video|broadcast|a\/v)\b/i },
-  { type: "cte.energy.1", re: /\b(energy|oil and gas|solar)\b/i },
+  { type: "cte.manufacturing.1", re: /\b(welding|machining|manufacturing|cnc)\b/i, broad: cluster("manufacturing") },
+  { type: "cte.hospitality.1", re: /\b(culinary|cooking|baking|hospitality)\b/i, broad: cluster("hospitality") },
+  { type: "cte.transportation.1", re: /\b(auto(motive)?|diesel|aviation|aircraft|collision repair|small engines?)\b/i, broad: cluster("transportation") },
+  { type: "cte.architecture_construction.1", re: /\b(construction|carpentry|electrical|plumbing|hvac|woodworking|woods|cabinet(making|ry)?|architecture)\b/i, broad: cluster("architecture_construction") },
+  { type: "cte.education.1", re: /\b(child development|early childhood|teaching|education (and|&) training)\b/i, broad: cluster("education") },
+  { type: "cte.law.1", re: /\b(criminal justice|law enforcement|fire science|public safety|legal studies|pre-?law)\b/i, broad: cluster("law") },
+  { type: "cte.human_services.1", re: /\b(cosmetology|barbering|family (and|&) consumer|interpersonal)\b/i, broad: cluster("human_services") },
+  { type: "cte.it.1", re: /\b(networking|information technology|comptia)\b/i, broad: cluster("it") },
+  { type: "cte.business.1", re: /\b(business|marketing|entrepreneurship|finance)\b/i, broad: cluster("business") },
+  { type: "cte.ag.1", re: /\b(agri\w*|ag science|horticulture|ffa)\b/i, broad: cluster("ag") },
+  { type: "cte.engineering.1", re: /\b(engineering|stem)\b/i, broad: cluster("engineering") },
+  { type: "cte.health.1", re: /\b(medical|nursing|pharmacy|sports medicine|dental)\b/i, broad: cluster("health") },
+  { type: "cte.arts_av.1", re: /\b(audio|video|broadcast|a\/v)\b/i, broad: cluster("arts_av") },
+  { type: "cte.energy.1", re: /\b(energy|oil and gas|solar)\b/i, broad: cluster("energy") },
 ];
 
 const LANGUAGE_PATTERNS: [LanguageCode, RegExp][] = [
@@ -336,6 +379,7 @@ const LANGUAGE_LEVEL_PATTERNS: [LanguageLevel, RegExp][] = [
   [4, /\b(iv|4|v|5|vi|6|ap|ib|advanced|literature)\b/i],
   [3, /\b(iii|3)\b/i],
   [2, /\b(ii|2)\b/i],
+  [1, /\b(i|1)\b/i],
 ];
 
 function fitsSubject(type: CourseTypeId, subject: CourseSubject) {
@@ -343,10 +387,24 @@ function fitsSubject(type: CourseTypeId, subject: CourseSubject) {
   return t.subject === subject || t.altSubjects.includes(subject);
 }
 
-function guessLanguage(name: string): CourseTypeId {
-  const code = LANGUAGE_PATTERNS.find(([, re]) => re.test(name))?.[0] ?? "other";
-  const level: LanguageLevel = LANGUAGE_LEVEL_PATTERNS.find(([, re]) => re.test(name))?.[0] ?? LANGUAGE_LEVELS[0];
-  return `lang.${code}.${level}`;
+/**
+ * A language class: its language and level from the name. Without a level ("Spanish for Heritage
+ * Speakers", "Spanish") it guesses level 1, but it might be any level (students are often placed
+ * above level 1), and without a language it might be any language at that level.
+ */
+function guessLanguage(name: string): TypeGuess {
+  const code = LANGUAGE_PATTERNS.find(([, re]) => re.test(name))?.[0] ?? null;
+  const cued = LANGUAGE_LEVEL_PATTERNS.find(([, re]) => re.test(name))?.[0] ?? null;
+  const level: LanguageLevel = cued ?? LANGUAGE_LEVELS[0];
+  const typeId: CourseTypeId = `lang.${code ?? "other"}.${level}`;
+  const codes = code ? [code] : LANGUAGES;
+  const levels = cued ? [cued] : LANGUAGE_LEVELS;
+  const candidates = uniq([typeId, ...codes.flatMap((c) => levels.map((l): CourseTypeId => `lang.${c}.${l}`))]);
+  return { typeId, confident: code !== null && cued !== null, candidates };
+}
+
+function uniq<T>(values: readonly T[]): T[] {
+  return [...new Set(values)];
 }
 
 /**
@@ -371,17 +429,54 @@ function cteLevelFromName(type: CourseTypeId, name: string): CourseTypeId {
 }
 
 /**
+ * A guess from a typed name, and how sure it is.
+ * - `typeId`: the most likely kind (the first pattern that matches, within the row's subject).
+ * - `confident`: the name names one kind of class. Not for a name no pattern knows (the subject's
+ *   "Other … class"), a catch-all for a family of classes ("PE", "Computer Science", "Welding"), a
+ *   language class without its level, or a name that matches two rungs of one sequence.
+ * - `candidates`: every kind the row might be, the guess first: other rungs of the same sequence
+ *   the name also matches, the family a catch-all stands for, or for a name no pattern knows, every
+ *   kind of class in the subject (the engine narrows those by grade).
+ */
+export type TypeGuess = { typeId: CourseTypeId; confident: boolean; candidates: CourseTypeId[] };
+
+export function guessCourseType(name: string, subject: CourseSubject, state: PlannerState | null = null): TypeGuess {
+  if (subject === "world_language") return guessLanguage(name);
+  const hits: { type: CourseTypeId; broad?: (t: CourseType) => boolean; from: number; to: number }[] = [];
+  for (const p of PATTERNS) {
+    if (p.states && (!state || !p.states.includes(state))) continue;
+    if (!fitsSubject(p.type, subject)) continue;
+    const m = p.re.exec(name);
+    if (m) hits.push({ type: cteLevelFromName(p.type, name), broad: p.broad, from: m.index, to: m.index + m[0].length });
+  }
+  const inSubject = courseTypesForSubject(subject);
+  const first = hits[0];
+  if (!first) {
+    const fallback = SUBJECT_FALLBACK_TYPE[subject];
+    return { typeId: fallback, confident: false, candidates: uniq([fallback, ...inSubject.map((t) => t.id)]) };
+  }
+  if (first.broad) {
+    const family = first.broad;
+    return { typeId: first.type, confident: false, candidates: uniq([first.type, ...inSubject.filter((t) => family(t)).map((t) => t.id)]) };
+  }
+  // Another rung of the same sequence named by another part of the name ("Algebra II/Trigonometry"
+  // read as Trigonometry also names Algebra II): the row might be either. A pattern matching only
+  // words a longer match already covers ("Algebra" inside "Algebra II") names nothing more.
+  const ladder = getCourseType(first.type).ladder?.id;
+  const same = hits.filter((h) => !h.broad && ladder !== undefined && getCourseType(h.type).ladder?.id === ladder);
+  const covered = (h: (typeof hits)[number]) => same.some((o) => o !== h && o.from <= h.from && o.to >= h.to && o.to - o.from > h.to - h.from);
+  const others = same.filter((h) => h.type !== first.type && !covered(h)).map((h) => h.type);
+  const candidates = uniq([first.type, ...others]);
+  return { typeId: first.type, confident: candidates.length === 1, candidates };
+}
+
+/**
  * The course type a typed class name most likely is, within the row's subject. Always returns a
  * type: the subject's "Other … class" when nothing matches. `state` only disambiguates names like
  * "Math 2" (Utah's Secondary Math II there).
  */
 export function guessCourseTypeId(name: string, subject: CourseSubject, state: PlannerState | null = null): CourseTypeId {
-  if (subject === "world_language") return guessLanguage(name);
-  for (const p of PATTERNS) {
-    if (p.states && (!state || !p.states.includes(state))) continue;
-    if (fitsSubject(p.type, subject) && p.re.test(name)) return cteLevelFromName(p.type, name);
-  }
-  return SUBJECT_FALLBACK_TYPE[subject];
+  return guessCourseType(name, subject, state).typeId;
 }
 
 /**

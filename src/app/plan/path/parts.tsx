@@ -9,6 +9,7 @@ const STATUS_STYLE: Record<AuditStatus, string> = {
   done: "bg-success-soft",
   planned: "bg-accent-soft",
   room_to_add: "border border-border",
+  waiting_confirm: "border border-dashed border-accent",
   ask_counselor: "border border-dashed border-border",
   not_tracked: "border border-border text-muted",
 };

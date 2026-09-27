@@ -1,5 +1,6 @@
 import type { PlannerState } from "../common";
 import { type CourseTypeId, getCourseType } from "../course-types";
+import type { PlannerChoices } from "../engine-io";
 import { ladderFamily, mathRankOf, rungTypes } from "./ladder";
 import { countsForSequence, type Item } from "./model";
 
@@ -24,10 +25,12 @@ function englishLevel(typeId: CourseTypeId): boolean {
  * The student's guessed rows with a provisional type: an "Other English class" in a high school
  * grade with no other English level that year is that grade's English; an "Other math class" in a
  * year without another math class on the ladder is the next rung (Algebra I, Geometry, Algebra II
- * or the state's equivalents), when that rung usually comes in that grade or the one before.
- * Rows the name placed, and the student's own picks, are never changed.
+ * or the state's equivalents), when that rung usually comes in that grade or the one before, and
+ * never a rung the family opted out of in writing (Utah's Secondary Math III: the row is more
+ * likely the applied class that takes its place, which only the student can say). Rows the name
+ * placed, and the student's own picks, are never changed.
  */
-export function placeGuesses(state: PlannerState, items: Item[]): Item[] {
+export function placeGuesses(state: PlannerState, items: Item[], choices: PlannerChoices = {}): Item[] {
   const out = [...items];
   const guessed = (i: Item, fallback: CourseTypeId) => i.own && i.assumed && i.typeId === fallback;
   // English: one row per grade, when the student has no English level that year or anywhere else.
@@ -48,6 +51,7 @@ export function placeGuesses(state: PlannerState, items: Item[]): Item[] {
     const rank = reached + 1;
     // Past the ladder's first three rungs, or a rung the student takes later under its own name.
     if (rank > 3 || out.some((j) => j.own && j.grade > i.grade && mathRankOf(j.typeId) === rank)) continue;
+    if (rank === 3 && choices.utMath3OptOut) continue;
     const typeId = rungTypes(family, rank)[0];
     // A student a year behind the usual order still fits (Algebra I in 10th); a senior's only
     // recorded class isn't taken for Algebra I.
