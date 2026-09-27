@@ -16,6 +16,7 @@ import { solveLadder } from "./ladder";
 import { itemFromFact } from "./model";
 import { claimsOnWaiting, extraClaims } from "./testing/claims";
 import { planned, requirement, ruleSet, suggestions } from "./testing/helpers";
+import { auditExactTitles, exactTitleClaims } from "./testing/exact";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 import { randomInput } from "./testing/random";
 
@@ -354,6 +355,8 @@ describe("Typed and confirmed kinds of the same classes give the same plan (mode
       if (a.mode === "no_state" || b.mode === "no_state") continue;
       expect(extraClaims(b, a), `seed ${seed}`).toEqual([]);
       expect(claimsOnWaiting(b), `seed ${seed}`).toEqual([]);
+      // As the app reads their names (exact titles confirmed, the rest guessed): nothing new either.
+      expect(exactTitleClaims(guessed), `seed ${seed}, exact titles confirmed`).toEqual([]);
       compared++;
     }
     expect(compared).toBeGreaterThan(80);
@@ -792,3 +795,5 @@ describe("Typed program-of-study titles land at their level (course-type-guess.t
     expect(guessCourseTypeId(name, subject, state)).toBe(expected);
   });
 });
+
+auditExactTitles(65);

@@ -114,7 +114,7 @@ export function scenario(s: Scenario): PlannerInput {
       origin: "typed",
     };
   });
-  return {
+  const input: PlannerInput = {
     asOf: { today: s.today ?? `${month >= 8 ? schoolYear : schoolYear + 1}-${String(month).padStart(2, "0")}-15`, schoolYear, month },
     student: { grade: s.grade, cohort },
     state: s.state,
@@ -134,4 +134,12 @@ export function scenario(s: Scenario): PlannerInput {
     prefs: { choices: s.choices ?? {}, limits: { ...DEFAULT_LIMITS, ...s.limits }, dismissed: s.dismissed ?? [] },
     content: s.content === undefined ? (s.state ? contentFor(s.state) : null) : s.content,
   };
+  if (courses.some((c) => c.assumed)) typedInputs.push(input);
+  return input;
 }
+
+/**
+ * Every input `scenario` built in this test file with a class typed by name only (a guessed kind),
+ * in order: `auditExactTitles` (testing/exact.ts) runs them again as the app resolves typed names.
+ */
+export const typedInputs: PlannerInput[] = [];

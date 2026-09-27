@@ -10,6 +10,7 @@ import { prereqsMetIn } from "./fill";
 import { plan } from "./index";
 import { needsFromEval } from "./needs";
 import { planned, requirement, ruleSet, suggestions, typesIn } from "./testing/helpers";
+import { auditExactTitles } from "./testing/exact";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 import { alternatives, item, variant } from "./testing/items";
 import { x1CalcInfeasible } from "./testing/scenarios";
@@ -625,3 +626,5 @@ describe("Guessed language classes (blockReason)", () => {
     expect(requirement(path, "tx.fhsp.grad", "lote.same").modifiers).toContain("guessed_type");
   });
 });
+
+auditExactTitles(1);

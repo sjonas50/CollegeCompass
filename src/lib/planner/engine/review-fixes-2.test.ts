@@ -5,6 +5,7 @@ import type { CatalogCourse, CatalogView, CollegeTarget, FamilyTarget, PlannedPa
 import type { FamilyId } from "../families";
 import { plan } from "./index";
 import { planned, requirement, ruleSet, suggestions, typesIn } from "./testing/helpers";
+import { auditExactTitles } from "./testing/exact";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 import { randomInput } from "./testing/random";
 import { creditNoun, lowerFirstWord } from "./util";
@@ -593,3 +594,5 @@ describe("A senior short of total credits sees the state's verified options (gap
     expect(total.options[0].text).toMatch(/Statewide Online Education Program/);
   });
 });
+
+auditExactTitles(135);

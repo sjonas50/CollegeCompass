@@ -9,6 +9,7 @@ import { earlyWithoutCredit } from "./audit";
 import { sameContent } from "./fill";
 import { plan } from "./index";
 import { planned, requirement, ruleSet, suggestions, typesIn } from "./testing/helpers";
+import { auditExactTitles } from "./testing/exact";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 import { item } from "./testing/items";
 import { randomInput } from "./testing/random";
@@ -831,3 +832,5 @@ describe("\"Two that fit your goals\" only when both endorsements come from the 
     }
   });
 });
+
+auditExactTitles(111);

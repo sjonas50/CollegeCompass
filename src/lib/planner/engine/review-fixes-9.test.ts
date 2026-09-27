@@ -11,6 +11,7 @@ import { cteReached } from "./fill";
 import { plan } from "./index";
 import { itemFromFact } from "./model";
 import { claims, claimsOnWaiting, extraClaims } from "./testing/claims";
+import { exactTitleClaims } from "./testing/exact";
 import { planned, requirement, suggestions } from "./testing/helpers";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 
@@ -57,6 +58,8 @@ function expectNoClaimFromAGuess(s: Omit<Scenario, "courses">, rows: Row[], goal
   const truth = real({ ...s, courses: typed(state, rows, true) }, goals);
   expect(claimsOnWaiting(guessedPath), `${label} claims about requirements waiting on a confirmation`).toEqual([]);
   expect(extraClaims(guessedPath, truth), `${label} claims only the guess makes`).toEqual([]);
+  // As the app reads the names (exact titles confirmed, the rest guessed): nothing new either.
+  expect(exactTitleClaims(input({ ...s, courses: typed(state, rows) }, goals), truth), `${label} claims an exact title makes`).toEqual([]);
   return { guessedPath, truth };
 }
 
@@ -192,6 +195,9 @@ describe("Confirm first: a guessed class kind never creates a claim by itself (e
           const label = `${state}: "${name}" guessed as ${wrong}`;
           expect(claimsOnWaiting(path), label).toEqual([]);
           expect(extraClaims(path, truth), label).toEqual([]);
+          // As the app reads the names, with the row's credit its own (not the wrong kind's usual one).
+          const credited = rows.map((r, j): Row => (j === k ? [r[0], r[1], r[2], { units: getCourseType(guess).units, ...r[3], as: wrong }] : r));
+          expect(exactTitleClaims(input({ state, grade: 11, ...extra, courses: typed(state, credited) }, goals), truth), `${label}, exact titles confirmed`).toEqual([]);
           checked++;
         }
       });

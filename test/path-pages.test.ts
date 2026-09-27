@@ -350,19 +350,43 @@ describe("the class planner beta", () => {
 });
 
 // Round 9, confirm first: classes typed with a name only are listed at the top of "Your path" with
-// the planner's guess as one tap, at most six at once, grouped by year.
+// the planner's guess as one tap, at most six at once, grouped by year. A name that's the state's
+// own title for a class (exact-titles.ts) isn't a guess, so it isn't listed.
 describe("Confirm your classes", () => {
+  // Short names the planner guesses from ("English I", "Biology" would be exact titles).
   const TYPED: Row[] = [
-    { name: "English I", subject: "english", grade: 9, type: "" },
-    { name: "Algebra I", subject: "math", grade: 9, type: "" },
-    { name: "Biology", subject: "science", grade: 9, type: "" },
-    { name: "World Geography", subject: "social_studies", grade: 9, type: "" },
-    { name: "Spanish I", subject: "world_language", grade: 9, type: "" },
-    { name: "English II", subject: "english", grade: 10, type: "" },
-    { name: "Geometry", subject: "math", grade: 10, type: "" },
+    { name: "Eng I", subject: "english", grade: 9, type: "" },
+    { name: "Alg I", subject: "math", grade: 9, type: "" },
+    { name: "Bio", subject: "science", grade: 9, type: "" },
+    { name: "World Geo", subject: "social_studies", grade: 9, type: "" },
+    { name: "Spanish Level 1", subject: "world_language", grade: 9, type: "" },
+    { name: "Eng II", subject: "english", grade: 10, type: "" },
+    { name: "Geom", subject: "math", grade: 10, type: "" },
     { name: "Algebra II/Trigonometry", subject: "math", grade: 10, type: "" },
     { name: "Math Lab", subject: "math", grade: 10, type: "" },
   ];
+
+  it("doesn't ask about classes typed with the state's own titles, only a name joining two classes (the demo Texas 9th grader)", async () => {
+    await student({
+      grade: 9,
+      homeState: "TX",
+      rows: [
+        { name: "English I", subject: "english", grade: 9, type: "" },
+        { name: "Geometry", subject: "math", grade: 9, type: "" },
+        { name: "Biology", subject: "science", grade: 9, type: "" },
+        { name: "World Geography", subject: "social_studies", grade: 9, type: "" },
+        { name: "Spanish I", subject: "world_language", grade: 9, type: "" },
+        { name: "Principles of Applied Engineering", subject: "career_technical", grade: 9, type: "" },
+        { name: "Alg 2/Trig", subject: "math", grade: 10, type: "" },
+      ],
+    });
+    const t = text(await render(PlanPage(props<PageProps<"/plan">>())));
+    const card = t.slice(t.indexOf("Confirm your classes"), t.indexOf(DRAFT_NOTICE));
+    expect(card).toContain("Alg 2/Trig · Algebra II?");
+    expect(card.match(/Yes ?, /g) ?? []).toHaveLength(1);
+    for (const name of ["English I", "Geometry", "Biology", "World Geography", "Spanish I", "Principles of Applied Engineering"]) expect(card).not.toContain(name);
+    expect(card).not.toMatch(/more class/);
+  });
 
   it("lists six typed classes at a time with one-tap guesses, grouped by year, and confirming stores the kind", async () => {
     const id = await student({ grade: 10, homeState: "TX", rows: TYPED });
@@ -374,15 +398,16 @@ describe("Confirm your classes", () => {
     expect(card.length).toBeGreaterThan(0);
     expect(card).toMatch(/9th grade .* 10th grade/);
     expect(card).toContain("3 more classes after these.");
-    const yes = card.match(/Yes, /g) ?? [];
+    const yes = card.match(/Yes ?, /g) ?? [];
+    expect(yes.length).toBeGreaterThan(0);
     expect(yes.length).toBeLessThanOrEqual(6);
     expect(card).toContain("Something else…");
     // Keyboard reachable: real buttons, each named for its class.
-    expect(html).toMatch(/<button[^>]*type="button"[^>]*>Yes<span class="sr-only">, English I is English I<\/span><\/button>/);
+    expect(html).toMatch(/<button[^>]*type="button"[^>]*>Yes<span class="sr-only">, Eng I is English I<\/span><\/button>/);
 
     const { confirmCourseTypeAction } = await import("@/app/actions/path");
-    const [english] = await db.select().from(schema.studentCourses).where(eq(schema.studentCourses.name, "English I"));
-    expect(await confirmCourseTypeAction(english.id, "ela.9")).toMatchObject({ ok: true, message: expect.stringContaining("Saved: English I is English I.") });
+    const [english] = await db.select().from(schema.studentCourses).where(eq(schema.studentCourses.name, "Eng I"));
+    expect(await confirmCourseTypeAction(english.id, "ela.9")).toMatchObject({ ok: true, message: expect.stringContaining("Saved: Eng I is English I.") });
     const [saved] = await db.select().from(schema.studentCourses).where(eq(schema.studentCourses.id, english.id));
     expect(saved).toMatchObject({ courseTypeId: "ela.9", courseTypeSource: "student", userId: id });
     // A kind that doesn't fit the class's subject, or another student's class, changes nothing.

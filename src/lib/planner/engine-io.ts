@@ -133,7 +133,7 @@ export type CourseFact = {
   level: CourseTypeLevel;
   /**
    * The subject `subjects` selectors match: the type's own subject when the type is confirmed
-   * (catalog or student), the row's subject when it's a guess.
+   * (catalog, student or an exact title), the row's subject when it's a guess.
    */
   subject: CourseSubject;
   grade: SchoolGrade;

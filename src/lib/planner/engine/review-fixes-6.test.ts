@@ -11,6 +11,7 @@ import type { Req } from "../rules";
 import { studentPath } from "../service";
 import { plan } from "./index";
 import { planned, requirement, ruleSet, suggestions } from "./testing/helpers";
+import { auditExactTitles } from "./testing/exact";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 
 // Regression tests for the counselor's sixth review of the course planner (each block names the
@@ -676,3 +677,5 @@ describe("F3 through studentPath: a Texas junior's typed Education and Training 
     expect(requirement(result, "tx.endorse.public-services", "ps.cte.education").counted).toHaveLength(3);
   });
 });
+
+auditExactTitles(5);

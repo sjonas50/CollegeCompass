@@ -9,7 +9,8 @@ proof-of-concept decisions override the design where they differ; see the end of
 |---|---|
 | `common.ts` | `PlannerState` (UT, TN, TX), `SchoolGrade`, quarter-credit units (`toUnits`, `toCredits`), ISO dates, school-year labels |
 | `course-types.ts` | The course-type vocabulary: ids, levels, CTE, ladders, prerequisites, capabilities, state titles |
-| `course-type-guess.ts` | From a `student_courses` row (subject, level, typed name) to a type; guesses are *assumed*, with how sure they are and every kind the row might be (`guessCourseType`) |
+| `course-type-guess.ts` | From a `student_courses` row (subject, level, typed name) to a type (`resolveRowCourseType`); guesses are *assumed*, with how sure they are and every kind the row might be (`guessCourseType`) |
+| `exact-titles.ts` | Exact titles: a typed name that's the official or canonical title of exactly one kind in the student's state is that kind, confirmed (`exactCourseType`, `exactTitlesFor`) |
 | `beta.ts` | "Your path" is in beta: `plannerPathEnabled` (households marked by staff, or `PLANNER_PATH=everyone`) and `npm run beta:planner` |
 | `families.ts` | The 32 major-family ids, math targets (CALC … APPLIED), the CIP routing type and `routeCip` |
 | `rules.ts` | The rule language: rule files, rule sets, variants, requirements, selectors, checks, conditions, gates, review |
@@ -82,14 +83,30 @@ type), and optionally a ladder rank, capabilities and state display names.
 - **Capabilities**: `alg2_or_beyond`, `advanced_math_after_alg2` and `lab_science`. Rules match types
   or capabilities, so Secondary Math III, Integrated Math III and Algebra II are equal only where a
   rule says so.
-- **From a student row**: a linked school-list row's type, else the student's pick, else a name
-  guess within the row's subject. A guess is *assumed*: it only matches `subjects` selectors, so it
-  counts toward "3 science credits" but never makes "Chemistry" done.
+- **From a student row**: a linked school-list row's type, else the student's pick, else an exact
+  title, else a name guess within the row's subject. A guess is *assumed*: it only matches
+  `subjects` selectors, so it counts toward "3 science credits" but never makes "Chemistry" done.
+- **Exact titles** (`exact-titles.ts`): a typed name that, after normalizing case, spaces,
+  punctuation, numerals ("Algebra 1" is "Algebra I") and one H, Honors, AP, Pre-AP, CE or dual
+  credit marker at its start or end, is the official or canonical title of exactly one kind in the
+  student's state is that kind (source `exact`): it counts for requirements and needs no
+  confirmation. The titles are the vocabulary's own names (a type's title where it names one class,
+  its state titles, every language's I-IV) plus common names ("World Geography", "English 9") and
+  each state's official titles from its saved sources (TEKS and TEA programs of study, Tennessee
+  Policy 3.205, USBE's course list), all listed by `exactTitlesFor`. Never exact: a title two kinds
+  share, a title joining two classes ("Gov/Econ", "Alg 2/Trig", "Personal Financial Literacy and
+  Economics"), a catch-all ("Physical Education"), a kind outside the row's subject, and a level
+  that could change the kind (Pre-AP is honors, never AP; the level must be one the kind is offered
+  at and agree with the row's; an AP, IB or college-credit Biology, Chemistry, Physics or Calculus
+  may be the second-year class). A marker sets the level of a row left at regular. Applied when rows
+  are read, so nothing is stored or migrated.
 - **Confirm first**: a guess never creates a claim by itself (a requirement missing, "doesn't
   fit", "needs a plan now", a "Required by" class the row might already be, or a different route).
   Requirements a guess decides read "Waiting on you to confirm a class", and "Confirm your classes"
   at the top of the path asks for each unconfirmed row's kind with the guess as one tap
-  (`engine/confirm.ts`). The add and edit forms pre-select a confident guess, so saving confirms it.
+  (`engine/confirm.ts`); exact titles aren't guesses and aren't asked about. The add and edit forms
+  pre-select a confident guess (the exact kind, for an exact title: a test keeps the two in step),
+  so saving confirms it.
 - **Names the guesser reads carefully**: a name joining two classes ("Gov/Econ", "Economics &
   Personal Finance") is never a sure guess, and has both kinds as candidates; when both are
   half-credit kinds on a full-credit row, "Confirm your classes" offers it as two half-credit

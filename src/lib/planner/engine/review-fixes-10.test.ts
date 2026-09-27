@@ -11,6 +11,7 @@ import { pastLanguageLevel } from "./fill";
 import { plan } from "./index";
 import { itemFromFact } from "./model";
 import { claims, claimsOnWaiting, extraClaims } from "./testing/claims";
+import { auditExactTitles, exactTitleClaims } from "./testing/exact";
 import { planned, requirement, suggestions } from "./testing/helpers";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 
@@ -54,6 +55,8 @@ function expectNoClaimFromAGuess(s: Omit<Scenario, "courses">, list: Row[], goal
   const truth = student(s, list, "truth", goals);
   expect(claimsOnWaiting(typed), `${label} claims about requirements waiting on a confirmation`).toEqual([]);
   expect(extraClaims(typed, truth), `${label} claims only the guess makes`).toEqual([]);
+  // As the app reads the names (exact titles confirmed, the rest guessed): nothing new either.
+  expect(exactTitleClaims(input({ ...s, courses: rows(s.state!, list, "typed") }, goals), truth), `${label} claims an exact title makes`).toEqual([]);
   return { typed, truth };
 }
 
@@ -574,3 +577,5 @@ describe("Program-of-study titles with \"&\" and Texas's level-2 names (course-t
     expect(path.confirm.find((c) => c.courseId === id)?.guess).toBe("cte.engineering.2");
   });
 });
+
+auditExactTitles(31);

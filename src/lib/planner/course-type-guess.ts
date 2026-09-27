@@ -14,6 +14,7 @@ import {
   type LanguageLevel,
   SUBJECT_FALLBACK_TYPE,
 } from "./course-types";
+import { type ExactCourseType, exactCourseType } from "./exact-titles";
 
 // ---------------------------------------------------------------------------
 // From a `student_courses` row to a course type (design §2.5, §5.2).
@@ -21,11 +22,15 @@ import {
 // A row's type comes from, in order:
 //   1. its linked school-list row (`course_type_source: "catalog"`),
 //   2. the type the student picked ("What kind of class is this?", source "student"),
-//   3. a guess from the typed name, limited to the row's subject. A guess is ASSUMED: it counts
+//   3. an exact title: the official or canonical name of exactly one kind of class in the student's
+//      state ("Algebra I", Texas's "Lifetime Fitness and Wellness Pursuits"; exact-titles.ts), taken
+//      as that kind (source "exact": not assumed, nothing to confirm),
+//   4. a guess from the typed name, limited to the row's subject. A guess is ASSUMED: it counts
 //      only toward subject-level requirements ("3 science credits") and never makes a
-//      specific-course requirement ("Chemistry") done or planned (design §5.4). Guesses are
-//      computed at render time and never stored.
-// The level always comes from the row (the student's choice), never from the name.
+//      specific-course requirement ("Chemistry") done or planned (design §5.4).
+// Exact titles and guesses are computed at render time and never stored. The level comes from the
+// row (the student's choice), except that an exact title's level marker ("Biology H", "Pre-AP
+// English I") sets it on a row left at regular.
 //
 // Confirm first: a guess is also what the student is asked to confirm ("Algebra II?" Yes / Something
 // else). `guessCourseType` says how sure the guess is (`confident`: the add and edit forms pre-select
@@ -33,7 +38,7 @@ import {
 // missing, or adds a "Required by" class, where the row might be that class.
 // ---------------------------------------------------------------------------
 
-export type CourseTypeSource = "catalog" | "student" | "guess";
+export type CourseTypeSource = "catalog" | "student" | "exact" | "guess";
 
 export type ResolvedCourseType = {
   typeId: CourseTypeId;
@@ -575,13 +580,25 @@ export function guessCourseTypeId(name: string, subject: CourseSubject, state: P
 }
 
 /**
+ * A typed title that names one kind of class exactly in the student's state (exact-titles.ts),
+ * never a name the guesser reads as two classes ("Algebra II/Trigonometry", "Gov/Econ").
+ */
+export function exactRowType(name: string, subject: CourseSubject, level: CourseTypeLevel, state: PlannerState): ExactCourseType | null {
+  const exact = exactCourseType(name, subject, level, state);
+  return exact && !guessCourseType(name, subject, state).combined ? exact : null;
+}
+
+/**
  * A `student_courses` row's course type and level. A stored type (from the school's list or the
- * student's pick) is used as is; otherwise the name is guessed and the result is `assumed`.
+ * student's pick) is used as is; then a title that's exact in the student's state is that kind
+ * (source "exact"); otherwise the name is guessed and the result is `assumed`.
  */
 export function resolveRowCourseType(row: CourseRowForType, state: PlannerState | null = null): ResolvedCourseType {
   const level = COURSE_LEVEL_TO_TYPE_LEVEL[row.level];
   if (row.courseTypeId && isCourseTypeId(row.courseTypeId) && row.courseTypeSource) {
     return { typeId: row.courseTypeId, level, source: row.courseTypeSource, assumed: false };
   }
+  const exact = state ? exactRowType(row.name, row.subject, level, state) : null;
+  if (exact) return { typeId: exact.typeId, level: exact.level, source: "exact", assumed: false };
   return { typeId: guessCourseTypeId(row.name, row.subject, state), level, source: "guess", assumed: true };
 }

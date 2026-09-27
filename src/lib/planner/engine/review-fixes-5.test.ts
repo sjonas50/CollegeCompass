@@ -14,6 +14,7 @@ import { studentPath } from "../service";
 import { compileVariant } from "./compile";
 import { plan } from "./index";
 import { planned, requirement, ruleSet, suggestions } from "./testing/helpers";
+import { auditExactTitles } from "./testing/exact";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 
 // Regression tests for the counselor's fifth review of the course planner (each block names the
@@ -738,3 +739,5 @@ describe("Smaller fixes from the fifth review", () => {
     }
   });
 });
+
+auditExactTitles(5);

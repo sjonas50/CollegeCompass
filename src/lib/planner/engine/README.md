@@ -66,7 +66,11 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
   requirement the fill held because a class held for a confirmation would count there too. Guessed kinds never add a claim the same kinds, confirmed, wouldn't
   make (pinned over random and misguessed students, `review-fixes-9.test.ts`). The path lists the
   unconfirmed rows (`confirm`) for "Confirm your classes", and the counselor questions always keep
-  one line about them.
+  one line about them. A name that's an exact title in the student's state (`exact-titles.ts`,
+  "Algebra I", "Lifetime Fitness and Wellness Pursuits") reaches the engine confirmed (`typeSource:
+  "exact"`), so it's neither a guess nor asked about. The `review-fixes` suites run their typed
+  students again that way, against the right kinds confirmed, and none gains a claim
+  (`testing/exact.ts`).
 - Credits never double-count inside an exclusive rule set, except where a rule shares them
   (`shareable`, a substitution, shared same-language levels). A kind of class that may stand in
   only once (`substituteOnce`: Tennessee's computer science for "one (1) credit in mathematics,
@@ -331,4 +335,7 @@ const path = plan(await loadPlannerInput(db, userId)); // loadPlannerInput is bu
 
 `testing/` holds test-only content (invented quotes on example.org, shaped like Appendix A and
 validated by the contracts' validator), the golden scenarios (`scenarios.ts`, design §10.2), a
-seeded random input generator and a plan summarizer for readable snapshots.
+seeded random input generator and a plan summarizer for readable snapshots. `claims.ts` lists the
+claims a guess must never create; `exact.ts` runs typed students again as the app reads their names
+(`withExactTitles`, `exactTitleClaims`), and `auditExactTitles`, last in a regression file, does
+that for every typed student the file built with `scenario`.

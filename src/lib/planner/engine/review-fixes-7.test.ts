@@ -11,6 +11,7 @@ import { updatePlanPrefs } from "../prefs";
 import { studentPath } from "../service";
 import { plan } from "./index";
 import { planned, requirement, ruleSet, suggestions } from "./testing/helpers";
+import { auditExactTitles } from "./testing/exact";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 
 // Regression tests for the counselor's seventh review of the course planner (each block names the
@@ -800,3 +801,5 @@ describe("Tennessee: a student on the integrated track stays on it (tn/generic-c
     for (const r of rows) expect(r.cite).toContain("tn-3205-math");
   });
 });
+
+auditExactTitles(5);

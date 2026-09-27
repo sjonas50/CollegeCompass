@@ -85,7 +85,7 @@ const SOFTWARE_DEVELOPER_MAJORS: [string, string][] = [
   ["15.1204", "Computer Software Technology/Technician"],
 ];
 
-type Row = { name: string; subject: CourseSubject; grade: number; type?: string; level?: CourseLevel; status?: CourseStatus; letter?: string; credits?: number };
+type Row = { name: string; subject: CourseSubject; grade: number; type?: string; level?: CourseLevel; status?: CourseStatus; letter?: string; credits?: number; hsCredit?: boolean };
 
 async function student({ grade, state, rows = [], stars = [], colleges = [] }: { grade: number; state: string | null; rows?: Row[]; stars?: string[]; colleges?: number[] }) {
   const [household] = await db.insert(schema.households).values({}).returning();
@@ -104,7 +104,7 @@ async function student({ grade, state, rows = [], stars = [], colleges = [] }: {
       credits: r.credits ?? 1,
       status,
       finalGrade: status === "completed" ? (r.letter ?? "A") : null,
-      highSchoolCredit: r.grade >= 9 || r.type === "math.alg1",
+      highSchoolCredit: r.hsCredit ?? (r.grade >= 9 || r.type === "math.alg1"),
       courseTypeId: r.type ?? null,
       courseTypeSource: r.type ? "student" : null,
     });
@@ -264,15 +264,16 @@ describe("a Texas 9th grader's path", () => {
 
 describe("classes recorded without choosing their kind", () => {
   it("a parent sees them as waiting on a confirmed kind, not as room to add", async () => {
+    // Short names the planner guesses from (the state's own titles are exact: see below).
     const guessed: Row[] = [
-      { name: "English I", subject: "english", grade: 9 },
-      { name: "Algebra I", subject: "math", grade: 9 },
-      { name: "Biology", subject: "science", grade: 9 },
-      { name: "World Geography", subject: "social_studies", grade: 9 },
-      { name: "Spanish I", subject: "world_language", grade: 9 },
-      { name: "English II", subject: "english", grade: 10 },
-      { name: "Geometry", subject: "math", grade: 10 },
-      { name: "Spanish II", subject: "world_language", grade: 10 },
+      { name: "Eng I", subject: "english", grade: 9 },
+      { name: "Alg I", subject: "math", grade: 9 },
+      { name: "Bio", subject: "science", grade: 9 },
+      { name: "World Geo", subject: "social_studies", grade: 9 },
+      { name: "Spanish Level 1", subject: "world_language", grade: 9 },
+      { name: "Eng II", subject: "english", grade: 10 },
+      { name: "Geom", subject: "math", grade: 10 },
+      { name: "Spanish Level 2", subject: "world_language", grade: 10 },
     ];
     const id = await student({ grade: 11, state: "TX", rows: guessed });
     const path = planned(await studentPath(db, id, NOW));
@@ -289,18 +290,60 @@ describe("classes recorded without choosing their kind", () => {
     // No language gap for the guessed Spanish I and II.
     expect(path.result.gaps.filter((g) => /language/i.test(g.text))).toEqual([]);
   });
+
+  it("the state's own class names count as those classes with nothing to confirm; a name joining two still asks (the demo Texas 9th grader)", async () => {
+    const id = await student({
+      grade: 9,
+      state: "TX",
+      stars: ["17-2141.00"],
+      rows: [
+        { name: "Algebra I", subject: "math", grade: 8, hsCredit: true },
+        { name: "English I", subject: "english", grade: 9 },
+        { name: "Geometry", subject: "math", grade: 9 },
+        { name: "Biology", subject: "science", grade: 9 },
+        { name: "World Geography", subject: "social_studies", grade: 9 },
+        { name: "Spanish I", subject: "world_language", grade: 9 },
+        { name: "Principles of Applied Engineering", subject: "career_technical", grade: 9 },
+        { name: "Alg 2/Trig", subject: "math", grade: 10 },
+      ],
+    });
+    const path = planned(await studentPath(db, id, NOW));
+    const byName = new Map(path.input.courses.map((c) => [c.name, c]));
+    for (const [name, typeId] of [
+      ["Algebra I", "math.alg1"],
+      ["English I", "ela.9"],
+      ["Geometry", "math.geom"],
+      ["Biology", "sci.bio"],
+      ["World Geography", "ss.world_geo"],
+      ["Spanish I", "lang.es.1"],
+      ["Principles of Applied Engineering", "cte.engineering_design"],
+    ]) {
+      expect(byName.get(name), name).toMatchObject({ typeId, typeSource: "exact", assumed: false });
+    }
+    expect(byName.get("Alg 2/Trig")).toMatchObject({ typeSource: "guess", assumed: true });
+    // "Confirm your classes" asks about the one name that joins two classes, and nothing else.
+    const toConfirm = path.result.confirm.map((c) => path.input.courses.find((x) => x.id === c.courseId)?.name);
+    expect(toConfirm).toEqual(["Alg 2/Trig"]);
+    // Nothing the exact classes are counted for waits on a confirmation.
+    const tx = path.result.audit.find((a) => a.ruleSetId === "tx.fhsp.grad")!;
+    for (const reqId of ["ela.1", "math.alg1", "math.geom", "sci.bio"]) {
+      expect(tx.requirements.find((r) => r.reqId === reqId)?.status, reqId).toMatch(/^(done|planned)$/);
+    }
+  });
 });
 
 // Classes typed with a name only (no kind picked: every row saved before the "What kind of class
-// is this?" question, and any row where it's skipped). The planner guesses the type, and a guess
-// never makes a named requirement done; the fill must still plan as if the guess were right and
-// never add a second class of a kind the student probably already has (counselor re-review, S1-S3).
+// is this?" question, and any row where it's skipped). A name that's the state's own title for a
+// class ("Biology", "Spanish 1") is that class; for any other, the planner guesses the type, and a
+// guess never makes a named requirement done. The fill must still plan as if the guess were right
+// and never add a second class of a kind the student probably already has (counselor re-review,
+// S1-S3).
 describe("classes typed with a name only are planned around, never added again", () => {
   async function guessesAndPath(rows: Row[], opts: { grade: number; state: string; stars: string[]; colleges?: number[] }) {
     const id = await student({ ...opts, rows });
     const path = planned(await studentPath(db, id, NOW));
-    const guessed = new Set(path.input.courses.filter((c) => c.assumed).map((c) => c.typeId));
-    expect(path.input.courses.every((c) => c.assumed)).toBe(true);
+    const guessed = new Set(path.input.courses.map((c) => c.typeId));
+    expect(path.input.courses.every((c) => c.typeSource === "guess" || c.typeSource === "exact")).toBe(true);
     return { path, guessed };
   }
 
@@ -336,10 +379,12 @@ describe("classes typed with a name only are planned around, never added again",
     // No Computer Science I and II for the language credit, no second chemistry.
     for (const plan of path.result.plans) expect(suggestions(path.result, plan.id).map((s) => s.typeId)).not.toEqual(expect.arrayContaining(["cs.prog1", "cs.prog2"]));
     for (const plan of path.result.plans) expect(suggestions(path.result, plan.id).map((s) => s.typeId)).not.toContain("sci.chem2");
-    // The audit shows the language route the guesses meet, waiting on a confirmed type.
+    // The audit shows the language route the typed Spanish 1 and 2 meet: Texas's own titles, so
+    // they count as Spanish I and II, with nothing to confirm.
     const lote = path.result.audit.find((a) => a.ruleSetId === "tx.fhsp.grad")!.requirements.find((r) => r.reqId.startsWith("lote"))!;
-    expect(lote).toMatchObject({ reqId: "lote.same", status: "waiting_confirm" });
-    expect(lote.modifiers).toContain("guessed_type");
+    expect(lote).toMatchObject({ reqId: "lote.same", status: "done" });
+    expect(lote.modifiers).not.toContain("guessed_type");
+    expect(path.input.courses.filter((c) => c.subject === "world_language").map((c) => c.typeSource)).toEqual(["exact", "exact"]);
     // Only the credits the plan leaves for 12th's open periods (round 9): nothing missing or impossible.
     expect(path.result.gaps.filter((g) => g.priority <= 1 && !/in 12th grade \(your open periods\)/.test(g.text))).toEqual([]);
   });
