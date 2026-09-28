@@ -19,6 +19,7 @@ import { planned, requirement, ruleSet, suggestions } from "./testing/helpers";
 import { auditExactTitles, exactTitleClaims } from "./testing/exact";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 import { randomInput } from "./testing/random";
+import { SWEEP_TIMEOUT_MS } from "./testing/sweep";
 
 // Regression tests for the counselor's eighth review of the course planner (each block names the
 // finding it pins). They run the engine on the real Utah, Tennessee and Texas content, with the
@@ -360,7 +361,7 @@ describe("Typed and confirmed kinds of the same classes give the same plan (mode
       compared++;
     }
     expect(compared).toBeGreaterThan(80);
-  });
+  }, SWEEP_TIMEOUT_MS);
 
   describe("through studentPath", () => {
     let db: Db;

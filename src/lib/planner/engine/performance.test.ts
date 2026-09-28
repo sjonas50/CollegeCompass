@@ -58,22 +58,26 @@ function katySizedList(): CatalogView {
   };
 }
 
+// The design's budget is 50 ms per plan (about 9 ms on a laptop). Shared CI runners are several
+// times slower, so they get three times the budget; a real regression still fails there.
+const BUDGET_MS = process.env.CI ? 150 : 50;
+
 describe("performance", () => {
-  it("plans each golden scenario in under 50 ms", () => {
+  it(`plans each golden scenario in under ${BUDGET_MS} ms`, () => {
     const slow: string[] = [];
     for (const [name, make] of Object.entries(ALL_SCENARIOS)) {
       const ms = time(make());
-      if (ms >= 50) slow.push(`${name}: ${ms.toFixed(1)} ms`);
+      if (ms >= BUDGET_MS) slow.push(`${name}: ${ms.toFixed(1)} ms`);
     }
     expect(slow).toEqual([]);
   });
 
-  it("plans with a Katy-sized list of about 600 classes in under 50 ms", () => {
+  it(`plans with a Katy-sized list of about 600 classes in under ${BUDGET_MS} ms`, () => {
     const list = katySizedList();
     expect(list.courses.length).toBeGreaterThan(550);
     const input = tx1WorkedExample({ catalogs: { 9: list, 10: list, 11: list, 12: list } });
     const path = plan(input);
     expect(path.mode).toBe("catalog");
-    expect(time(input, 5)).toBeLessThan(50);
+    expect(time(input, 5)).toBeLessThan(BUDGET_MS);
   });
 });

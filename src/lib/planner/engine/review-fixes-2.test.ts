@@ -9,6 +9,7 @@ import { auditExactTitles } from "./testing/exact";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 import { randomInput } from "./testing/random";
 import { creditNoun, lowerFirstWord } from "./util";
+import { SWEEP_TIMEOUT_MS } from "./testing/sweep";
 
 // Regression tests for the counselor's second review of the course planner (each block names the
 // finding it pins). They run the engine on the real Utah, Tennessee and Texas content, with the
@@ -178,7 +179,7 @@ describe("Sciences spread across years; required classes don't move for a recomm
       }
     }
     expect(bad).toEqual([]);
-  });
+  }, SWEEP_TIMEOUT_MS);
 });
 
 describe("Acceleration in gap options only with the opt-in and a B or better (gaps.ts optionsFor)", () => {

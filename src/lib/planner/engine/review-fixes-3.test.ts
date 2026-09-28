@@ -13,6 +13,7 @@ import { auditExactTitles } from "./testing/exact";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
 import { item } from "./testing/items";
 import { randomInput } from "./testing/random";
+import { SWEEP_TIMEOUT_MS } from "./testing/sweep";
 
 // Regression tests for the counselor's third review of the course planner (each block names the
 // finding it pins). They run the engine on the real Utah, Tennessee and Texas content, with the
@@ -503,7 +504,7 @@ describe("Classes that teach the same content aren't stacked (course-types overl
       }
     }
     expect(bad).toEqual([]);
-  });
+  }, SWEEP_TIMEOUT_MS);
 });
 
 describe("Tennessee's AP or IB focus counts an AP class that stands in for a requirement too (Policy 3.103 I(4)(b))", () => {

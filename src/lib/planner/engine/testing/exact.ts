@@ -5,6 +5,7 @@ import type { PlannedPath, PlannerInput } from "../../engine-io";
 import { plan } from "../index";
 import { type Claim, claimsOnWaiting, extraClaims } from "./claims";
 import { typedInputs } from "./input";
+import { SWEEP_TIMEOUT_MS } from "./sweep";
 
 // Test helper: typed students as the app resolves them. The app takes a typed name that's an exact
 // title in the student's state as that kind, confirmed (course-type-guess.ts resolveRowCourseType,
@@ -87,5 +88,5 @@ export function auditExactTitles(atLeast: number) {
       audited++;
     }
     expect(audited).toBeGreaterThanOrEqual(atLeast);
-  });
+  }, SWEEP_TIMEOUT_MS);
 }

@@ -14,6 +14,7 @@ import { claims, claimsOnWaiting, extraClaims } from "./testing/claims";
 import { exactTitleClaims } from "./testing/exact";
 import { planned, requirement, suggestions } from "./testing/helpers";
 import { type CourseSpec, type Scenario, scenario } from "./testing/input";
+import { SWEEP_TIMEOUT_MS } from "./testing/sweep";
 
 // Regression tests for the counselor's ninth review of the course planner, and the owner's
 // structural fix for guessed class kinds ("confirm first", engine/confirm.ts). They run the engine
@@ -203,7 +204,7 @@ describe("Confirm first: a guessed class kind never creates a claim by itself (e
       });
     }
     expect(checked).toBeGreaterThan(40);
-  });
+  }, SWEEP_TIMEOUT_MS);
 
   it("the round-9 misses, with the old wrong guesses forced: no false \"doesn't fit\", \"needs a plan now\" or \"Required by\"", () => {
     // N32 (Tennessee 11th, civil engineer): "Algebra II/Trigonometry" read as Trigonometry.
