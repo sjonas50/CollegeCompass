@@ -7,6 +7,7 @@ import { getDb } from "@/db";
 import { requireFullAccess } from "@/lib/access/guard";
 import { MAX_GRADE, MIN_GRADE } from "@/lib/auth/age";
 import { requireUser } from "@/lib/auth/dal";
+import { plannerPathEnabled } from "@/lib/planner/beta";
 import {
   type GradeProgress,
   type Roadmap,
@@ -51,10 +52,11 @@ export default async function RoadmapPage({ searchParams }: PageProps<"/roadmap"
   await requireFullAccess(student);
   const now = new Date();
   const db = await getDb();
-  const [progress, week, params] = await Promise.all([
+  const [progress, week, params, pathLinks] = await Promise.all([
     getMilestoneProgress(db, student.id),
     listWeek(db, student.id, weekStartOf(now)),
     searchParams,
+    plannerPathEnabled(db, student.id),
   ]);
   const grade = student.grade;
   const peek = peekGradeFrom(params.grade, grade);
@@ -77,6 +79,7 @@ export default async function RoadmapPage({ searchParams }: PageProps<"/roadmap"
         roadmap={buildRoadmap(MILESTONES, grade, now, progress)}
         gradeProgress={grades.find((g) => g.grade === grade)}
         week={week}
+        pathLinks={pathLinks}
       />
     );
   }
@@ -101,7 +104,7 @@ export default async function RoadmapPage({ searchParams }: PageProps<"/roadmap"
   );
 }
 
-function MainView({ roadmap, gradeProgress, week }: { roadmap: Roadmap; gradeProgress?: GradeProgress; week: WeeklyStep[] }) {
+function MainView({ roadmap, gradeProgress, week, pathLinks }: { roadmap: Roadmap; gradeProgress?: GradeProgress; week: WeeklyStep[]; pathLinks: boolean }) {
   const weekFull = week.length >= MAX_STEPS_PER_WEEK;
   const weekAllDone = weekFull && week.every((s) => s.status === "done");
   const weekState = (id: string): WeekState =>
@@ -135,7 +138,7 @@ function MainView({ roadmap, gradeProgress, week }: { roadmap: Roadmap; gradePro
         lead={`Good things to work on in ${month}.`}
         items={roadmap.now}
         grade={roadmap.grade}
-        weekState={weekState}
+        weekState={weekState} pathLinks={pathLinks}
         persistent
       >
         <p className="text-sm text-muted">
@@ -150,7 +153,7 @@ function MainView({ roadmap, gradeProgress, week }: { roadmap: Roadmap; gradePro
           lead={`In ${monthList(roadmap.comingUpMonths)}. No need to start yet, but it's good to know what's next.`}
           items={roadmap.comingUp}
           grade={roadmap.grade}
-          weekState={weekState}
+          weekState={weekState} pathLinks={pathLinks}
           persistent
         >
           <p className="text-sm text-muted">Nothing new in {monthList(roadmap.comingUpMonths)}.</p>
@@ -164,7 +167,7 @@ function MainView({ roadmap, gradeProgress, week }: { roadmap: Roadmap; gradePro
           lead="From earlier this year. It's not too late: do what still makes sense, and set aside anything that doesn't fit you."
           items={roadmap.catchUp}
           grade={roadmap.grade}
-          weekState={weekState}
+          weekState={weekState} pathLinks={pathLinks}
         />
       )}
 
@@ -175,7 +178,7 @@ function MainView({ roadmap, gradeProgress, week }: { roadmap: Roadmap; gradePro
           lead="A look at what's ahead this school year."
           items={roadmap.later}
           grade={roadmap.grade}
-          weekState={weekState}
+          weekState={weekState} pathLinks={pathLinks}
         />
       )}
 
@@ -200,7 +203,7 @@ function MainView({ roadmap, gradeProgress, week }: { roadmap: Roadmap; gradePro
             </summary>
             <div className="space-y-4 border-t border-border p-4">
               {done.length > 0 && (
-                <MilestoneList items={done} grade={roadmap.grade} focusAfter={doneFocus} weekState={weekState} />
+                <MilestoneList items={done} grade={roadmap.grade} focusAfter={doneFocus} weekState={weekState} pathLinks={pathLinks} />
               )}
               {skipped.length > 0 && (
                 <div className="space-y-2">
@@ -209,7 +212,7 @@ function MainView({ roadmap, gradeProgress, week }: { roadmap: Roadmap; gradePro
                     items={skipped}
                     grade={roadmap.grade}
                     focusAfter={doneFocus}
-                    weekState={weekState}
+                    weekState={weekState} pathLinks={pathLinks}
                     headingLevel={4}
                   />
                 </div>
@@ -257,6 +260,7 @@ function MilestoneSection({
   items,
   grade,
   weekState,
+  pathLinks,
   persistent = false,
   children,
 }: {
@@ -266,6 +270,8 @@ function MilestoneSection({
   items: RoadmapItem[];
   grade: number;
   weekState: (id: string) => WeekState;
+  /** Class-choosing milestones link to "Your path" (only where the class planner beta is on). */
+  pathLinks: boolean;
   /** Always rendered, so it's a safe place to return focus to. */
   persistent?: boolean;
   children?: ReactNode;
@@ -281,7 +287,7 @@ function MilestoneSection({
         </h2>
         <p className="text-sm text-muted">{lead}</p>
       </div>
-      {items.length > 0 ? <MilestoneList items={items} grade={grade} focusAfter={focusAfter} weekState={weekState} /> : children}
+      {items.length > 0 ? <MilestoneList items={items} grade={grade} focusAfter={focusAfter} weekState={weekState} pathLinks={pathLinks} /> : children}
     </section>
   );
 }
@@ -291,12 +297,14 @@ function MilestoneList({
   grade,
   focusAfter,
   weekState,
+  pathLinks,
   headingLevel = 3,
 }: {
   items: RoadmapItem[];
   grade: number;
   focusAfter: string;
   weekState: (id: string) => WeekState;
+  pathLinks: boolean;
   headingLevel?: 3 | 4;
 }) {
   return (
@@ -308,6 +316,7 @@ function MilestoneList({
             status={item.status}
             studentGrade={grade}
             actions={{ week: weekState(item.id), focusAfter }}
+            showPathLink={pathLinks}
             headingLevel={headingLevel}
           />
         </li>

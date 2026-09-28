@@ -67,7 +67,7 @@ describe("back to dashboard links", () => {
 
   it("are full-size touch targets on the plan page", async () => {
     await signInStudent(10);
-    expect(backLink(await render(PlanPage()))).toMatch(/class="[^"]*\bmin-h-11\b/);
+    expect(backLink(await render(PlanPage({ params: Promise.resolve({}), searchParams: Promise.resolve({}) } as PageProps<"/plan">)))).toMatch(/class="[^"]*\bmin-h-11\b/);
   });
 
   it("are full-size touch targets on an activity's start page", async () => {

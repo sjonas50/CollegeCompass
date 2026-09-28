@@ -72,7 +72,7 @@ describe("footer", () => {
     const html = await renderLayout();
     const footer = /<footer[\s\S]*<\/footer>/.exec(html)?.[0] ?? "";
     const links = [...footer.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
-    expect(links.map((a) => /href="([^"]+)"/.exec(a)?.[1])).toEqual(["/careers", "/colleges", "/aid", "/about/data", "/privacy"]);
+    expect(links.map((a) => /href="([^"]+)"/.exec(a)?.[1])).toEqual(["/careers", "/colleges", "/aid", "/graduation", "/about/data", "/privacy"]);
     for (const a of links) expect(a).toMatch(/class="[^"]*inline-flex[^"]*min-h-11/);
   });
 });

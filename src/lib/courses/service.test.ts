@@ -4,7 +4,9 @@ import { type Db, createTestDb, schema } from "@/db";
 import { registerStudent } from "../accounts";
 import { addNorthStar } from "../goals";
 import { deleteStudent } from "../privacy";
-import { MAX_COURSES, addCourse, deleteCourse, getCourse, listCourses, planSummary, updateCourse } from "./service";
+import { resolveRowCourseType } from "../planner/course-type-guess";
+import { NOT_SURE } from "./kinds";
+import { MAX_COURSES, addCourse, deleteCourse, getCourse, listCourses, planSummary, setCourseType, splitCombinedCourse, updateCourse } from "./service";
 import { type CourseInputRaw, CourseInputSchema } from "./validation";
 
 const now = new Date("2026-09-23T12:00:00Z");
@@ -57,6 +59,37 @@ describe("course CRUD", () => {
     expect(res.ok && res.value.createdAt.getTime()).toBe(bio.createdAt.getTime());
   });
 
+  it("stores the kind of class a student picks as theirs, and never stores a guess", async () => {
+    const chem = await add(ana, { name: "Chem", courseTypeId: "sci.chem" });
+    expect(chem).toMatchObject({ courseTypeId: "sci.chem", courseTypeSource: "student" });
+    const guessed = await add(ana, { name: "Honors Chem" });
+    expect(guessed).toMatchObject({ courseTypeId: null, courseTypeSource: null });
+    const cleared = await updateCourse(db, ana, chem.id, input({ name: "Chem", courseTypeId: "" }));
+    expect(cleared.ok && cleared.value).toMatchObject({ courseTypeId: null, courseTypeSource: null });
+  });
+
+  it("stores the forms' \"Not sure\" as no kind, source \"unsure\", so the planner still asks about it", async () => {
+    const alg = await add(ana, { name: "Algebra I", subject: "math", courseTypeId: NOT_SURE });
+    expect(alg).toMatchObject({ courseTypeId: null, courseTypeSource: "unsure" });
+    // An exact title the student said they aren't sure about stays a guess to confirm.
+    expect(resolveRowCourseType(alg, "TX")).toMatchObject({ typeId: "math.alg1", source: "guess", assumed: true });
+    const picked = await updateCourse(db, ana, alg.id, input({ name: "Algebra I", subject: "math", courseTypeId: "math.alg1" }));
+    expect(picked.ok && picked.value).toMatchObject({ courseTypeId: "math.alg1", courseTypeSource: "student" });
+    const unsureAgain = await updateCourse(db, ana, alg.id, input({ name: "Algebra I", subject: "math", courseTypeId: NOT_SURE }));
+    expect(unsureAgain.ok && unsureAgain.value).toMatchObject({ courseTypeId: null, courseTypeSource: "unsure" });
+    // "Confirm your classes" then records the kind as theirs.
+    expect(await setCourseType(db, ana, alg.id, "math.alg1")).toMatchObject({ ok: true, value: { courseTypeId: "math.alg1", courseTypeSource: "student" } });
+  });
+
+  it("keeps a kind of class from the school's list when the student doesn't change it", async () => {
+    const bio = await add(ana);
+    await db.update(schema.studentCourses).set({ courseTypeId: "sci.bio", courseTypeSource: "catalog" }).where(eq(schema.studentCourses.id, bio.id));
+    const same = await updateCourse(db, ana, bio.id, input({ name: "Biology H", courseTypeId: "sci.bio" }));
+    expect(same.ok && same.value).toMatchObject({ courseTypeId: "sci.bio", courseTypeSource: "catalog" });
+    const changed = await updateCourse(db, ana, bio.id, input({ name: "Biology H", courseTypeId: "sci.bio2" }));
+    expect(changed.ok && changed.value).toMatchObject({ courseTypeId: "sci.bio2", courseTypeSource: "student" });
+  });
+
   it("clears the final grade when a course is no longer finished", async () => {
     const bio = await add(ana, { status: "completed", finalGrade: "A" });
     // Bypasses the schema, as a defense against callers that skip validation.
@@ -101,6 +134,47 @@ describe("course CRUD", () => {
     await add(ben);
     expect(await deleteStudent(db, ana, ana)).toBe(true);
     expect(await db.select().from(schema.studentCourses)).toHaveLength(1);
+  });
+});
+
+describe("splitting a class whose name joins two half-credit classes (\"Confirm your classes\")", () => {
+  it("\"Gov/Econ\" becomes a fall Government and a spring Economics, half a credit each, with their kinds", async () => {
+    const row = await add(ana, { name: "Gov/Econ", subject: "social_studies", gradeLevel: 12, status: "completed", finalGrade: "B+", level: "honors" });
+    const later = new Date("2027-01-10T12:00:00Z");
+    const res = await splitCombinedCourse(db, ana, row.id, "TX", later);
+    expect(res.ok).toBe(true);
+    const courses = await listCourses(db, ana);
+    expect(courses.map((c) => [c.name, c.term, c.credits, c.courseTypeId, c.courseTypeSource, c.level, c.status, c.finalGrade, c.gradeLevel])).toEqual([
+      ["Gov", "fall", 0.5, "ss.us_gov", "student", "honors", "completed", "B+", 12],
+      ["Econ", "spring", 0.5, "ss.econ", "student", "honors", "completed", "B+", 12],
+    ]);
+    // The first half keeps the row's id.
+    expect(courses[0].id).toBe(row.id);
+    expect(courses[0].updatedAt.toISOString()).toBe(later.toISOString());
+  });
+
+  it("only for the student's own class, a name that joins two half-credit classes, and a full credit", async () => {
+    const gov = await add(ana, { name: "Economics/Personal Finance", subject: "social_studies", gradeLevel: 12 });
+    expect(await splitCombinedCourse(db, ben, gov.id, "TN")).toEqual({ ok: false, error: "not_found" });
+    expect(await splitCombinedCourse(db, ana, "not-a-uuid", "TN")).toEqual({ ok: false, error: "not_found" });
+    const bio = await add(ana);
+    expect(await splitCombinedCourse(db, ana, bio.id, "TN")).toEqual({ ok: false, error: "not_combined" });
+    const half = await add(ana, { name: "Gov/Econ", subject: "social_studies", gradeLevel: 12, credits: 0.5, term: "fall" });
+    expect(await splitCombinedCourse(db, ana, half.id, "TN")).toEqual({ ok: false, error: "not_combined" });
+    const debate = await add(ana, { name: "Speech and Debate", subject: "english", gradeLevel: 11 });
+    expect(await splitCombinedCourse(db, ana, debate.id, "TN")).toEqual({ ok: false, error: "not_combined" });
+    expect(await listCourses(db, ana)).toHaveLength(4);
+    const res = await splitCombinedCourse(db, ana, gov.id, "TN");
+    expect(res.ok && res.value.map((c) => [c.name, c.courseTypeId])).toEqual([["Economics", "ss.econ"], ["Personal Finance", "ss.pfl"]]);
+  });
+
+  it("not past the class limit", async () => {
+    const row = await add(ana, { name: "Gov/Econ", subject: "social_studies", gradeLevel: 12 });
+    await db.insert(schema.studentCourses).values(
+      Array.from({ length: MAX_COURSES - 1 }, (_, i) => ({ userId: ana, name: `Course ${i}`, subject: "other" as const, gradeLevel: 9 })),
+    );
+    expect(await splitCombinedCourse(db, ana, row.id, "TX")).toEqual({ ok: false, error: "limit" });
+    expect((await getCourse(db, ana, row.id))?.name).toBe("Gov/Econ");
   });
 });
 

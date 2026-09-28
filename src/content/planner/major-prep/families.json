@@ -1,0 +1,2074 @@
+{
+  "schemaVersion": 1,
+  "id": "major-prep.families",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "MP-ABET-EAC": {
+      "title": "Criteria for Accrediting Engineering Programs, 2026-2027",
+      "url": "https://www.abet.org/accreditation/accreditation-criteria/criteria-for-accrediting-engineering-programs-2026-2027/",
+      "publisher": "ABET",
+      "kind": "guidance",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-ABET-ETAC": {
+      "title": "Criteria for Accrediting Engineering Technology Programs, 2026-2027",
+      "url": "https://www.abet.org/accreditation/accreditation-criteria/criteria-for-accrediting-engineering-technology-programs-2026-2027/",
+      "publisher": "ABET",
+      "kind": "guidance",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-ADELMAN": {
+      "title": "The Toolbox Revisited: Paths to Degree Completion From High School Through College (2006)",
+      "url": "https://files.eric.ed.gov/fulltext/ED490195.pdf",
+      "publisher": "U.S. Department of Education",
+      "kind": "research",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-AEA": {
+      "title": "Econ Opens Doors: Next Steps",
+      "url": "https://www.econopensdoors.org/next-steps",
+      "publisher": "American Economic Association",
+      "kind": "guidance",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-APTA": {
+      "title": "Becoming a Physical Therapist",
+      "url": "https://www.apta.org/your-career/careers-in-physical-therapy/becoming-a-pt",
+      "publisher": "American Physical Therapy Association",
+      "kind": "guidance",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-ARCH": {
+      "title": "Occupational Outlook Handbook: Architects, How to Become One",
+      "url": "https://www.bls.gov/ooh/architecture-and-engineering/architects.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-AUTO": {
+      "title": "Occupational Outlook Handbook: Automotive Service Technicians and Mechanics, How to Become One",
+      "url": "https://www.bls.gov/ooh/installation-maintenance-and-repair/automotive-service-technicians-and-mechanics.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-CARP": {
+      "title": "Occupational Outlook Handbook: Carpenters, How to Become One",
+      "url": "https://www.bls.gov/ooh/construction-and-extraction/carpenters.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-CHEF": {
+      "title": "Occupational Outlook Handbook: Chefs and Head Cooks, How to Become One",
+      "url": "https://www.bls.gov/ooh/food-preparation-and-serving/chefs-and-head-cooks.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-COSMO": {
+      "title": "Occupational Outlook Handbook: Barbers, Hairstylists, and Cosmetologists, How to Become One",
+      "url": "https://www.bls.gov/ooh/personal-care-and-service/barbers-hairstylists-and-cosmetologists.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-DH": {
+      "title": "Occupational Outlook Handbook: Dental Hygienists, How to Become One",
+      "url": "https://www.bls.gov/ooh/healthcare/dental-hygienists.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-DRAFT": {
+      "title": "Occupational Outlook Handbook: Drafters, How to Become One",
+      "url": "https://www.bls.gov/ooh/architecture-and-engineering/drafters.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-EMT": {
+      "title": "Occupational Outlook Handbook: EMTs and Paramedics, How to Become One",
+      "url": "https://www.bls.gov/ooh/healthcare/emts-and-paramedics.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-GD": {
+      "title": "Occupational Outlook Handbook: Graphic Designers, How to Become One",
+      "url": "https://www.bls.gov/ooh/arts-and-design/graphic-designers.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-HVAC": {
+      "title": "Occupational Outlook Handbook: Heating, Air Conditioning, and Refrigeration Mechanics and Installers, How to Become One",
+      "url": "https://www.bls.gov/ooh/installation-maintenance-and-repair/heating-air-conditioning-and-refrigeration-mechanics-and-installers.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-LAB": {
+      "title": "Occupational Outlook Handbook: Clinical Laboratory Technologists and Technicians, How to Become One",
+      "url": "https://www.bls.gov/ooh/healthcare/clinical-laboratory-technologists-and-technicians.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-LAW": {
+      "title": "Occupational Outlook Handbook: Lawyers, How to Become One",
+      "url": "https://www.bls.gov/ooh/legal/lawyers.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-LPN": {
+      "title": "Occupational Outlook Handbook: Licensed Practical and Licensed Vocational Nurses, How to Become One",
+      "url": "https://www.bls.gov/ooh/healthcare/licensed-practical-and-licensed-vocational-nurses.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-MA": {
+      "title": "Occupational Outlook Handbook: Medical Assistants, How to Become One",
+      "url": "https://www.bls.gov/ooh/healthcare/medical-assistants.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-MACH": {
+      "title": "Occupational Outlook Handbook: Machinists and Tool and Die Makers, How to Become One",
+      "url": "https://www.bls.gov/ooh/production/machinists-and-tool-and-die-makers.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-NA": {
+      "title": "Occupational Outlook Handbook: Nursing Assistants and Orderlies, How to Become One",
+      "url": "https://www.bls.gov/ooh/healthcare/nursing-assistants.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-PHARM": {
+      "title": "Occupational Outlook Handbook: Pharmacists, How to Become One",
+      "url": "https://www.bls.gov/ooh/healthcare/pharmacists.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-PILOT": {
+      "title": "Occupational Outlook Handbook: Airline and Commercial Pilots, How to Become One",
+      "url": "https://www.bls.gov/ooh/transportation-and-material-moving/airline-and-commercial-pilots.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-PLUMB": {
+      "title": "Occupational Outlook Handbook: Plumbers, Pipefitters, and Steamfitters, How to Become One",
+      "url": "https://www.bls.gov/ooh/construction-and-extraction/plumbers-pipefitters-and-steamfitters.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-PRESCH": {
+      "title": "Occupational Outlook Handbook: Preschool Teachers, How to Become One",
+      "url": "https://www.bls.gov/ooh/education-training-and-library/preschool-teachers.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-PT": {
+      "title": "Occupational Outlook Handbook: Physical Therapists, How to Become One",
+      "url": "https://www.bls.gov/ooh/healthcare/physical-therapists.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-RESP": {
+      "title": "Occupational Outlook Handbook: Respiratory Therapists, How to Become One",
+      "url": "https://www.bls.gov/ooh/healthcare/respiratory-therapists.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-RN": {
+      "title": "Occupational Outlook Handbook: Registered Nurses, How to Become One",
+      "url": "https://www.bls.gov/ooh/healthcare/registered-nurses.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-RT": {
+      "title": "Occupational Outlook Handbook: Radiologic and MRI Technologists, How to Become One",
+      "url": "https://www.bls.gov/ooh/healthcare/radiologic-technologists.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-SUPPORT": {
+      "title": "Occupational Outlook Handbook: Computer Support Specialists, How to Become One",
+      "url": "https://www.bls.gov/ooh/computer-and-information-technology/computer-support-specialists.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-VET": {
+      "title": "Occupational Outlook Handbook: Veterinarians, How to Become One",
+      "url": "https://www.bls.gov/ooh/healthcare/veterinarians.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-BLS-WELD": {
+      "title": "Occupational Outlook Handbook: Welders, Cutters, Solderers, and Brazers, How to Become One",
+      "url": "https://www.bls.gov/ooh/production/welders-cutters-solderers-and-brazers.htm",
+      "publisher": "U.S. Bureau of Labor Statistics",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-ECCLES": {
+      "title": "David Eccles School of Business: Declare a Major",
+      "url": "https://eccles.utah.edu/programs/undergraduate/admissions/declare-major/",
+      "publisher": "University of Utah",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-FAA-61-103": {
+      "title": "14 CFR 61.103",
+      "url": "https://www.ecfr.gov/current/title-14/chapter-I/subchapter-D/part-61/subpart-E/section-61.103",
+      "publisher": "Federal Aviation Administration (eCFR)",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-FAA-61-123": {
+      "title": "14 CFR 61.123",
+      "url": "https://www.ecfr.gov/current/title-14/chapter-I/subchapter-D/part-61/subpart-F/section-61.123",
+      "publisher": "Federal Aviation Administration (eCFR)",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-FAA-61-153": {
+      "title": "14 CFR 61.153",
+      "url": "https://www.ecfr.gov/current/title-14/chapter-I/subchapter-D/part-61/subpart-G/section-61.153",
+      "publisher": "Federal Aviation Administration (eCFR)",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-FAA-61-83": {
+      "title": "14 CFR 61.83",
+      "url": "https://www.ecfr.gov/current/title-14/chapter-I/subchapter-D/part-61/subpart-C/section-61.83",
+      "publisher": "Federal Aviation Administration (eCFR)",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-FAA-65-71": {
+      "title": "14 CFR 65.71",
+      "url": "https://www.ecfr.gov/current/title-14/chapter-I/subchapter-D/part-65/subpart-D/section-65.71",
+      "publisher": "Federal Aviation Administration (eCFR)",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-MIT": {
+      "title": "Preparing in High School",
+      "url": "https://mitadmissions.org/apply/prepare/highschool/",
+      "publisher": "Massachusetts Institute of Technology",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-STAN": {
+      "title": "Preparing for College",
+      "url": "https://admission.stanford.edu/apply/selection/prepare.html",
+      "publisher": "Stanford University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-AAVTC-GRAPHIC-DESIGN-AND-INTERACTIVE-MEDIA": {
+      "title": "Texas CTE Statewide Program of Study (aavtc-graphic-design-and-interactive-media-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/aavtc-graphic-design-and-interactive-media-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-AC-ARCHITECTURAL-DRAFTING-AND-DESIGN": {
+      "title": "Texas CTE Statewide Program of Study (ac-architectural-drafting-and-design-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/ac-architectural-drafting-and-design-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-AC-ELECTRICAL": {
+      "title": "Texas CTE Statewide Program of Study (ac-electrical-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/ac-electrical-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-AFNR-ANIMAL-SCIENCE": {
+      "title": "Texas CTE Statewide Program of Study (afnr-animal-science-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/afnr-animal-science-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-BMF-ACCOUNTING-AND-FINANCIAL-SERVICES": {
+      "title": "Texas CTE Statewide Program of Study (bmf-accounting-and-financial-services-2025-0.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/bmf-accounting-and-financial-services-2025-0.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-ENG-ENGINEERING-FOUNDATIONS": {
+      "title": "Texas CTE Statewide Program of Study (eng-engineering-foundations-2025-0.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/eng-engineering-foundations-2025-0.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-ET-EARLY-LEARNING": {
+      "title": "Texas CTE Statewide Program of Study (et-early-learning-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/et-early-learning-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-ET-TEACHING-AND-TRAINING": {
+      "title": "Texas CTE Statewide Program of Study (et-teaching-and-training-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/et-teaching-and-training-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-HS-BIOMEDICAL-SCIENCE": {
+      "title": "Texas CTE Statewide Program of Study (hs-biomedical-science-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/hs-biomedical-science-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-HS-COSMETOLOGY": {
+      "title": "Texas CTE Statewide Program of Study (hs-cosmetology-2025-0.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/hs-cosmetology-2025-0.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-HS-DIAGNOSTIC-AND-THERAPEUTIC-SERVICES": {
+      "title": "Texas CTE Statewide Program of Study (hs-diagnostic-and-therapeutic-services-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/hs-diagnostic-and-therapeutic-services-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-HS-NURSING-SCIENCE": {
+      "title": "Texas CTE Statewide Program of Study (hs-nursing-science-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/hs-nursing-science-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-HT-CULINARY-ARTS": {
+      "title": "Texas CTE Statewide Program of Study (ht-culinary-arts-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/ht-culinary-arts-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-IT-CYBERSECURITY": {
+      "title": "Texas CTE Statewide Program of Study (it-cybersecurity-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/it-cybersecurity-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-IT-PROGRAMMING-AND-SOFTWARE-DEVELOPMENT": {
+      "title": "Texas CTE Statewide Program of Study (it-programming-and-software-development-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/it-programming-and-software-development-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-LPS-FIRE-SCIENCE": {
+      "title": "Texas CTE Statewide Program of Study (lps-fire-science-2025-0.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/lps-fire-science-2025-0.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-LPS-LAW-ENFORCEMENT": {
+      "title": "Texas CTE Statewide Program of Study (lps-law-enforcement-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/lps-law-enforcement-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-M-WELDING": {
+      "title": "Texas CTE Statewide Program of Study (m-welding-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/m-welding-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-TDL-AUTOMOTIVE-AND-COLLISION-REPAIR": {
+      "title": "Texas CTE Statewide Program of Study (tdl-automotive-and-collision-repair-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/tdl-automotive-and-collision-repair-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-TDL-AVIATION-MAINTENANCE": {
+      "title": "Texas CTE Statewide Program of Study (tdl-aviation-maintenance-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/tdl-aviation-maintenance-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-TEA-POS-TDL-AVIATION-PILOTS": {
+      "title": "Texas CTE Statewide Program of Study (tdl-aviation-pilots-2025.pdf)",
+      "url": "https://tea.texas.gov/student-readiness-and-high-school/college-career-and-military-prep/career-and-technical-education/tdl-aviation-pilots-2025.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-USBE-CTE": {
+      "title": "Utah CTE Career Pathway Chart, 2025-2026",
+      "url": "https://schools.utah.gov/cte/_cte/pathways/AllCareerPathways2025.pdf",
+      "publisher": "Utah State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-UT-ART": {
+      "title": "Department of Art and Art History: Studio Art Portfolio",
+      "url": "https://art.utexas.edu/admissions/undergraduate/portfolio",
+      "publisher": "The University of Texas at Austin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-UT-NUR": {
+      "title": "School of Nursing: Bachelor of Science in Nursing",
+      "url": "https://nursing.utexas.edu/academics/undergraduate/bsn",
+      "publisher": "The University of Texas at Austin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-UT-SOA": {
+      "title": "School of Architecture: Undergraduate Admissions",
+      "url": "https://soa.utexas.edu/undergraduate-admissions",
+      "publisher": "The University of Texas at Austin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-UT-TD": {
+      "title": "Department of Theatre and Dance: Apply",
+      "url": "https://theatredance.utexas.edu/apply/",
+      "publisher": "The University of Texas at Austin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-UTK-AD": {
+      "title": "College of Architecture + Design: How to Apply",
+      "url": "https://archdesign.utk.edu/admissions-aid/how-to-apply/",
+      "publisher": "University of Tennessee, Knoxville",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-UTK-ENG": {
+      "title": "Tickle College of Engineering: Undergraduate Admission Requirements",
+      "url": "https://tickle.utk.edu/admissions-aid/admissions-requirements/undergraduate/",
+      "publisher": "University of Tennessee, Knoxville",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-UTK-NUR": {
+      "title": "College of Nursing: Undergraduate Admissions",
+      "url": "https://nursing.utk.edu/admissions-and-aid/undergrad-admissions/",
+      "publisher": "University of Tennessee, Knoxville",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-UU-ENG": {
+      "title": "Price College of Engineering: Admissions",
+      "url": "https://www.price.utah.edu/future/admissions",
+      "publisher": "University of Utah",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S1": {
+      "title": "19 TAC Chapter 74, Subchapter B, Graduation Requirements (August 2026 update)",
+      "url": "https://tea.texas.gov/laws-and-rules/sboe-rules-tac/sboe-tac-currently-effect/ch074b.pdf",
+      "publisher": "Texas Education Agency",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S36": {
+      "title": "High School Prerequisites",
+      "url": "https://admissions.utexas.edu/apply/application-materials/high-school-prerequisites/",
+      "publisher": "The University of Texas at Austin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S38": {
+      "title": "Frequently Asked Questions",
+      "url": "https://admissions.utexas.edu/apply/frequently-asked-questions/",
+      "publisher": "The University of Texas at Austin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S40": {
+      "title": "College Readiness",
+      "url": "https://admissions.tamu.edu/resources/future-students/college-readiness.html",
+      "publisher": "Texas A&M University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S43": {
+      "title": "Majors with Additional Requirements (2027 terms)",
+      "url": "https://www.uh.edu/undergraduate-admissions/academics/_files/additional-requirements-freshman.pdf",
+      "publisher": "University of Houston",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "mp-tx-74-13-f6a",
+      "source": "TX-S1",
+      "pinpoint": "\u00a774.13(f)(6)(A)",
+      "quote": "(A) courses required to be designated a CTE completer in one of the following TEA-approved programs of study related to STEM: (i) biomedical sciences; (ii) civil engineering; (iii) cybersecurity; (iv) electrical engineering; (v) engineering foundations;"
+    },
+    {
+      "id": "mp-tx-74-13-f6a-2",
+      "source": "TX-S1",
+      "pinpoint": "\u00a774.13(f)(6)(A)",
+      "quote": "(vi) geospatial engineering and land surveying; (vii) mechanical and aerospace engineering; (viii) networking systems; (ix) nursing science; (x) programming and software development; (xi) renewable energy; (xii) robotics and automation technology; or (xiii) web development;"
+    },
+    {
+      "id": "mp-tx-74-13-f6b",
+      "source": "TX-S1",
+      "pinpoint": "\u00a774.13(f)(6)(B)",
+      "quote": "(B) three credits in mathematics by successfully completing Algebra II and two additional mathematics courses for which Algebra II is a prerequisite by selecting courses from subsection (e)(2) of this section;"
+    },
+    {
+      "id": "mp-tx-74-13-f6c",
+      "source": "TX-S1",
+      "pinpoint": "\u00a774.13(f)(6)(C)",
+      "quote": "(C) four credits in science by successfully completing chemistry, physics, and two additional science courses by selecting courses from subsection (e)(6) of this section; or"
+    },
+    {
+      "id": "mp-abet-eac-college-math",
+      "source": "MP-ABET-EAC",
+      "pinpoint": "Definitions",
+      "quote": "College-level mathematics consists of mathematics that requires a degree of mathematical sophistication at least equivalent to that of introductory calculus."
+    },
+    {
+      "id": "mp-abet-etac-associate",
+      "source": "MP-ABET-ETAC",
+      "pinpoint": "Curriculum",
+      "quote": "Associate degree curricula will include the application of algebra and trigonometry at a level appropriate to the student outcomes and the discipline."
+    },
+    {
+      "id": "mp-abet-etac-bachelor",
+      "source": "MP-ABET-ETAC",
+      "pinpoint": "Curriculum",
+      "quote": "Baccalaureate degree curricula will include the application of integral and differential calculus, or other mathematics above the level of algebra and trigonometry,"
+    },
+    {
+      "id": "mp-adelman-tipping-point",
+      "source": "MP-ADELMAN",
+      "quote": "The highest level of mathematics reached in high school continues to be a key marker in precollegiate momentum, with the tipping point of momentum toward a bachelor’s degree now firmly above Algebra 2."
+    },
+    {
+      "id": "mp-aea-math",
+      "source": "MP-AEA",
+      "quote": "Continue taking math courses through high school. Consider taking an econ course if your high school offers it."
+    },
+    {
+      "id": "mp-apta-freshman-entry",
+      "source": "MP-APTA",
+      "quote": "A few programs offer freshman entry, recruiting students directly from high school into a guaranteed admissions program."
+    },
+    {
+      "id": "mp-bls-arch",
+      "source": "MP-BLS-ARCH",
+      "pinpoint": "Education",
+      "quote": "Most architects earn their degree through a 5-year Bachelor of Architecture degree program."
+    },
+    {
+      "id": "mp-bls-auto",
+      "source": "MP-BLS-AUTO",
+      "pinpoint": "Education",
+      "quote": "Students interested in becoming an automotive service technician or mechanic may benefit from taking high school courses in automotive repair, electronics, computers, and mathematics."
+    },
+    {
+      "id": "mp-bls-carp",
+      "source": "MP-BLS-CARP",
+      "pinpoint": "Education",
+      "quote": "Certain high school courses, such as mathematics and mechanical drawing, may be useful."
+    },
+    {
+      "id": "mp-bls-chef",
+      "source": "MP-BLS-CHEF",
+      "pinpoint": "Licenses, Certifications, and Registrations",
+      "quote": "Some states and localities require chefs and head cooks to have a food handler’s certification."
+    },
+    {
+      "id": "mp-bls-cosmo",
+      "source": "MP-BLS-COSMO",
+      "pinpoint": "Licenses",
+      "quote": "To qualify for a license, candidates typically must graduate from a state-approved barber or cosmetology program and pass an exam."
+    },
+    {
+      "id": "mp-bls-dh",
+      "source": "MP-BLS-DH",
+      "pinpoint": "Education",
+      "quote": "High school students interested in becoming dental hygienists should take courses in biology, chemistry, and math."
+    },
+    {
+      "id": "mp-bls-draft",
+      "source": "MP-BLS-DRAFT",
+      "pinpoint": "Education",
+      "quote": "High school students may begin preparing by taking classes in mathematics, science, computer technology, design, computer graphics, and, where available, drafting."
+    },
+    {
+      "id": "mp-bls-emt",
+      "source": "MP-BLS-EMT",
+      "pinpoint": "Education",
+      "quote": "High school students interested in becoming EMTs or paramedics should take courses in life sciences and consider becoming certified in cardiopulmonary resuscitation (CPR)."
+    },
+    {
+      "id": "mp-bls-gd",
+      "source": "MP-BLS-GD",
+      "pinpoint": "Education",
+      "quote": "Some schools require applicants to submit sketches and other examples of their artistic ability."
+    },
+    {
+      "id": "mp-bls-hvac",
+      "source": "MP-BLS-HVAC",
+      "pinpoint": "Education",
+      "quote": "High school students interested in becoming an HVAC technician should take courses in vocational education, math, and physics."
+    },
+    {
+      "id": "mp-bls-lab",
+      "source": "MP-BLS-LAB",
+      "pinpoint": "Education",
+      "quote": "High school students who are interested in becoming a clinical laboratory technologist or technician should take classes in chemistry, biology, and math."
+    },
+    {
+      "id": "mp-bls-law",
+      "source": "MP-BLS-LAW",
+      "pinpoint": "Education",
+      "quote": "Although most law schools do not require a specific bachelor's degree for entry, common undergraduate fields of study include law and legal studies, history, and social science."
+    },
+    {
+      "id": "mp-bls-lpn",
+      "source": "MP-BLS-LPN",
+      "pinpoint": "Education",
+      "quote": "Certificate and diploma programs are commonly found in community colleges and technical schools, including some high schools, and typically take about 1 year to complete."
+    },
+    {
+      "id": "mp-bls-ma",
+      "source": "MP-BLS-MA",
+      "pinpoint": "Education",
+      "quote": "High school students interested in a career as a medical assistant should take science classes, including biology and chemistry."
+    },
+    {
+      "id": "mp-bls-mach",
+      "source": "MP-BLS-MACH",
+      "pinpoint": "Education",
+      "quote": "High school courses in math, blueprint reading, metalworking, and CAD/CAM are considered useful."
+    },
+    {
+      "id": "mp-bls-na",
+      "source": "MP-BLS-NA",
+      "quote": "Nursing assistants often need to complete a state-approved education program and pass their state’s competency exam to become licensed or certified."
+    },
+    {
+      "id": "mp-bls-pharm",
+      "source": "MP-BLS-PHARM",
+      "pinpoint": "Education",
+      "quote": "Others admit high school graduates into a 6-year program."
+    },
+    {
+      "id": "mp-bls-pilot",
+      "source": "MP-BLS-PILOT",
+      "quote": "Airline pilots typically need a bachelor’s degree and experience as a commercial or military pilot."
+    },
+    {
+      "id": "mp-bls-plumb",
+      "source": "MP-BLS-PLUMB",
+      "pinpoint": "Licenses",
+      "quote": "states and localities often require workers to have 2 to 5 years of experience and to pass an exam that shows their knowledge of the trade before allowing plumbers to work independently."
+    },
+    {
+      "id": "mp-bls-presch",
+      "source": "MP-BLS-PRESCH",
+      "pinpoint": "Quick Facts",
+      "quote": "Typical Entry-Level Education Associate's degree"
+    },
+    {
+      "id": "mp-bls-pt",
+      "source": "MP-BLS-PT",
+      "pinpoint": "Education",
+      "quote": "Physical therapy programs typically require a bachelor's degree, which may be in recreation and fitness or healthcare and related fields, and prerequisite courses such as anatomy, chemistry, and physics."
+    },
+    {
+      "id": "mp-bls-resp",
+      "source": "MP-BLS-RESP",
+      "pinpoint": "Education",
+      "quote": "High school students interested in applying to respiratory therapy programs should take courses in biology, algebra, chemistry, and physics."
+    },
+    {
+      "id": "mp-bls-rn",
+      "source": "MP-BLS-RN",
+      "pinpoint": "Education",
+      "quote": "Nursing education programs usually include courses in anatomy, physiology, microbiology psychology, and social and behavioral sciences."
+    },
+    {
+      "id": "mp-bls-rt",
+      "source": "MP-BLS-RT",
+      "pinpoint": "Education",
+      "quote": "High school students who are interested in radiologic or MRI technology should take courses that focus on math and science, such as anatomy, biology, chemistry, and physics."
+    },
+    {
+      "id": "mp-bls-support",
+      "source": "MP-BLS-SUPPORT",
+      "pinpoint": "Education",
+      "quote": "However, candidates may qualify with a high school diploma plus relevant information technology (IT) certifications."
+    },
+    {
+      "id": "mp-bls-vet",
+      "source": "MP-BLS-VET",
+      "pinpoint": "Education",
+      "quote": "Veterinary medical colleges typically require applicants to have taken many science classes, including biology, chemistry, and animal science."
+    },
+    {
+      "id": "mp-bls-weld",
+      "source": "MP-BLS-WELD",
+      "pinpoint": "Education & Training",
+      "quote": "Employers often prefer or require candidates to have a high school diploma or equivalent and technical training."
+    },
+    {
+      "id": "mp-eccles-major-application",
+      "source": "MP-ECCLES",
+      "quote": "Students must be admitted to Upper Division and complete required courses before they apply to a specialized major. Admission to each business major requires an additional application."
+    },
+    {
+      "id": "mp-faa-61-103",
+      "source": "MP-FAA-61-103",
+      "pinpoint": "§61.103",
+      "quote": "at least 17 years of age for a rating in other than a glider or balloon."
+    },
+    { "id": "mp-faa-61-123", "source": "MP-FAA-61-123", "pinpoint": "§61.123", "quote": "at least 18 years of age;" },
+    { "id": "mp-faa-61-153", "source": "MP-FAA-61-153", "pinpoint": "§61.153", "quote": "at least 23 years of age; or" },
+    { "id": "mp-faa-61-153-21", "source": "MP-FAA-61-153", "pinpoint": "§61.153", "quote": "at least 21 years of age." },
+    {
+      "id": "mp-faa-61-83",
+      "source": "MP-FAA-61-83",
+      "pinpoint": "§61.83",
+      "quote": "at least 16 years of age for other than the operation of a glider or balloon."
+    },
+    {
+      "id": "mp-faa-61-83-glider",
+      "source": "MP-FAA-61-83",
+      "pinpoint": "§61.83",
+      "quote": "at least 14 years of age for the operation of a glider or balloon."
+    },
+    { "id": "mp-faa-65-71", "source": "MP-FAA-65-71", "pinpoint": "§65.71(a)(1)", "quote": "at least 18 years of age;" },
+    {
+      "id": "mp-mit-calculus",
+      "source": "MP-MIT",
+      "quote": "depend on a mastery of the basic principles of calculus as a tool of problem solving."
+    },
+    {
+      "id": "mp-stanford-language",
+      "source": "MP-STAN",
+      "quote": "World Language: minimum three years of the same language."
+    },
+    {
+      "id": "mp-tea-pos-accounting",
+      "source": "MP-TEA-POS-BMF-ACCOUNTING-AND-FINANCIAL-SERVICES",
+      "quote": "Statewide Program of Study: Accounting and Financial Services"
+    },
+    {
+      "id": "mp-tea-pos-animal",
+      "source": "MP-TEA-POS-AFNR-ANIMAL-SCIENCE",
+      "quote": "Statewide Program of Study: Animal Science"
+    },
+    {
+      "id": "mp-tea-pos-architecture",
+      "source": "MP-TEA-POS-AC-ARCHITECTURAL-DRAFTING-AND-DESIGN",
+      "quote": "Statewide Program of Study: Architectural Drafting and Design"
+    },
+    {
+      "id": "mp-tea-pos-automotive",
+      "source": "MP-TEA-POS-TDL-AUTOMOTIVE-AND-COLLISION-REPAIR",
+      "quote": "Statewide Program of Study: Automotive and Collision Repair"
+    },
+    {
+      "id": "mp-tea-pos-aviation-maint",
+      "source": "MP-TEA-POS-TDL-AVIATION-MAINTENANCE",
+      "quote": "Statewide Program of Study: Aviation Maintenance"
+    },
+    {
+      "id": "mp-tea-pos-biomed",
+      "source": "MP-TEA-POS-HS-BIOMEDICAL-SCIENCE",
+      "quote": "Statewide Program of Study: Bio-Medical Science"
+    },
+    {
+      "id": "mp-tea-pos-cosmetology",
+      "source": "MP-TEA-POS-HS-COSMETOLOGY",
+      "quote": "Statewide Program of Study: Cosmetology and Personal Care Services"
+    },
+    {
+      "id": "mp-tea-pos-culinary",
+      "source": "MP-TEA-POS-HT-CULINARY-ARTS",
+      "quote": "Statewide Program of Study: Culinary Arts"
+    },
+    {
+      "id": "mp-tea-pos-cyber",
+      "source": "MP-TEA-POS-IT-CYBERSECURITY",
+      "quote": "Statewide Program of Study: Cybersecurity"
+    },
+    {
+      "id": "mp-tea-pos-diagnostic",
+      "source": "MP-TEA-POS-HS-DIAGNOSTIC-AND-THERAPEUTIC-SERVICES",
+      "quote": "Statewide Program of Study: Diagnostic and Therapeutic Services"
+    },
+    {
+      "id": "mp-tea-pos-early",
+      "source": "MP-TEA-POS-ET-EARLY-LEARNING",
+      "quote": "Statewide Program of Study: Early Learning"
+    },
+    {
+      "id": "mp-tea-pos-electrical",
+      "source": "MP-TEA-POS-AC-ELECTRICAL",
+      "quote": "Statewide Program of Study: Electrical"
+    },
+    {
+      "id": "mp-tea-pos-engineering",
+      "source": "MP-TEA-POS-ENG-ENGINEERING-FOUNDATIONS",
+      "quote": "Statewide Program of Study: Engineering Foundations"
+    },
+    {
+      "id": "mp-tea-pos-exercise",
+      "source": "MP-TEA-POS-HS-NURSING-SCIENCE",
+      "quote": "Statewide Program of Study: Exercise Science, Wellness, and Restoration"
+    },
+    {
+      "id": "mp-tea-pos-fire",
+      "source": "MP-TEA-POS-LPS-FIRE-SCIENCE",
+      "quote": "Statewide Program of Study: Fire Science"
+    },
+    {
+      "id": "mp-tea-pos-graphic",
+      "source": "MP-TEA-POS-AAVTC-GRAPHIC-DESIGN-AND-INTERACTIVE-MEDIA",
+      "quote": "Statewide Program of Study: Graphic Design and Interactive Media"
+    },
+    {
+      "id": "mp-tea-pos-law-enforcement",
+      "source": "MP-TEA-POS-LPS-LAW-ENFORCEMENT",
+      "quote": "Statewide Program of Study: Law Enforcement"
+    },
+    {
+      "id": "mp-tea-pos-nursing",
+      "source": "MP-TEA-POS-HS-NURSING-SCIENCE",
+      "quote": "Statewide Program of Study: Nursing Science"
+    },
+    {
+      "id": "mp-tea-pos-nursing-stem",
+      "source": "MP-TEA-POS-HS-NURSING-SCIENCE",
+      "quote": "Successful completion of the Nursing Science program of study will fulfill requirements of STEM endorsement if the math and science requirements are met or the Public Services endorsement."
+    },
+    {
+      "id": "mp-tea-pos-pilots",
+      "source": "MP-TEA-POS-TDL-AVIATION-PILOTS",
+      "quote": "Statewide Program of Study: Aviation Pilots"
+    },
+    {
+      "id": "mp-tea-pos-programming",
+      "source": "MP-TEA-POS-IT-PROGRAMMING-AND-SOFTWARE-DEVELOPMENT",
+      "quote": "Statewide Program of Study: Programming and Software Development"
+    },
+    {
+      "id": "mp-tea-pos-teaching",
+      "source": "MP-TEA-POS-ET-TEACHING-AND-TRAINING",
+      "quote": "Statewide Program of Study: Teaching and Training"
+    },
+    { "id": "mp-tea-pos-welding", "source": "MP-TEA-POS-M-WELDING", "quote": "Statewide Program of Study: Welding" },
+    {
+      "id": "mp-uofu-engineering-calculus",
+      "source": "MP-UU-ENG",
+      "quote": "Freshman engineering students are expected to complete calculus in their first year."
+    },
+    {
+      "id": "mp-uofu-engineering-math-every-year",
+      "source": "MP-UU-ENG",
+      "quote": "We advise that a student take math every year while in high school. It is helpful, although not necessary, that incoming students are able to enroll into Calculus I or higher during their first semester of their academic careers."
+    },
+    {
+      "id": "mp-usbe-pathway-ag-production",
+      "source": "MP-USBE-CTE",
+      "quote": "Career Pathway: Agricultural Production Systems"
+    },
+    { "id": "mp-usbe-pathway-animal", "source": "MP-USBE-CTE", "quote": "Career Pathway: Animal & Veterinary Science" },
+    {
+      "id": "mp-usbe-pathway-architecture",
+      "source": "MP-USBE-CTE",
+      "quote": "Career Pathway: Architectural & Interior Design"
+    },
+    { "id": "mp-usbe-pathway-automotive", "source": "MP-USBE-CTE", "quote": "Career Pathway: Automotive" },
+    { "id": "mp-usbe-pathway-aviation", "source": "MP-USBE-CTE", "quote": "Career Pathway: Aviation" },
+    {
+      "id": "mp-usbe-pathway-broadcasting",
+      "source": "MP-USBE-CTE",
+      "quote": "Career Pathway: Broadcasting & Digital Media"
+    },
+    { "id": "mp-usbe-pathway-business", "source": "MP-USBE-CTE", "quote": "Career Pathway: Business" },
+    {
+      "id": "mp-usbe-pathway-construction",
+      "source": "MP-USBE-CTE",
+      "quote": "Career Pathway: Construction & Structural Systems"
+    },
+    { "id": "mp-usbe-pathway-culinary", "source": "MP-USBE-CTE", "quote": "Career Pathway: Culinary Arts" },
+    { "id": "mp-usbe-pathway-cyber", "source": "MP-USBE-CTE", "quote": "Career Pathway: Cybersecurity" },
+    { "id": "mp-usbe-pathway-diesel", "source": "MP-USBE-CTE", "quote": "Career Pathway: Diesel" },
+    { "id": "mp-usbe-pathway-engineering", "source": "MP-USBE-CTE", "quote": "Career Pathway: Engineering" },
+    { "id": "mp-usbe-pathway-family", "source": "MP-USBE-CTE", "quote": "Career Pathway: Family & Human Services" },
+    { "id": "mp-usbe-pathway-finance", "source": "MP-USBE-CTE", "quote": "Career Pathway: Finance" },
+    {
+      "id": "mp-usbe-pathway-graphic",
+      "source": "MP-USBE-CTE",
+      "quote": "Career Pathway: Graphic Design & Communication"
+    },
+    { "id": "mp-usbe-pathway-health", "source": "MP-USBE-CTE", "quote": "Career Pathway: Health Science" },
+    { "id": "mp-usbe-pathway-hospitality", "source": "MP-USBE-CTE", "quote": "Career Pathway: Hospitality & Tourism" },
+    {
+      "id": "mp-usbe-pathway-it-systems",
+      "source": "MP-USBE-CTE",
+      "quote": "Career Pathway: Information Technology Systems"
+    },
+    {
+      "id": "mp-usbe-pathway-manufacturing",
+      "source": "MP-USBE-CTE",
+      "quote": "Career Pathway: Manufacturing & Production"
+    },
+    { "id": "mp-usbe-pathway-marketing", "source": "MP-USBE-CTE", "quote": "Career Pathway: Marketing" },
+    {
+      "id": "mp-usbe-pathway-natural-resources",
+      "source": "MP-USBE-CTE",
+      "quote": "Career Pathway: Natural Resource Science"
+    },
+    {
+      "id": "mp-usbe-pathway-personal-care",
+      "source": "MP-USBE-CTE",
+      "quote": "Career Pathway: Personal Care Services"
+    },
+    { "id": "mp-usbe-pathway-plant", "source": "MP-USBE-CTE", "quote": "Career Pathway: Plant Science" },
+    {
+      "id": "mp-usbe-pathway-pre-k",
+      "source": "MP-USBE-CTE",
+      "quote": "Career Pathway: Pre-K: Early Childhood Education"
+    },
+    {
+      "id": "mp-usbe-pathway-programming",
+      "source": "MP-USBE-CTE",
+      "quote": "Career Pathway: Programming & Software Development"
+    },
+    { "id": "mp-usbe-pathway-protective", "source": "MP-USBE-CTE", "quote": "Career Pathway: Protective Services" },
+    {
+      "id": "mp-usbe-pathway-teaching",
+      "source": "MP-USBE-CTE",
+      "quote": "Career Pathway: K-12: Teaching as a Profession"
+    },
+    { "id": "mp-usbe-pathway-web", "source": "MP-USBE-CTE", "quote": "Career Pathway: Web Development" },
+    { "id": "mp-usbe-pathway-welding", "source": "MP-USBE-CTE", "quote": "Career Pathway: Welding & Machining" },
+    {
+      "id": "mp-ut-architecture-portfolio",
+      "source": "MP-UT-SOA",
+      "quote": "Portfolios are optional for Freshman applicants."
+    },
+    {
+      "id": "mp-ut-nursing-deadline",
+      "source": "MP-UT-NUR",
+      "quote": "Application Deadline for Prospective Freshman: December 1 for fall admission"
+    },
+    {
+      "id": "mp-ut-nursing-prerequisites",
+      "source": "MP-UT-NUR",
+      "quote": "There are three pre-requisite courses needed: Biology, Chemistry, and Statistics."
+    },
+    {
+      "id": "mp-ut-studio-art-portfolio",
+      "source": "MP-UT-ART",
+      "quote": "Include 12–15 works of art in your portfolio, with 2 pieces being made from direct observation."
+    },
+    {
+      "id": "mp-ut-theatre-dance-application",
+      "source": "MP-UT-TD",
+      "quote": "Apply for any of our four unique undergraduate programs by submitting a University and Department of Theatre and Dance application."
+    },
+    {
+      "id": "mp-ut-theatre-dance-deadlines",
+      "source": "MP-UT-TD",
+      "quote": "The deadline to apply to the University is December 1. The deadline to submit additional Theatre and Dance application materials is December 10."
+    },
+    {
+      "id": "mp-utk-architecture-portfolio",
+      "source": "MP-UTK-AD",
+      "quote": "Undergraduate and graduate applicants will be evaluated based on grades, personal narratives and test scores, as well as in some instances, the submission of a portfolio."
+    },
+    {
+      "id": "mp-utk-engineering-holistic",
+      "source": "MP-UTK-ENG",
+      "quote": "Students who may not meet the test-score criteria will be holistically reviewed for admission into TCE."
+    },
+    {
+      "id": "mp-utk-engineering-spi",
+      "source": "MP-UTK-ENG",
+      "pinpoint": "Success Prediction Indicator",
+      "quote": "For consideration in the Tickle College of Engineering, your minimum SPI predictor should be at least 60 and a math ACT of 25 or a math SAT of 590."
+    },
+    {
+      "id": "mp-utk-nursing-45-hours",
+      "source": "MP-UTK-NUR",
+      "quote": "Students anticipating more than 45 dual enrollment hours or completion of an Associate of Arts/Science degree at high school graduation should contact the College of Nursing Office of Student Services before applying. Direct admission may not be the best fit in these cases."
+    },
+    {
+      "id": "mp-utk-nursing-competitive",
+      "source": "MP-UTK-NUR",
+      "quote": "Freshman direct admission to the nursing major is a highly competitive application process"
+    },
+    {
+      "id": "tx-tamu-engineering",
+      "source": "TX-S40",
+      "quote": "NOTE: Students planning to apply to an engineering major are encouraged to take a Math higher than Pre-Calculus."
+    },
+    {
+      "id": "tx-uh-2027-terms",
+      "source": "TX-S43",
+      "quote": "Requirements for spring, summer and fall 2027 admission terms."
+    },
+    {
+      "id": "tx-uh-must-complete",
+      "source": "TX-S43",
+      "quote": "In addition, applicants must complete the following high school coursework:"
+    },
+    {
+      "id": "tx-uh-nsm-courses",
+      "source": "TX-S43",
+      "pinpoint": "College of Natural Sciences & Mathematics",
+      "quote": "Biology, Chemistry or Physics: 2 units English: 4 units Algebra: 2 units Geometry: 1 unit Pre-Calculus: 1 unit"
+    },
+    {
+      "id": "tx-uh-nursing-courses",
+      "source": "TX-S43",
+      "pinpoint": "Andy & Barbara Gessner College of Nursing",
+      "quote": "Biology: 1 unit Two additional science courses: 2 units Algebra: 1 unit Geometry: 1 unit One additional math course: 1 unit English: 3 units"
+    },
+    {
+      "id": "tx-ut-calc-course",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "Official high school transcript showing credit for a Calculus I (or higher) course with a grade of B or higher Classical Learning Test (CLT) Math score of 26 or above"
+    },
+    {
+      "id": "tx-ut-calc-majors",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "Freshman applicants must demonstrate calculus readiness to apply to the following majors: All majors in the Cockrell School of Engineering All majors in the Jackson School of Geosciences"
+    },
+    {
+      "id": "tx-ut-calc-majors-2",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "Environmental Science (Geographical Sciences) major in the College of Liberal Arts Environmental Science (Biological Sciences) major in the College of Natural Sciences Computer Science, Linguistics and Computer Science,"
+    },
+    {
+      "id": "tx-ut-calc-tests",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "SAT Math score of 620 or above ACT Math score of 26 or above Advanced Placement (AP) Calculus AB or BC test score of 3 or higher International Baccalaureate (IB) HL Mathematics score of 4 or higher"
+    },
+    {
+      "id": "tx-ut-faq-december-10",
+      "source": "TX-S38",
+      "pinpoint": "Calculus Readiness FAQ",
+      "quote": "If you will not receive a final grade for your calculus course or receive an AP/IB score by December 10, then it will not count for calculus readiness purposes."
+    },
+    {
+      "id": "tx-ut-prereq-language",
+      "source": "TX-S36",
+      "quote": "Foreign Language (2 Credits Required) Both credits should be related to the study of a single foreign language. For purposes of the requirement, American Sign Language and computer science are considered foreign languages."
+    }
+  ],
+  "families": [
+    {
+      "id": "engineering",
+      "summary": "Engineering majors start with calculus, physics and chemistry in the first college year, so plan to reach calculus by 12th grade and take math every year.",
+      "path": "degree",
+      "math": {
+        "target": ["CALC"],
+        "note": "Take math every year. Precalculus plus a test score or placement exam is the minimum that keeps the path open.",
+        "cite": ["mp-abet-eac-college-math", "mp-uofu-engineering-calculus", "mp-uofu-engineering-math-every-year"]
+      },
+      "sciences": ["sci.phys", "sci.chem", "sci.bio"],
+      "keyCourses": ["cs.prog1", "cte.engineering_design"],
+      "rigorFirst": ["math.calc", "sci.phys", "sci.chem"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6a"] },
+      "ctePathways": [
+        {
+          "state": "TX",
+          "cluster": "engineering",
+          "name": "Engineering Foundations",
+          "cite": ["mp-tea-pos-engineering"]
+        },
+        { "state": "UT", "cluster": "engineering", "name": "Engineering", "cite": ["mp-usbe-pathway-engineering"] }
+      ],
+      "gates": [
+        {
+          "id": "ut-austin-calculus-readiness",
+          "text": "UT Austin requires calculus readiness to apply to every engineering major: a qualifying SAT, ACT, CLT, AP or IB score, or Calculus I with a B or higher, received by December 10 of 12th grade.",
+          "evidence": "A",
+          "colleges": [228778],
+          "ruleSetId": "utaustin.calc-ready",
+          "cite": ["tx-ut-calc-majors", "tx-ut-calc-majors-2", "tx-ut-calc-tests", "tx-ut-calc-course", "tx-ut-faq-december-10"]
+        },
+        {
+          "id": "utk-engineering-spi",
+          "text": "UT Knoxville engineering looks for a Success Prediction Indicator of at least 60 and an ACT math score of 25 or SAT math score of 590; students below that are reviewed holistically.",
+          "evidence": "A",
+          "colleges": [221759],
+          "cite": ["mp-utk-engineering-spi", "mp-utk-engineering-holistic"]
+        },
+        {
+          "id": "tamu-engineering-math",
+          "text": "Texas A&M encourages engineering applicants to take a math class higher than precalculus.",
+          "evidence": "A",
+          "colleges": [228723],
+          "ruleSetId": "tamu.engineering",
+          "cite": ["tx-tamu-engineering"]
+        },
+        {
+          "id": "uofu-engineering-calculus",
+          "text": "The University of Utah expects engineering students to finish calculus in their first year; starting college ready for Calculus I helps, though it isn't required.",
+          "evidence": "A",
+          "colleges": [230764],
+          "cite": ["mp-uofu-engineering-calculus", "mp-uofu-engineering-math-every-year"]
+        }
+      ],
+      "cautions": []
+    },
+    {
+      "id": "engineering_tech",
+      "summary": "Engineering technology and drafting programs apply math and physics to hands-on work. Bachelor's programs use calculus or math above trigonometry; associate programs use algebra and trigonometry.",
+      "path": "both",
+      "math": {
+        "target": ["PRECALC"],
+        "trainingTarget": ["ALG2+"],
+        "note": "For an associate program, Algebra II with trigonometry is the target.",
+        "cite": ["mp-abet-etac-associate", "mp-abet-etac-bachelor", "mp-bls-draft"]
+      },
+      "sciences": ["sci.phys", "sci.chem"],
+      "keyCourses": ["cte.cad", "cte.digital_electronics"],
+      "rigorFirst": ["sci.phys", "math.precalc"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6a", "mp-tx-74-13-f6a-2"] },
+      "ctePathways": [
+        {
+          "state": "TX",
+          "cluster": "engineering",
+          "name": "Engineering Foundations",
+          "cite": ["mp-tea-pos-engineering"]
+        },
+        { "state": "UT", "cluster": "engineering", "name": "Engineering", "cite": ["mp-usbe-pathway-engineering"] },
+        {
+          "state": "UT",
+          "cluster": "manufacturing",
+          "name": "Manufacturing & Production",
+          "cite": ["mp-usbe-pathway-manufacturing"]
+        }
+      ],
+      "gates": [],
+      "cautions": []
+    },
+    {
+      "id": "computer_data_science",
+      "summary": "Computer science and data science majors lean on calculus, discrete math and programming. Plan to reach calculus by 12th grade and take computer science along the way.",
+      "path": "degree",
+      "math": {
+        "target": ["CALC"],
+        "note": "Discrete math helps if your school offers it.",
+        "cite": ["mp-mit-calculus", "tx-ut-calc-majors-2", "mp-adelman-tipping-point"]
+      },
+      "sciences": ["sci.phys"],
+      "keyCourses": ["cs.principles", "cs.prog2", "math.discrete"],
+      "rigorFirst": ["math.calc", "cs.prog2"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6a-2"] },
+      "ctePathways": [
+        {
+          "state": "TX",
+          "cluster": "it",
+          "name": "Programming and Software Development",
+          "cite": ["mp-tea-pos-programming"]
+        },
+        {
+          "state": "UT",
+          "cluster": "it",
+          "name": "Programming & Software Development",
+          "cite": ["mp-usbe-pathway-programming"]
+        }
+      ],
+      "gates": [
+        {
+          "id": "ut-austin-calculus-readiness",
+          "text": "UT Austin requires calculus readiness to apply to computer science and its joint majors: a qualifying SAT, ACT, CLT, AP or IB score, or Calculus I with a B or higher, received by December 10 of 12th grade.",
+          "evidence": "A",
+          "colleges": [228778],
+          "ruleSetId": "utaustin.calc-ready",
+          "cite": ["tx-ut-calc-majors", "tx-ut-calc-majors-2", "tx-ut-calc-tests", "tx-ut-calc-course", "tx-ut-faq-december-10"]
+        },
+        {
+          "id": "uh-natural-sciences",
+          "text": "For 2027 terms, the University of Houston's College of Natural Sciences & Mathematics asks for precalculus, Algebra I and II, Geometry, 4 English and 2 of biology, chemistry or physics for automatic admission.",
+          "evidence": "A",
+          "colleges": [225511],
+          "ruleSetId": "uh.nsm",
+          "cite": ["tx-uh-must-complete", "tx-uh-nsm-courses", "tx-uh-2027-terms"]
+        }
+      ],
+      "cautions": [
+        {
+          "id": "ut-austin-cs-language",
+          "text": "UT Austin counts computer science as a foreign language for its admission prerequisites.",
+          "cite": ["tx-ut-prereq-language"]
+        }
+      ]
+    },
+    {
+      "id": "it_cybersecurity",
+      "summary": "IT, networking and cybersecurity careers can start with certifications or an associate degree. Algebra II plus a 4th math works; aim for calculus if you might study computer science or engineering.",
+      "path": "both",
+      "math": {
+        "target": ["ALG2+"],
+        "orTarget": ["CALC"],
+        "note": "Calculus if you're aiming for a computer science or engineering bachelor's degree.",
+        "cite": ["mp-adelman-tipping-point", "mp-abet-etac-bachelor"]
+      },
+      "sciences": [],
+      "keyCourses": ["cs.principles", "cs.cyber", "cs.prog1"],
+      "rigorFirst": ["cs.principles", "cs.prog2"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6a", "mp-tx-74-13-f6a-2"] },
+      "ctePathways": [
+        { "state": "TX", "cluster": "it", "name": "Cybersecurity", "cite": ["mp-tea-pos-cyber"] },
+        { "state": "UT", "cluster": "it", "name": "Cybersecurity", "cite": ["mp-usbe-pathway-cyber"] },
+        {
+          "state": "UT",
+          "cluster": "it",
+          "name": "Information Technology Systems",
+          "cite": ["mp-usbe-pathway-it-systems"]
+        },
+        { "state": "UT", "cluster": "it", "name": "Web Development", "cite": ["mp-usbe-pathway-web"] }
+      ],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "it-certifications",
+          "text": "Some IT support jobs start with a high school diploma plus IT certifications.",
+          "cite": ["mp-bls-support"]
+        }
+      ]
+    },
+    {
+      "id": "math_physical_sciences",
+      "summary": "Math, statistics, chemistry, physics and earth science majors use calculus from the first year. Take the highest math your school offers, plus chemistry and physics.",
+      "path": "degree",
+      "math": { "target": ["CALC"], "cite": ["mp-mit-calculus", "mp-adelman-tipping-point"] },
+      "sciences": ["sci.chem", "sci.phys", "sci.bio", "sci.earth"],
+      "keyCourses": ["cs.prog1", "math.stats"],
+      "rigorFirst": ["math.calc", "sci.phys", "sci.chem"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6b", "mp-tx-74-13-f6c"] },
+      "ctePathways": [],
+      "gates": [
+        {
+          "id": "ut-austin-geosciences",
+          "text": "UT Austin requires calculus readiness for all geosciences majors (a qualifying test score, or Calculus I with a B or higher, received by December 10 of 12th grade).",
+          "evidence": "A",
+          "colleges": [228778],
+          "cite": ["tx-ut-calc-majors", "tx-ut-calc-tests", "tx-ut-calc-course", "tx-ut-faq-december-10"]
+        },
+        {
+          "id": "uh-natural-sciences",
+          "text": "For 2027 terms, the University of Houston's College of Natural Sciences & Mathematics asks for precalculus, Algebra I and II, Geometry, 4 English and 2 of biology, chemistry or physics for automatic admission.",
+          "evidence": "A",
+          "colleges": [225511],
+          "ruleSetId": "uh.nsm",
+          "cite": ["tx-uh-must-complete", "tx-uh-nsm-courses", "tx-uh-2027-terms"]
+        }
+      ],
+      "cautions": []
+    },
+    {
+      "id": "biological_sciences",
+      "summary": "Biology majors take chemistry and biology from the start, often with calculus or statistics. Calculus by 12th grade is the target; precalculus keeps the path open.",
+      "path": "degree",
+      "math": {
+        "target": ["CALC"],
+        "orTarget": ["PRECALC", "STATS"],
+        "note": "Statistics helps too.",
+        "cite": ["mp-mit-calculus", "mp-adelman-tipping-point"]
+      },
+      "sciences": ["sci.bio", "sci.chem", "sci.phys"],
+      "keyCourses": ["math.stats", "sci.bio2"],
+      "rigorFirst": ["sci.chem", "sci.bio", "math.calc"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6a", "mp-tx-74-13-f6c"] },
+      "ctePathways": [
+        { "state": "TX", "cluster": "health", "name": "Bio-Medical Science", "cite": ["mp-tea-pos-biomed"] },
+        { "state": "UT", "cluster": "health", "name": "Health Science", "cite": ["mp-usbe-pathway-health"] }
+      ],
+      "gates": [
+        {
+          "id": "ut-austin-environmental-science",
+          "text": "UT Austin requires calculus readiness for its Environmental Science (Biological Sciences) major.",
+          "evidence": "A",
+          "colleges": [228778],
+          "cite": ["tx-ut-calc-majors-2", "tx-ut-calc-tests"]
+        },
+        {
+          "id": "uh-natural-sciences",
+          "text": "For 2027 terms, the University of Houston's College of Natural Sciences & Mathematics asks for precalculus, Algebra I and II, Geometry, 4 English and 2 of biology, chemistry or physics for automatic admission.",
+          "evidence": "A",
+          "colleges": [225511],
+          "ruleSetId": "uh.nsm",
+          "cite": ["tx-uh-must-complete", "tx-uh-nsm-courses", "tx-uh-2027-terms"]
+        }
+      ],
+      "cautions": []
+    },
+    {
+      "id": "pre_health",
+      "summary": "Medicine, dentistry, pharmacy, physical therapy and veterinary medicine are graduate or professional degrees. Plan for the college major first (often biology) with strong biology, chemistry and physics.",
+      "path": "degree",
+      "math": { "target": ["CALC"], "orTarget": ["PRECALC", "STATS"], "cite": ["mp-bls-pt", "mp-adelman-tipping-point"] },
+      "sciences": ["sci.bio", "sci.chem", "sci.phys", "sci.anat"],
+      "keyCourses": ["math.stats"],
+      "rigorFirst": ["sci.chem", "sci.bio"],
+      "txEndorsement": { "value": "stem", "cite": ["mp-tx-74-13-f6a", "mp-tx-74-13-f6c"] },
+      "ctePathways": [
+        { "state": "TX", "cluster": "health", "name": "Bio-Medical Science", "cite": ["mp-tea-pos-biomed"] },
+        {
+          "state": "TX",
+          "cluster": "health",
+          "name": "Diagnostic and Therapeutic Services",
+          "cite": ["mp-tea-pos-diagnostic"]
+        },
+        { "state": "UT", "cluster": "health", "name": "Health Science", "cite": ["mp-usbe-pathway-health"] }
+      ],
+      "gates": [
+        {
+          "id": "uh-natural-sciences",
+          "text": "For 2027 terms, the University of Houston's College of Natural Sciences & Mathematics asks for precalculus, Algebra I and II, Geometry, 4 English and 2 of biology, chemistry or physics for automatic admission.",
+          "evidence": "A",
+          "colleges": [225511],
+          "ruleSetId": "uh.nsm",
+          "cite": ["tx-uh-must-complete", "tx-uh-nsm-courses", "tx-uh-2027-terms"]
+        }
+      ],
+      "cautions": [
+        {
+          "id": "professional-programs",
+          "text": "Professional programs set their own prerequisites, like anatomy, chemistry and physics for physical therapy. A few programs admit students straight from high school.",
+          "cite": ["mp-bls-pt", "mp-apta-freshman-entry", "mp-bls-pharm"]
+        },
+        {
+          "id": "vet",
+          "text": "Veterinary colleges look for many science classes, including biology, chemistry and animal science.",
+          "cite": ["mp-bls-vet"]
+        }
+      ]
+    },
+    {
+      "id": "nursing",
+      "summary": "Registered nursing programs start with biology, chemistry, anatomy and statistics. Algebra II plus statistics is the math target.",
+      "path": "degree",
+      "math": { "target": ["STATS"], "cite": ["mp-ut-nursing-prerequisites", "mp-bls-rn"] },
+      "sciences": ["sci.bio", "sci.chem", "sci.anat"],
+      "keyCourses": ["ss.psych", "math.stats"],
+      "rigorFirst": ["sci.chem", "sci.bio", "math.stats"],
+      "txEndorsement": { "value": "public_services", "cite": ["mp-tea-pos-nursing-stem"] },
+      "ctePathways": [
+        { "state": "TX", "cluster": "health", "name": "Nursing Science", "cite": ["mp-tea-pos-nursing"] },
+        { "state": "UT", "cluster": "health", "name": "Health Science", "cite": ["mp-usbe-pathway-health"] }
+      ],
+      "gates": [
+        {
+          "id": "utk-nursing-dual-hours",
+          "text": "UT Knoxville's freshman direct admission to nursing is highly competitive. Students expecting more than 45 dual enrollment hours, or an associate degree, by graduation should contact the College of Nursing before applying.",
+          "evidence": "A",
+          "colleges": [221759],
+          "collegeCredit": true,
+          "cite": ["mp-utk-nursing-competitive", "mp-utk-nursing-45-hours"]
+        },
+        {
+          "id": "ut-austin-bsn",
+          "text": "UT Austin admits nursing students directly as freshmen; the deadline is December 1.",
+          "evidence": "A",
+          "colleges": [228778],
+          "cite": ["mp-ut-nursing-deadline"]
+        },
+        {
+          "id": "uh-nursing",
+          "text": "For 2027 terms, the University of Houston's nursing college asks for biology, two more sciences, algebra, geometry, one more math and 3 English credits for automatic admission.",
+          "evidence": "A",
+          "colleges": [225511],
+          "ruleSetId": "uh.nursing",
+          "cite": ["tx-uh-must-complete", "tx-uh-nursing-courses", "tx-uh-2027-terms"]
+        }
+      ],
+      "cautions": [
+        {
+          "id": "texas-nursing-endorsement",
+          "text": "In Texas, finishing the Nursing Science program of study meets the STEM endorsement's program requirement if the STEM math and science requirements are met; otherwise it counts toward Public Services.",
+          "cite": ["mp-tea-pos-nursing-stem"]
+        }
+      ]
+    },
+    {
+      "id": "practical_nursing",
+      "summary": "Practical nursing (LPN or LVN) and nurse aide (CNA) training can start in high school career and technical programs. Algebra II plus a 4th math, like medical math, is the target.",
+      "path": "training",
+      "math": {
+        "target": ["ALG2+"],
+        "note": "Medical math is a good 4th math if your school offers it.",
+        "cite": ["mp-bls-lpn", "mp-adelman-tipping-point"]
+      },
+      "sciences": ["sci.bio", "sci.anat"],
+      "keyCourses": ["math.applied.medical", "cte.health_principles", "cte.nurse_aide"],
+      "rigorFirst": [],
+      "ctePathways": [
+        { "state": "TX", "cluster": "health", "name": "Nursing Science", "cite": ["mp-tea-pos-nursing"] },
+        { "state": "UT", "cluster": "health", "name": "Health Science", "cite": ["mp-usbe-pathway-health"] }
+      ],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "state-approved",
+          "text": "Nursing assistants usually finish a state-approved program and pass a state exam. Practical nursing programs take about a year and are offered at some high schools. Age and hour rules vary by state; ask your counselor.",
+          "cite": ["mp-bls-na", "mp-bls-lpn"]
+        }
+      ]
+    },
+    {
+      "id": "allied_health",
+      "summary": "Allied health careers (imaging, respiratory care, dental hygiene, lab science, medical assisting) build on biology and chemistry, with physics for imaging and respiratory care.",
+      "path": "both",
+      "math": {
+        "target": ["ALG2+"],
+        "orTarget": ["PRECALC"],
+        "note": "Precalculus or statistics for bachelor's-degree programs.",
+        "cite": ["mp-bls-resp", "mp-bls-dh", "mp-bls-lab"]
+      },
+      "sciences": ["sci.bio", "sci.chem", "sci.phys", "sci.anat"],
+      "keyCourses": ["cte.medical_terminology"],
+      "rigorFirst": ["sci.bio", "sci.chem"],
+      "ctePathways": [
+        {
+          "state": "TX",
+          "cluster": "health",
+          "name": "Diagnostic and Therapeutic Services",
+          "cite": ["mp-tea-pos-diagnostic"]
+        },
+        { "state": "UT", "cluster": "health", "name": "Health Science", "cite": ["mp-usbe-pathway-health"] }
+      ],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "imaging",
+          "text": "For radiology or MRI technology, take anatomy, biology, chemistry and physics.",
+          "cite": ["mp-bls-rt"]
+        },
+        {
+          "id": "medical-assistant",
+          "text": "Medical assistants benefit from biology and chemistry.",
+          "cite": ["mp-bls-ma"]
+        }
+      ]
+    },
+    {
+      "id": "kinesiology_public_health",
+      "summary": "Kinesiology, athletic training, public health and nutrition majors build on biology, chemistry and anatomy, with precalculus and statistics.",
+      "path": "degree",
+      "math": { "target": ["PRECALC", "STATS"], "cite": ["mp-adelman-tipping-point", "mp-bls-pt"] },
+      "sciences": ["sci.bio", "sci.chem", "sci.anat"],
+      "keyCourses": ["ss.psych", "math.stats"],
+      "rigorFirst": ["sci.chem", "sci.bio"],
+      "ctePathways": [
+        {
+          "state": "TX",
+          "cluster": "health",
+          "name": "Exercise Science, Wellness, and Restoration",
+          "cite": ["mp-tea-pos-exercise"]
+        },
+        { "state": "UT", "cluster": "health", "name": "Health Science", "cite": ["mp-usbe-pathway-health"] }
+      ],
+      "gates": [],
+      "cautions": []
+    },
+    {
+      "id": "agriculture",
+      "summary": "Agriculture, animal and plant science programs build on chemistry and biology. Science tracks aim for precalculus; agribusiness and ag education can aim for Algebra II plus statistics.",
+      "path": "both",
+      "math": { "target": ["PRECALC"], "trainingTarget": ["ALG2+"], "cite": ["mp-adelman-tipping-point", "mp-bls-vet"] },
+      "sciences": ["sci.chem", "sci.bio"],
+      "keyCourses": ["cte.agriscience", "cte.animal_science"],
+      "rigorFirst": ["sci.chem", "sci.bio"],
+      "ctePathways": [
+        { "state": "TX", "cluster": "ag", "name": "Animal Science", "cite": ["mp-tea-pos-animal"] },
+        { "state": "UT", "cluster": "ag", "name": "Animal & Veterinary Science", "cite": ["mp-usbe-pathway-animal"] },
+        { "state": "UT", "cluster": "ag", "name": "Plant Science", "cite": ["mp-usbe-pathway-plant"] },
+        {
+          "state": "UT",
+          "cluster": "ag",
+          "name": "Agricultural Production Systems",
+          "cite": ["mp-usbe-pathway-ag-production"]
+        }
+      ],
+      "gates": [],
+      "cautions": []
+    },
+    {
+      "id": "natural_resources",
+      "summary": "Natural resources and environmental science combine biology, chemistry, earth science and math. Some programs require calculus; otherwise precalculus plus statistics works.",
+      "path": "degree",
+      "math": {
+        "target": ["CALC"],
+        "orTarget": ["PRECALC", "STATS"],
+        "note": "Calculus where the program requires it.",
+        "cite": ["tx-ut-calc-majors-2", "mp-adelman-tipping-point"]
+      },
+      "sciences": ["sci.bio", "sci.chem", "sci.env", "sci.earth", "sci.phys"],
+      "keyCourses": ["math.stats"],
+      "rigorFirst": ["sci.bio", "sci.chem", "math.calc"],
+      "ctePathways": [
+        {
+          "state": "UT",
+          "cluster": "ag",
+          "name": "Natural Resource Science",
+          "cite": ["mp-usbe-pathway-natural-resources"]
+        }
+      ],
+      "gates": [
+        {
+          "id": "ut-austin-calculus-readiness",
+          "text": "UT Austin requires calculus readiness to apply to both environmental science majors: a qualifying SAT, ACT, CLT, AP or IB score, or Calculus I with a B or higher, received by December 10 of 12th grade.",
+          "evidence": "A",
+          "colleges": [228778],
+          "ruleSetId": "utaustin.calc-ready",
+          "cite": ["tx-ut-calc-majors", "tx-ut-calc-majors-2", "tx-ut-calc-tests", "tx-ut-calc-course", "tx-ut-faq-december-10"]
+        }
+      ],
+      "cautions": []
+    },
+    {
+      "id": "architecture",
+      "summary": "Architecture and interior design combine math, physics and art. Plan for calculus and physics, plus drawing or studio art.",
+      "path": "degree",
+      "math": { "target": ["CALC"], "cite": ["mp-adelman-tipping-point"] },
+      "sciences": ["sci.phys"],
+      "keyCourses": ["arts.visual", "cte.cad"],
+      "rigorFirst": ["math.calc", "sci.phys", "arts.visual"],
+      "ctePathways": [
+        {
+          "state": "TX",
+          "cluster": "architecture_construction",
+          "name": "Architectural Drafting and Design",
+          "cite": ["mp-tea-pos-architecture"]
+        },
+        {
+          "state": "UT",
+          "cluster": "architecture_construction",
+          "name": "Architectural & Interior Design",
+          "cite": ["mp-usbe-pathway-architecture"]
+        }
+      ],
+      "gates": [
+        {
+          "id": "ut-austin-architecture-portfolio",
+          "text": "UT Austin's School of Architecture makes portfolios optional for freshman applicants.",
+          "evidence": "A",
+          "colleges": [228778],
+          "cite": ["mp-ut-architecture-portfolio"]
+        },
+        {
+          "id": "utk-architecture",
+          "text": "UT Knoxville's College of Architecture and Design looks at grades, personal narratives and test scores, and in some cases a portfolio.",
+          "evidence": "A",
+          "colleges": [221759],
+          "cite": ["mp-utk-architecture-portfolio"]
+        }
+      ],
+      "cautions": [
+        {
+          "id": "five-year",
+          "text": "Most architects earn a 5-year Bachelor of Architecture.",
+          "cite": ["mp-bls-arch"]
+        }
+      ]
+    },
+    {
+      "id": "business",
+      "summary": "Business, accounting and finance majors use math, economics and communication. Calculus helps for selective business schools; otherwise precalculus or statistics.",
+      "path": "degree",
+      "math": {
+        "target": ["CALC"],
+        "orTarget": ["PRECALC", "STATS"],
+        "note": "Calculus for selective direct-admission business schools; otherwise precalculus or statistics.",
+        "cite": ["mp-adelman-tipping-point"]
+      },
+      "sciences": [],
+      "keyCourses": ["ss.econ", "math.stats", "ela.speech"],
+      "rigorFirst": ["math.calc", "ss.econ"],
+      "ctePathways": [
+        {
+          "state": "TX",
+          "cluster": "business",
+          "name": "Accounting and Financial Services",
+          "cite": ["mp-tea-pos-accounting"]
+        },
+        { "state": "UT", "cluster": "business", "name": "Business", "cite": ["mp-usbe-pathway-business"] },
+        { "state": "UT", "cluster": "business", "name": "Finance", "cite": ["mp-usbe-pathway-finance"] },
+        { "state": "UT", "cluster": "business", "name": "Marketing", "cite": ["mp-usbe-pathway-marketing"] }
+      ],
+      "gates": [
+        {
+          "id": "uofu-business-majors",
+          "text": "At the University of Utah, business students reach the upper division first and then apply separately to each business major.",
+          "evidence": "A",
+          "colleges": [230764],
+          "cite": ["mp-eccles-major-application"]
+        }
+      ],
+      "cautions": []
+    },
+    {
+      "id": "economics",
+      "summary": "Economics majors use calculus and statistics. Keep taking math through high school and take an economics class if your school offers one.",
+      "path": "degree",
+      "math": { "target": ["CALC"], "cite": ["mp-aea-math", "mp-adelman-tipping-point"] },
+      "sciences": [],
+      "keyCourses": ["ss.econ", "math.stats"],
+      "rigorFirst": ["math.calc", "math.stats"],
+      "ctePathways": [],
+      "gates": [],
+      "cautions": []
+    },
+    {
+      "id": "psychology",
+      "summary": "Psychology majors take statistics early, and biology matters for science tracks. Algebra II plus statistics is the math target.",
+      "path": "degree",
+      "math": { "target": ["STATS"], "cite": ["mp-adelman-tipping-point"] },
+      "sciences": ["sci.bio"],
+      "keyCourses": ["ss.psych"],
+      "rigorFirst": ["math.stats", "sci.bio"],
+      "ctePathways": [],
+      "gates": [],
+      "cautions": []
+    },
+    {
+      "id": "social_sciences_law",
+      "summary": "Government, history, sociology and pre-law build on strong writing, history, government and a world language. Statistics is useful for social science research.",
+      "path": "degree",
+      "math": { "target": ["STATS"], "cite": ["mp-adelman-tipping-point"] },
+      "sciences": [],
+      "keyCourses": ["ss.us_gov", "ss.econ", "ela.debate"],
+      "rigorFirst": ["ela.lang_comp", "ss.us_hist"],
+      "ctePathways": [],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "law-school",
+          "text": "Most law schools don't require a specific college major.",
+          "cite": ["mp-bls-law"]
+        }
+      ]
+    },
+    {
+      "id": "communication",
+      "summary": "Communication, journalism and media majors build on four years of English with writing, plus journalism, yearbook or speech.",
+      "path": "degree",
+      "math": { "target": ["ALG2+"], "cite": ["mp-adelman-tipping-point"] },
+      "sciences": [],
+      "keyCourses": ["ela.journalism", "ela.speech"],
+      "rigorFirst": ["ela.lang_comp", "ela.journalism"],
+      "ctePathways": [
+        {
+          "state": "UT",
+          "cluster": "arts_av",
+          "name": "Broadcasting & Digital Media",
+          "cite": ["mp-usbe-pathway-broadcasting"]
+        }
+      ],
+      "gates": [],
+      "cautions": []
+    },
+    {
+      "id": "humanities",
+      "summary": "English, world languages and humanities majors build on four years of English and as much of one world language as your school offers.",
+      "path": "degree",
+      "math": { "target": ["ALG2+"], "cite": ["mp-adelman-tipping-point"] },
+      "sciences": [],
+      "keyCourses": ["ela.lit_comp", "ela.lang_comp"],
+      "rigorFirst": ["ela.lit_comp", "ss.world_hist"],
+      "ctePathways": [],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "language-years",
+          "text": "Selective colleges often suggest at least three years of the same language.",
+          "cite": ["mp-stanford-language"]
+        }
+      ]
+    },
+    {
+      "id": "education",
+      "summary": "Teaching and early childhood careers start with a teaching pathway if your school has one. Future math or science teachers should follow that subject's family.",
+      "path": "both",
+      "math": {
+        "target": ["ALG2+"],
+        "note": "Future math or science teachers follow that subject's math target.",
+        "cite": ["mp-adelman-tipping-point"]
+      },
+      "sciences": [],
+      "keyCourses": ["ss.psych"],
+      "rigorFirst": [],
+      "ctePathways": [
+        { "state": "TX", "cluster": "education", "name": "Teaching and Training", "cite": ["mp-tea-pos-teaching"] },
+        { "state": "TX", "cluster": "education", "name": "Early Learning", "cite": ["mp-tea-pos-early"] },
+        {
+          "state": "UT",
+          "cluster": "education",
+          "name": "K-12: Teaching as a Profession",
+          "cite": ["mp-usbe-pathway-teaching"]
+        },
+        {
+          "state": "UT",
+          "cluster": "education",
+          "name": "Pre-K: Early Childhood Education",
+          "cite": ["mp-usbe-pathway-pre-k"]
+        }
+      ],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "preschool",
+          "text": "Preschool teachers typically need at least an associate degree.",
+          "cite": ["mp-bls-presch"]
+        }
+      ]
+    },
+    {
+      "id": "social_work",
+      "summary": "Social work and human services majors take psychology, sociology and statistics, plus biology.",
+      "path": "degree",
+      "math": { "target": ["STATS"], "cite": ["mp-adelman-tipping-point"] },
+      "sciences": ["sci.bio"],
+      "keyCourses": ["ss.psych", "ss.soc"],
+      "rigorFirst": ["math.stats", "ss.psych"],
+      "ctePathways": [
+        {
+          "state": "UT",
+          "cluster": "human_services",
+          "name": "Family & Human Services",
+          "cite": ["mp-usbe-pathway-family"]
+        }
+      ],
+      "gates": [],
+      "cautions": []
+    },
+    {
+      "id": "visual_arts",
+      "summary": "Visual arts, design, photography and animation programs look at your work. Take art every year, draw from observation, and build a portfolio.",
+      "path": "both",
+      "math": { "target": ["ALG2+"], "cite": ["mp-adelman-tipping-point"] },
+      "sciences": [],
+      "keyCourses": ["arts.visual", "arts.media"],
+      "rigorFirst": ["arts.visual"],
+      "ctePathways": [
+        {
+          "state": "TX",
+          "cluster": "arts_av",
+          "name": "Graphic Design and Interactive Media",
+          "cite": ["mp-tea-pos-graphic"]
+        },
+        {
+          "state": "UT",
+          "cluster": "arts_av",
+          "name": "Graphic Design & Communication",
+          "cite": ["mp-usbe-pathway-graphic"]
+        }
+      ],
+      "gates": [
+        {
+          "id": "ut-austin-studio-art",
+          "text": "UT Austin's Studio Art program asks for a portfolio of 12 to 15 works, with 2 made from direct observation.",
+          "evidence": "A",
+          "colleges": [228778],
+          "cite": ["mp-ut-studio-art-portfolio"]
+        }
+      ],
+      "cautions": [
+        {
+          "id": "sketches",
+          "text": "Some art schools ask for sketches and other examples of your work when you apply.",
+          "cite": ["mp-bls-gd"]
+        }
+      ]
+    },
+    {
+      "id": "music",
+      "summary": "Music programs usually hold auditions. Play or sing in an ensemble every year, study your instrument or voice, and take music theory if you can.",
+      "path": "both",
+      "math": { "target": ["ALG2+"], "cite": ["mp-adelman-tipping-point"] },
+      "sciences": [],
+      "keyCourses": ["arts.ensemble", "arts.music_theory"],
+      "rigorFirst": ["arts.music_theory"],
+      "ctePathways": [],
+      "gates": [],
+      "cautions": []
+    },
+    {
+      "id": "theatre_dance_film",
+      "summary": "Theatre, dance and film programs often have their own application, audition or portfolio. Take theatre or dance classes and join productions.",
+      "path": "both",
+      "math": { "target": ["ALG2+"], "cite": ["mp-adelman-tipping-point"] },
+      "sciences": [],
+      "keyCourses": ["arts.theatre", "arts.dance", "arts.media"],
+      "rigorFirst": ["arts.theatre"],
+      "ctePathways": [
+        {
+          "state": "UT",
+          "cluster": "arts_av",
+          "name": "Broadcasting & Digital Media",
+          "cite": ["mp-usbe-pathway-broadcasting"]
+        }
+      ],
+      "gates": [
+        {
+          "id": "ut-austin-theatre-dance",
+          "text": "UT Austin Theatre and Dance applicants also apply to the department: the university deadline is December 1 and department materials are due December 10.",
+          "evidence": "A",
+          "colleges": [228778],
+          "cite": ["mp-ut-theatre-dance-application", "mp-ut-theatre-dance-deadlines"]
+        }
+      ],
+      "cautions": []
+    },
+    {
+      "id": "public_safety",
+      "summary": "Law enforcement, fire and EMS careers build on life sciences and anatomy, plus a career and technical pathway if your school has one.",
+      "path": "both",
+      "math": { "target": ["ALG2+"], "cite": ["mp-adelman-tipping-point", "mp-bls-emt"] },
+      "sciences": ["sci.bio", "sci.anat"],
+      "keyCourses": ["cte.emt", "ss.us_gov", "ss.psych"],
+      "rigorFirst": ["sci.anat"],
+      "ctePathways": [
+        { "state": "TX", "cluster": "law", "name": "Law Enforcement", "cite": ["mp-tea-pos-law-enforcement"] },
+        { "state": "TX", "cluster": "law", "name": "Fire Science", "cite": ["mp-tea-pos-fire"] },
+        { "state": "UT", "cluster": "law", "name": "Protective Services", "cite": ["mp-usbe-pathway-protective"] }
+      ],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "emt",
+          "text": "Future EMTs should take life science classes and consider CPR certification. Age rules for EMT certification vary by state; ask your counselor.",
+          "cite": ["mp-bls-emt"]
+        }
+      ]
+    },
+    {
+      "id": "construction_trades",
+      "summary": "Electricians, plumbers, HVAC technicians and carpenters learn through apprenticeships and licenses. Algebra I, Geometry and Algebra II with applied math, plus physics for HVAC.",
+      "path": "training",
+      "math": { "target": ["APPLIED"], "cite": ["mp-bls-hvac", "mp-bls-carp"] },
+      "sciences": ["sci.phys"],
+      "keyCourses": ["cte.cad"],
+      "rigorFirst": [],
+      "ctePathways": [
+        {
+          "state": "TX",
+          "cluster": "architecture_construction",
+          "name": "Electrical",
+          "cite": ["mp-tea-pos-electrical"]
+        },
+        {
+          "state": "UT",
+          "cluster": "architecture_construction",
+          "name": "Construction & Structural Systems",
+          "cite": ["mp-usbe-pathway-construction"]
+        }
+      ],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "licensing",
+          "text": "Licensing varies by state; plumbers often need 2 to 5 years of experience and an exam to work on their own.",
+          "cite": ["mp-bls-plumb"]
+        }
+      ]
+    },
+    {
+      "id": "manufacturing",
+      "summary": "Welding and machining careers use geometry, shop math, blueprint reading and CAD. A career and technical pathway plus a credential is the core.",
+      "path": "training",
+      "math": { "target": ["APPLIED"], "note": "Geometry and shop math matter most.", "cite": ["mp-bls-mach"] },
+      "sciences": ["sci.phys", "sci.chem"],
+      "keyCourses": ["cte.cad"],
+      "rigorFirst": [],
+      "ctePathways": [
+        { "state": "TX", "cluster": "manufacturing", "name": "Welding", "cite": ["mp-tea-pos-welding"] },
+        {
+          "state": "UT",
+          "cluster": "manufacturing",
+          "name": "Welding & Machining",
+          "cite": ["mp-usbe-pathway-welding"]
+        },
+        {
+          "state": "UT",
+          "cluster": "manufacturing",
+          "name": "Manufacturing & Production",
+          "cite": ["mp-usbe-pathway-manufacturing"]
+        }
+      ],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "training",
+          "text": "Employers often prefer or require a high school diploma plus technical training.",
+          "cite": ["mp-bls-weld"]
+        }
+      ]
+    },
+    {
+      "id": "transportation_maintenance",
+      "summary": "Automotive, diesel and aircraft maintenance careers use math, electronics and computers. A career and technical pathway plus a credential is the core.",
+      "path": "training",
+      "math": { "target": ["APPLIED"], "cite": ["mp-bls-auto"] },
+      "sciences": ["sci.phys"],
+      "keyCourses": [],
+      "rigorFirst": [],
+      "ctePathways": [
+        {
+          "state": "TX",
+          "cluster": "transportation",
+          "name": "Automotive and Collision Repair",
+          "cite": ["mp-tea-pos-automotive"]
+        },
+        {
+          "state": "TX",
+          "cluster": "transportation",
+          "name": "Aviation Maintenance",
+          "cite": ["mp-tea-pos-aviation-maint"]
+        },
+        { "state": "UT", "cluster": "transportation", "name": "Automotive", "cite": ["mp-usbe-pathway-automotive"] },
+        { "state": "UT", "cluster": "transportation", "name": "Diesel", "cite": ["mp-usbe-pathway-diesel"] },
+        { "state": "UT", "cluster": "transportation", "name": "Aviation", "cite": ["mp-usbe-pathway-aviation"] }
+      ],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "faa-mechanic",
+          "text": "An FAA mechanic certificate requires being at least 18, so you can train in high school and certify later.",
+          "cite": ["mp-faa-65-71"]
+        }
+      ]
+    },
+    {
+      "id": "aviation",
+      "summary": "Pilot careers use physics and precalculus, and airline pilots typically need a bachelor's degree and flight experience.",
+      "path": "both",
+      "math": { "target": ["PRECALC"], "cite": ["mp-bls-pilot", "mp-adelman-tipping-point"] },
+      "sciences": ["sci.phys"],
+      "keyCourses": [],
+      "rigorFirst": ["sci.phys", "math.precalc"],
+      "ctePathways": [
+        { "state": "TX", "cluster": "transportation", "name": "Aviation Pilots", "cite": ["mp-tea-pos-pilots"] },
+        { "state": "UT", "cluster": "transportation", "name": "Aviation", "cite": ["mp-usbe-pathway-aviation"] }
+      ],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "faa-ages",
+          "text": "FAA minimum ages: 16 for a student pilot (14 for a glider or balloon), 17 for a private pilot, 18 for a commercial pilot, and 23 for an airline transport pilot (21 in some cases).",
+          "cite": ["mp-faa-61-83", "mp-faa-61-83-glider", "mp-faa-61-103", "mp-faa-61-123", "mp-faa-61-153", "mp-faa-61-153-21"]
+        },
+        {
+          "id": "airline-degree",
+          "text": "Airline pilots typically need a bachelor's degree and experience as a commercial or military pilot.",
+          "cite": ["mp-bls-pilot"]
+        }
+      ]
+    },
+    {
+      "id": "culinary_hospitality",
+      "summary": "Culinary and hospitality careers build on a culinary or hospitality pathway and food-safety credentials. Business or financial math fits well.",
+      "path": "training",
+      "math": {
+        "target": ["ALG2+"],
+        "note": "Business or financial math is a good 4th math.",
+        "cite": ["mp-adelman-tipping-point", "mp-bls-chef"]
+      },
+      "sciences": ["sci.chem"],
+      "keyCourses": ["math.applied.finance"],
+      "rigorFirst": [],
+      "ctePathways": [
+        { "state": "TX", "cluster": "hospitality", "name": "Culinary Arts", "cite": ["mp-tea-pos-culinary"] },
+        { "state": "UT", "cluster": "hospitality", "name": "Culinary Arts", "cite": ["mp-usbe-pathway-culinary"] },
+        {
+          "state": "UT",
+          "cluster": "hospitality",
+          "name": "Hospitality & Tourism",
+          "cite": ["mp-usbe-pathway-hospitality"]
+        }
+      ],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "food-handler",
+          "text": "Some states and localities require a food handler's certification.",
+          "cite": ["mp-bls-chef"]
+        }
+      ]
+    },
+    {
+      "id": "cosmetology",
+      "summary": "Cosmetology and barbering careers need a state-approved program and a license exam. A career and technical pathway can start that in high school.",
+      "path": "training",
+      "math": { "target": ["ALG2+"], "cite": ["mp-adelman-tipping-point", "mp-bls-cosmo"] },
+      "sciences": ["sci.chem", "sci.bio"],
+      "keyCourses": [],
+      "rigorFirst": [],
+      "ctePathways": [
+        {
+          "state": "TX",
+          "cluster": "human_services",
+          "name": "Cosmetology and Personal Care Services",
+          "cite": ["mp-tea-pos-cosmetology"]
+        },
+        {
+          "state": "UT",
+          "cluster": "human_services",
+          "name": "Personal Care Services",
+          "cite": ["mp-usbe-pathway-personal-care"]
+        }
+      ],
+      "gates": [],
+      "cautions": [
+        {
+          "id": "license",
+          "text": "A license usually means finishing a state-approved program and passing an exam. Hours, age and other rules vary by state; ask your counselor.",
+          "cite": ["mp-bls-cosmo"]
+        }
+      ]
+    }
+  ]
+}

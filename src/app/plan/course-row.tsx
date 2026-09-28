@@ -6,6 +6,7 @@ import { Button, FormMessage } from "@/components/ui";
 import { useFormAction } from "@/components/use-form-action";
 import type { Course } from "@/lib/courses/service";
 import { LEVEL_LABELS, STATUS_LABELS, SUBJECT_LABELS, TERM_LABELS, isLetterGrade } from "@/lib/courses/catalog";
+import { NOT_SURE } from "@/lib/courses/kinds";
 import { removedNotice, savedNotice } from "@/lib/courses/plan-layout";
 import type { CourseFormState } from "@/lib/courses/validation";
 import { CourseFields } from "./course-fields";
@@ -13,7 +14,13 @@ import { CourseFields } from "./course-fields";
 export type PlanCourse = Pick<
   Course,
   "id" | "name" | "subject" | "level" | "gradeLevel" | "term" | "credits" | "status" | "finalGrade" | "highSchoolCredit"
->;
+> &
+  Partial<Pick<Course, "courseTypeId" | "courseTypeSource">>;
+
+/** The edit form's kind of class: the saved kind, "Not sure" for a class saved that way, or none. */
+export function savedKind(course: PlanCourse): string {
+  return course.courseTypeId ?? (course.courseTypeSource === "unsure" ? NOT_SURE : "");
+}
 
 /**
  * Tells the grade's list what just happened, for its status line. `moveFocus` means this row is
@@ -67,6 +74,7 @@ function EditCourse({
           status: course.status,
           finalGrade: course.finalGrade ?? "",
           highSchoolCredit: course.highSchoolCredit,
+          courseTypeId: savedKind(course),
         }}
         editGradeLevel
         focusName

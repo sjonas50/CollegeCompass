@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "major-prep.cip-routing",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {  },
+  "citations": [],
+  "rules": [
+    { "match": ["51.0904", "51.0810"], "family": "public_safety", "note": "EMS before any other 51 (health)." },
+    { "match": ["13.1312"], "family": "music", "note": "Music teacher education before the rest of 13 (education)." },
+    {
+      "match": ["19.0706", "19.0709"],
+      "family": "education",
+      "note": "Child development and child care before the rest of 19.07 (human services)."
+    },
+    { "match": ["51.0913", "51.2201", "51.3101", "30.1901", "31"], "family": "kinesiology_public_health" },
+    {
+      "match": ["51.1105"],
+      "family": "nursing",
+      "note": "Pre-nursing studies belongs with nursing, so it comes before 51.11 (pre-health)."
+    },
+    { "match": ["51.11", "51.04", "51.0912", "51.12", "51.20", "51.23", "01.80", "01.81"], "family": "pre_health" },
+    { "match": ["51.38"], "family": "nursing" },
+    { "match": ["51.39", "51.26"], "family": "practical_nursing" },
+    { "match": ["51"], "family": "allied_health" },
+    { "match": ["01"], "family": "agriculture" },
+    { "match": ["03"], "family": "natural_resources" },
+    { "match": ["04", "50.0408"], "family": "architecture" },
+    { "match": ["11.01", "11.04", "11.07", "30.70"], "family": "computer_data_science" },
+    { "match": ["11", "15.12"], "family": "it_cybersecurity" },
+    { "match": ["14"], "family": "engineering" },
+    { "match": ["15"], "family": "engineering_tech" },
+    { "match": ["27", "40"], "family": "math_physical_sciences" },
+    { "match": ["26"], "family": "biological_sciences" },
+    { "match": ["52.09"], "family": "culinary_hospitality" },
+    { "match": ["52"], "family": "business" },
+    { "match": ["45.06"], "family": "economics" },
+    { "match": ["42"], "family": "psychology" },
+    { "match": ["45", "54", "22", "05", "44.04", "44.05"], "family": "social_sciences_law" },
+    { "match": ["44", "19.07"], "family": "social_work" },
+    { "match": ["13"], "family": "education" },
+    {
+      "match": ["10.0304"],
+      "family": "visual_arts",
+      "note": "Animation and video graphics before the rest of 10 (communication)."
+    },
+    { "match": ["09", "10"], "family": "communication" },
+    { "match": ["23", "16", "24", "38", "50.0703"], "family": "humanities" },
+    { "match": ["50.09"], "family": "music" },
+    { "match": ["50.0605"], "family": "visual_arts", "note": "Photography before the rest of 50.06 (film)." },
+    { "match": ["50.03", "50.05", "50.06"], "family": "theatre_dance_film" },
+    { "match": ["50"], "family": "visual_arts" },
+    { "match": ["43"], "family": "public_safety" },
+    { "match": ["46", "47.02"], "family": "construction_trades" },
+    { "match": ["48"], "family": "manufacturing" },
+    { "match": ["47"], "family": "transportation_maintenance" },
+    { "match": ["49.01"], "family": "aviation" },
+    { "match": ["12.05"], "family": "culinary_hospitality" },
+    { "match": ["12.04"], "family": "cosmetology" }
+  ]
+}

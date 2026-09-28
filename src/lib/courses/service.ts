@@ -1,12 +1,16 @@
-import { and, asc, count, eq, getTableColumns } from "drizzle-orm";
+import { and, asc, count, eq, getTableColumns, sql } from "drizzle-orm";
 import * as z from "zod";
 import type { Db } from "@/db";
-import { studentCourses, users } from "@/db/schema";
+import { type CourseTerm, studentCourses, users } from "@/db/schema";
 import { scrubPii } from "../ai/privacy";
+import { UNITS_PER_CREDIT, type PlannerState } from "../planner/common";
+import { combinedHalves } from "../planner/course-type-guess";
+import { isCourseTypeId } from "../planner/course-types";
 import { type Checklist, CHECKLIST_CAVEAT, CHECKLIST_FRAMING, CTE_NOTE, collegePrepChecklist } from "./checklist";
 import { GPA_CAVEAT, type GpaSummary, computeGpa } from "./gpa";
+import { NOT_SURE } from "./kinds";
 import { type CareerSuggestion, SUGGESTIONS_NOTE, courseSuggestions } from "./suggestions";
-import type { CourseInput } from "./validation";
+import { type CourseInput, courseTypeFitsSubject } from "./validation";
 
 /** Generous for six grades of classes; stops scripted floods. */
 export const MAX_COURSES = 120;
@@ -21,9 +25,21 @@ type Result<T = undefined> = { ok: true; value: T } | { ok: false; error: Course
 
 const isUuid = (v: string) => z.uuid().safeParse(v).success;
 
-/** Only finished courses carry a final grade. */
+/**
+ * Only finished courses carry a final grade. A kind of class the student picked is theirs
+ * ("student"); none means the planner guesses from the name, and guesses are never stored. The
+ * forms' "Not sure" (NOT_SURE) is no kind with source "unsure": the planner keeps it a guess to
+ * confirm, even when the name is an exact title.
+ */
 function values(input: CourseInput) {
-  return { ...input, finalGrade: input.status === "completed" ? input.finalGrade : null };
+  const unsure = input.courseTypeId === NOT_SURE;
+  const courseTypeId = unsure ? null : (input.courseTypeId ?? null);
+  return {
+    ...input,
+    finalGrade: input.status === "completed" ? input.finalGrade : null,
+    courseTypeId,
+    courseTypeSource: courseTypeId ? ("student" as const) : unsure ? ("unsure" as const) : null,
+  };
 }
 
 /** The student's courses, by grade and then in the order they were added. */
@@ -63,12 +79,90 @@ export async function updateCourse(
   now = new Date(),
 ): Promise<Result<Course>> {
   if (!isUuid(courseId)) return { ok: false, error: "not_found" };
+  const next = values(input);
   const [row] = await db
     .update(studentCourses)
-    .set({ ...values(input), updatedAt: now })
+    .set({
+      ...next,
+      // Unchanged, a type from the school's class list stays "catalog".
+      courseTypeSource: next.courseTypeId
+        ? sql`case when ${studentCourses.courseTypeId} = ${next.courseTypeId} and ${studentCourses.courseTypeSource} = 'catalog' then 'catalog' else 'student' end`
+        : next.courseTypeSource,
+      updatedAt: now,
+    })
     .where(and(eq(studentCourses.id, courseId), eq(studentCourses.userId, userId)))
     .returning(courseColumns);
   return row ? { ok: true, value: row } : { ok: false, error: "not_found" };
+}
+
+export type SetCourseTypeResult = { ok: true; value: Course } | { ok: false; error: "not_found" | "mismatch" };
+
+/**
+ * "Confirm your classes" on the path: records the kind of one of the student's classes as their own
+ * choice (course_type_id, source "student"), only if the class is theirs and the kind fits its
+ * subject (like the add and edit forms). Nothing else about the class changes.
+ */
+export async function setCourseType(db: Db, userId: string, courseId: string, typeId: string, now = new Date()): Promise<SetCourseTypeResult> {
+  if (!isUuid(courseId)) return { ok: false, error: "not_found" };
+  if (!isCourseTypeId(typeId)) return { ok: false, error: "mismatch" };
+  const course = await getCourse(db, userId, courseId);
+  if (!course) return { ok: false, error: "not_found" };
+  if (!courseTypeFitsSubject(typeId, course.subject)) return { ok: false, error: "mismatch" };
+  const [row] = await db
+    .update(studentCourses)
+    .set({ courseTypeId: typeId, courseTypeSource: "student", updatedAt: now })
+    .where(and(eq(studentCourses.id, courseId), eq(studentCourses.userId, userId)))
+    .returning(courseColumns);
+  return row ? { ok: true, value: row } : { ok: false, error: "not_found" };
+}
+
+export type SplitCourseResult = { ok: true; value: [Course, Course] } | { ok: false; error: "not_found" | "not_combined" | "limit" };
+
+/**
+ * "Confirm your classes" on the path: a class whose name joins two half-credit classes ("Gov/Econ",
+ * "Economics/Personal Finance") becomes the two classes it names, each with half its credits and
+ * its kind as the student's choice (a full-year row becomes a fall and a spring class). Everything
+ * else about the class (grade, level, status, final grade) stays. Only the student's own class,
+ * and only when its name joins two half-credit kinds of its subject (`combinedHalves`, decided
+ * here from the stored row: the browser sends only its id).
+ */
+export async function splitCombinedCourse(db: Db, userId: string, courseId: string, state: PlannerState | null, now = new Date()): Promise<SplitCourseResult> {
+  if (!isUuid(courseId)) return { ok: false, error: "not_found" };
+  const course = await getCourse(db, userId, courseId);
+  if (!course) return { ok: false, error: "not_found" };
+  const halves = combinedHalves(course.name, course.subject, Math.round(course.credits * UNITS_PER_CREDIT), state);
+  // Half the credits in the form's steps (a quarter credit).
+  if (!halves || !Number.isInteger(course.credits * 2)) return { ok: false, error: "not_combined" };
+  const [{ n }] = await db.select({ n: count() }).from(studentCourses).where(eq(studentCourses.userId, userId));
+  if (n >= MAX_COURSES) return { ok: false, error: "limit" };
+  const credits = course.credits / 2;
+  const [first, second]: [CourseTerm, CourseTerm] = course.term === "full_year" ? ["fall", "spring"] : [course.term, course.term];
+  const rows = await db.transaction(async (tx) => {
+    const [a] = await tx
+      .update(studentCourses)
+      .set({ name: halves.names[0], credits, term: first, courseTypeId: halves.parts[0], courseTypeSource: "student", updatedAt: now })
+      .where(and(eq(studentCourses.id, courseId), eq(studentCourses.userId, userId)))
+      .returning(courseColumns);
+    const [b] = await tx
+      .insert(studentCourses)
+      .values({
+        userId,
+        name: halves.names[1],
+        subject: course.subject,
+        level: course.level,
+        gradeLevel: course.gradeLevel,
+        term: second,
+        credits,
+        status: course.status,
+        finalGrade: course.finalGrade,
+        highSchoolCredit: course.highSchoolCredit,
+        courseTypeId: halves.parts[1],
+        courseTypeSource: "student",
+      })
+      .returning(courseColumns);
+    return [a, b] as const;
+  });
+  return rows[0] && rows[1] ? { ok: true, value: [rows[0], rows[1]] } : { ok: false, error: "not_found" };
 }
 
 /** Deletes a course only if it belongs to `userId`. */

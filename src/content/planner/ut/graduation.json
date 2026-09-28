@@ -1,0 +1,1277 @@
+{
+  "schemaVersion": 1,
+  "id": "ut.graduation",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "UT-S1": {
+      "title": "Utah Admin. Code R277-700, The Elementary and Secondary School General Core",
+      "url": "https://adminrules.utah.gov/api/public/getHTML/uac-html/0b04a299-cb20-4bf4-b882-dc9bf443d818.html",
+      "publisher": "Utah State Board of Education",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S13": {
+      "title": "H.B. 312 (2026), School Curriculum and Standards Modifications, enrolled",
+      "url": "https://le.utah.gov/Session/2026/bills/enrolled/HB0312.pdf",
+      "publisher": "Utah Legislature",
+      "kind": "statute",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S3": {
+      "title": "Current Courses Meeting the Criteria for Graduation Requirements 2026-2027",
+      "url": "https://www.schools.utah.gov/curr/_curr_/_earlycollege_/CoursesMeetingGraduationRequirements2026-2027.pdf",
+      "publisher": "Utah State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S4": {
+      "title": "Social Studies Graduation Requirement FAQ 2026-2027",
+      "url": "https://www.schools.utah.gov/curr/_curr_/_earlycollege_/SocialStudiesGraduationRequirementFAQ.pdf",
+      "publisher": "Utah State Board of Education",
+      "kind": "guidance",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S5": {
+      "title": "Middle School Students Keeping High School Credit FAQ",
+      "url": "https://www.schools.utah.gov/curr/_curr_/_earlycollege_/MiddleSchoolKeepingHighSchoolCreditFAQ.pdf",
+      "publisher": "Utah State Board of Education",
+      "kind": "guidance",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "ut-hb312-arts",
+      "source": "UT-S13",
+      "pinpoint": "lines 17-18",
+      "quote": "allows local education agencies to determine whether applied crafts and technical arts"
+    },
+    {
+      "id": "ut-msfaq-eligibility",
+      "source": "UT-S5",
+      "pinpoint": "p. 1",
+      "quote": "The credit, for high school graduation purposes, is guaranteed (if the student successfully earns it), however, scholarship and college/university eligibility may be affected."
+    },
+    {
+      "id": "ut-msfaq-gpa",
+      "source": "UT-S5",
+      "pinpoint": "p. 1",
+      "quote": "the course taken will be recorded in the student's high school transcript, so grades earned will be included in the student's 9th grade GPA."
+    },
+    {
+      "id": "ut-r277-700-6-10",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(10)",
+      "quote": "A student who successfully completes a Calculus course with a \"C\" grade or higher has completed mathematics graduation requirements, regardless of the number of mathematics credits earned."
+    },
+    {
+      "id": "ut-r277-700-6-9-grad",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(9)",
+      "quote": "A student who successfully completes a mathematics foundation course before 9th grade shall earn 3.0 units of additional mathematics credit by:"
+    },
+    {
+      "id": "ut-r277-700-6-11-bio",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(11)(a)(ii)",
+      "quote": "(ii) Biological Science (1.0 units of credit); (A) Biology; (B) Biology: Agricultural Science and Technology; (C) Advanced Placement Biology; (D) International Baccalaureate Biology; or (E) Biology with Lab Concurrent Enrollment;"
+    },
+    {
+      "id": "ut-r277-700-6-11-chem",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(11)(a)(iii)",
+      "quote": "(iii) Chemistry (1.0 units of credit); (A) Chemistry; (B) Advanced Placement Chemistry; (C) International Baccalaureate Chemistry; or (D) Chemistry with Lab Concurrent Enrollment;"
+    },
+    {
+      "id": "ut-r277-700-6-11-cs",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(11)(a)(v)",
+      "quote": "(v) Computer Science (1.0 units of credit): (A) Advanced Placement Computer Science; (B) Computer Science Principles; or (C) Computer Programming 2;"
+    },
+    {
+      "id": "ut-r277-700-6-11-earth",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(11)(a)(i)",
+      "quote": "(i) Earth Science (1.0 units of credit); (A) Earth Science; (B) Advanced Placement Environmental Science; or (C) International Baccalaureate Environmental Systems;"
+    },
+    {
+      "id": "ut-r277-700-6-11-phys",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(11)(a)(iv)",
+      "quote": "(iv) Physics (1.0 units of credit); (A) Physics; (B) Advanced Placement Physics (1, 2, C: Electricity and Magnetism, or C: Mechanics); (C) International Baccalaureate Physics; or (D) Physics with Lab Concurrent Enrollment;"
+    },
+    {
+      "id": "ut-r277-700-6-11a",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(11)(a)",
+      "quote": "Science (3.0 units of credit): (a) shall be met minimally through successful completion of 2.0 units of credit from two of the following five science foundation areas:"
+    },
+    {
+      "id": "ut-r277-700-6-11b",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(11)(b)",
+      "quote": "(b) one additional unit of credit from: (i) the foundation courses described in Subsection (10)(a); or (ii) the applied or advanced science list:"
+    },
+    {
+      "id": "ut-r277-700-6-12",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(12)",
+      "quote": "Social Studies (3.0 units of credit, and beginning with incoming 10th graders in the 2026-2027 school year, 3.5 units of credit)"
+    },
+    {
+      "id": "ut-r277-700-6-12-acgc",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(12)(a)(v)",
+      "quote": "(v) Beginning with incoming 10th graders in the 2026-2027 school year, the requirement in Subsection (iv) will be replaced by American Constitutional Government and Citizenship (1.0 units of credit);"
+    },
+    {
+      "id": "ut-r277-700-6-12a",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(12)(a)",
+      "quote": "(i) World Geography (0.5 units of credit); (ii) World History (0.5 units of credit); (iii) U.S. History (1.0 units of credit); (iv) U.S. Government and Citizenship (0.5 units of credit);"
+    },
+    {
+      "id": "ut-r277-700-6-12b",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(12)(b)",
+      "quote": "(b) Social Studies (0.5 units of credit per LEA discretion)."
+    },
+    {
+      "id": "ut-r277-700-6-13",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(13)",
+      "quote": "The Arts (1.5 units of credit from any of the following performance areas): (a) Visual Arts; (b) Music; (c) Dance; (d) Theatre; or (e) Media Arts."
+    },
+    {
+      "id": "ut-r277-700-6-14",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(14)",
+      "quote": "Health Education (0.5 units of credit)."
+    },
+    {
+      "id": "ut-r277-700-6-15",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(15)(a)",
+      "quote": "Physical Education (1.5 units of credit from each of the following): (i) Participation Skills (0.5 units of credit); (ii) Fitness for Life (0.5 units of credit); and (iii) Individualized Lifetime Activities (0.5 units of credit);"
+    },
+    {
+      "id": "ut-r277-700-6-15b",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(15)(b)",
+      "quote": "a student may earn 0.5 units of credit per sport for team sport or athletic participation up to a maximum of 1.0 units of credit with LEA approval to replace participation skills and individualized lifetime activities requirements."
+    },
+    {
+      "id": "ut-r277-700-6-16",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(16)",
+      "quote": "Career and Technical Education (CTE) (1.0 units of credit) from CTE approved pathways."
+    },
+    {
+      "id": "ut-r277-700-6-17",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(17)",
+      "quote": "Digital Studies (0.5 units of credit)."
+    },
+    {
+      "id": "ut-r277-700-6-19",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(19)",
+      "quote": "General Financial Literacy (0.5 units of credit)."
+    },
+    {
+      "id": "ut-r277-700-6-2",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(2)",
+      "quote": "A student in grades 9-12 shall earn a minimum of 24 units of credit through course completion or through competency assessment consistent with Rule R277-705 to graduate."
+    },
+    {
+      "id": "ut-r277-700-6-22",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(22)",
+      "quote": "An LEA board may require a student to earn credits for graduation that exceed the minimum Board requirements described in this rule."
+    },
+    {
+      "id": "ut-r277-700-6-3",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(3)(a)",
+      "quote": "Through recording of credits in a student's transcripts for grades 9-12, for purposes of high school graduation, an LEA shall recognize high school credits earned before grade 9."
+    },
+    {
+      "id": "ut-r277-700-6-5",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(5)",
+      "quote": "Language Arts (4.0 units of credit from the following): (a) Grade 9 level (1.0 unit of credit); (b) Grade 10 level (1.0 unit of credit); (c) Grade 11 level (1.0 unit of credit); and (d) Grade 12 level (1.0 Unit of credit)"
+    },
+    {
+      "id": "ut-r277-700-6-5e",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(5)(e)",
+      "quote": "A student may receive up to a half credit of the students four required Language Arts credits for a course or school sponsored activity emphasizing verbal communication during any year between grades 9 and 12."
+    },
+    {
+      "id": "ut-r277-700-6-6",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(6)",
+      "quote": "Mathematics (3.0 units of credit) shall be met minimally through successful completion of a combination of the foundation or foundation extended courses, Secondary Mathematics I, Secondary Mathematics II, and Secondary Mathematics III."
+    },
+    {
+      "id": "ut-r277-700-6-7",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(7)",
+      "quote": "(a) A student may opt out of Secondary Mathematics III if the student's parent submits a written request to the school. (b) If a student's parent requests an opt out described in Subsection (6)(a), the student shall complete a third math credit from the Board-approved mathematics list."
+    },
+    {
+      "id": "ut-r277-700-9-2",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-9(2)",
+      "quote": "in addition to the graduation requirements described in Section R277-700-6, beginning with the 2016-17 school year, a student pursuing a college degree after graduation shall: (a) receive one of the following:"
+    },
+    {
+      "id": "ut-r277-700-9-2a-1",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-9(2)(a)(i)-(iv)",
+      "quote": "(i) a score of 3 or higher on an Advanced Placement (AP) calculus AB or BC exam; (ii) a score of 3 or higher on an Advanced Placement (AP) statistics exam; (iii) a score of 5 or higher on an International Baccalaureate (IB) higher level math exam;"
+    },
+    {
+      "id": "ut-r277-700-9-2a-2",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-9(2)(a)(iv)-(vi)",
+      "quote": "(iv) a score of 50 or higher on a College Level Exam Program (CLEP) pre-calculus or calculus exam; (v) a score of 26 or higher on the mathematics portion of the American College Test (ACT) exam; (vi) a score of 640 or higher on the mathematics portion of the Scholastic Aptitude Test (SAT) exam; or"
+    },
+    {
+      "id": "ut-r277-700-9-2a-3",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-9(2)(a)(vii)",
+      "quote": "(vii) a \"C\" grade in a concurrent enrollment mathematics course that satisfies a state system of higher education quantitative literacy requirement; or"
+    },
+    {
+      "id": "ut-r277-700-9-2b",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-9(2)(b)",
+      "quote": "(b) if the student is a senior student with a special circumstance, take a full year mathematics course during the student's senior year of high school."
+    },
+    {
+      "id": "ut-ssfaq-acgc-available",
+      "source": "UT-S4",
+      "pinpoint": "p. 1",
+      "quote": "American Constitutional Government and Citizenship will be available to students in the 2027-2028 school year."
+    },
+    {
+      "id": "ut-ssfaq-prior-credit",
+      "source": "UT-S4",
+      "pinpoint": "p. 2",
+      "quote": "prior credit from that course may not be used to fulfill any portion of the new American Constitutional Government and Citizenship course requirement."
+    },
+    {
+      "id": "ut-ssfaq-seniors",
+      "source": "UT-S4",
+      "pinpoint": "p. 1",
+      "quote": "The U.S. Government and Citizenship course is being replaced by the American Constitutional Government and Citizenship course, so senior students would take that course to fulfill the former requirement."
+    },
+    {
+      "id": "ut-usbe-2627-arts",
+      "source": "UT-S3",
+      "pinpoint": "p. 6",
+      "quote": "Information regarding HB 312 (2026) will be made available as soon as possible. This area will be updated at that time."
+    },
+    {
+      "id": "ut-usbe-2627-digital",
+      "source": "UT-S3",
+      "pinpoint": "p. 6",
+      "quote": "The six approved courses that count towards the Digital Studies 0.5 required graduation credit are: Business Office Specialist Digital Business Apps Computer Programming 1 Exploring Computer Science Computer Science Principles Web Development 1"
+    },
+    {
+      "id": "ut-usbe-2627-electives",
+      "source": "UT-S3",
+      "pinpoint": "p. 7",
+      "quote": "Electives 5.5 credits* applies to 11th & 12th grade cohorts of 2026-27 *(5.0 required for 9th & 10th grade cohorts of 2026-27 and all subsequent cohorts)"
+    },
+    {
+      "id": "ut-usbe-2627-engl1010",
+      "source": "UT-S3",
+      "pinpoint": "p. 2",
+      "quote": "Students who took ENGL 1010* to fulfill their level 11 ELA requirement before the 2026-2027 school year or who are participating in an approved ENGL 1010 pilot, may apply that credit to the level 11 ELA requirement."
+    },
+    {
+      "id": "ut-usbe-2627-gfl",
+      "source": "UT-S3",
+      "pinpoint": "p. 7",
+      "quote": "The 0.5 credit for General Financial Literacy can be met through the following courses: General Financial Literacy or Finance CE"
+    },
+    {
+      "id": "ut-usbe-2627-gfl-ce",
+      "source": "UT-S3",
+      "pinpoint": "p. 7",
+      "quote": "Finance CE will no longer be an option to fulfill this requirement beginning in school year 2027-2028. Students who have taken Finance CE in school years 2026-2027 or before will still have that course applied to the General Financial Literacy (GFL) graduation requirement."
+    },
+    {
+      "id": "ut-usbe-2627-health",
+      "source": "UT-S3",
+      "pinpoint": "p. 6",
+      "quote": "Health Education 0.5 credits Health II"
+    },
+    {
+      "id": "ut-usbe-2627-la",
+      "source": "UT-S3",
+      "pinpoint": "p. 2",
+      "quote": "Three courses from the foundational courses plus one course from the Level 12 course options or the Applied and Advanced List"
+    },
+    {
+      "id": "ut-usbe-2627-la-applied",
+      "source": "UT-S3",
+      "pinpoint": "p. 2",
+      "quote": "AP World Languages Business Communication Creative Writing 1 & 2 Debate 2 & 3 Humanities Journalism 1 & 2 Literary Magazine Literature Mythology Professional & Technical Communication Speech 2"
+    },
+    {
+      "id": "ut-usbe-2627-la10",
+      "source": "UT-S3",
+      "pinpoint": "p. 2",
+      "quote": "Language Arts Level 10 (1.0 Credit) ELA 10 AP Seminar"
+    },
+    {
+      "id": "ut-usbe-2627-la11",
+      "source": "UT-S3",
+      "pinpoint": "p. 2",
+      "quote": "Language Arts Level 11 (1.0 Credit) English 11 English 11 Honors International Baccalaureate AP Literature & Composition AP Language & Composition"
+    },
+    {
+      "id": "ut-usbe-2627-la12",
+      "source": "UT-S3",
+      "pinpoint": "p. 2",
+      "quote": "Language Arts Level 12 (1.0 Credit) English 12 English Concurrent Enrollment* International Baccalaureate AP Literature & Composition AP Language & Composition"
+    },
+    {
+      "id": "ut-usbe-2627-math-applied",
+      "source": "UT-S3",
+      "pinpoint": "p. 3",
+      "quote": "Applied Courses (Secondary II Prerequisite) Alternative Selections for Secondary III must total 1.0 credit"
+    },
+    {
+      "id": "ut-usbe-2627-math-applied-list",
+      "source": "UT-S3",
+      "pinpoint": "p. 3",
+      "quote": "Accounting I (0.5) Accounting II (0.5) Computer Programming 1 (0.5) If not used for Digital Studies or CTE credit Computer Programming 2 (0.5) Introductory Statistics or Intro to Data Science (1.0) Mathematical Decision Making for Life (non-CE course) (1.0)"
+    },
+    {
+      "id": "ut-usbe-2627-math-applied-list2",
+      "source": "UT-S3",
+      "pinpoint": "p. 3",
+      "quote": "Mathematics of Personal Finance (Does not count for General Financial Literacy) (1.0) Medical Math (0.5) Modern Mathematics (1.0) Small Business Math (0.5)"
+    },
+    {
+      "id": "ut-usbe-2627-sci",
+      "source": "UT-S3",
+      "pinpoint": "p. 4",
+      "quote": "A total of two courses from two of the five areas of science on the Foundational Courses list plus one credit from the Foundation Courses list or Applied and Advanced Courses list."
+    },
+    {
+      "id": "ut-usbe-2627-sci-cs",
+      "source": "UT-S3",
+      "pinpoint": "p. 4",
+      "quote": "Computer Science AP Computer Science+ Computer Science Principles+"
+    },
+    {
+      "id": "ut-usbe-2627-sci-robotics",
+      "source": "UT-S3",
+      "pinpoint": "p. 4",
+      "quote": "Robotics+ 1, 2 Veterinary Assistant+ 1, 2"
+    },
+    {
+      "id": "ut-usbe-2627-sec3-optout",
+      "source": "UT-S3",
+      "pinpoint": "p. 3",
+      "quote": "Secondary III can be replaced by an Applied Course with a written parent request acknowledging that opting their student out of Secondary Math III leaves them unprepared for college mathematics."
+    },
+    {
+      "id": "ut-usbe-2627-ss",
+      "source": "UT-S3",
+      "pinpoint": "p. 5",
+      "quote": "Social Studies – 3.0 Credits applies to 11th & 12th graders of 2026-2027 (3.5 credits required for 9th & 10th grade cohorts of 2026-2027 and all cohorts afterward)"
+    },
+    {
+      "id": "ut-usbe-2627-ss-half",
+      "source": "UT-S3",
+      "pinpoint": "p. 5",
+      "quote": "2.5 from the foundational required course list (or their equivalent) and .5 elective from any course from the Applied/Advanced social studies area, which could include an additional half credit added to any of the required half-credit courses."
+    },
+    {
+      "id": "ut-usbe-2627-wl34",
+      "source": "UT-S3",
+      "pinpoint": "p. 2",
+      "quote": "World Languages 3 & 4 will no longer be eligible to fulfill the 4th Language Arts Credit beginning in SY 2027-2028. Students who have taken the course prior to that school year may apply that credit to their 4th ELA requirement."
+    }
+  ],
+  "state": "UT",
+  "kind": "graduation",
+  "ruleSets": [
+    {
+      "id": "ut.grad",
+      "state": "UT",
+      "kind": "state_graduation",
+      "title": "Utah high school graduation requirements",
+      "issuer": { "kind": "state", "name": "Utah" },
+      "plainSummary": "Utah requires at least 24 credits in set subjects to graduate. The classes of 2027 and 2028 need 3 social studies credits; the class of 2029 and later need 3.5, including a new American government class. College-bound students also show they're ready for college math, or take math in 12th grade.",
+      "strength": "required",
+      "strengthCite": "ut-r277-700-6-2",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "projectedBeyond": 2030,
+      "appliesWhen": {  },
+      "variants": [
+        {
+          "id": "ut.grad.2027",
+          "cohort": { "to": 2028 },
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "ela",
+              "label": "Language arts",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "ela.9",
+                  "label": "Grade 9 language arts",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.9"] }],
+                  "cite": ["ut-r277-700-6-5"]
+                },
+                {
+                  "id": "ela.10",
+                  "label": "Grade 10 language arts",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.10", "ela.seminar"] }],
+                  "cite": ["ut-r277-700-6-5", "ut-usbe-2627-la10"]
+                },
+                {
+                  "id": "ela.11",
+                  "label": "Grade 11 language arts",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "types": ["ela.11"] },
+                    { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] },
+                    { "types": ["ela.lang_comp"], "levels": ["dual_enrollment"], "schoolYears": { "to": 2025 } }
+                  ],
+                  "cite": ["ut-r277-700-6-5", "ut-usbe-2627-la11", "ut-usbe-2627-engl1010"],
+                  "note": "ENGL 1010 taken in 2026-27 or later counts for level 11 only through an approved ENGL 1010 pilot. Ask your counselor whether your class is part of one.",
+                  "ask": {
+                    "select": [{ "types": ["ela.lang_comp"], "levels": ["dual_enrollment"], "grades": [11], "schoolYears": { "from": 2026 } }],
+                    "question": "Is my school's ENGL 1010 an approved pilot, so it counts for level 11 English?",
+                    "cite": ["ut-usbe-2627-engl1010"]
+                  }
+                },
+                {
+                  "id": "ela.12",
+                  "label": "Grade 12 language arts",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    {
+                      "types": ["ela.12", "ela.lang_comp", "ela.lit_comp", "ela.creative_writing", "ela.debate", "ela.humanities", "ela.journalism", "ela.professional_comm", "ela.speech"]
+                    },
+                    {
+                      "types": ["lang.es.4", "lang.fr.4", "lang.de.4", "lang.la.4", "lang.zh.4", "lang.ja.4", "lang.ru.4", "lang.ar.4", "lang.it.4", "lang.ko.4", "lang.pt.4", "lang.asl.4", "lang.other.4"],
+                      "levels": ["ap"]
+                    },
+                    {
+                      "types": ["lang.es.3", "lang.fr.3", "lang.de.3", "lang.la.3", "lang.zh.3", "lang.ja.3", "lang.ru.3", "lang.ar.3", "lang.it.3", "lang.ko.3", "lang.pt.3", "lang.asl.3", "lang.other.3", "lang.es.4", "lang.fr.4", "lang.de.4", "lang.la.4", "lang.zh.4", "lang.ja.4", "lang.ru.4", "lang.ar.4", "lang.it.4", "lang.ko.4", "lang.pt.4", "lang.asl.4", "lang.other.4"],
+                      "schoolYears": { "to": 2026 }
+                    }
+                  ],
+                  "cite": ["ut-r277-700-6-5", "ut-usbe-2627-la", "ut-usbe-2627-la12", "ut-usbe-2627-la-applied", "ut-usbe-2627-wl34"],
+                  "note": "Level 12 can be English 12, concurrent enrollment English, AP or IB English, or a class on the state's applied and advanced list (such as creative writing, debate or journalism)."
+                }
+              ],
+              "area": "english"
+            },
+            {
+              "id": "math",
+              "label": "Math",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "math.secondary",
+                  "label": "Secondary Math I, II and III",
+                  "kind": "all",
+                  "of": [
+                    {
+                      "id": "math.sec1",
+                      "label": "Secondary Math I",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["math.ut_sec1"] }],
+                      "cite": ["ut-r277-700-6-6"]
+                    },
+                    {
+                      "id": "math.sec2",
+                      "label": "Secondary Math II",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["math.ut_sec2"] }],
+                      "cite": ["ut-r277-700-6-6"]
+                    },
+                    {
+                      "id": "math.third",
+                      "label": "Secondary Math III",
+                      "kind": "option",
+                      "pref": "utMath3OptOut",
+                      "on": {
+                        "id": "math.third.applied",
+                        "label": "A third math credit from the state's applied list",
+                        "kind": "credits",
+                        "units": 4,
+                        "select": [
+                          {
+                            "types": ["cte.accounting", "cte.accounting2", "cs.prog1", "cs.prog2", "math.stats", "cs.data_science", "math.applied.decision", "math.applied.finance", "math.applied.medical", "math.applied.business"]
+                          }
+                        ],
+                        "cite": ["ut-r277-700-6-7", "ut-usbe-2627-math-applied", "ut-usbe-2627-math-applied-list", "ut-usbe-2627-math-applied-list2"],
+                        "note": "Some of these are half-credit classes, so it can take two. Modern Mathematics also counts; ask your counselor how your school lists it."
+                      },
+                      "off": {
+                        "id": "math.sec3",
+                        "label": "Secondary Math III",
+                        "kind": "credits",
+                        "units": 4,
+                        "select": [{ "types": ["math.ut_sec3"] }],
+                        "cite": ["ut-r277-700-6-6"]
+                      },
+                      "cite": ["ut-r277-700-6-7"]
+                    },
+                    {
+                      "id": "math.hs_credits",
+                      "label": "3 math credits in grades 9-12",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "subjects": ["math"], "grades": [9, 10, 11, 12], "exclude": ["math.ms"] }],
+                      "shareable": true,
+                      "cite": ["ut-r277-700-6-9-grad"],
+                      "note": "A math class passed before 9th grade still leaves 3 math credits to earn in high school."
+                    }
+                  ]
+                },
+                {
+                  "id": "math.calculus",
+                  "label": "A calculus class with a C or better",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.calc", "math.calc2"], "minLetter": "C" }],
+                  "cite": ["ut-r277-700-6-10"],
+                  "onlyWhenDone": true,
+                  "note": "This counts once you've passed a calculus class with a C or better. Until then, Secondary Math I, II and III is the route we plan."
+                }
+              ],
+              "area": "math",
+              "note": "Passing a calculus class with a C or better finishes the math requirement, however many math credits you have."
+            },
+            {
+              "id": "sci",
+              "label": "Science",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "sci.foundation",
+                  "label": "Two of the five foundation science areas",
+                  "kind": "choose",
+                  "n": 2,
+                  "of": [
+                    {
+                      "id": "sci.earth",
+                      "label": "Earth science",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["sci.earth"] }, { "types": ["sci.env"], "levels": ["ap", "ib"] }],
+                      "cite": ["ut-r277-700-6-11-earth"]
+                    },
+                    {
+                      "id": "sci.biology",
+                      "label": "Biological science",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["sci.bio", "sci.bio2"], "lab": true }],
+                      "cite": ["ut-r277-700-6-11-bio"]
+                    },
+                    {
+                      "id": "sci.chemistry",
+                      "label": "Chemistry",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["sci.chem", "sci.chem2"], "lab": true }],
+                      "cite": ["ut-r277-700-6-11-chem"]
+                    },
+                    {
+                      "id": "sci.physics",
+                      "label": "Physics",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["sci.phys", "sci.phys2"], "lab": true }],
+                      "cite": ["ut-r277-700-6-11-phys"]
+                    },
+                    {
+                      "id": "sci.cs",
+                      "label": "Computer science",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["cs.principles", "cs.prog2", "cs.advanced"] }],
+                      "cite": ["ut-r277-700-6-11-cs", "ut-usbe-2627-sci-cs"]
+                    }
+                  ],
+                  "cite": ["ut-r277-700-6-11a", "ut-usbe-2627-sci"]
+                },
+                {
+                  "id": "sci.more",
+                  "label": "One more science credit",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "subjects": ["science"], "exclude": ["sci.ms"] },
+                    { "types": ["cs.principles", "cs.prog2", "cs.advanced"] },
+                    {
+                      "types": ["cte.agriscience", "cte.animal_science", "cte.engineering_design", "cte.robotics", "cte.robotics2", "cte.digital_electronics"]
+                    }
+                  ],
+                  "cite": ["ut-r277-700-6-11b", "ut-usbe-2627-sci", "ut-r277-700-6-11-cs", "ut-usbe-2627-sci-robotics"]
+                }
+              ],
+              "area": "science"
+            },
+            {
+              "id": "ss",
+              "label": "Social studies",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "ss.world_geo",
+                  "label": "World geography",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.world_geo"] }],
+                  "cite": ["ut-r277-700-6-12a", "ut-usbe-2627-ss-half"]
+                },
+                {
+                  "id": "ss.world_hist",
+                  "label": "World history",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.world_hist"] }],
+                  "cite": ["ut-r277-700-6-12a", "ut-usbe-2627-ss-half"]
+                },
+                {
+                  "id": "ss.us_hist",
+                  "label": "U.S. history",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ss.us_hist"] }],
+                  "cite": ["ut-r277-700-6-12a"]
+                },
+                {
+                  "id": "ss.us_gov",
+                  "label": "U.S. Government and Citizenship",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.us_gov"] }, { "types": ["ss.ut_acgc"], "schoolYears": { "from": 2027 } }],
+                  "cite": ["ut-r277-700-6-12a", "ut-ssfaq-seniors", "ut-usbe-2627-ss-half"],
+                  "note": "U.S. Government and Citizenship is retired in 2027-28; seniors that year take the new American Constitutional Government and Citizenship class instead."
+                },
+                {
+                  "id": "ss.elective",
+                  "label": "Social studies elective",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+                  "cite": ["ut-r277-700-6-12b", "ut-usbe-2627-ss-half"]
+                }
+              ],
+              "area": "social_studies",
+              "cite": ["ut-r277-700-6-12", "ut-usbe-2627-ss"]
+            },
+            {
+              "id": "arts",
+              "label": "The arts",
+              "kind": "credits",
+              "units": 6,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+              "cite": ["ut-r277-700-6-13"],
+              "area": "arts"
+            },
+            {
+              "id": "health",
+              "label": "Health",
+              "kind": "credits",
+              "units": 2,
+              "select": [{ "types": ["health.health"] }],
+              "cite": ["ut-r277-700-6-14", "ut-usbe-2627-health"],
+              "area": "health_pe"
+            },
+            {
+              "id": "pe",
+              "label": "Physical education",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "pe.skills",
+                  "label": "Participation Skills and Techniques",
+                  "kind": "credits",
+                  "units": 2,
+                  "select": [{ "types": ["pe.skills"] }, { "types": ["pe.athletics"] }],
+                  "cite": ["ut-r277-700-6-15", "ut-r277-700-6-15b"]
+                },
+                {
+                  "id": "pe.fitness",
+                  "label": "Fitness for Life",
+                  "kind": "credits",
+                  "units": 2,
+                  "select": [{ "types": ["pe.fitness"] }],
+                  "cite": ["ut-r277-700-6-15"]
+                },
+                {
+                  "id": "pe.lifetime",
+                  "label": "Individualized Lifetime Activities",
+                  "kind": "credits",
+                  "units": 2,
+                  "select": [{ "types": ["pe.lifetime"] }, { "types": ["pe.athletics"] }],
+                  "cite": ["ut-r277-700-6-15", "ut-r277-700-6-15b"]
+                }
+              ],
+              "area": "health_pe",
+              "note": "A full school sport season can earn half a credit toward Participation Skills or Lifetime Activities, with your district's approval."
+            },
+            {
+              "id": "cte",
+              "label": "Career and technical education",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "cte": true }],
+              "cite": ["ut-r277-700-6-16"],
+              "area": "career_technical"
+            },
+            {
+              "id": "digital",
+              "label": "Digital studies",
+              "kind": "credits",
+              "units": 2,
+              "select": [{ "types": ["cte.business_office", "cs.prog1", "cs.intro", "cs.principles", "cs.web"] }],
+              "cite": ["ut-r277-700-6-17", "ut-usbe-2627-digital"],
+              "area": "digital_studies"
+            },
+            {
+              "id": "gfl",
+              "label": "General financial literacy",
+              "kind": "credits",
+              "units": 2,
+              "select": [
+                { "types": ["ss.pfl"], "levels": ["regular"] },
+                { "types": ["ss.pfl"], "levels": ["dual_enrollment"], "schoolYears": { "to": 2026 } }
+              ],
+              "cite": ["ut-r277-700-6-19", "ut-usbe-2627-gfl", "ut-usbe-2627-gfl-ce"],
+              "area": "financial_literacy",
+              "note": "Only General Financial Literacy counts (Finance CE counted through 2026-27). Mathematics of Personal Finance doesn't count here."
+            },
+            {
+              "id": "electives",
+              "label": "Electives",
+              "kind": "remaining_electives",
+              "units": 22,
+              "cite": ["ut-usbe-2627-electives"],
+              "area": "electives"
+            },
+            {
+              "id": "total",
+              "label": "Total credits",
+              "kind": "total_credits",
+              "units": 96,
+              "source": "state",
+              "cite": ["ut-r277-700-6-2", "ut-r277-700-6-22"],
+              "note": "This is the state minimum. Your district may require more."
+            }
+          ],
+          "checks": [
+            {
+              "id": "ut.grad.senior-math",
+              "kind": "senior_year_math",
+              "unlessChoice": "utMathCompetencyMet",
+              "cite": ["ut-r277-700-9-2", "ut-r277-700-9-2b"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "ut.grad.district-more",
+              "text": "24 credits is the state minimum. Your district may require more, so check your school's total with your counselor.",
+              "cite": ["ut-r277-700-6-22"]
+            },
+            {
+              "id": "ut.grad.before-9",
+              "text": "High school classes you pass before 9th grade count toward graduation, and their grades go into your 9th-grade GPA. They may affect scholarship or college eligibility, so check first.",
+              "cite": ["ut-r277-700-6-3", "ut-msfaq-gpa", "ut-msfaq-eligibility"]
+            },
+            {
+              "id": "ut.grad.verbal",
+              "text": "Up to half a credit of language arts can come from a class or school activity focused on speaking, such as debate.",
+              "cite": ["ut-r277-700-6-5e"]
+            },
+            {
+              "id": "ut.grad.math3-optout",
+              "text": "A parent can opt a student out of Secondary Math III in writing, but the state warns this leaves students unprepared for college math.",
+              "cite": ["ut-usbe-2627-sec3-optout", "ut-r277-700-6-7"]
+            },
+            {
+              "id": "ut.grad.ce-science-lab",
+              "text": "A concurrent enrollment science class counts as a foundation science only in its version with a lab.",
+              "cite": ["ut-r277-700-6-11-bio", "ut-r277-700-6-11-chem", "ut-r277-700-6-11-phys"]
+            },
+            {
+              "id": "ut.grad.arts-hb312",
+              "text": "A 2026 law lets each district decide whether applied crafts and technical arts classes, such as woodworking, count for arts credit. Ask your counselor what your district allows.",
+              "cite": ["ut-hb312-arts", "ut-usbe-2627-arts"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "ut.grad.cs-course-name",
+              "text": "Utah's rule names Computer Programming 2 as a computer science foundation class, while the 2026-27 course list names Computer Science Advanced. Ask your counselor which one your school counts."
+            }
+          ]
+        },
+        {
+          "id": "ut.grad.2029",
+          "cohort": { "from": 2029 },
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "ela",
+              "label": "Language arts",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "ela.9",
+                  "label": "Grade 9 language arts",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.9"] }],
+                  "cite": ["ut-r277-700-6-5"]
+                },
+                {
+                  "id": "ela.10",
+                  "label": "Grade 10 language arts",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.10", "ela.seminar"] }],
+                  "cite": ["ut-r277-700-6-5", "ut-usbe-2627-la10"]
+                },
+                {
+                  "id": "ela.11",
+                  "label": "Grade 11 language arts",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "types": ["ela.11"] },
+                    { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] },
+                    { "types": ["ela.lang_comp"], "levels": ["dual_enrollment"], "schoolYears": { "to": 2025 } }
+                  ],
+                  "cite": ["ut-r277-700-6-5", "ut-usbe-2627-la11", "ut-usbe-2627-engl1010"],
+                  "note": "ENGL 1010 taken in 2026-27 or later counts for level 11 only through an approved ENGL 1010 pilot. Ask your counselor whether your class is part of one.",
+                  "ask": {
+                    "select": [{ "types": ["ela.lang_comp"], "levels": ["dual_enrollment"], "grades": [11], "schoolYears": { "from": 2026 } }],
+                    "question": "Is my school's ENGL 1010 an approved pilot, so it counts for level 11 English?",
+                    "cite": ["ut-usbe-2627-engl1010"]
+                  }
+                },
+                {
+                  "id": "ela.12",
+                  "label": "Grade 12 language arts",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    {
+                      "types": ["ela.12", "ela.lang_comp", "ela.lit_comp", "ela.creative_writing", "ela.debate", "ela.humanities", "ela.journalism", "ela.professional_comm", "ela.speech"]
+                    },
+                    {
+                      "types": ["lang.es.4", "lang.fr.4", "lang.de.4", "lang.la.4", "lang.zh.4", "lang.ja.4", "lang.ru.4", "lang.ar.4", "lang.it.4", "lang.ko.4", "lang.pt.4", "lang.asl.4", "lang.other.4"],
+                      "levels": ["ap"]
+                    },
+                    {
+                      "types": ["lang.es.3", "lang.fr.3", "lang.de.3", "lang.la.3", "lang.zh.3", "lang.ja.3", "lang.ru.3", "lang.ar.3", "lang.it.3", "lang.ko.3", "lang.pt.3", "lang.asl.3", "lang.other.3", "lang.es.4", "lang.fr.4", "lang.de.4", "lang.la.4", "lang.zh.4", "lang.ja.4", "lang.ru.4", "lang.ar.4", "lang.it.4", "lang.ko.4", "lang.pt.4", "lang.asl.4", "lang.other.4"],
+                      "schoolYears": { "to": 2026 }
+                    }
+                  ],
+                  "cite": ["ut-r277-700-6-5", "ut-usbe-2627-la", "ut-usbe-2627-la12", "ut-usbe-2627-la-applied", "ut-usbe-2627-wl34"],
+                  "note": "Level 12 can be English 12, concurrent enrollment English, AP or IB English, or a class on the state's applied and advanced list (such as creative writing, debate or journalism)."
+                }
+              ],
+              "area": "english"
+            },
+            {
+              "id": "math",
+              "label": "Math",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "math.secondary",
+                  "label": "Secondary Math I, II and III",
+                  "kind": "all",
+                  "of": [
+                    {
+                      "id": "math.sec1",
+                      "label": "Secondary Math I",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["math.ut_sec1"] }],
+                      "cite": ["ut-r277-700-6-6"]
+                    },
+                    {
+                      "id": "math.sec2",
+                      "label": "Secondary Math II",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["math.ut_sec2"] }],
+                      "cite": ["ut-r277-700-6-6"]
+                    },
+                    {
+                      "id": "math.third",
+                      "label": "Secondary Math III",
+                      "kind": "option",
+                      "pref": "utMath3OptOut",
+                      "on": {
+                        "id": "math.third.applied",
+                        "label": "A third math credit from the state's applied list",
+                        "kind": "credits",
+                        "units": 4,
+                        "select": [
+                          {
+                            "types": ["cte.accounting", "cte.accounting2", "cs.prog1", "cs.prog2", "math.stats", "cs.data_science", "math.applied.decision", "math.applied.finance", "math.applied.medical", "math.applied.business"]
+                          }
+                        ],
+                        "cite": ["ut-r277-700-6-7", "ut-usbe-2627-math-applied", "ut-usbe-2627-math-applied-list", "ut-usbe-2627-math-applied-list2"],
+                        "note": "Some of these are half-credit classes, so it can take two. Modern Mathematics also counts; ask your counselor how your school lists it."
+                      },
+                      "off": {
+                        "id": "math.sec3",
+                        "label": "Secondary Math III",
+                        "kind": "credits",
+                        "units": 4,
+                        "select": [{ "types": ["math.ut_sec3"] }],
+                        "cite": ["ut-r277-700-6-6"]
+                      },
+                      "cite": ["ut-r277-700-6-7"]
+                    },
+                    {
+                      "id": "math.hs_credits",
+                      "label": "3 math credits in grades 9-12",
+                      "kind": "credits",
+                      "units": 12,
+                      "select": [{ "subjects": ["math"], "grades": [9, 10, 11, 12], "exclude": ["math.ms"] }],
+                      "shareable": true,
+                      "cite": ["ut-r277-700-6-9-grad"],
+                      "note": "A math class passed before 9th grade still leaves 3 math credits to earn in high school."
+                    }
+                  ]
+                },
+                {
+                  "id": "math.calculus",
+                  "label": "A calculus class with a C or better",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.calc", "math.calc2"], "minLetter": "C" }],
+                  "cite": ["ut-r277-700-6-10"],
+                  "onlyWhenDone": true,
+                  "note": "This counts once you've passed a calculus class with a C or better. Until then, Secondary Math I, II and III is the route we plan."
+                }
+              ],
+              "area": "math",
+              "note": "Passing a calculus class with a C or better finishes the math requirement, however many math credits you have."
+            },
+            {
+              "id": "sci",
+              "label": "Science",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "sci.foundation",
+                  "label": "Two of the five foundation science areas",
+                  "kind": "choose",
+                  "n": 2,
+                  "of": [
+                    {
+                      "id": "sci.earth",
+                      "label": "Earth science",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["sci.earth"] }, { "types": ["sci.env"], "levels": ["ap", "ib"] }],
+                      "cite": ["ut-r277-700-6-11-earth"]
+                    },
+                    {
+                      "id": "sci.biology",
+                      "label": "Biological science",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["sci.bio", "sci.bio2"], "lab": true }],
+                      "cite": ["ut-r277-700-6-11-bio"]
+                    },
+                    {
+                      "id": "sci.chemistry",
+                      "label": "Chemistry",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["sci.chem", "sci.chem2"], "lab": true }],
+                      "cite": ["ut-r277-700-6-11-chem"]
+                    },
+                    {
+                      "id": "sci.physics",
+                      "label": "Physics",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["sci.phys", "sci.phys2"], "lab": true }],
+                      "cite": ["ut-r277-700-6-11-phys"]
+                    },
+                    {
+                      "id": "sci.cs",
+                      "label": "Computer science",
+                      "kind": "credits",
+                      "units": 4,
+                      "select": [{ "types": ["cs.principles", "cs.prog2", "cs.advanced"] }],
+                      "cite": ["ut-r277-700-6-11-cs", "ut-usbe-2627-sci-cs"]
+                    }
+                  ],
+                  "cite": ["ut-r277-700-6-11a", "ut-usbe-2627-sci"]
+                },
+                {
+                  "id": "sci.more",
+                  "label": "One more science credit",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "subjects": ["science"], "exclude": ["sci.ms"] },
+                    { "types": ["cs.principles", "cs.prog2", "cs.advanced"] },
+                    {
+                      "types": ["cte.agriscience", "cte.animal_science", "cte.engineering_design", "cte.robotics", "cte.robotics2", "cte.digital_electronics"]
+                    }
+                  ],
+                  "cite": ["ut-r277-700-6-11b", "ut-usbe-2627-sci", "ut-r277-700-6-11-cs", "ut-usbe-2627-sci-robotics"]
+                }
+              ],
+              "area": "science"
+            },
+            {
+              "id": "ss",
+              "label": "Social studies",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "ss.world_geo",
+                  "label": "World geography",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.world_geo"] }],
+                  "cite": ["ut-r277-700-6-12a", "ut-usbe-2627-ss-half"]
+                },
+                {
+                  "id": "ss.world_hist",
+                  "label": "World history",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.world_hist"] }],
+                  "cite": ["ut-r277-700-6-12a", "ut-usbe-2627-ss-half"]
+                },
+                {
+                  "id": "ss.us_hist",
+                  "label": "U.S. history",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ss.us_hist"] }],
+                  "cite": ["ut-r277-700-6-12a"]
+                },
+                {
+                  "id": "ss.acgc",
+                  "label": "American Constitutional Government and Citizenship",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ss.ut_acgc"], "schoolYears": { "from": 2027 } }],
+                  "cite": ["ut-r277-700-6-12-acgc", "ut-ssfaq-acgc-available", "ut-ssfaq-prior-credit"],
+                  "note": "First offered in 2027-28. Earlier U.S. Government and Citizenship credit doesn't count toward it."
+                },
+                {
+                  "id": "ss.elective",
+                  "label": "Social studies elective",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+                  "cite": ["ut-r277-700-6-12b", "ut-usbe-2627-ss-half"]
+                }
+              ],
+              "area": "social_studies",
+              "cite": ["ut-r277-700-6-12", "ut-usbe-2627-ss"]
+            },
+            {
+              "id": "arts",
+              "label": "The arts",
+              "kind": "credits",
+              "units": 6,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+              "cite": ["ut-r277-700-6-13"],
+              "area": "arts"
+            },
+            {
+              "id": "health",
+              "label": "Health",
+              "kind": "credits",
+              "units": 2,
+              "select": [{ "types": ["health.health"] }],
+              "cite": ["ut-r277-700-6-14", "ut-usbe-2627-health"],
+              "area": "health_pe"
+            },
+            {
+              "id": "pe",
+              "label": "Physical education",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "pe.skills",
+                  "label": "Participation Skills and Techniques",
+                  "kind": "credits",
+                  "units": 2,
+                  "select": [{ "types": ["pe.skills"] }, { "types": ["pe.athletics"] }],
+                  "cite": ["ut-r277-700-6-15", "ut-r277-700-6-15b"]
+                },
+                {
+                  "id": "pe.fitness",
+                  "label": "Fitness for Life",
+                  "kind": "credits",
+                  "units": 2,
+                  "select": [{ "types": ["pe.fitness"] }],
+                  "cite": ["ut-r277-700-6-15"]
+                },
+                {
+                  "id": "pe.lifetime",
+                  "label": "Individualized Lifetime Activities",
+                  "kind": "credits",
+                  "units": 2,
+                  "select": [{ "types": ["pe.lifetime"] }, { "types": ["pe.athletics"] }],
+                  "cite": ["ut-r277-700-6-15", "ut-r277-700-6-15b"]
+                }
+              ],
+              "area": "health_pe",
+              "note": "A full school sport season can earn half a credit toward Participation Skills or Lifetime Activities, with your district's approval."
+            },
+            {
+              "id": "cte",
+              "label": "Career and technical education",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "cte": true }],
+              "cite": ["ut-r277-700-6-16"],
+              "area": "career_technical"
+            },
+            {
+              "id": "digital",
+              "label": "Digital studies",
+              "kind": "credits",
+              "units": 2,
+              "select": [{ "types": ["cte.business_office", "cs.prog1", "cs.intro", "cs.principles", "cs.web"] }],
+              "cite": ["ut-r277-700-6-17", "ut-usbe-2627-digital"],
+              "area": "digital_studies"
+            },
+            {
+              "id": "gfl",
+              "label": "General financial literacy",
+              "kind": "credits",
+              "units": 2,
+              "select": [
+                { "types": ["ss.pfl"], "levels": ["regular"] },
+                { "types": ["ss.pfl"], "levels": ["dual_enrollment"], "schoolYears": { "to": 2026 } }
+              ],
+              "cite": ["ut-r277-700-6-19", "ut-usbe-2627-gfl", "ut-usbe-2627-gfl-ce"],
+              "area": "financial_literacy",
+              "note": "Only General Financial Literacy counts (Finance CE counted through 2026-27). Mathematics of Personal Finance doesn't count here."
+            },
+            {
+              "id": "electives",
+              "label": "Electives",
+              "kind": "remaining_electives",
+              "units": 20,
+              "cite": ["ut-usbe-2627-electives"],
+              "area": "electives"
+            },
+            {
+              "id": "total",
+              "label": "Total credits",
+              "kind": "total_credits",
+              "units": 96,
+              "source": "state",
+              "cite": ["ut-r277-700-6-2", "ut-r277-700-6-22"],
+              "note": "This is the state minimum. Your district may require more."
+            }
+          ],
+          "checks": [
+            {
+              "id": "ut.grad.senior-math",
+              "kind": "senior_year_math",
+              "unlessChoice": "utMathCompetencyMet",
+              "cite": ["ut-r277-700-9-2", "ut-r277-700-9-2b"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "ut.grad.district-more",
+              "text": "24 credits is the state minimum. Your district may require more, so check your school's total with your counselor.",
+              "cite": ["ut-r277-700-6-22"]
+            },
+            {
+              "id": "ut.grad.before-9",
+              "text": "High school classes you pass before 9th grade count toward graduation, and their grades go into your 9th-grade GPA. They may affect scholarship or college eligibility, so check first.",
+              "cite": ["ut-r277-700-6-3", "ut-msfaq-gpa", "ut-msfaq-eligibility"]
+            },
+            {
+              "id": "ut.grad.verbal",
+              "text": "Up to half a credit of language arts can come from a class or school activity focused on speaking, such as debate.",
+              "cite": ["ut-r277-700-6-5e"]
+            },
+            {
+              "id": "ut.grad.math3-optout",
+              "text": "A parent can opt a student out of Secondary Math III in writing, but the state warns this leaves students unprepared for college math.",
+              "cite": ["ut-usbe-2627-sec3-optout", "ut-r277-700-6-7"]
+            },
+            {
+              "id": "ut.grad.ce-science-lab",
+              "text": "A concurrent enrollment science class counts as a foundation science only in its version with a lab.",
+              "cite": ["ut-r277-700-6-11-bio", "ut-r277-700-6-11-chem", "ut-r277-700-6-11-phys"]
+            },
+            {
+              "id": "ut.grad.arts-hb312",
+              "text": "A 2026 law lets each district decide whether applied crafts and technical arts classes, such as woodworking, count for arts credit. Ask your counselor what your district allows.",
+              "cite": ["ut-hb312-arts", "ut-usbe-2627-arts"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "ut.grad.cs-course-name",
+              "text": "Utah's rule names Computer Programming 2 as a computer science foundation class, while the 2026-27 course list names Computer Science Advanced. Ask your counselor which one your school counts."
+            },
+            {
+              "id": "ut.grad.acgc-substitutes",
+              "text": "Utah hasn't decided which AP or concurrent enrollment classes will count for American Constitutional Government and Citizenship. Ask your counselor before planning one in its place."
+            }
+          ]
+        }
+      ],
+      "testRoutes": [
+        {
+          "id": "ut.math-competency",
+          "text": "College-bound students show they're ready for college math with one of these: an AP Calculus or AP Statistics score of 3 or higher, an IB higher level math score of 5 or higher, a CLEP precalculus or calculus score of 50 or higher, an ACT math score of 26 or higher, an SAT math score of 640 or higher, or a C in a concurrent enrollment math class that meets the college quantitative literacy requirement. Otherwise, take a full year of math in 12th grade.",
+          "cite": ["ut-r277-700-9-2", "ut-r277-700-9-2a-1", "ut-r277-700-9-2a-2", "ut-r277-700-9-2a-3", "ut-r277-700-9-2b"],
+          "reqIds": ["ut.grad.senior-math"]
+        }
+      ]
+    }
+  ]
+}

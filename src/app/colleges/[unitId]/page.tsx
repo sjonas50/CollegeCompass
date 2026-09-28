@@ -5,13 +5,19 @@ import { cache, type ReactNode } from "react";
 import { AddToListButton } from "@/components/add-to-list";
 import { Card, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
+import { getCurrentUser } from "@/lib/auth/dal";
 import {
   FOR_PROFIT_NOTE,
+  IN_STATE_FOR_YOU,
   MEANINGS,
   PUBLIC_IN_STATE_NOTE,
   TRANSFER_NOTE,
   admissionContext,
+  inStateCaveat,
+  inStateNote,
   outOfStateCost,
+  outOfStateNote,
+  residencyFor,
   sizeText,
   tuitionLines,
 } from "@/lib/colleges/describe";
@@ -20,6 +26,7 @@ import { AID_EXCEEDS_COST, NOT_REPORTED, formatDollars, formatNetPrice, formatPe
 import { CONTROL_LABELS, CREDENTIAL_LABELS, DEGREE_LABELS, MISSION_LABELS } from "@/lib/colleges/labels";
 import { CIP4_PATTERN } from "@/lib/colleges/search";
 import { stateName } from "@/lib/colleges/states";
+import { viewerHomeState } from "@/lib/schools/student";
 import { IncomeBandPicker, NetPriceHeadline, NetPriceTable } from "../income-band";
 import { ExternalLink, MissionBadges, ScorecardAttribution } from "../shared";
 import { ProgramGroups, YourMajor } from "./programs";
@@ -72,6 +79,17 @@ export default async function CollegePage({ params, searchParams }: PageProps<"/
   const netPrice = formatNetPrice(college.avgNetPrice);
   // Public colleges report net price and cost of attendance for in-state students.
   const inState = college.control === 1;
+  // Whether those prices are the viewer's own: a public college in the state they told us.
+  const homeState = await viewerHomeState(await getDb(), await getCurrentUser());
+  const residency = residencyFor(college.control, college.state, homeState);
+  const homeName = homeState ? (stateName(homeState) ?? homeState) : null;
+  const collegeStateName = stateName(college.state) ?? college.state ?? "another state";
+  const residencyNote =
+    residency === "in_state" && homeName
+      ? inStateNote(homeName)
+      : residency === "out_of_state" && homeName
+        ? outOfStateNote(collegeStateName, homeName)
+        : PUBLIC_IN_STATE_NOTE;
   const outOfState = inState ? formatDollars(outOfStateCost(college.costOfAttendance, college.tuitionInState, college.tuitionOutOfState)) : null;
   const tuition = tuitionLines(college.tuitionInState, college.tuitionOutOfState);
   const stickerStats = 1 + (outOfState ? 1 : 0) + tuition.length;
@@ -90,6 +108,12 @@ export default async function CollegePage({ params, searchParams }: PageProps<"/
       <div className="space-y-3">
         <PageHeading title={college.name} lead={facts.join(" · ") || undefined} />
         <MissionBadges missions={college.missions} onlineOnly={college.onlineOnly} />
+        {residency === "in_state" && homeName && (
+          <p className="text-sm">
+            <span className="rounded-full bg-success-soft px-2 py-0.5 font-medium">{IN_STATE_FOR_YOU}</span>{" "}
+            <span className="text-muted">{inStateCaveat(homeName)}</span>
+          </p>
+        )}
         <AddToListButton unitId={college.unitId} name={college.name} />
       </div>
 
@@ -103,7 +127,7 @@ export default async function CollegePage({ params, searchParams }: PageProps<"/
         <Card className="space-y-4">
           <h3 className="font-medium">Net price: what students paid after grants</h3>
           <NetPriceHeadline byIncome={college.netPriceByIncome} inState={inState} />
-          {inState && <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm">{PUBLIC_IN_STATE_NOTE}</p>}
+          {inState && <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm">{residencyNote}</p>}
           <dl>
             <Stat
               term={`Average net price${inState ? " for in-state students" : ""}, all income ranges`}

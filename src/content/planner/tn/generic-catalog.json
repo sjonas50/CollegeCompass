@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "id": "tn.generic-catalog",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "TN-S1": {
+      "title": "High School Policy 2.103 (revised 02/21/2025)",
+      "url": "https://www.tn.gov/content/dam/tn/stateboardofeducation/documents/2025-sbe-meetings/february-21%2c-2025-sbe-meeting/2-21-25%20VII%20E%20High%20School%20Policy%202.103%20Attachment.pdf",
+      "publisher": "Tennessee State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S3": {
+      "title": "Graduation Permissions and Substitutions Policy 3.103 (revised 02/27/2026)",
+      "url": "https://www.tn.gov/content/dam/tn/stateboardofeducation/documents/2026-sbe-meetings/february-27%2c-2026-sbe-meeting/02-27-26%20VI%20F%20Graduation%20Permissions%20and%20Substitutions%20Policy%203.103%20Clean.pdf",
+      "publisher": "Tennessee State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S6B": {
+      "title": "Approved High School Courses Policy 3.205 (revised 5/30/2025)",
+      "url": "https://www.tn.gov/content/dam/tn/stateboardofeducation/documents/2025-sbe-meetings/may-30%2c-2025-sbe-meeting/5-30-25%20VI%20H%20Approved%20High%20School%20Courses%20Policy%203.205%20Clean.pdf",
+      "publisher": "Tennessee State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "tn-2103-i-13",
+      "source": "TN-S1",
+      "pinpoint": "I(13)",
+      "quote": "Students shall complete one-half (½) credit in Personal Finance. Three (3) years of JROTC may be substituted for one-half (½) credit of Personal Finance if the JROTC instructor attends the Personal Finance training."
+    },
+    {
+      "id": "tn-3103-ii-1-math",
+      "source": "TN-S3",
+      "pinpoint": "II(1)",
+      "quote": "Math Calculus Mathematical Reasoning for Decision Making Precalculus Statistic"
+    },
+    {
+      "id": "tn-3103-iii-2",
+      "source": "TN-S3",
+      "pinpoint": "III(2)",
+      "quote": "AP English Language & Composition AP English Literature & Composition AP Research AP Seminar Cambridge International English Program International Baccalaureate English Program Statewide Programs Dual Enrollment English Program"
+    },
+    {
+      "id": "tn-3205-computer-science",
+      "source": "TN-S6B",
+      "pinpoint": "3",
+      "quote": "3.5 Computer Science 3.6 Computer Science Foundations 3.7 Coding I 3.8 Coding II"
+    },
+    {
+      "id": "tn-3205-intro",
+      "source": "TN-S6B",
+      "quote": "The following courses may be offered for credit in grades 9-12."
+    },
+    {
+      "id": "tn-3205-math",
+      "source": "TN-S6B",
+      "pinpoint": "8",
+      "quote": "8.1 Algebra I 8.2 Geometry 8.3 Algebra II 8.4 Integrated Math I, II, III 8.5 Statistics 8.6 Precalculus 8.7 Calculus"
+    },
+    {
+      "id": "tn-3205-science",
+      "source": "TN-S6B",
+      "pinpoint": "10",
+      "quote": "10.1 Physical Science 10.2 Biology I, Biology II 10.3 Human Anatomy and Physiology 10.4 Chemistry I, II 10.5 Earth and Space Science 10.6 Geology 10.7 Environmental Science 10.8 Ecology 10.9 Physics I, Physics II"
+    },
+    {
+      "id": "tn-3205-social-studies",
+      "source": "TN-S6B",
+      "pinpoint": "11",
+      "quote": "11.1 United States History and Geography 11.2 Economics 11.3 United States Government and Civics 11.4 Psychology 11.5 Sociology 11.6 World Geography 11.7 World History and Geography"
+    },
+    {
+      "id": "tn-3205-wellness",
+      "source": "TN-S6B",
+      "pinpoint": "6",
+      "quote": "6.1 Physical Education 6.2 Health Education 6.3 Wellness"
+    },
+    {
+      "id": "tn-3205-world-languages",
+      "source": "TN-S6B",
+      "pinpoint": "12",
+      "quote": "12.1 Latin I, II, III, IV 12.2 French I, II, III, IV 12.3 German I, II, III, IV 12.4 Spanish I, II, III, IV"
+    }
+  ],
+  "state": "TN",
+  "title": "Classes most Tennessee high schools offer",
+  "classesPerYear": 7,
+  "courses": [
+    { "typeId": "ela.9", "levels": ["regular", "honors"], "cite": ["tn-3205-intro"] },
+    { "typeId": "ela.10", "levels": ["regular", "honors"], "cite": ["tn-3205-intro"] },
+    { "typeId": "ela.11", "levels": ["regular", "honors", "dual_enrollment"], "cite": ["tn-3205-intro"] },
+    { "typeId": "ela.12", "levels": ["regular", "honors", "dual_enrollment"], "cite": ["tn-3205-intro"] },
+    { "typeId": "ela.lang_comp", "levels": ["ap"], "cite": ["tn-3103-iii-2"] },
+    { "typeId": "ela.lit_comp", "levels": ["ap"], "cite": ["tn-3103-iii-2"] },
+    { "typeId": "ela.creative_writing", "levels": ["regular"] },
+    { "typeId": "ela.journalism", "levels": ["regular"] },
+    { "typeId": "math.alg1", "levels": ["regular", "honors"], "cite": ["tn-3205-math"] },
+    { "typeId": "math.geom", "levels": ["regular", "honors"], "cite": ["tn-3205-math"] },
+    { "typeId": "math.alg2", "levels": ["regular", "honors"], "cite": ["tn-3205-math"] },
+    { "typeId": "math.int1", "levels": ["regular", "honors"], "cite": ["tn-3205-math"] },
+    { "typeId": "math.int2", "levels": ["regular", "honors"], "cite": ["tn-3205-math"] },
+    { "typeId": "math.int3", "levels": ["regular", "honors"], "cite": ["tn-3205-math"] },
+    { "typeId": "math.precalc", "levels": ["regular", "honors", "dual_enrollment"], "cite": ["tn-3205-math"] },
+    { "typeId": "math.calc", "levels": ["regular", "ap"], "cite": ["tn-3205-math"] },
+    { "typeId": "math.stats", "levels": ["regular", "ap"], "cite": ["tn-3205-math"] },
+    { "typeId": "math.applied.decision", "levels": ["regular"], "cite": ["tn-3103-ii-1-math"] },
+    { "typeId": "sci.ipc", "levels": ["regular"], "cite": ["tn-3205-science"] },
+    { "typeId": "sci.bio", "levels": ["regular", "honors"], "cite": ["tn-3205-science"] },
+    { "typeId": "sci.bio2", "levels": ["regular", "ap"], "cite": ["tn-3205-science"] },
+    { "typeId": "sci.chem", "levels": ["regular", "honors"], "cite": ["tn-3205-science"] },
+    { "typeId": "sci.chem2", "levels": ["ap"], "cite": ["tn-3205-science"] },
+    { "typeId": "sci.phys", "levels": ["regular", "ap"], "cite": ["tn-3205-science"] },
+    { "typeId": "sci.anat", "levels": ["regular"], "cite": ["tn-3205-science"] },
+    { "typeId": "sci.earth", "levels": ["regular"], "cite": ["tn-3205-science"] },
+    { "typeId": "sci.env", "levels": ["regular", "ap"], "cite": ["tn-3205-science"] },
+    { "typeId": "ss.us_hist", "levels": ["regular", "honors", "ap"], "cite": ["tn-3205-social-studies"] },
+    { "typeId": "ss.world_hist", "levels": ["regular", "honors", "ap"], "cite": ["tn-3205-social-studies"] },
+    { "typeId": "ss.econ", "levels": ["regular", "ap"], "cite": ["tn-3205-social-studies"] },
+    { "typeId": "ss.us_gov", "levels": ["regular", "ap"], "cite": ["tn-3205-social-studies"] },
+    { "typeId": "ss.world_geo", "levels": ["regular"], "cite": ["tn-3205-social-studies"] },
+    { "typeId": "ss.psych", "levels": ["regular", "ap"], "cite": ["tn-3205-social-studies"] },
+    { "typeId": "ss.soc", "levels": ["regular"], "cite": ["tn-3205-social-studies"] },
+    { "typeId": "ss.pfl", "levels": ["regular"], "cite": ["tn-2103-i-13"] },
+    { "typeId": "health.wellness", "levels": ["regular"], "cite": ["tn-3205-wellness"] },
+    { "typeId": "pe.general", "levels": ["regular"], "cite": ["tn-3205-wellness"] },
+    { "typeId": "arts.visual", "levels": ["regular", "ap"] },
+    { "typeId": "arts.ensemble", "levels": ["regular"] },
+    { "typeId": "arts.theatre", "levels": ["regular"] },
+    { "typeId": "arts.music_theory", "levels": ["regular", "ap"] },
+    { "typeId": "cs.intro", "levels": ["regular"], "cite": ["tn-3205-computer-science"] },
+    { "typeId": "cs.principles", "levels": ["regular", "ap"], "cite": ["tn-3205-computer-science"] },
+    { "typeId": "cs.prog1", "levels": ["regular"], "cite": ["tn-3205-computer-science"] },
+    { "typeId": "cs.prog2", "levels": ["regular", "ap"], "cite": ["tn-3205-computer-science"] },
+    { "typeId": "lang.es.1", "levels": ["regular"], "cite": ["tn-3205-world-languages"] },
+    { "typeId": "lang.es.2", "levels": ["regular"], "cite": ["tn-3205-world-languages"] },
+    { "typeId": "lang.es.3", "levels": ["regular", "honors"], "cite": ["tn-3205-world-languages"] },
+    { "typeId": "lang.es.4", "levels": ["regular", "ap"], "cite": ["tn-3205-world-languages"] },
+    { "typeId": "lang.fr.1", "levels": ["regular"], "cite": ["tn-3205-world-languages"] },
+    { "typeId": "lang.fr.2", "levels": ["regular"], "cite": ["tn-3205-world-languages"] },
+    { "typeId": "lang.fr.3", "levels": ["regular"], "cite": ["tn-3205-world-languages"] },
+    { "typeId": "lang.la.1", "levels": ["regular"], "cite": ["tn-3205-world-languages"] },
+    { "typeId": "lang.la.2", "levels": ["regular"], "cite": ["tn-3205-world-languages"] },
+    { "typeId": "cte.health.1", "levels": ["regular"] },
+    { "typeId": "cte.health.2", "levels": ["regular"] },
+    { "typeId": "cte.health.3", "levels": ["regular"] },
+    { "typeId": "cte.business.1", "levels": ["regular"] },
+    { "typeId": "cte.business.2", "levels": ["regular"] },
+    { "typeId": "cte.business.3", "levels": ["regular"] },
+    { "typeId": "cte.ag.1", "levels": ["regular"] },
+    { "typeId": "cte.ag.2", "levels": ["regular"] },
+    { "typeId": "cte.ag.3", "levels": ["regular"] },
+    { "typeId": "cte.engineering.1", "levels": ["regular"] },
+    { "typeId": "cte.engineering.2", "levels": ["regular"] },
+    { "typeId": "cte.engineering.3", "levels": ["regular"] },
+    { "typeId": "cte.it.1", "levels": ["regular"] },
+    { "typeId": "cte.it.2", "levels": ["regular"] },
+    { "typeId": "cte.it.3", "levels": ["regular"] },
+    { "typeId": "cte.architecture_construction.1", "levels": ["regular"] },
+    { "typeId": "cte.architecture_construction.2", "levels": ["regular"] },
+    { "typeId": "cte.architecture_construction.3", "levels": ["regular"] },
+    { "typeId": "cte.manufacturing.1", "levels": ["regular"] },
+    { "typeId": "cte.manufacturing.2", "levels": ["regular"] },
+    { "typeId": "cte.manufacturing.3", "levels": ["regular"] },
+    { "typeId": "cte.human_services.1", "levels": ["regular"] },
+    { "typeId": "cte.human_services.2", "levels": ["regular"] },
+    { "typeId": "cte.human_services.3", "levels": ["regular"] }
+  ]
+}

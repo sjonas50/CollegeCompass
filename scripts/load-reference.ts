@@ -1,8 +1,10 @@
 /**
  * Downloads and loads public reference data: O*NET occupations, interest profiles and work styles
  * (31.0; work styles are AI/Expert ratings, see src/lib/reference/work-styles.ts), the O*NET 30.0
- * work values (dropped from 31.0), the NCES CIP–SOC crosswalk (majors ↔ careers), and College
- * Scorecard institutions and their undergraduate programs (field-of-study data).
+ * work values (dropped from 31.0), the NCES CIP–SOC crosswalk (majors ↔ careers), College
+ * Scorecard institutions and their undergraduate programs (field-of-study data), and every school
+ * teaching grades 7–12: public schools from the NCES Common Core of Data (CCD) school directory
+ * and characteristics files, private schools from the NCES Private School Universe Survey (PSS).
  *
  *   npm run data:load            # downloads into .data/reference (cached) and loads
  *
@@ -26,6 +28,7 @@ import {
   occupationValues,
   occupationWorkStyles,
   occupations,
+  schools,
 } from "../src/db/schema";
 import {
   collectCollegePrograms,
@@ -40,6 +43,7 @@ import {
   parseWorkStyle,
   withLeadInterests,
 } from "../src/lib/reference/parsers";
+import { parseCcdSchool, parsePssSchool } from "../src/lib/reference/schools";
 
 const DIR = ".data/reference";
 const ONET = "https://www.onetcenter.org/dl_files/database/db_31_0_csv";
@@ -52,6 +56,11 @@ const SOURCES = {
   crosswalk: "https://nces.ed.gov/ipeds/cipcode/Files/CIP2020_SOC2018_Crosswalk.xlsx",
   scorecard: "https://ed-public-download.scorecard.network/downloads/Most-Recent-Cohorts-Institution_06102026.zip",
   fieldOfStudy: "https://ed-public-download.scorecard.network/downloads/Most-Recent-Cohorts-Field-of-Study_06102026.zip",
+  // NCES school files (public domain; Latin-1 CSV). Moving to a new release: change these and
+  // SCHOOL_RELEASES in src/lib/reference/schools.ts together.
+  ccdDirectory: "https://nces.ed.gov/ccd/Data/zip/ccd_sch_029_2425_w_1a_073025.zip",
+  ccdCharacteristics: "https://nces.ed.gov/ccd/Data/zip/ccd_sch_129_2425_w_1a_073025.zip",
+  pss: "https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip",
 };
 
 async function download(url: string): Promise<string> {
@@ -65,15 +74,15 @@ async function download(url: string): Promise<string> {
   return file;
 }
 
-async function* csvRows(input: Readable, delimiter = ",") {
-  yield* input.pipe(parse({ columns: true, bom: true, relax_column_count: true, delimiter, quote: delimiter === "\t" ? false : '"' })) as AsyncIterable<
-    Record<string, string>
-  >;
+async function* csvRows(input: Readable, delimiter = ",", encoding: BufferEncoding = "utf8") {
+  yield* input.pipe(
+    parse({ columns: true, bom: true, relax_column_count: true, delimiter, quote: delimiter === "\t" ? false : '"', encoding }),
+  ) as AsyncIterable<Record<string, string>>;
 }
 
-async function collect<T>(input: Readable, map: (row: Record<string, string>) => T | null, delimiter = ",") {
+async function collect<T>(input: Readable, map: (row: Record<string, string>) => T | null, delimiter = ",", encoding: BufferEncoding = "utf8") {
   const out: T[] = [];
-  for await (const row of csvRows(input, delimiter)) {
+  for await (const row of csvRows(input, delimiter, encoding)) {
     const value = map(row);
     if (value !== null) out.push(value);
   }
@@ -130,6 +139,20 @@ async function main() {
   // ~228k rows: streamed, keeping only parsed undergraduate programs at the colleges above.
   const programRows = await collectCollegePrograms(csvRows(await csvFromZip(files.fieldOfStudy)), new Set(collegeRows.map((c) => c.unitId)));
 
+  // Schools teaching grades 7-12 in every state. The characteristics file adds virtual and
+  // shared-time status to the directory's rows.
+  const characteristics = new Map(
+    await collect(
+      await csvFromZip(files.ccdCharacteristics),
+      (row) => (row.NCESSCH ? ([row.NCESSCH.trim(), { sharedTime: row.SHARED_TIME, virtual: row.VIRTUAL }] as const) : null),
+      ",",
+      "latin1",
+    ),
+  );
+  const publicSchools = await collect(await csvFromZip(files.ccdDirectory), (row) => parseCcdSchool(row, characteristics.get(row.NCESSCH?.trim() ?? "")), ",", "latin1");
+  const privateSchools = await collect(await csvFromZip(files.pss), parsePssSchool, ",", "latin1");
+  const schoolRows = [...new Map([...publicSchools, ...privateSchools].map((s) => [s.schoolRef, s])).values()];
+
   await migrateDb();
   const db = await getDb();
   await db.transaction(async (tx) => {
@@ -141,6 +164,7 @@ async function main() {
     await tx.delete(majors);
     await tx.delete(collegePrograms);
     await tx.delete(colleges);
+    await tx.delete(schools);
     for (const batch of chunks(occupationRows)) await tx.insert(occupations).values(batch);
     for (const batch of chunks(interestRows)) await tx.insert(occupationInterests).values(batch);
     for (const batch of chunks(valueRows)) await tx.insert(occupationValues).values(batch);
@@ -149,13 +173,14 @@ async function main() {
     for (const batch of chunks(linkRows)) await tx.insert(cipSocLinks).values(batch);
     for (const batch of chunks(collegeRows, 500)) await tx.insert(colleges).values(batch);
     for (const batch of chunks(programRows)) await tx.insert(collegePrograms).values(batch);
+    for (const batch of chunks(schoolRows, 500)) await tx.insert(schools).values(batch);
   });
 
   console.log(
     `Loaded ${occupationRows.length} occupations, ${interestRows.length} interest scores, ${valueRows.length} work value scores, ` +
       `${workStyleRows.length} work style ratings (${new Set(workStyleRows.map((r) => r.occupationCode)).size} occupations), ` +
       `${majorRows.length} majors, ${linkRows.length} major–career links, ${collegeRows.length} colleges, ` +
-      `${programRows.length} college programs.`,
+      `${programRows.length} college programs, ${publicSchools.length} public and ${privateSchools.length} private schools.`,
   );
   process.exit(0);
 }

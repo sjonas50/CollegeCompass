@@ -53,6 +53,10 @@ const EnvSchema = z
     // Stripe Price ids for the family plan (prices are set after the pilot).
     STRIPE_PRICE_MONTHLY: z.string().optional(),
     STRIPE_PRICE_ANNUAL: z.string().optional(),
+
+    // Who sees the class planner's "Your path" (/plan, its print view, a parent's read-only path):
+    // "beta" (households staff mark with npm run beta:planner) or "everyone".
+    PLANNER_PATH: z.enum(["beta", "everyone"]).default("beta"),
   })
   .superRefine((env, ctx) => {
     // Checked everywhere: a broken sender makes every email fail, while the site looks healthy.

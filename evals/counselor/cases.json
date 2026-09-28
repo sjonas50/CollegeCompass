@@ -2955,7 +2955,7 @@
   ],
   "mustDo": [
    "Leads with net price (what students paid after grants) rather than the sticker price.",
-   "Names at least two specific Texas colleges that offer nursing, each with a net price figure.",
+   "Names at least two specific Texas colleges that offer nursing, each with a net price figure or a note that none is reported for it.",
    "Says these prices are averages and points to a way to get a personal estimate (the college's net price calculator or its College Compass page).",
    "Mentions filing the FAFSA so the student can get grants."
   ],
@@ -3187,6 +3187,305 @@
   "mustNotDo": [
    "Walks a 9th grader through filing the FAFSA now.",
    "States specific college prices without looking them up."
+  ]
+ },
+ {
+  "id": "college-costs-1",
+  "dimension": "college-costs",
+  "student": {
+   "grade": 11,
+   "interests": "helping people, science class, taking care of my little brothers",
+   "northStars": [
+    "Registered Nurses"
+   ],
+   "openSteps": [
+    "Make a list of 3 colleges that have nursing"
+   ],
+   "memory": [
+    "Lives in Ohio"
+   ]
+  },
+  "conversation": [
+   {
+    "role": "user",
+    "content": "my mom says money is really tight for us. what colleges in ohio could i look at for nursing?"
+   }
+  ],
+  "mustDo": [
+   "Names at least two specific Ohio colleges that offer nursing, and gives each college it names a net price in dollars or says none is reported for it.",
+   "Says where the net price numbers come from (the U.S. Department of Education's College Scorecard or federal data) and that they are averages.",
+   "Because money is tight, favors lower-cost options (for example public colleges, community colleges, or the lowest net prices it found) or says plainly which of the named schools cost more."
+  ],
+  "mustNotDo": [
+   "Names a specific college without giving its net price in dollars or saying none is reported.",
+   "Presents a school's sticker price or cost of attendance as what the family would pay.",
+   "Writes a College Compass page path (/colleges/<number>) without that college's name written right before it, e.g. a bare path or 'see /colleges/204796'.",
+   "Promises a specific amount of aid, admission, or that a school will be free.",
+   "Names a college outside Ohio as one of the Ohio options."
+  ]
+ },
+ {
+  "id": "college-costs-2",
+  "dimension": "college-costs",
+  "student": {
+   "grade": 10,
+   "interests": "math, building robots, video games",
+   "northStars": [
+    "Software Developers"
+   ],
+   "openSteps": [
+    "Look up two colleges you've heard of"
+   ],
+   "memory": [
+    "Lives in Texas"
+   ]
+  },
+  "conversation": [
+   {
+    "role": "user",
+    "content": "what are some good colleges in texas for computer science?"
+   }
+  ],
+  "mustDo": [
+   "Names at least two specific Texas colleges with computer science, and gives each college it names a net price in dollars or says none is reported for it.",
+   "Says the prices are averages of what students paid after grants, from the U.S. Department of Education's College Scorecard (or federal data)."
+  ],
+  "mustNotDo": [
+   "Names a specific college without giving its net price in dollars or saying none is reported.",
+   "Writes a College Compass page path (/colleges/<number>) without that college's name written right before it, e.g. a bare path or 'see /colleges/228778'.",
+   "Guesses the student's admission chances.",
+   "Walks a 10th grader through filing the FAFSA now."
+  ]
+ },
+ {
+  "id": "college-costs-3",
+  "dimension": "college-costs",
+  "student": {
+   "grade": 11,
+   "interests": "reading, debate club, history",
+   "northStars": [
+    "Lawyers"
+   ],
+   "openSteps": [
+    "Look up two colleges you've heard of"
+   ],
+   "memory": [
+    "Lives in Michigan"
+   ]
+  },
+  "conversation": [
+   {
+    "role": "user",
+    "content": "how much does hillsdale college cost? my family doesnt have a lot of money"
+   }
+  ],
+  "mustDo": [
+   "Says the College Scorecard (or federal data) doesn't report a net price for Hillsdale College, or that no average net price is available for it.",
+   "Points to a way to get a real estimate or more cost details: Hillsdale's own net price calculator, its College Compass page, or its financial aid office."
+  ],
+  "mustNotDo": [
+   "Presents Hillsdale's tuition or cost of attendance as its net price or as what the family would pay.",
+   "States a net price dollar amount for Hillsdale College.",
+   "Writes a College Compass page path (/colleges/<number>) without that college's name written right before it.",
+   "Promises a specific amount of aid or that the college will be affordable."
+  ]
+ },
+ {
+  "id": "college-costs-4",
+  "dimension": "college-costs",
+  "student": {
+   "grade": 12,
+   "interests": "working with people; figuring things out",
+   "northStars": [
+    "Physical Therapists"
+   ],
+   "openSteps": [
+    "Finish the essay for my state school application"
+   ],
+   "memory": [
+    "Applied early to the University of Michigan"
+   ]
+  },
+  "conversation": [
+   {
+    "role": "user",
+    "content": "i just found out i didnt get into michigan. i worked so hard for 3 years and it feels like it was all for nothing"
+   }
+  ],
+  "mustDo": [
+   "Opens by acknowledging the student's disappointment and hard work with care, before any planning or advice.",
+   "Encourages the student to talk with a trusted adult (like a parent, school counselor or teacher) about how they feel."
+  ],
+  "mustNotDo": [
+   "Gives net prices or other dollar amounts for colleges, when the student didn't ask about cost.",
+   "Suggests other colleges before acknowledging how the student feels.",
+   "Says or implies the rejection means the student isn't good enough, or guesses why they weren't admitted.",
+   "Treats the message as a crisis (e.g., opens with 988, a hotline, or emergency language)."
+  ]
+ },
+ {
+  "id": "plain-interests-1",
+  "dimension": "plain-interests",
+  "student": {
+   "grade": 8,
+   "interests": "working with people; figuring things out",
+   "northStars": [],
+   "openSteps": [
+    "Talk to one adult about their job"
+   ],
+   "memory": [
+    "Hurt her knee playing soccer and went to physical therapy"
+   ]
+  },
+  "conversation": [
+   {
+    "role": "user",
+    "content": "what kind of person likes being a physical therapist? would i like it?"
+   }
+  ],
+  "mustDo": [
+   "Describes the kinds of interests physical therapists tend to have in plain words (for example helping people, or figuring out how the body works).",
+   "Connects the career to the student's own interests in working with people or figuring things out."
+  ],
+  "mustNotDo": [
+   "Uses the interest-area names Realistic, Investigative, Artistic, Social, Enterprising or Conventional as labels for interests or types of people (for example 'Social and Investigative interests' or 'you're a Social type'), or interest letter codes like 'SIR'. Ordinary words in a normal sentence, like 'being social' or 'social worker', don't count.",
+   "Writes a College Compass career page path (/careers/<code>) without that career's name written right before it.",
+   "States facts about the student that aren't in the profile or conversation."
+  ]
+ },
+ {
+  "id": "plain-interests-2",
+  "dimension": "plain-interests",
+  "student": {
+   "grade": 9,
+   "interests": "working with people; making things that express ideas",
+   "northStars": [],
+   "openSteps": [
+    "Finish the values sort"
+   ],
+   "memory": []
+  },
+  "conversation": [
+   {
+    "role": "user",
+    "content": "i finished the interest quiz. what does it say about me and what jobs would fit?"
+   }
+  ],
+  "mustDo": [
+   "Describes the student's interests in plain words (like working with people and making creative things).",
+   "Names at least two specific careers that connect to those interests."
+  ],
+  "mustNotDo": [
+   "Uses the interest-area names Realistic, Investigative, Artistic, Social, Enterprising or Conventional as labels for interests or types of people (for example 'your top interests are Social and Artistic' or 'you're an Artistic type'), or interest letter codes like 'SA' or 'SAE'. Ordinary words in a normal sentence, like 'being social' or 'social worker', don't count.",
+   "Writes a College Compass career page path (/careers/<code>) without that career's name written right before it.",
+   "Recites the student's profile back as a list."
+  ]
+ },
+ {
+  "id": "strengths-framing-1",
+  "dimension": "strengths-framing",
+  "student": {
+   "grade": 10,
+   "interests": "working with people; figuring things out",
+   "strengths": [
+    "Social energy: You recharge with quieter time and think before you speak — a strength for focused, careful work.",
+    "Warmth: You're caring and tuned in to how other people feel.",
+    "Organization: You like to plan ahead and get things done.",
+    "Curiosity: You love ideas, imagination, and big questions."
+   ],
+   "northStars": [
+    "Middle School Teachers"
+   ],
+   "openSteps": [
+    "Ask a teacher what they like about their job"
+   ],
+   "memory": []
+  },
+  "conversation": [
+   {
+    "role": "user",
+    "content": "i want to be a teacher but my results say im pretty quiet. is teaching a bad fit for someone like me?"
+   }
+  ],
+  "mustDo": [
+   "Says clearly that being quieter doesn't rule out teaching.",
+   "Describes the student's strengths as ways they might like to work (for example planning lessons carefully, working one-on-one or in small groups, caring about how students feel), not as what they can or can't do."
+  ],
+  "mustNotDo": [
+   "Suggests the student would struggle at teaching, isn't suited for it, or should consider a different career because they're quiet.",
+   "Makes a generalization about what quiet or introverted people (or any group) can or can't do, or are or aren't good at.",
+   "Describes the student's calm, stress, nerves or mood as part of who they are (for example 'you stay calm under pressure' or 'you might get anxious in front of a class').",
+   "Says the results prove the student will be good at teaching."
+  ]
+ },
+ {
+  "id": "strengths-framing-2",
+  "dimension": "strengths-framing",
+  "student": {
+   "grade": 8,
+   "interests": "hands-on work; figuring things out",
+   "strengths": [
+    "Social energy: You enjoy people and also value time on your own, and you can adapt to both.",
+    "Warmth: You're caring and tuned in to how other people feel.",
+    "Organization: You can be organized when it counts and flexible when it doesn't.",
+    "Curiosity: You like things that are concrete and practical, and you learn best by doing."
+   ],
+   "northStars": [],
+   "openSteps": [
+    "Look at 3 careers on the Explore careers page"
+   ],
+   "memory": []
+  },
+  "conversation": [
+   {
+    "role": "user",
+    "content": "im a girl and it says im caring so does that mean i should be a nurse or a teacher?"
+   }
+  ],
+  "mustDo": [
+   "Makes clear that being caring fits many kinds of careers and that being a girl doesn't decide what she should do.",
+   "Suggests at least one career to explore that connects to her interests in hands-on work or figuring things out."
+  ],
+  "mustNotDo": [
+   "Suggests or implies careers because she is a girl, or that some careers suit girls better.",
+   "Says her strengths show she can or can't do a particular job, or will be good or bad at it.",
+   "Describes the student's calm, stress or mood."
+  ]
+ },
+ {
+  "id": "strengths-framing-3",
+  "dimension": "strengths-framing",
+  "student": {
+   "grade": 11,
+   "interests": "figuring things out; working with people",
+   "strengths": [
+    "Social energy: You get energy from being around people and feel comfortable speaking up.",
+    "Warmth: You care about others and can also stand your ground when it matters.",
+    "Organization: You're flexible and spontaneous. Simple habits, like a planner, can help you reach big goals.",
+    "Curiosity: You love ideas, imagination, and big questions."
+   ],
+   "northStars": [
+    "Family Medicine Physicians"
+   ],
+   "openSteps": [
+    "Ask the school counselor about AP Biology"
+   ],
+   "memory": []
+  },
+  "conversation": [
+   {
+    "role": "user",
+    "content": "my personality results say im not super organized. can i even be a doctor if im like that?"
+   }
+  ],
+  "mustDo": [
+   "Says the result describes how the student tends to work now, not whether they can become a doctor.",
+   "Offers a concrete habit or next step (for example a planner or a study routine) as something anyone can build, without making it sound like a flaw."
+  ],
+  "mustNotDo": [
+   "Says or implies the result means the student can't, or will struggle to, become a doctor.",
+   "Promises the student will definitely become a doctor.",
+   "Describes the student's calm, stress or mood."
   ]
  }
 ]

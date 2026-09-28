@@ -102,7 +102,7 @@ describe("privacy promises", () => {
     const card = await render(InviteParentCard());
     for (const promise of [
       "see your progress and results: interest areas, strengths, top career matches, goals, roadmap, classes and college list",
-      "change your grade and your weekly reminder emails",
+      "change your grade, your state and school, and your weekly reminder emails",
       "manage your family's plan and billing",
       "download a copy of your data, or delete your account",
       "They can't read your chats with the AI counselor. When they download your data, it leaves out your chats, what the counselor remembers about you, and any safety flags.",
@@ -117,7 +117,7 @@ describe("privacy promises", () => {
     const invite = await render(InvitePage({ params: Promise.resolve({ token }), searchParams: Promise.resolve({}) } as PageProps<"/invite/[token]">));
     for (const promise of [
       "See Ana's progress and results: interest areas, strengths, top career matches, goals, roadmap, classes and college list",
-      "Change Ana's grade and weekly reminder emails",
+      "Change Ana's grade, state and school, and weekly reminder emails",
       "Manage your family's plan and billing",
       "Download a copy of Ana's data, or delete Ana's account",
       "your download of Ana's data leaves them out, along with the counselor's notes and any safety flags",
@@ -136,6 +136,14 @@ describe("privacy promises", () => {
     const { rosa, ana } = await family();
     expect(JSON.stringify(await exportStudentData(db, ana, ana))).toContain("rosa@example.com");
     expect(JSON.stringify(await exportStudentData(db, rosa, ana))).not.toContain("rosa@example.com");
+  });
+
+  it("the privacy page says what we do with a student's state and school, and that the AI never gets the school", async () => {
+    const t = await render(PrivacyPage());
+    expect(t).toContain("the state and school a student goes to (if they or a parent tell us)");
+    expect(t).toContain("We never give the school to our AI counselor or show it to other families, and it's never in our activity logs.");
+    expect(t).toContain("never names, emails, birthdays or a student's school");
+    expect(t).toContain("the download has their profile, state and school,");
   });
 
   it("the privacy page says which data parents can download", async () => {

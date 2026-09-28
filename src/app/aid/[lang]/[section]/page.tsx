@@ -13,8 +13,9 @@ import {
 } from "@/lib/aid-guide";
 import { aidText } from "@/lib/aid-guide/dictionary";
 import { headingAnchors } from "@/lib/aid-guide/navigation";
-import { GuideBlock, GuideTopBar, LastUpdated, OnThisPage, ReviewStatus, SectionNav, SourcesList } from "../../guide-ui";
+import { ForYourState, GuideBlock, GuideTopBar, LastUpdated, OnThisPage, ReviewStatus, SectionNav, SourcesList } from "../../guide-ui";
 import { PrintButton } from "../../print-button";
+import { guideStatesForViewer } from "../../viewer-states";
 
 // Only sections in the content files exist; anything else is a 404.
 export const dynamicParams = false;
@@ -52,6 +53,8 @@ export default async function AidGuideSectionPage({ params }: PageProps<"/aid/[l
   const neighbors = getNeighbors(lang, section.id);
   const anchors = headingAnchors(section.blocks);
   const contents = section.blocks.flatMap((block, i) => (block.heading && anchors[i] ? [{ id: anchors[i], label: block.heading }] : []));
+  // A signed-in student's own state's programs come first (English only; see ForYourState).
+  const states = await guideStatesForViewer(lang);
 
   return (
     <>
@@ -70,6 +73,7 @@ export default async function AidGuideSectionPage({ params }: PageProps<"/aid/[l
       </div>
 
       <div className="mt-8 space-y-6">
+        <ForYourState section={section} states={states} sources={section.sources} />
         {section.blocks.map((block, i) => (
           <GuideBlock key={i} block={block} lang={lang} anchor={anchors[i]} sources={section.sources} />
         ))}

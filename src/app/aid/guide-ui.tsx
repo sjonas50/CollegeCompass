@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import {
   type AidGuide,
   type AidGuideBlock,
+  type AidGuideSection,
   type AidGuideSectionLink,
   type AidGuideSource,
   type AidLanguage,
@@ -10,6 +11,8 @@ import {
 } from "@/lib/aid-guide";
 import { LANGUAGE_NAMES, aidText, formatGuideDate, otherLanguages } from "@/lib/aid-guide/dictionary";
 import { guideTextSegments } from "@/lib/aid-guide/links";
+import { headingAnchors } from "@/lib/aid-guide/navigation";
+import { FIND_YOUR_STATE_HEADING, STATE_AID_SECTION, contentForStates, itemStates, stateNames } from "@/lib/aid-guide/states";
 import { ExternalIcon, GlobeIcon, InfoIcon, TipIcon, WarningIcon } from "./icons";
 
 // Building blocks for the financial aid guide pages. Content is always rendered as React text
@@ -177,6 +180,114 @@ function BlockHeading({ id, children }: { id?: string; children: ReactNode }) {
   );
 }
 
+/** A small tag naming the states a block or list item is about ("Tennessee"). English only, like the tags. */
+export function StateTag({ codes }: { codes: readonly string[] }) {
+  if (!codes.length) return null;
+  return (
+    <span className="mr-2 inline-block rounded-full border border-border bg-surface px-2 align-[0.1em] text-sm leading-6 font-medium">
+      <span className="sr-only">For </span>
+      {stateNames(codes)}
+    </span>
+  );
+}
+
+/**
+ * "For Texas": the section's blocks and list items tagged with the viewer's state(s), first. On the
+ * state aid section, a state the guide has nothing for gets a pointer to "Find your state's
+ * programs" instead. English only; renders nothing without states.
+ */
+export function ForYourState({
+  section,
+  states,
+  sources,
+}: {
+  section: AidGuideSection;
+  states: readonly string[];
+  sources: readonly AidGuideSource[];
+}) {
+  if (!states.length) return null;
+  const content = contentForStates(section, states);
+  const names = stateNames(states);
+  if (!content.length) {
+    if (section.id !== STATE_AID_SECTION) return null;
+    const anchors = headingAnchors(section.blocks);
+    const find = anchors[section.blocks.findIndex((b) => b.heading === FIND_YOUR_STATE_HEADING)];
+    return (
+      <div role="note" className="rounded-lg border border-border bg-surface p-4">
+        <p>
+          This guide doesn&apos;t list {names}&apos;s own programs yet.{" "}
+          {find ? (
+            <a href={`#${find}`} className={textLink}>
+              Here&apos;s how to find them
+            </a>
+          ) : (
+            "Ask your school counselor about them"
+          )}
+          .
+        </p>
+      </div>
+    );
+  }
+  return (
+    <section aria-labelledby="for-your-state" className="rounded-xl border-2 border-accent bg-surface p-4">
+      <h2 id="for-your-state" className="scroll-mt-4 text-xl font-semibold leading-8 tracking-tight">
+        For {names}
+      </h2>
+      <p className="text-base text-muted">From this section, for students in {names}. Everything else is below.</p>
+      <ul className="mt-2 list-disc space-y-2 pl-6">
+        {content.map((c, i) => (
+          <li key={i} className="pl-1">
+            {c.kind === "item" ? (
+              <LinkedText text={c.text} lang="en" sources={sources} />
+            ) : c.anchor ? (
+              <a href={`#${c.anchor}`} className={textLink}>
+                {c.heading}
+              </a>
+            ) : (
+              c.heading ?? "See below."
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** On the guide's front page: the sections with something for the viewer's state(s). English only. */
+export function StateSections({ sections, states }: { sections: readonly AidGuideSection[]; states: readonly string[] }) {
+  if (!states.length) return null;
+  const names = stateNames(states);
+  return (
+    <section aria-labelledby="for-your-state" className="rounded-xl border-2 border-accent bg-surface p-4">
+      <h2 id="for-your-state" className="text-xl font-semibold leading-8 tracking-tight">
+        For {names}
+      </h2>
+      {sections.length ? (
+        <>
+          <p className="text-base text-muted">These parts of the guide have dates and programs for {names}:</p>
+          <ul className="mt-1">
+            {sections.map((s) => (
+              <li key={s.id}>
+                <Link href={aidGuideHref("en", s.id)} className={`flex min-h-11 items-center text-base ${textLink}`}>
+                  {s.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p className="text-base">
+          This guide doesn&apos;t list {names}&apos;s own programs yet.{" "}
+          <Link href={aidGuideHref("en", STATE_AID_SECTION)} className={textLink}>
+            Here&apos;s how to find them
+          </Link>
+          .
+        </p>
+      )}
+    </section>
+  );
+}
+
 /**
  * One block of a guide section. `anchor` is the id for its heading, if it has one; `sources` are
  * the section's sources, whose sites the block's text may link to.
@@ -193,12 +304,14 @@ export function GuideBlock({
   sources: readonly AidGuideSource[];
 }) {
   const heading = block.heading ? <BlockHeading id={anchor}>{block.heading}</BlockHeading> : null;
+  const tag = block.states ? <StateTag codes={block.states} /> : null;
   switch (block.kind) {
     case "paragraph":
       return (
         <div className="space-y-2">
           {heading}
           <p>
+            {tag}
             <LinkedText text={block.text} lang={lang} sources={sources} />
           </p>
         </div>
@@ -209,9 +322,11 @@ export function GuideBlock({
       return (
         <div className="space-y-2">
           {heading}
+          {tag && <p>{tag}</p>}
           <List className={`space-y-2 pl-6 ${block.kind === "steps" ? "list-decimal marker:font-semibold" : "list-disc"}`}>
             {block.items.map((item, i) => (
               <li key={i} className="pl-1 break-inside-avoid">
+                <StateTag codes={itemStates(block, i)} />
                 <LinkedText text={item} lang={lang} sources={sources} />
               </li>
             ))}
@@ -230,6 +345,7 @@ export function GuideBlock({
           </p>
           {heading && <div className="mt-1">{heading}</div>}
           <p className="mt-1">
+            {tag}
             <LinkedText text={block.text} lang={lang} sources={sources} />
           </p>
         </div>

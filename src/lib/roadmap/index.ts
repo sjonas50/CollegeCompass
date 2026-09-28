@@ -250,6 +250,26 @@ export function findMilestone(id: string, library: readonly Milestone[] = MILEST
   return library.find((m) => m.id === id);
 }
 
+/**
+ * Milestones about choosing classes, which link to "Your path" on the Plan page (design §7). The
+ * link is added by code; milestone ids and content never change for it.
+ */
+export const COURSE_PLANNING_MILESTONES: ReadonlySet<string> = new Set([
+  "g8-pick-your-9th-grade-classes",
+  "g9-sketch-four-year-plan",
+  "g9-see-college-course-requirements",
+  "g9-pick-10th-grade-classes",
+  "g10-pick-11th-grade-classes",
+  "g11-choose-senior-classes",
+]);
+
+export const PATH_LINK = { href: "/plan#path", label: "Open your path" } as const;
+
+/** Where a milestone links for doing it: "Your path" for class-choosing steps, otherwise nothing. */
+export function milestonePathLink(id: string): typeof PATH_LINK | null {
+  return COURSE_PLANNING_MILESTONES.has(id) ? PATH_LINK : null;
+}
+
 // ---------------------------------------------------------------------------
 // Progress (student data)
 // ---------------------------------------------------------------------------

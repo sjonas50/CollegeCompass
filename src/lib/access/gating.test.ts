@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { requestFreeAccessAction } from "@/app/actions/access";
 import { addCollegeAction, addCustomEntryAction, removeEntryAction, updateEntryAction } from "@/app/actions/applications";
 import { clearMemoryAction, deleteConversationAction } from "@/app/actions/counselor";
+import { acceptSuggestionAction, dismissSuggestionAction, restoreSuggestionsAction, savePathSettingsAction } from "@/app/actions/path";
 import { addCourseAction, deleteCourseAction, updateCourseAction } from "@/app/actions/plan";
 import {
   addMilestoneStepAction,
@@ -14,13 +15,18 @@ import {
   removeStepAction,
   setStepDoneAction,
 } from "@/app/actions/roadmap";
+import { saveChildSchoolAction, saveMySchoolAction } from "@/app/actions/schools";
 import { POST as counselorApi } from "@/app/api/counselor/route";
+import { POST as schoolSearchApi } from "@/app/api/schools/search/route";
 import EntryPage from "@/app/applications/[id]/page";
 import ComparePage from "@/app/applications/compare/page";
 import ApplicationsPage from "@/app/applications/page";
 import ConversationPage from "@/app/counselor/[id]/page";
 import CounselorPage from "@/app/counselor/page";
+import ChildPlanPage from "@/app/parent/children/[id]/plan/page";
+import ChildPlanPrintPage from "@/app/parent/children/[id]/plan/print/page";
 import PlanPage from "@/app/plan/page";
+import PlanPrintPage from "@/app/plan/print/page";
 import RoadmapPage from "@/app/roadmap/page";
 import { type Db, createTestDb, schema } from "@/db";
 import { addCustom } from "@/lib/applications/service";
@@ -28,6 +34,7 @@ import type { SessionUser } from "@/lib/auth/sessions";
 import { createConversation } from "@/lib/counselor/conversations";
 import { respond } from "@/lib/counselor/respond";
 import { MILESTONES } from "@/lib/roadmap/milestones";
+import { SCHOOLS } from "@/lib/schools/test-fixtures";
 import { CRISIS_LINE } from "./describe";
 
 // Every page, action and route that needs full access refuses without it (sending students to
@@ -52,12 +59,15 @@ const DAY_MS = 86_400_000;
 let db: Db;
 
 beforeEach(async () => {
+  // The students are 11th graders in 2026-27: pin today so they don't graduate out of the tests.
+  vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-09-25T15:00:00Z") });
   db = await createTestDb();
   state.db = db;
   vi.mocked(respond).mockClear();
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   state.db = null;
   state.user = null;
 });
@@ -99,7 +109,8 @@ const pageProps = <T,>(params: object = {}, searchParams: object = {}) => ({ par
 
 describe("gated pages", () => {
   const pages: [string, () => Promise<unknown>][] = [
-    ["/plan", () => PlanPage()],
+    ["/plan", () => PlanPage(pageProps<PageProps<"/plan">>())],
+    ["/plan/print", () => PlanPrintPage(pageProps<PageProps<"/plan/print">>())],
     ["/roadmap", () => RoadmapPage(pageProps<PageProps<"/roadmap">>())],
     ["/applications", () => ApplicationsPage(pageProps<PageProps<"/applications">>())],
     ["/applications/compare", () => ComparePage()],
@@ -117,7 +128,7 @@ describe("gated pages", () => {
     const id = await signIn("full");
     const entry = await addCustom(db, id, { name: "Welding program", kind: "program" });
     if (!entry.ok) throw new Error();
-    expect(text(await render(PlanPage()))).toContain("Your course plan");
+    expect(text(await render(PlanPage(pageProps<PageProps<"/plan">>())))).toContain("Your course plan");
     expect(await redirectOf(RoadmapPage(pageProps<PageProps<"/roadmap">>()))).toBeNull();
     expect(text(await render(ApplicationsPage(pageProps<PageProps<"/applications">>())))).toContain("Welding program");
     expect(await redirectOf(ComparePage())).toBeNull();
@@ -126,7 +137,7 @@ describe("gated pages", () => {
 
   it("don't give a trial to a household whose trial ended", async () => {
     await signIn("locked");
-    await redirectOf(PlanPage);
+    await redirectOf(() => PlanPage(pageProps<PageProps<"/plan">>()));
     expect(await db.select().from(schema.accessGrants)).toHaveLength(1);
   });
 });
@@ -177,6 +188,10 @@ describe("gated actions", () => {
     ["addCustomEntryAction", () => addCustomEntryAction(undefined, form({ name: "Welding program", kind: "program" }))],
     ["updateEntryAction", () => updateEntryAction(undefined, form({ entryId: "x" }))],
     ["removeEntryAction", () => removeEntryAction(undefined, form({ entryId: "x" }))],
+    ["acceptSuggestionAction", () => acceptSuggestionAction("tx.fhsp.grad/ela.2/ela.10/regular")],
+    ["dismissSuggestionAction", () => dismissSuggestionAction("tx.fhsp.grad/ela.2/ela.10/regular")],
+    ["restoreSuggestionsAction", () => restoreSuggestionsAction()],
+    ["savePathSettingsAction", () => savePathSettingsAction(undefined, form({ path: "degree" }))],
   ];
 
   for (const [name, action] of actions) {
@@ -224,6 +239,32 @@ describe("gated actions", () => {
     expect(await redirectOf(removeEntryAction(undefined, form({ entryId: entry.id })))).toBe("/applications?removed=1");
   });
 
+  it("“Your path” actions work with full access", async () => {
+    const id = await signIn("full");
+    await db.update(schema.users).set({ homeState: "TX" }).where(eq(schema.users.id, id));
+    // In the class planner beta (lib/planner/beta.ts): outside it they change nothing.
+    expect(await savePathSettingsAction(undefined, form({ path: "degree" }))).toMatchObject({ ok: false });
+    expect(await db.select().from(schema.studentPlanPrefs)).toHaveLength(0);
+    await db.update(schema.households).set({ plannerBeta: true }).where(eq(schema.households.id, state.user!.householdId!));
+    expect(await savePathSettingsAction(undefined, form({ path: "degree", txEndorsement: "stem", maxCollegeLevelPerYear: "2" }))).toMatchObject({ ok: true });
+    const { studentPath } = await import("@/lib/planner/service");
+    const path = await studentPath(db, id);
+    if (path.kind !== "planned") throw new Error(path.kind);
+    const [first, second] = path.result.plans[0]!.years.flatMap((y) => y.slots.flatMap((s) => (s.kind === "suggested" ? [s.key] : [])));
+    expect(await acceptSuggestionAction(first)).toMatchObject({ ok: true });
+    expect(await dismissSuggestionAction(second)).toMatchObject({ ok: true });
+    expect(await restoreSuggestionsAction()).toMatchObject({ ok: true });
+    expect(await acceptSuggestionAction("not/in/the/plan")).toMatchObject({ ok: false });
+    expect(await db.select().from(schema.studentCourses)).toHaveLength(1);
+    expect(await savePathSettingsAction(undefined, form({ maxCollegeLevelPerYear: "9" }))).toMatchObject({ ok: false });
+  });
+
+  it("change no plan choices while locked", async () => {
+    await signIn("locked");
+    await redirectOf(() => savePathSettingsAction(undefined, form({ path: "degree" })));
+    expect(await db.select().from(schema.studentPlanPrefs)).toHaveLength(0);
+  });
+
   it("leave counselor privacy controls working while locked", async () => {
     const id = await signIn("locked");
     const conv = await createConversation(db, id, "About colleges");
@@ -232,6 +273,75 @@ describe("gated actions", () => {
     expect(await db.select().from(schema.counselorConversations)).toHaveLength(0);
     expect(await redirectOf(clearMemoryAction(form({})))).toBe("/counselor?memory=cleared");
     expect(await db.select().from(schema.counselorMemory)).toHaveLength(0);
+  });
+});
+
+describe("where a student goes to school (free)", () => {
+  const search = (body: unknown) =>
+    schoolSearchApi(new Request("http://localhost/api/schools/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+
+  it("saves a state and school, and searches schools, while locked", async () => {
+    const id = await signIn("locked");
+    await db.insert(schema.schools).values(SCHOOLS.alcoa);
+    expect((await search({ state: "TN", query: "alcoa" })).status).toBe(200);
+    expect(await redirectOf(saveMySchoolAction(undefined, form({ state: "TN", school: `ref:${SCHOOLS.alcoa.schoolRef}` })))).toBe(
+      "/dashboard?settings=school#school-settings",
+    );
+    expect(await db.select({ userId: schema.studentSchools.userId }).from(schema.studentSchools)).toEqual([{ userId: id }]);
+  });
+
+  it("lets a locked parent set a child's school", async () => {
+    const parentId = await signIn("locked", { role: "parent" });
+    const [child] = await db
+      .insert(schema.users)
+      .values({ role: "student", householdId: state.user!.householdId, displayName: "Leo", passwordHash: "x", birthDate: "2014-03-01", grade: 7, gradeSchoolYear: 2026 })
+      .returning({ id: schema.users.id });
+    await db.insert(schema.parentStudentLinks).values({ parentUserId: parentId, studentUserId: child.id });
+    expect(await redirectOf(saveChildSchoolAction(undefined, form({ studentId: child.id, state: "OH", school: "prefer_not_to_say" })))).toBe(
+      `/parent?saved=1#school-${child.id}`,
+    );
+  });
+});
+
+describe("a parent's view of a child's path", () => {
+  it("needs full access, like the child's Plan page", async () => {
+    const parentId = await signIn("locked", { role: "parent" });
+    const [child] = await db
+      .insert(schema.users)
+      .values({ role: "student", householdId: state.user!.householdId, displayName: "Leo", passwordHash: "x", birthDate: "2014-03-01", grade: 7, gradeSchoolYear: 2026, homeState: "UT" })
+      .returning({ id: schema.users.id });
+    await db.insert(schema.parentStudentLinks).values({ parentUserId: parentId, studentUserId: child.id });
+    expect(await redirectOf(ChildPlanPage(pageProps<PageProps<"/parent/children/[id]/plan">>({ id: child.id })))).toBe("/account/access");
+  });
+
+  it("the printable draft too: a locked parent goes to /account/access", async () => {
+    const parentId = await signIn("locked", { role: "parent" });
+    const [child] = await db
+      .insert(schema.users)
+      .values({ role: "student", householdId: state.user!.householdId, displayName: "Leo", passwordHash: "x", birthDate: "2011-03-01", grade: 10, gradeSchoolYear: 2026, homeState: "TX" })
+      .returning({ id: schema.users.id });
+    await db.insert(schema.parentStudentLinks).values({ parentUserId: parentId, studentUserId: child.id });
+    expect(await redirectOf(ChildPlanPrintPage(pageProps<PageProps<"/parent/children/[id]/plan/print">>({ id: child.id })))).toBe("/account/access");
+  });
+
+  it("the printable draft is only for the parent's own children, and prints with full access", async () => {
+    const parentId = await signIn("full", { role: "parent" });
+    const [child, stranger] = await db
+      .insert(schema.users)
+      .values([
+        { role: "student", householdId: state.user!.householdId, displayName: "Leo", passwordHash: "x", birthDate: "2011-03-01", grade: 10, gradeSchoolYear: 2026, homeState: "TX" },
+        { role: "student", householdId: state.user!.householdId, displayName: "Ana", passwordHash: "x", birthDate: "2011-03-01", grade: 10, gradeSchoolYear: 2026, homeState: "TX" },
+      ])
+      .returning({ id: schema.users.id });
+    await db.insert(schema.parentStudentLinks).values({ parentUserId: parentId, studentUserId: child.id });
+    await expect(ChildPlanPrintPage(pageProps<PageProps<"/parent/children/[id]/plan/print">>({ id: stranger.id }))).rejects.toMatchObject({
+      digest: expect.stringMatching(/;404$/),
+    });
+    // Outside the class planner beta the parent goes back to the dashboard.
+    expect(await redirectOf(ChildPlanPrintPage(pageProps<PageProps<"/parent/children/[id]/plan/print">>({ id: child.id })))).toBe("/parent");
+    await db.update(schema.households).set({ plannerBeta: true }).where(eq(schema.households.id, state.user!.householdId!));
+    const html = await render(ChildPlanPrintPage(pageProps<PageProps<"/parent/children/[id]/plan/print">>({ id: child.id })) as Promise<ReactNode>);
+    expect(text(html)).toContain("Draft class plan, to talk over with my school counselor");
   });
 });
 
@@ -277,7 +387,7 @@ describe("the free-access form", () => {
   it("unlocks a teen's household and returns them to their access page", async () => {
     await signIn("locked");
     expect(await redirectOf(requestFreeAccessAction(undefined, form({ statement: "on" })))).toBe("/account/access?free=on");
-    expect(await redirectOf(PlanPage)).toBeNull();
+    expect(await redirectOf(() => PlanPage(pageProps<PageProps<"/plan">>()))).toBeNull();
   });
 
   it("sends a parent back to billing", async () => {

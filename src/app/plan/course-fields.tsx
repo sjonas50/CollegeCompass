@@ -21,6 +21,10 @@ import {
   highSchoolCreditChecked,
   highSchoolCreditHint,
 } from "@/lib/courses/catalog";
+import { NOT_SURE, courseTypeOptions, isCourseSubject as isSubject, typeLevelOf } from "@/lib/courses/kinds";
+import { exactRowType, guessCourseType } from "@/lib/planner/course-type-guess";
+import { type CourseTypeId, courseTypeTitle } from "@/lib/planner/course-types";
+import { usePlannerState, useSchoolYearOf } from "./planner-state";
 
 type Errors = Record<string, string[] | undefined> | undefined;
 
@@ -35,7 +39,99 @@ export type CourseDefaults = {
   status: CourseStatus;
   finalGrade: string;
   highSchoolCredit: boolean;
+  /**
+   * The kind of class the student picked, if any: NOT_SURE for a class saved as "Not sure", "" or
+   * missing when never asked (we guess from the name).
+   */
+  courseTypeId?: string;
 };
+
+/**
+ * "What kind of class is this?": the planner's course types for the subject, or "Not sure"
+ * (NOT_SURE, stored as no kind with source "unsure": a guess only ever counts toward subject totals,
+ * never a specific class, and the class stays one the student is asked to confirm on the path, even
+ * when its name is an exact title). When the name is an exact title in the student's state for the
+ * class's level and school year ("Algebra I"), or makes the guess confident ("Algebra II"), that
+ * kind is selected, so saving the form confirms it; it follows the name until the student picks
+ * something themselves. A saved choice (even "Not sure"), or what was just submitted, is kept as is.
+ */
+function CourseTypeField({
+  id,
+  name,
+  subject,
+  level,
+  gradeLevel,
+  defaultValue,
+  keepChoice,
+  errors,
+}: {
+  id: string;
+  name: string;
+  subject: string;
+  level: string;
+  gradeLevel: number;
+  defaultValue: string;
+  /** The value is a choice (saved, or just submitted), not a default for the guess to replace. */
+  keepChoice: boolean;
+  errors?: string[];
+}) {
+  const state = usePlannerState();
+  const schoolYear = useSchoolYearOf(gradeLevel);
+  // Null: nothing picked yet, so an exact title's kind or a confident guess from the name is the selection.
+  const [picked, setPicked] = useState<string | null>(keepChoice || defaultValue ? defaultValue : null);
+  const typeLevel = typeLevelOf(level);
+  const named = name.trim() !== "";
+  const exact = state && named && isSubject(subject) ? exactRowType(name, subject, typeLevel, state, schoolYear) : null;
+  const guessed = named && isSubject(subject) ? guessCourseType(name, subject, state, { level: typeLevel, schoolYear }) : null;
+  const guess = guessed?.typeId ?? null;
+  const preselect = picked === null ? (exact?.typeId ?? (guessed?.confident ? guessed.typeId : null)) : null;
+  const value = picked ?? preselect ?? NOT_SURE;
+  const options = courseTypeOptions(subject, level, value);
+  // A type that doesn't fit the subject now is dropped (the student changed the subject).
+  const selected = options.includes(value as CourseTypeId) ? value : NOT_SURE;
+  const hintId = `${id}-hint`;
+  if (!isSubject(subject)) {
+    return (
+      <div>
+        <p className="text-sm font-medium">What kind of class is this? (optional)</p>
+        <p className="text-sm text-muted">Choose a subject first.</p>
+        <input type="hidden" name="courseTypeId" value="" />
+      </div>
+    );
+  }
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium">
+        What kind of class is this? (optional)
+      </label>
+      <p id={hintId} className="text-sm text-muted">
+        It helps your plan know which requirements the class counts for.{" "}
+        {preselect && selected === preselect
+          ? "We picked it from the name. Change it if that's not right."
+          : guess
+            ? `Not sure? Leave it, and we'll treat it as ${courseTypeTitle(guess, state)} for now.`
+            : "Not sure? Leave it, and we'll guess from the name."}
+      </p>
+      <select
+        id={id}
+        name="courseTypeId"
+        value={selected}
+        onChange={(e) => setPicked(e.target.value)}
+        aria-invalid={errors?.length ? true : undefined}
+        aria-describedby={describedBy(hintId, errors?.length && `${id}-error`)}
+        className={control}
+      >
+        <option value={NOT_SURE}>{guess ? `Not sure (we'll guess ${courseTypeTitle(guess, state)})` : "Not sure (we'll guess from the name)"}</option>
+        {options.map((t) => (
+          <option key={t} value={t}>
+            {courseTypeTitle(t, state)}
+          </option>
+        ))}
+      </select>
+      <FieldError id={`${id}-error`} errors={errors} />
+    </div>
+  );
+}
 
 const control =
   "mt-1 block min-h-11 w-full rounded-lg border border-border bg-surface px-3 focus-visible:outline-2 focus-visible:outline-accent";
@@ -123,6 +219,11 @@ export function CourseFields({
   const submitted = Object.keys(values).length > 0;
   const initial = (key: keyof CourseDefaults) => (submitted ? (values[key] ?? "") : String(defaults[key]));
   const [status, setStatus] = useState(initial("status"));
+  // The kind-of-class field follows the name (for its guess), the subject and the level.
+  const [name, setName] = useState(initial("name"));
+  const [subject, setSubject] = useState(initial("subject"));
+  const [level, setLevel] = useState(initial("level"));
+  const initialType = submitted ? (values.courseTypeId ?? "") : (defaults.courseTypeId ?? "");
   const initialGrade = Number(initial("gradeLevel")) || defaults.gradeLevel;
   // The grade picked in the edit form; the credit box and its hint follow it.
   const [gradeLevel, setGradeLevel] = useState(initialGrade);
@@ -153,6 +254,7 @@ export function CourseFields({
           maxLength={80}
           autoComplete="off"
           defaultValue={initial("name")}
+          onChange={(e) => setName(e.target.value)}
           aria-invalid={errors?.name?.length ? true : undefined}
           aria-describedby={describedBy(`${nameId}-hint`, errors?.name?.length && `${nameId}-error`)}
           className={control}
@@ -168,6 +270,7 @@ export function CourseFields({
           options={[{ value: "", label: "Choose a subject" }, ...options(COURSE_SUBJECTS, SUBJECT_LABELS)]}
           defaultValue={initial("subject")}
           errors={errors?.subject}
+          onChange={setSubject}
         />
         <SelectField
           id={`${id}-level`}
@@ -176,6 +279,7 @@ export function CourseFields({
           options={options(COURSE_LEVELS, LEVEL_LABELS)}
           defaultValue={initial("level")}
           errors={errors?.level}
+          onChange={setLevel}
         />
         <SelectField
           id={`${id}-term`}
@@ -211,6 +315,19 @@ export function CourseFields({
           <FieldError id={`${id}-gradeLevel-error`} errors={errors?.gradeLevel} />
         </>
       )}
+
+      <CourseTypeField
+        // Remounted with the submitted choice after a validation error, like the selects.
+        key={`${submitted}-${initialType}`}
+        id={`${id}-courseType`}
+        name={name}
+        subject={subject}
+        level={level}
+        gradeLevel={gradeLevel}
+        defaultValue={initialType}
+        keepChoice={submitted}
+        errors={errors?.courseTypeId}
+      />
 
       <fieldset aria-describedby={errors?.status?.length ? `${id}-status-error` : undefined}>
         <legend className="text-sm font-medium">Status</legend>

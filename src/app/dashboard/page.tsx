@@ -17,10 +17,11 @@ import { strengthsSummary } from "@/lib/assessments/descriptions";
 import { type InstrumentStatus, instrumentStatuses, latestResult } from "@/lib/assessments/service";
 import { gradeBand } from "@/lib/auth/age";
 import { requireUser } from "@/lib/auth/dal";
+import { plannerPathEnabled } from "@/lib/planner/beta";
 import { computeGpa } from "@/lib/courses/gpa";
 import { listCourses } from "@/lib/courses/service";
 import { listNorthStars } from "@/lib/goals";
-import { buildRoadmap, getMilestoneProgress } from "@/lib/roadmap";
+import { buildRoadmap, getMilestoneProgress, milestonePathLink } from "@/lib/roadmap";
 import { MILESTONES } from "@/lib/roadmap/milestones";
 import { listEntries } from "@/lib/applications/service";
 import { formatDate, usToday } from "@/lib/applications/dates";
@@ -28,6 +29,7 @@ import { deadlineName, dueText } from "@/lib/applications/display";
 import { dueWithin } from "@/lib/applications/timeline";
 import { listLinkedParents } from "@/lib/parent-links";
 import { reminderSettingFor } from "@/lib/reminders";
+import { schoolSettings } from "@/lib/schools/student";
 
 export const metadata: Metadata = { title: "Your dashboard" };
 
@@ -63,10 +65,10 @@ function discoverText(statuses: Record<InstrumentId, InstrumentStatus>) {
 
 export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   const user = await requireUser(["student"]);
-  const { settings, parent } = await searchParams;
+  const { settings, parent, school: schoolParam } = await searchParams;
   const db = await getDb();
   const grade = user.grade ?? 9;
-  const [access, statuses, stars, progress, courses, reminders, list, personality, parents] = await Promise.all([
+  const [access, statuses, stars, progress, courses, reminders, list, personality, parents, school] = await Promise.all([
     accessFor(user),
     instrumentStatuses(db, user.id),
     listNorthStars(db, user.id),
@@ -77,7 +79,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
     latestResult(db, user.id, "personality"),
     // Only ever the signed-in student's own parents.
     listLinkedParents(db, user),
+    schoolSettings(db, user.id),
   ]);
+  // Class-choosing milestones open "Your path" only where the class planner beta is on.
+  const pathLinks = await plannerPathEnabled(db, user.id);
   const roadmap = buildRoadmap(MILESTONES, grade, new Date(), progress);
   const timely = [...roadmap.now, ...roadmap.catchUp].slice(0, 3);
   const gpa = computeGpa(courses);
@@ -100,6 +105,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         lead={graduated ? "Congratulations on finishing high school! Your plans and notes are all still here." : BAND_COPY[gradeBand(grade)]}
       />
       {settings === "saved" && <Notice>Settings saved.</Notice>}
+      {settings === "school" && <Notice>Saved where you go to school.</Notice>}
       {settings === "stale" && <Notice>The school year changed since that page loaded, so we didn&apos;t save the grade. Please pick it again.</Notice>}
       {parent === "removed" && (
         <Notice>Done. That parent or guardian isn&apos;t linked to your account anymore. You can invite a parent or guardian again anytime.</Notice>
@@ -132,6 +138,21 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
 
       <InviteParentCard />
 
+      {/* Free for everyone: the state unlocks in-state colleges and state aid. */}
+      {school && !school.homeState && !graduated && (
+        <Card>
+          <h2 className="font-medium">Add your state and school</h2>
+          <p className="mt-1 text-sm text-muted">
+            See which colleges are in-state for you and your state&apos;s financial aid first. It takes a minute, and it&apos;s free.
+          </p>
+          <div className="mt-3">
+            <ButtonLink href="/dashboard?school=edit#school-settings" variant="secondary">
+              Add my state and school
+            </ButtonLink>
+          </div>
+        </Card>
+      )}
+
       {full && !graduated && (
         <section>
           <h2 className="text-lg font-medium">Timely on your roadmap</h2>
@@ -139,7 +160,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
             <ul className="mt-3 space-y-2">
               {timely.map((m) => (
                 <li key={m.id}>
-                  <Link href="/roadmap" className="block rounded-xl border border-border bg-surface p-4 hover:border-accent">
+                  <Link href={(pathLinks && milestonePathLink(m.id)?.href) || "/roadmap"} className="block rounded-xl border border-border bg-surface p-4 hover:border-accent">
                     <span className="font-medium">{m.title}</span>
                     <span className="mt-1 block text-sm text-muted">{m.detail}</span>
                   </Link>
@@ -301,7 +322,15 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </Card>
       </div>
 
-      <StudentSettings studentId={user.id} parentManaged={user.parentManaged} grade={user.grade} reminders={reminders} parents={parents} />
+      <StudentSettings
+        studentId={user.id}
+        parentManaged={user.parentManaged}
+        grade={user.grade}
+        reminders={reminders}
+        parents={parents}
+        school={school ?? undefined}
+        open={settings === "school" || schoolParam === "edit"}
+      />
 
       <form action={logoutAction}>
         <button type="submit" className="min-h-11 text-sm text-muted underline">Sign out</button>

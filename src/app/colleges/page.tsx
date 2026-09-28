@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ButtonLink, PageHeading } from "@/components/ui";
 import { getDb } from "@/db";
+import { getCurrentUser } from "@/lib/auth/dal";
 import { resultRange } from "@/lib/colleges/describe";
 import { formatCount } from "@/lib/colleges/format";
 import {
@@ -14,6 +15,8 @@ import {
   resolveMajorQuery,
   searchColleges,
 } from "@/lib/colleges/search";
+import { stateName } from "@/lib/colleges/states";
+import { viewerHomeState } from "@/lib/schools/student";
 import { CollegeCard } from "./college-card";
 import { IncomeBandPicker } from "./income-band";
 import { Pagination } from "./pagination";
@@ -26,8 +29,13 @@ export const metadata: Metadata = {
 };
 
 export default async function CollegesPage({ searchParams }: PageProps<"/colleges">) {
-  const { filters, majorQuery } = parseCollegeSearchParams(await searchParams);
+  const { filters, majorQuery, anyState } = parseCollegeSearchParams(await searchParams);
   const db = await getDb();
+  // A signed-in student's state (or their children's, for a parent with one state), for
+  // "In-state for you" and as the search's starting state. Signed-out visitors search every state.
+  const homeState = await viewerHomeState(db, await getCurrentUser());
+  const defaultedState = Boolean(homeState && !filters.state && !anyState);
+  if (defaultedState && homeState) filters.state = homeState;
 
   // A major comes from ?major= (e.g. from a career page) or from words typed in the major field.
   let majorTitle: string | null = null;
@@ -59,11 +67,30 @@ export default async function CollegesPage({ searchParams }: PageProps<"/college
         lead="Compare four-year colleges, community colleges and career schools. We show the net price, what students actually paid after grants, before the sticker price."
       />
 
-      <SearchForm filters={filters} majorTitle={majorTitle} majorIncludes={majorIncludes} majorQuery={filters.major ? null : majorQuery} />
+      <SearchForm
+        filters={filters}
+        majorTitle={majorTitle}
+        majorIncludes={majorIncludes}
+        majorQuery={filters.major ? null : majorQuery}
+        homeState={homeState}
+        anyState={anyState}
+      />
+
+      {defaultedState && homeState && (
+        <p className="text-sm">
+          Showing colleges in {stateName(homeState)}, your state.{" "}
+          <Link
+            href={`${collegeSearchHref({ ...filters, state: undefined, page: undefined }, { anyState: true })}#results`}
+            className="inline-flex min-h-11 items-center underline underline-offset-2"
+          >
+            Search every state
+          </Link>
+        </p>
+      )}
 
       {/* Searches and page links jump here (#results), so phones don't land back at the top of the form. */}
       <div id="results" className="scroll-mt-4 space-y-6">
-        {choices && <MajorChoices query={majorQuery ?? ""} choices={choices.choices} more={choices.more} filters={filters} />}
+        {choices && <MajorChoices query={majorQuery ?? ""} choices={choices.choices} more={choices.more} filters={filters} anyState={anyState} />}
 
         {majorNotFound !== null && (
           <p role="status" className="rounded-lg bg-accent-soft px-4 py-3 text-sm">
@@ -85,7 +112,7 @@ export default async function CollegesPage({ searchParams }: PageProps<"/college
                 <IncomeBandPicker />
               </section>
             )}
-            <Results filters={filters} result={result} />
+            <Results filters={filters} result={result} anyState={anyState} homeState={homeState} />
           </>
         )}
       </div>
@@ -101,11 +128,13 @@ function MajorChoices({
   choices,
   more,
   filters,
+  anyState,
 }: {
   query: string;
   choices: ProgramMatch[];
   more: boolean;
   filters: CollegeSearchFilters;
+  anyState: boolean;
 }) {
   return (
     <section aria-labelledby="major-choices-heading" className="rounded-xl border border-border bg-surface p-5">
@@ -120,7 +149,7 @@ function MajorChoices({
         {choices.map((m) => (
           <li key={m.cip4}>
             <Link
-              href={`${collegeSearchHref({ ...filters, major: m.cip4, page: undefined })}#results`}
+              href={`${collegeSearchHref({ ...filters, major: m.cip4, page: undefined }, { anyState })}#results`}
               className="group block min-h-11 py-2 focus-visible:outline-2 focus-visible:outline-accent"
             >
               <span className="underline-offset-2 group-hover:underline">{m.title}</span>
@@ -141,7 +170,17 @@ function MajorChoices({
   );
 }
 
-function Results({ filters, result }: { filters: CollegeSearchFilters; result: Awaited<ReturnType<typeof searchColleges>> }) {
+function Results({
+  filters,
+  result,
+  anyState,
+  homeState,
+}: {
+  filters: CollegeSearchFilters;
+  result: Awaited<ReturnType<typeof searchColleges>>;
+  anyState: boolean;
+  homeState: string | null;
+}) {
   const range = resultRange(result.total, result.page, result.pageSize);
   return (
     <section aria-labelledby="results-heading">
@@ -168,7 +207,7 @@ function Results({ filters, result }: { filters: CollegeSearchFilters; result: A
       ) : (
         <ul className="mt-3 space-y-4">
           {result.results.map((college) => (
-            <CollegeCard key={college.unitId} college={college} major={filters.major} />
+            <CollegeCard key={college.unitId} college={college} major={filters.major} homeState={homeState} />
           ))}
         </ul>
       )}
@@ -177,7 +216,7 @@ function Results({ filters, result }: { filters: CollegeSearchFilters; result: A
         page={result.page}
         total={result.total}
         pageSize={result.pageSize}
-        hrefFor={(page) => `${collegeSearchHref({ ...filters, page })}#results`}
+        hrefFor={(page) => `${collegeSearchHref({ ...filters, page }, { anyState })}#results`}
       />
     </section>
   );

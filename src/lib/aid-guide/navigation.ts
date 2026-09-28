@@ -24,7 +24,7 @@ export function slugify(text: string): string {
 }
 
 /** Element ids the section page uses for itself, which headings must not take. */
-export const RESERVED_ANCHORS = ["sources", "main", "on-this-page"] as const;
+export const RESERVED_ANCHORS = ["sources", "main", "on-this-page", "for-your-state"] as const;
 
 /**
  * An anchor id for each block with a heading (undefined for blocks without one), unique within the

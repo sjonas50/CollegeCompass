@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "id": "tx.aid",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "TX-S15": {
+      "title": "Texas Education Code, Chapter 56",
+      "url": "https://statutes.capitol.texas.gov/Docs/ED/htm/ED.56.htm",
+      "publisher": "Texas Legislature",
+      "kind": "statute",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S26": {
+      "title": "19 TAC §22.233, TEXAS Grant priority",
+      "url": "https://texas-sos.appianportalsgov.com/rules-and-meetings?interface=VIEW_TAC_SUMMARY&recordId=228479",
+      "publisher": "Texas Higher Education Coordinating Board",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "tx-22-233-b",
+      "source": "TX-S26",
+      "pinpoint": "§22.233(b)",
+      "quote": "an institution shall give priority to those students who graduated in the top 25 percent of their high school graduating class in one of the two prior academic years."
+    },
+    {
+      "id": "tx-22-233-h",
+      "source": "TX-S26",
+      "pinpoint": "§22.233(h)",
+      "quote": "In determining initial student eligibility for a TEXAS Grant pursuant to §22.228(a) of this subchapter, priority shall be given to those students who:"
+    },
+    {
+      "id": "tx-22-233-h2",
+      "source": "TX-S26",
+      "pinpoint": "§22.233(h)(2)",
+      "quote": "have accomplished, or are on track to accomplish, any two or more of the following at the time a TEXAS Grant was offered:"
+    },
+    {
+      "id": "tx-tec-56-3041-a2a",
+      "source": "TX-S15",
+      "pinpoint": "§56.3041(a)(2)(A)",
+      "quote": "completed the foundation high school program established under Section 28.025 or its equivalent and have accomplished any two or more of the following:"
+    },
+    {
+      "id": "tx-tec-56-3041-a2a-i",
+      "source": "TX-S15",
+      "pinpoint": "§56.3041(a)(2)(A)(i)",
+      "quote": "earning of the equivalent of at least 12 semester credit hours of college credit in high school through courses described in Sections 28.009(a)(1), (2), and (3);"
+    },
+    {
+      "id": "tx-tec-56-3041-a2a-ii",
+      "source": "TX-S15",
+      "pinpoint": "§56.3041(a)(2)(A)(ii)",
+      "quote": "satisfaction of the Texas Success Initiative (TSI) college readiness benchmarks prescribed by the coordinating board under Section 51.334"
+    },
+    {
+      "id": "tx-tec-56-3041-a2a-iii",
+      "source": "TX-S15",
+      "pinpoint": "§56.3041(a)(2)(A)(iii)",
+      "quote": "graduation in the top one-third of the person's high school graduating class or graduation from high school with a grade point average of at least 3.0 on a four-point scale or the equivalent;"
+    },
+    {
+      "id": "tx-tec-56-3041-a2a-iv",
+      "source": "TX-S15",
+      "pinpoint": "§56.3041(a)(2)(A)(iv)",
+      "quote": "completion for high school credit of at least one advanced mathematics course following the successful completion of an Algebra II course or at least one advanced career and technical or technology applications course;"
+    },
+    {
+      "id": "tx-tec-56-404-a",
+      "source": "TX-S15",
+      "pinpoint": "§56.404(a)",
+      "quote": "(a) To be eligible initially for a grant under the grant program, a person must: (1) be a resident of this state as determined by coordinating board rules; (2) meet financial need requirements as defined by the coordinating board;"
+    }
+  ],
+  "state": "TX",
+  "kind": "aid",
+  "ruleSets": [
+    {
+      "id": "tx.texas-grant.priority",
+      "state": "TX",
+      "kind": "state_aid",
+      "title": "TEXAS Grant priority: the class part",
+      "issuer": { "kind": "aid_agency", "name": "the TEXAS Grant" },
+      "plainSummary": "The TEXAS Grant gives priority to students who finish the Foundation program and meet two of four: 12 college credit hours in high school (or the IB diploma), college-readiness test standards, a top-third rank or 3.0 GPA, or an advanced math class after Algebra II (or an advanced career and technical class). Skipping Algebra II lowers your priority; it doesn't rule the grant out.",
+      "strength": "priority",
+      "strengthCite": "tx-22-233-h",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "appliesWhen": { "paths": ["degree", "undecided"] },
+      "variants": [
+        {
+          "id": "tx.texas-grant.priority.all",
+          "cohort": { "from": 2013 },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "advanced-math",
+              "label": "One of the four: an advanced math class after Algebra II",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "capabilities": ["advanced_math_after_alg2"] }],
+              "cite": ["tx-22-233-h2", "tx-tec-56-3041-a2a-iv"],
+              "area": "math",
+              "note": "An advanced career and technical or technology applications class also counts for this one. Ask your counselor which classes count."
+            }
+          ],
+          "checks": [{ "id": "fhsp", "kind": "requires_rule_set", "anyOf": ["tx.fhsp.grad"], "cite": ["tx-tec-56-3041-a2a"] }],
+          "conditions": [
+            {
+              "id": "college-hours",
+              "label": "One of the four: 12 or more college credit hours in high school, or the IB diploma",
+              "kind": "other",
+              "cite": ["tx-tec-56-3041-a2a-i"]
+            },
+            {
+              "id": "tsi",
+              "label": "One of the four: meet the Texas Success Initiative college-readiness standards",
+              "kind": "test_score",
+              "cite": ["tx-tec-56-3041-a2a-ii"]
+            },
+            {
+              "id": "rank-gpa",
+              "label": "One of the four: top third of your class or a 3.0 GPA",
+              "kind": "class_rank",
+              "cite": ["tx-tec-56-3041-a2a-iii"]
+            },
+            {
+              "id": "top-25",
+              "label": "Colleges also give priority to students in the top 25% of their class",
+              "kind": "class_rank",
+              "cite": ["tx-22-233-b"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "priority",
+              "text": "These set priority for the grant when money is limited. Financial need and a FAFSA or TASFA also matter.",
+              "cite": ["tx-22-233-h"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "infoCards": [
+    {
+      "id": "tx.card.teog",
+      "title": "Texas Educational Opportunity Grant (TEOG)",
+      "text": "The TEOG, for community and technical colleges, has no high school class requirement in its law. It's based on residency and financial need.",
+      "confidence": "verified",
+      "cite": ["tx-tec-56-404-a"]
+    }
+  ]
+}

@@ -704,6 +704,7 @@ describe("search params", () => {
         page: 3,
       },
       majorQuery: null,
+      anyState: false,
     });
 
     expect(
@@ -718,10 +719,25 @@ describe("search params", () => {
         page: "-2",
         mq: ["nursing", "welding"],
       }),
-    ).toEqual({ filters: {}, majorQuery: "nursing" });
-    expect(parseCollegeSearchParams({ page: "abc", sort: "relevance", q: "   " })).toEqual({ filters: {}, majorQuery: null });
+    ).toEqual({ filters: {}, majorQuery: "nursing", anyState: false });
+    expect(parseCollegeSearchParams({ page: "abc", sort: "relevance", q: "   " })).toEqual({ filters: {}, majorQuery: null, anyState: false });
     // "Best match" is the default; A to Z is a choice.
-    expect(parseCollegeSearchParams({ sort: "name", q: "ohio state" })).toEqual({ filters: { sort: "name", q: "ohio state" }, majorQuery: null });
+    expect(parseCollegeSearchParams({ sort: "name", q: "ohio state" })).toEqual({
+      filters: { sort: "name", q: "ohio state" },
+      majorQuery: null,
+      anyState: false,
+    });
+  });
+
+  it("reads 'Any state' chosen on purpose, and keeps it in links", () => {
+    expect(parseCollegeSearchParams({ state: "any", q: "tech" })).toEqual({ filters: { q: "tech" }, majorQuery: null, anyState: true });
+    expect(parseCollegeSearchParams({ state: "ANY" }).anyState).toBe(true);
+    // A real state wins; no state at all isn't a choice.
+    expect(parseCollegeSearchParams({ state: "tx" }).anyState).toBe(false);
+    expect(parseCollegeSearchParams({}).anyState).toBe(false);
+    expect(collegeSearchHref({ q: "tech", page: 2 }, { anyState: true })).toBe("/colleges?q=tech&state=any&page=2");
+    expect(collegeSearchHref({ state: "TX" }, { anyState: true })).toBe("/colleges?state=TX");
+    expect(collegeSearchHref({ q: "tech" })).toBe("/colleges?q=tech");
   });
 
   it("never reads income from the URL", () => {

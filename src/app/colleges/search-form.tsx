@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Button, ButtonLink, Field } from "@/components/ui";
 import { CONTROLS, CONTROL_LABELS, CREDENTIALS, CREDENTIAL_LABELS, MISSIONS, MISSION_LABELS, SIZES, SIZE_LABELS } from "@/lib/colleges/labels";
-import { type CollegeSearchFilters, SEARCH_PARAM_NAMES, SORTS, SORT_LABELS, collegeSearchHref } from "@/lib/colleges/search";
+import { ANY_STATE, type CollegeSearchFilters, SEARCH_PARAM_NAMES, SORTS, SORT_LABELS, collegeSearchHref } from "@/lib/colleges/search";
 import { US_STATES } from "@/lib/colleges/states";
 
 const selectClass =
@@ -63,6 +63,8 @@ export function SearchForm({
   majorTitle,
   majorIncludes = null,
   majorQuery,
+  homeState = null,
+  anyState = false,
 }: {
   filters: CollegeSearchFilters;
   /** Title of the chosen major (shown as a removable chip). */
@@ -71,12 +73,19 @@ export function SearchForm({
   majorIncludes?: string | null;
   /** What was typed in the major field, when it didn't resolve to one major. */
   majorQuery: string | null;
+  /** The viewer's own state: the search starts there, and "Any state" is then chosen on purpose. */
+  homeState?: string | null;
+  /** "Any state" was chosen on purpose (state=any). */
+  anyState?: boolean;
 }) {
   const moreOpen = Boolean(
     filters.credential || filters.control || filters.size || filters.hbcu || filters.hispanicServing || filters.tribal || filters.includeOnlineOnly,
   );
-  const hasFilters = collegeSearchHref({ ...filters, page: undefined }) !== "/colleges" || Boolean(majorQuery);
-  const removeMajorHref = collegeSearchHref({ ...filters, major: undefined, page: undefined });
+  // The viewer's own state is where the search starts, so it isn't a filter to clear.
+  const startingState = homeState ? filters.state === homeState : filters.state === undefined;
+  const hasFilters =
+    collegeSearchHref({ ...filters, state: undefined, page: undefined }) !== "/colleges" || Boolean(majorQuery) || !startingState;
+  const removeMajorHref = collegeSearchHref({ ...filters, major: undefined, page: undefined }, { anyState });
 
   return (
     // "#results" brings phones straight to the results instead of back to the top of the form.
@@ -119,8 +128,9 @@ export function SearchForm({
         />
       )}
 
-      <SelectField label="State" name="state" defaultValue={filters.state}>
-        <option value="">Any state</option>
+      <SelectField label="State" name="state" defaultValue={filters.state ?? (homeState ? ANY_STATE : undefined)}>
+        {/* With a state of their own, "Any state" is sent as state=any so it isn't filled in again. */}
+        <option value={homeState ? ANY_STATE : ""}>Any state</option>
         {US_STATES.map((s) => (
           <option key={s.code} value={s.code}>
             {s.name}

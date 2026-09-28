@@ -36,6 +36,43 @@ export const FOR_PROFIT_NOTE =
 export const PUBLIC_IN_STATE_NOTE =
   "At public colleges, these prices are for students who live in the college's state. If you live in another state, you'll likely pay more.";
 
+/**
+ * Whether a college's prices are in-state for a student, from the state they told us: "in_state"
+ * at a public college in their state, "out_of_state" at one elsewhere, "unknown" without a state.
+ * Null for private colleges, which charge everyone the same tuition.
+ */
+export type Residency = "in_state" | "out_of_state" | "unknown";
+
+export function residencyFor(
+  control: number | null | undefined,
+  collegeState: string | null | undefined,
+  homeState: string | null | undefined,
+): Residency | null {
+  if (control !== 1) return null;
+  if (!homeState || !collegeState) return "unknown";
+  return collegeState === homeState ? "in_state" : "out_of_state";
+}
+
+export const IN_STATE_FOR_YOU = "In-state for you";
+
+/** The residency caveat that goes with "In-state for you". */
+export function inStateCaveat(stateName: string): string {
+  return `If you're a ${stateName} resident. Each college decides who counts as a resident, so check its rules.`;
+}
+
+/** A public college in the student's state: the prices shown are likely theirs. */
+export function inStateNote(stateName: string): string {
+  return `You live in ${stateName}, so these in-state prices are likely the ones you'd pay. ${inStateCaveat(stateName)}`;
+}
+
+/** A public college in another state: the prices shown are for that state's residents. */
+export function outOfStateNote(collegeStateName: string, homeStateName: string): string {
+  return `This public college is in ${collegeStateName}, and you live in ${homeStateName}, so you'd likely pay out-of-state tuition. The net prices shown are for in-state students, so yours would likely be higher. The college's net price calculator can give you a personal estimate.`;
+}
+
+/** One line for a search result at a public college in another state. */
+export const OUT_OF_STATE_SHORT = "Out-of-state for you: you'd likely pay more than these in-state prices.";
+
 /** Shown with the graduation rate of colleges where most students earn an associate degree. */
 export const TRANSFER_NOTE = "Students who transfer out count as not graduating.";
 

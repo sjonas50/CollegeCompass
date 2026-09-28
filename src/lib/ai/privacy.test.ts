@@ -28,4 +28,26 @@ describe("toAiContext", () => {
     const ctx = toAiContext({ grade: 8, displayName: "Maya", email: "m@x.com", birthDate: "2013-01-01" } as never);
     expect(ctx).toEqual({ grade: 8, gradeBand: "explore" });
   });
+
+  it("carries the student's state, and never their school", () => {
+    const student = {
+      grade: 10,
+      homeState: "TX",
+      school: { name: "Plano Senior High School", ref: "nces:483510003969" },
+      schoolRef: "nces:483510003969",
+      district: "Plano ISD",
+    };
+    const ctx = toAiContext(student as never);
+    expect(ctx).toEqual({ grade: 10, gradeBand: "build", homeState: "TX" });
+    expect(JSON.stringify(ctx)).not.toMatch(/Plano|nces|4835/);
+    // Only a real postal code gets through.
+    expect(toAiContext({ grade: 10, homeState: "Plano ISD" })).toEqual({ grade: 10, gradeBand: "build" });
+    expect(toAiContext({ grade: 10, homeState: null })).toEqual({ grade: 10, gradeBand: "build" });
+  });
+
+  it("has no field for a school", () => {
+    // Adding one would be a deliberate change to what the AI may know (CLAUDE.md); this pins it.
+    const keys: (keyof ReturnType<typeof toAiContext>)[] = ["grade", "gradeBand", "homeState"];
+    expect(Object.keys(toAiContext({ grade: 9, homeState: "UT" })).sort()).toEqual([...keys].sort());
+  });
 });

@@ -14,7 +14,7 @@ was cancelled, so calls to Anthropic and Resend go through `outboundFetch` (HTTP
 
 ```bash
 npm install
-npm run data:load   # optional: O*NET careers, CIP–SOC majors, College Scorecard colleges and programs (~45 MB download)
+npm run data:load   # optional: O*NET careers, CIP–SOC majors, College Scorecard colleges and programs, NCES schools (~68 MB download)
 npm run dev
 ```
 
@@ -40,6 +40,7 @@ change settings.
 | `npm run eval:counselor` | Live eval of the AI counselor (calls the Anthropic API; costs money) |
 | `npm run admin:create` | Creates a staff account for `/admin` (see [The first admin](#8-the-first-admin)) |
 | `npm run access:grant` | Gives a household comp or sponsored access, recorded with the staff account in `--by` (see "Giving a family access" in [`docs/operations.md`](docs/operations.md)) |
+| `npm run beta:planner` | Puts a household in the class planner beta ("Your path"), or takes it out with `--off`, recorded with the staff account in `--by` (see "The class planner beta" in [`docs/operations.md`](docs/operations.md)) |
 
 ## Reference data
 
@@ -54,6 +55,27 @@ foreign keys, so reloading never touches student data.
 | `majors`, `cip_soc_links` | [NCES CIP 2020–SOC 2018 crosswalk](https://nces.ed.gov/ipeds/cipcode/resources.aspx?y=56) |
 | `colleges` | [College Scorecard](https://collegescorecard.ed.gov/data/) institution data, U.S. Department of Education (June 2026 release) |
 | `college_programs` | College Scorecard field-of-study data, U.S. Department of Education (June 2026 release) |
+| `schools` | [NCES Common Core of Data](https://nces.ed.gov/ccd/files.asp) 2024-25 school directory and school characteristics (public schools, charters included) and the [Private School Universe Survey](https://nces.ed.gov/surveys/pss/pssdata.asp) 2023-24 public-use file, U.S. Department of Education (public domain) |
+
+School directory notes (`src/lib/reference/schools.ts`):
+
+- Every state, D.C. and the territories. We keep schools that teach any of grades 7–12 (by the
+  grades-offered flags, not `LEVEL`, which files K–12 and 7–12 schools as "Other" or
+  "Secondary"): about 52,000 public schools that are open (CCD `UPDATED_STATUS` 1, 3, 4, 5 or 8)
+  and about 17,000 private schools. Bureau of Indian Education schools (state "BI") are filed
+  under the state they're in. The files are Latin-1 CSV.
+- `school_ref` is `nces:` plus the 12-digit NCES id, or `pss:` plus the private school's PPIN.
+  Names filed in capitals ("PLANO SR H S") are shown title-cased with common abbreviations spelled
+  out ("Plano Senior High School"); search matches both spellings, the city and the district.
+- The private-school file only has schools that answered the survey, so "My school isn't listed"
+  is always offered. The characteristics file adds `virtual` and `shared_time`; many regular high
+  schools are marked shared-time, so search keeps them, and lists career and technical centers
+  last.
+- School search (`POST /api/schools/search`, `src/lib/schools/search.ts`) always filters by state
+  and uses a text-search index on `search_text` (about 1–9 ms on the full directory). Queries are
+  never logged or put in a URL.
+- A student's school (`student_schools`) keeps `school_ref` without a foreign key. A school a new
+  release drops shows as "no longer in the national school list".
 
 College Scorecard notes:
 
@@ -87,13 +109,22 @@ College Scorecard notes:
   the data-access layer (`requireUser`). `src/proxy.ts` only does optimistic redirects.
 - `src/lib/ai/` — model config, cost tracking with a per-student monthly budget, PII scrubbing,
   and the two-tier safety classifier (`safety/`), with its eval set in `evals/safety/`.
-- `src/lib/reference/` — parsers for O*NET, the NCES CIP–SOC crosswalk and College Scorecard
-  (institutions and field of study).
+- `src/lib/reference/` — parsers for O*NET, the NCES CIP–SOC crosswalk, College Scorecard
+  (institutions and field of study) and the NCES school directories.
+- `src/lib/schools/` — where a student goes to school: school search, their state and schools
+  (`student_schools`, set in Settings or by a parent), and which states a page should put first.
+  Free for everyone. The school never reaches the AI (`test/school-ai-privacy.test.ts`).
 - `src/lib/assessments/` — the three instruments (O*NET Interest Profiler Short Form, Mini-IPIP,
   a work-values ranking), deterministic scoring, and attempts with autosave and 90-day retakes.
 - `src/lib/matching/` — career matching (interest-profile correlation, lightly adjusted by values,
   degree and training paths ranked separately) and the AI explanation with a template fallback.
   Attribution required by the O*NET licenses is in `src/components/attribution.tsx` and `/about/data`.
+- `src/lib/planner/` — the class planner for Utah, Tennessee and Texas: rules content, the engine
+  (`engine/`, pure code, no AI) and "Your path" on `/plan`. "Your path" (with its print view and a
+  parent's read-only path) is in beta: it shows only for households staff mark with
+  `npm run beta:planner`, or for everyone with `PLANNER_PATH=everyone`
+  (`src/lib/planner/beta.ts`). Staff preview it with a test household in the beta. Everyone else keeps the checklist and course ideas. The free
+  `/graduation/[state]` pages and the state and school settings are public either way.
 
 ## Deploying to production
 
@@ -160,6 +191,7 @@ commercial, so move to Pro before you turn on Stripe checkout for real families.
 | `AI_MONTHLY_BUDGET_USD` | No | Monthly AI spending limit per student, in dollars (default 3). Safety checks are never blocked by it. |
 | `TRIAL_DAYS` | No | Length of every new household's free trial (default 14). |
 | `FREE_ACCESS_MONTHS` | No | How long a free-access grant lasts before the family renews it (default 12). |
+| `PLANNER_PATH` | No | Who sees the class planner's "Your path": `beta` (the default: households marked with `npm run beta:planner`) or `everyone`. |
 | `STRIPE_SECRET_KEY` | No | Turns on paid checkout. Without Stripe keys, families use the trial and free access only. |
 | `STRIPE_WEBHOOK_SECRET` | With Stripe | Signing secret of the webhook endpoint (`whsec_...`). On your computer, use the one `stripe listen` prints (see [Payments](#7-payments-stripe)). |
 | `STRIPE_PRICE_MONTHLY` | With Stripe | Price id (`price_...`) of the monthly family plan. |
@@ -168,6 +200,7 @@ commercial, so move to Pro before you turn on Stripe checkout for real families.
 | `PGLITE_DATA_DIR` | No | Local development only: where PGlite keeps its data (default `.data/pglite`). |
 | `SCORECARD_API_KEY` | No | Scripts only: api.data.gov key for `npm run data:check-scorecard` (uses `DEMO_KEY` without it). |
 | `EVAL_JUDGE_MODEL` | No | Scripts only: the judge model for `npm run eval:counselor` (default `claude-opus-5`). |
+| `EVAL_MAX_SPEND` | No | Scripts only: the most one eval run may spend, in dollars (default 3). A run projected to cost more doesn't start. |
 
 Keep secrets in Vercel's environment settings only. To run a script against production, paste the
 value into the one command (as below) instead of saving it in a file on your computer.
@@ -183,12 +216,12 @@ new one is live.
 # Use the direct (unpooled) connection string for these.
 DATABASE_URL="postgres://..." npm run db:migrate
 
-# First deploy, and each time a new data release is loaded (downloads ~45 MB; needs `unzip`):
+# First deploy, and each time a new data release is loaded (downloads ~68 MB; needs `unzip`):
 DATABASE_URL="postgres://..." npm run data:load
 DATABASE_URL="postgres://..." npm run data:check-scorecard   # must pass: our numbers match the live API
 ```
 
-`data:load` replaces only the reference tables (careers, majors, colleges) in one transaction.
+`data:load` replaces only the reference tables (careers, majors, colleges, schools) in one transaction.
 Student data is never touched. Do the same for the Preview database.
 
 ### 5. Cron jobs
@@ -364,10 +397,17 @@ Run both evals with the models you plan to use. They call the Anthropic API and 
 them on your computer against a local database with reference data loaded, never against
 production.
 
+Each run prints what it will likely cost before it starts, and won't start if that's more than
+`EVAL_MAX_SPEND` (default $3). It stops starting cases before its spend passes the cap, and stops
+at once if the API account has no credit or the key is refused. Cases that error aren't scored,
+and the run exits non-zero. A full safety run costs about $2, a full counselor run about $8, and
+one counselor dimension about $0.50 (September 2026, default models).
+
 ```bash
 npm run data:load            # once; the counselor eval's career tools need it
 npm run eval:safety          # must exit 0: no high or imminent case rated lower
-npm run eval:counselor       # must exit 0: at least 90% of cases pass
+EVAL_MAX_SPEND=10 npm run eval:counselor     # must exit 0: at least 90% of cases pass
+npm run eval:counselor -- privacy            # one dimension (or case id prefix)
 AI_MODEL_SAFETY=... npm run eval:safety      # try a different model before switching
 ```
 

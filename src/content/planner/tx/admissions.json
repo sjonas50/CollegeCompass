@@ -1,0 +1,1235 @@
+{
+  "schemaVersion": 1,
+  "id": "tx.admissions",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "TX-S14": {
+      "title": "Texas Education Code, Chapter 51",
+      "url": "https://statutes.capitol.texas.gov/Docs/ED/htm/ED.51.htm",
+      "publisher": "Texas Legislature",
+      "kind": "statute",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S35": {
+      "title": "Freshman Applicants",
+      "url": "https://admissions.utexas.edu/apply/freshman/",
+      "publisher": "The University of Texas at Austin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S36": {
+      "title": "High School Prerequisites",
+      "url": "https://admissions.utexas.edu/apply/application-materials/high-school-prerequisites/",
+      "publisher": "The University of Texas at Austin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S37": {
+      "title": "Review and Decision Process",
+      "url": "https://admissions.utexas.edu/apply/review-decision-process/",
+      "publisher": "The University of Texas at Austin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S38": {
+      "title": "Frequently Asked Questions",
+      "url": "https://admissions.utexas.edu/apply/frequently-asked-questions/",
+      "publisher": "The University of Texas at Austin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S40": {
+      "title": "College Readiness",
+      "url": "https://admissions.tamu.edu/resources/future-students/college-readiness.html",
+      "publisher": "Texas A&M University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S41": {
+      "title": "First-Time Freshmen",
+      "url": "https://www.depts.ttu.edu/admissions/apply/status/first_freshmen/",
+      "publisher": "Texas Tech University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S42": {
+      "title": "Freshman Admissions Process",
+      "url": "https://www.uh.edu/undergraduate-admissions/apply/incoming-freshman/freshman-admissions-process/",
+      "publisher": "University of Houston",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S43": {
+      "title": "Majors with Additional Requirements (2027 terms)",
+      "url": "https://www.uh.edu/undergraduate-admissions/academics/_files/additional-requirements-freshman.pdf",
+      "publisher": "University of Houston",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S44": {
+      "title": "Freshman Admission Criteria",
+      "url": "https://enroll.utdallas.edu/freshman/criteria/",
+      "publisher": "The University of Texas at Dallas",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S45": {
+      "title": "Freshman Admissions",
+      "url": "https://future.utsa.edu/freshman/admissions/",
+      "publisher": "The University of Texas at San Antonio",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S47": {
+      "title": "Freshman Admission Requirements",
+      "url": "https://www.unt.edu/admissions/freshman/admission-requirements.html",
+      "publisher": "University of North Texas",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S48": {
+      "title": "Freshman Admission Requirements",
+      "url": "https://www.admissions.txst.edu/future-students/freshman/admission-requirements.html",
+      "publisher": "Texas State University",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TX-S49": {
+      "title": "Freshmen",
+      "url": "https://www.uta.edu/admissions/apply/freshmen",
+      "publisher": "The University of Texas at Arlington",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "tx-tamu-engineering",
+      "source": "TX-S40",
+      "quote": "NOTE: Students planning to apply to an engineering major are encouraged to take a Math higher than Pre-Calculus."
+    },
+    {
+      "id": "tx-tamu-recommended",
+      "source": "TX-S40",
+      "quote": "Texas A&M University’s recommended coursework includes: 4 years of English 4 years of Mathematics - Three of the courses should be Algebra I, II and Geometry 4 years of Science - Two courses should come from Biology I, Chemistry I or Physics I 2 years of the same foreign language"
+    },
+    {
+      "id": "tx-tamu-test-optional",
+      "source": "TX-S40",
+      "quote": "Test optional means that you are not required to provide SAT and/or ACT scores to the university as part of your admission file."
+    },
+    {
+      "id": "tx-tec-51-803-a",
+      "source": "TX-S14",
+      "pinpoint": "§51.803(a)",
+      "quote": "each general academic teaching institution shall admit an applicant for admission to the institution as an undergraduate student if the applicant graduated with a grade point average in the top 10 percent of the student's high school graduating class"
+    },
+    {
+      "id": "tx-tec-51-803-a2a",
+      "source": "TX-S14",
+      "pinpoint": "§51.803(a)(2)(A)(i)",
+      "quote": "at a public high school, the curriculum requirements established under Section 28.025 for the distinguished level of achievement under the foundation high school program; or"
+    },
+    {
+      "id": "tx-tec-51-803-a2b",
+      "source": "TX-S14",
+      "pinpoint": "§51.803(a)(2)(B)",
+      "quote": "achieved a score set by the Texas Higher Education Coordinating Board on a college entrance examination designated by coordinating board rule; and"
+    },
+    {
+      "id": "tx-tec-51-803-d",
+      "source": "TX-S14",
+      "pinpoint": "§51.803(d)",
+      "quote": "a student's official transcript or diploma must, not later than the end of the student's junior year, indicate: (1) whether the student has satisfied or is on schedule to satisfy the requirements of Subsection (a)(2)(A)(i) or (ii), as applicable;"
+    },
+    {
+      "id": "tx-ttu-cs-language",
+      "source": "TX-S41",
+      "quote": "Computer Science is acceptable for admission purposes, however, it does not satisfy the TTU graduation requirements for foreign language."
+    },
+    {
+      "id": "tx-ttu-english",
+      "source": "TX-S41",
+      "quote": "Language Arts (4 Credits) English I, II & III Advanced English Course"
+    },
+    {
+      "id": "tx-ttu-language",
+      "source": "TX-S41",
+      "quote": "Foreign Language (2 Credits) Both credits must be the same language American Sign Language is accepted as a foreign language for admission purposes."
+    },
+    {
+      "id": "tx-ttu-math",
+      "source": "TX-S41",
+      "quote": "Mathematics (4 Credits) Algebra I Geometry Algebra II Advanced Math Course Options include Precalculus, AQR, AP Statistics & Engineering Mathematics"
+    },
+    {
+      "id": "tx-ttu-recommends",
+      "source": "TX-S41",
+      "quote": "Texas Tech University recommends that applicants complete the Foundation Curriculum with the Distinguished level of achievement."
+    },
+    {
+      "id": "tx-ttu-rest",
+      "source": "TX-S41",
+      "quote": "Physical Education (1 Credit) Fine Arts (1 Credit) Electives (6 Credits)"
+    },
+    {
+      "id": "tx-ttu-science",
+      "source": "TX-S41",
+      "quote": "Science (4 Credits) Biology IPC or Advanced Science Two advanced Science Courses Options include Chemistry, Physics, Forensic Science, & Astronomy"
+    },
+    {
+      "id": "tx-ttu-social",
+      "source": "TX-S41",
+      "quote": "Social Studies (3 Credits) U.S. History U.S. Government (.5 credit) Economics (.5 credit) World Geography or World History"
+    },
+    {
+      "id": "tx-ttu-test-optional",
+      "source": "TX-S41",
+      "pinpoint": "Test Optional Policy",
+      "quote": "a test optional admission policy"
+    },
+    {
+      "id": "tx-txst-assured",
+      "source": "TX-S48",
+      "pinpoint": "Assured Admission",
+      "quote": "Assured admission will be granted to students who will graduate with one of the following diploma types: (HB5) Distinguished Achievement"
+    },
+    { "id": "tx-txst-language", "source": "TX-S48", "quote": "2 credits of a Language other than English" },
+    {
+      "id": "tx-txst-list",
+      "source": "TX-S48",
+      "quote": "4 credits of English Including: English I, II, III and IV 4 credits of Math Including: algebra I and II, geometry and advanced math courses such as pre-calculus, calculus and statistics"
+    },
+    {
+      "id": "tx-txst-recommend",
+      "source": "TX-S48",
+      "quote": "We recommend students complete the following curriculum or equivalent for assured admission. Students applying without this curriculum will go through our review process."
+    },
+    {
+      "id": "tx-txst-science",
+      "source": "TX-S48",
+      "quote": "4 credits of Science Including: biology, chemistry and two advanced sciences such as physics, environmental science, anatomy and physiology;"
+    },
+    { "id": "tx-txst-social-language", "source": "TX-S48", "quote": "3 credits of Social Studies" },
+    {
+      "id": "tx-txst-tests",
+      "source": "TX-S48",
+      "quote": "ACT and SAT test scores are not required for applicants ranked in the top 75% of their graduating class."
+    },
+    { "id": "tx-uh-assured", "source": "TX-S42", "quote": "Assured Pathway 1 Top 10% Assured Pathway 2 3.5+ GPA" },
+    {
+      "id": "tx-uh-must-complete",
+      "source": "TX-S43",
+      "quote": "In addition, applicants must complete the following high school coursework:"
+    },
+    {
+      "id": "tx-uh-nsm-courses",
+      "source": "TX-S43",
+      "pinpoint": "College of Natural Sciences & Mathematics",
+      "quote": "Biology, Chemistry or Physics: 2 units English: 4 units Algebra: 2 units Geometry: 1 unit Pre-Calculus: 1 unit"
+    },
+    {
+      "id": "tx-uh-nursing-courses",
+      "source": "TX-S43",
+      "pinpoint": "Andy & Barbara Gessner College of Nursing",
+      "quote": "Biology: 1 unit Two additional science courses: 2 units Algebra: 1 unit Geometry: 1 unit One additional math course: 1 unit English: 3 units"
+    },
+    { "id": "tx-uh-test-optional", "source": "TX-S42", "quote": "We're Test Optional" },
+    {
+      "id": "tx-unt-top-30",
+      "source": "TX-S47",
+      "quote": "Students who rank in the top 30% of their high school graduating class are eligible for guaranteed admission to the University of North Texas."
+    },
+    { "id": "tx-unt-varies", "source": "TX-S47", "quote": "Admission requirements vary by start term." },
+    {
+      "id": "tx-ut-calc-college",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "Official college or university transcript showing credit for a college-level Calculus I (or higher) course with a grade of B or higher"
+    },
+    {
+      "id": "tx-ut-calc-course",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "Official high school transcript showing credit for a Calculus I (or higher) course with a grade of B or higher Classical Learning Test (CLT) Math score of 26 or above"
+    },
+    {
+      "id": "tx-ut-calc-deadline",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "You can demonstrate calculus readiness by submitting one of the following by the applicable admissions deadline."
+    },
+    {
+      "id": "tx-ut-calc-majors",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "Freshman applicants must demonstrate calculus readiness to apply to the following majors: All majors in the Cockrell School of Engineering All majors in the Jackson School of Geosciences"
+    },
+    {
+      "id": "tx-ut-calc-majors-2",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "Environmental Science (Geographical Sciences) major in the College of Liberal Arts Environmental Science (Biological Sciences) major in the College of Natural Sciences Computer Science, Linguistics and Computer Science,"
+    },
+    {
+      "id": "tx-ut-calc-tests",
+      "source": "TX-S36",
+      "pinpoint": "Calculus Readiness Requirement",
+      "quote": "SAT Math score of 620 or above ACT Math score of 26 or above Advanced Placement (AP) Calculus AB or BC test score of 3 or higher International Baccalaureate (IB) HL Mathematics score of 4 or higher"
+    },
+    {
+      "id": "tx-ut-faq-december-10",
+      "source": "TX-S38",
+      "pinpoint": "Calculus Readiness FAQ",
+      "quote": "If you will not receive a final grade for your calculus course or receive an AP/IB score by December 10, then it will not count for calculus readiness purposes."
+    },
+    {
+      "id": "tx-ut-prereq",
+      "source": "TX-S36",
+      "quote": "Freshman applicants must complete or be on track to complete certain high school coursework to be competitive for admission."
+    },
+    { "id": "tx-ut-prereq-arts", "source": "TX-S36", "quote": "Fine Arts (1 Credit Recommended)" },
+    {
+      "id": "tx-ut-prereq-demanding",
+      "source": "TX-S36",
+      "quote": "Students are encouraged to take demanding coursework, going beyond the level required."
+    },
+    {
+      "id": "tx-ut-prereq-dual",
+      "source": "TX-S36",
+      "quote": "Keep in mind, dual credit courses taken in high school count towards meeting these requirements."
+    },
+    { "id": "tx-ut-prereq-english", "source": "TX-S36", "quote": "Language Arts (4 Credits Required)" },
+    {
+      "id": "tx-ut-prereq-language",
+      "source": "TX-S36",
+      "quote": "Foreign Language (2 Credits Required) Both credits should be related to the study of a single foreign language. For purposes of the requirement, American Sign Language and computer science are considered foreign languages."
+    },
+    {
+      "id": "tx-ut-prereq-math",
+      "source": "TX-S36",
+      "quote": "Mathematics (4 Credits Strongly Recommended, 3 Credits Required)"
+    },
+    {
+      "id": "tx-ut-prereq-math-alg2",
+      "source": "TX-S36",
+      "quote": "All courses should be at the level of Algebra I or higher; one course should be Algebra II (or a course equivalent or more advanced in content and rigor)."
+    },
+    { "id": "tx-ut-prereq-pe", "source": "TX-S36", "quote": "Physical Education (1 Credit Recommended)" },
+    {
+      "id": "tx-ut-prereq-science",
+      "source": "TX-S36",
+      "quote": "Science (4 Credits Strongly Recommended, 2 Credits Required)"
+    },
+    {
+      "id": "tx-ut-prereq-science-suggested",
+      "source": "TX-S36",
+      "quote": "One course in biology, one course in physics and one course chemistry are suggested."
+    },
+    {
+      "id": "tx-ut-prereq-social",
+      "source": "TX-S36",
+      "quote": "Social Studies (4 Credits Recommended, 3 Credits Required)"
+    },
+    {
+      "id": "tx-ut-tests",
+      "source": "TX-S35",
+      "quote": "Send at least one official SAT or ACT score directly from the testing agency"
+    },
+    {
+      "id": "tx-ut-top-5",
+      "source": "TX-S37",
+      "pinpoint": "Automatic Admission Decisions",
+      "quote": "Summer/Fall 2026 and Spring 2027 applicants: Top 5% • Summer/Fall 2027 and Spring 2028 applicants: Top 5%"
+    },
+    {
+      "id": "tx-uta-test-optional",
+      "source": "TX-S49",
+      "quote": "UTA is test-score-optional for admission, however, submitting test scores can help determine admissions decisions, testing exemptions and scholarship opportunities."
+    },
+    {
+      "id": "tx-utd-holistic",
+      "source": "TX-S44",
+      "quote": "Freshman applications are reviewed individually using a holistic review process."
+    },
+    {
+      "id": "tx-utd-preparation",
+      "source": "TX-S44",
+      "quote": "Preparation for and ability to be successful in the intended major."
+    },
+    {
+      "id": "tx-utsa-test-optional",
+      "source": "TX-S45",
+      "quote": "You do not need to submit SAT or ACT scores to be considered for admission."
+    },
+    { "id": "tx-utsa-top-25", "source": "TX-S45", "pinpoint": "Guaranteed Admission", "quote": "Guaranteed Admission" }
+  ],
+  "state": "TX",
+  "kind": "admissions",
+  "ruleSets": [
+    {
+      "id": "utaustin.prereq",
+      "state": "TX",
+      "kind": "college_admission",
+      "title": "UT Austin high school prerequisites",
+      "issuer": { "kind": "college", "name": "UT Austin" },
+      "plainSummary": "UT Austin requires 4 English, 3 math (4 strongly recommended, including Algebra II or higher), 2 science (4 strongly recommended), 3 social studies (4 recommended) and 2 credits of one foreign language (ASL and computer science count). It also recommends PE and fine arts. Dual credit counts.",
+      "strength": "required",
+      "strengthCite": "tx-ut-prereq",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "appliesWhen": { "colleges": [228778] },
+      "variants": [
+        {
+          "id": "utaustin.prereq.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "english",
+              "label": "Language arts: 4 credits",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+              "cite": ["tx-ut-prereq-english"],
+              "area": "english"
+            },
+            {
+              "id": "math3",
+              "label": "Math: 3 credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "types": ["math.alg1", "math.int1", "math.ut_sec1", "math.geom", "math.int2", "math.ut_sec2"] }, { "capabilities": ["alg2_or_beyond"] }, { "types": ["math.stats"] }],
+              "cite": ["tx-ut-prereq-math", "tx-ut-prereq-math-alg2"],
+              "area": "math"
+            },
+            {
+              "id": "math.alg2",
+              "label": "Algebra II (or higher)",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "capabilities": ["alg2_or_beyond"] }],
+              "cite": ["tx-ut-prereq-math-alg2"],
+              "area": "math"
+            },
+            {
+              "id": "math4",
+              "label": "Math: a 4th credit",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "types": ["math.alg1", "math.int1", "math.ut_sec1", "math.geom", "math.int2", "math.ut_sec2"] }, { "capabilities": ["alg2_or_beyond"] }, { "types": ["math.stats"] }],
+              "cite": ["tx-ut-prereq-math", "tx-ut-prereq-math-alg2"],
+              "area": "math",
+              "strength": "strongly_encouraged",
+              "strengthCite": "tx-ut-prereq-math"
+            },
+            {
+              "id": "science2",
+              "label": "Science: 2 credits",
+              "kind": "credits",
+              "units": 8,
+              "select": [{ "subjects": ["science"], "exclude": ["sci.ms"] }],
+              "cite": ["tx-ut-prereq-science"],
+              "area": "science"
+            },
+            {
+              "id": "science4",
+              "label": "Science: 4 credits (biology, chemistry and physics suggested)",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["science"], "exclude": ["sci.ms"] }],
+              "cite": ["tx-ut-prereq-science", "tx-ut-prereq-science-suggested"],
+              "area": "science",
+              "strength": "strongly_encouraged",
+              "strengthCite": "tx-ut-prereq-science"
+            },
+            {
+              "id": "social3",
+              "label": "Social studies: 3 credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+              "cite": ["tx-ut-prereq-social"],
+              "area": "social_studies"
+            },
+            {
+              "id": "social4",
+              "label": "Social studies: 4 credits",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+              "cite": ["tx-ut-prereq-social"],
+              "area": "social_studies",
+              "strength": "recommended",
+              "strengthCite": "tx-ut-prereq-social"
+            },
+            {
+              "id": "language",
+              "label": "Foreign language: 2 credits of one language",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "language.same",
+                  "label": "2 credits of one foreign language (ASL counts)",
+                  "kind": "same_language",
+                  "levels": 2,
+                  "cite": ["tx-ut-prereq-language"]
+                },
+                {
+                  "id": "language.cs",
+                  "label": "2 computer science credits",
+                  "kind": "credits",
+                  "units": 8,
+                  "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
+                  "cite": ["tx-ut-prereq-language"]
+                }
+              ],
+              "area": "world_language"
+            },
+            {
+              "id": "pe",
+              "label": "Physical education: 1 credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "subjects": ["health_pe"] }],
+              "cite": ["tx-ut-prereq-pe"],
+              "area": "health_pe",
+              "strength": "recommended",
+              "strengthCite": "tx-ut-prereq-pe"
+            },
+            {
+              "id": "arts",
+              "label": "Fine arts: 1 credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+              "cite": ["tx-ut-prereq-arts"],
+              "area": "arts",
+              "strength": "recommended",
+              "strengthCite": "tx-ut-prereq-arts"
+            }
+          ],
+          "conditions": [
+            {
+              "id": "tests",
+              "label": "Send an SAT or ACT score (required)",
+              "kind": "test_score",
+              "cite": ["tx-ut-tests"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "dual",
+              "text": "Dual credit classes count toward these prerequisites.",
+              "cite": ["tx-ut-prereq-dual"]
+            },
+            {
+              "id": "demanding",
+              "text": "UT Austin encourages demanding classes beyond what's required.",
+              "cite": ["tx-ut-prereq-demanding"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "utaustin.calc-ready",
+      "state": "TX",
+      "kind": "program_admission",
+      "title": "UT Austin calculus readiness",
+      "issuer": { "kind": "program", "name": "UT Austin" },
+      "plainSummary": "To apply to UT Austin engineering, geosciences, the environmental science majors, or computer science and its joint majors, you show calculus readiness: an SAT Math 620+, ACT Math 26+ or CLT Math 26+ score, AP Calculus 3+, IB HL Math 4+, or Calculus I with a B or higher on your transcript, received by December 10.",
+      "strength": "required",
+      "strengthCite": "tx-ut-calc-majors",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "recheckBy": "2027-09-15",
+      "appliesWhen": { "colleges": [228778], "families": ["engineering", "computer_data_science", "natural_resources"], "cips": ["40.06"] },
+      "variants": [
+        {
+          "id": "utaustin.calc-ready.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "calculus",
+              "label": "Calculus I with a B or higher",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["math.calc", "math.calc2"], "minLetter": "B" }],
+              "cite": ["tx-ut-calc-course", "tx-ut-calc-college", "tx-ut-calc-deadline", "tx-ut-faq-december-10"],
+              "area": "math",
+              "deadlineGrade": 11,
+              "note": "The class route usually means finishing Calculus I in 11th grade: the grade has to be on your transcript by December 10 of 12th grade. A 12th-grade class counts only if its final grade is in by then; ask your counselor."
+            }
+          ],
+          "warnings": [
+            {
+              "id": "december-10",
+              "text": "A calculus class or AP or IB score you won't have by December 10 of 12th grade doesn't count for calculus readiness.",
+              "cite": ["tx-ut-faq-december-10"]
+            },
+            {
+              "id": "majors",
+              "text": "This applies to all engineering and geosciences majors, both environmental science majors, and computer science and its joint majors.",
+              "cite": ["tx-ut-calc-majors", "tx-ut-calc-majors-2"]
+            }
+          ]
+        }
+      ],
+      "testRoutes": [
+        {
+          "id": "calc-ready.tests",
+          "text": "Show calculus readiness with a test score instead: SAT Math 620 or higher, ACT Math 26 or higher, CLT Math 26 or higher, AP Calculus AB or BC 3 or higher, or IB HL Mathematics 4 or higher, received by December 10 of 12th grade.",
+          "cite": ["tx-ut-calc-tests", "tx-ut-calc-course", "tx-ut-calc-deadline", "tx-ut-faq-december-10"],
+          "by": { "grade": 12, "month": 12, "day": 10 }
+        }
+      ]
+    },
+    {
+      "id": "tamu.recommended",
+      "state": "TX",
+      "kind": "college_admission",
+      "title": "Texas A&M recommended high school coursework",
+      "issuer": { "kind": "college", "name": "Texas A&M" },
+      "plainSummary": "Texas A&M recommends 4 years of English, 4 of math (including Algebra I, Algebra II and Geometry), 4 of science (two of biology, chemistry or physics) and 2 of the same foreign language. With the Distinguished Level of Achievement, this is the default target when you haven't picked a Texas college.",
+      "strength": "recommended",
+      "strengthCite": "tx-tamu-recommended",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "appliesWhen": { "colleges": [228723], "stateDefault": true },
+      "variants": [
+        {
+          "id": "tamu.recommended.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "english",
+              "label": "4 years of English",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+              "cite": ["tx-tamu-recommended"],
+              "area": "english"
+            },
+            {
+              "id": "math",
+              "label": "4 years of math",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "math.four",
+                  "label": "4 math credits",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [{ "types": ["math.alg1", "math.int1", "math.ut_sec1", "math.geom", "math.int2", "math.ut_sec2"] }, { "capabilities": ["alg2_or_beyond"] }, { "types": ["math.stats"] }],
+                  "cite": ["tx-tamu-recommended"]
+                },
+                {
+                  "id": "math.alg1",
+                  "label": "Algebra I",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg1"] }],
+                  "cite": ["tx-tamu-recommended"]
+                },
+                {
+                  "id": "math.alg2",
+                  "label": "Algebra II",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg2"] }],
+                  "cite": ["tx-tamu-recommended"]
+                },
+                {
+                  "id": "math.geom",
+                  "label": "Geometry",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.geom"] }],
+                  "cite": ["tx-tamu-recommended"]
+                }
+              ],
+              "area": "math"
+            },
+            {
+              "id": "science",
+              "label": "4 years of science",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "science.four",
+                  "label": "4 science credits",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [{ "subjects": ["science"], "exclude": ["sci.ms"] }],
+                  "cite": ["tx-tamu-recommended"]
+                },
+                {
+                  "id": "science.core",
+                  "label": "Two of biology, chemistry or physics",
+                  "kind": "credits",
+                  "units": 8,
+                  "select": [{ "types": ["sci.bio", "sci.chem", "sci.phys"] }],
+                  "cite": ["tx-tamu-recommended"]
+                }
+              ],
+              "area": "science"
+            },
+            {
+              "id": "language",
+              "label": "2 years of the same foreign language",
+              "kind": "same_language",
+              "levels": 2,
+              "cite": ["tx-tamu-recommended"],
+              "area": "world_language"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tamu.engineering",
+      "state": "TX",
+      "kind": "program_admission",
+      "title": "Texas A&M engineering: math beyond precalculus",
+      "issuer": { "kind": "program", "name": "Texas A&M" },
+      "plainSummary": "Texas A&M encourages engineering applicants to take a math class higher than precalculus.",
+      "strength": "recommended",
+      "strengthCite": "tx-tamu-engineering",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "appliesWhen": { "colleges": [228723], "families": ["engineering"] },
+      "variants": [
+        {
+          "id": "tamu.engineering.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "math.beyond-precalc",
+              "label": "A math class higher than precalculus",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["math.calc", "math.calc2"] }],
+              "cite": ["tx-tamu-engineering"],
+              "area": "math"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ttu.recommended",
+      "state": "TX",
+      "kind": "college_admission",
+      "title": "Texas Tech recommended curriculum",
+      "issuer": { "kind": "college", "name": "Texas Tech" },
+      "plainSummary": "Texas Tech recommends the Distinguished Level of Achievement: 4 English, 4 math (Algebra I, Geometry, Algebra II and an advanced math), 4 science, 3 social studies, 2 of the same foreign language (ASL counts; computer science counts for admission), plus PE, fine arts and electives.",
+      "strength": "recommended",
+      "strengthCite": "tx-ttu-recommends",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "appliesWhen": { "colleges": [229115] },
+      "variants": [
+        {
+          "id": "ttu.recommended.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "english",
+              "label": "Language arts: 4 credits",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+              "cite": ["tx-ttu-english"],
+              "area": "english"
+            },
+            {
+              "id": "math",
+              "label": "Mathematics: 4 credits",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "math.alg1",
+                  "label": "Algebra I",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg1"] }],
+                  "cite": ["tx-ttu-math"]
+                },
+                {
+                  "id": "math.geom",
+                  "label": "Geometry",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.geom"] }],
+                  "cite": ["tx-ttu-math"]
+                },
+                {
+                  "id": "math.alg2",
+                  "label": "Algebra II",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg2"] }],
+                  "cite": ["tx-ttu-math"]
+                },
+                {
+                  "id": "math.advanced",
+                  "label": "An advanced math class",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "capabilities": ["advanced_math_after_alg2"] },
+                    { "types": ["math.stats"], "levels": ["ap"] },
+                    { "types": ["math.applied.engineering"] }
+                  ],
+                  "cite": ["tx-ttu-math"]
+                }
+              ],
+              "area": "math"
+            },
+            {
+              "id": "science",
+              "label": "Science: 4 credits",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "science.bio",
+                  "label": "Biology",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.bio"] }],
+                  "cite": ["tx-ttu-science"]
+                },
+                {
+                  "id": "science.four",
+                  "label": "4 science credits",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [{ "subjects": ["science"], "exclude": ["sci.ms"] }],
+                  "cite": ["tx-ttu-science"]
+                }
+              ],
+              "area": "science"
+            },
+            {
+              "id": "social",
+              "label": "Social studies: 3 credits",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+              "cite": ["tx-ttu-social"],
+              "area": "social_studies"
+            },
+            {
+              "id": "language",
+              "label": "Foreign language: 2 credits of the same language",
+              "kind": "any",
+              "of": [
+                {
+                  "id": "language.same",
+                  "label": "2 credits of the same language (ASL counts)",
+                  "kind": "same_language",
+                  "levels": 2,
+                  "cite": ["tx-ttu-language"]
+                },
+                {
+                  "id": "language.cs",
+                  "label": "2 computer science credits (admission only)",
+                  "kind": "credits",
+                  "units": 8,
+                  "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
+                  "cite": ["tx-ttu-cs-language"]
+                }
+              ],
+              "area": "world_language"
+            },
+            {
+              "id": "pe",
+              "label": "Physical education: 1 credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "subjects": ["health_pe"] }],
+              "cite": ["tx-ttu-rest"],
+              "area": "health_pe"
+            },
+            {
+              "id": "arts",
+              "label": "Fine arts: 1 credit",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "subjects": ["arts"], "exclude": ["arts.ms"] }],
+              "cite": ["tx-ttu-rest"],
+              "area": "arts"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "txstate.recommended",
+      "state": "TX",
+      "kind": "college_admission",
+      "title": "Texas State recommended curriculum for assured admission",
+      "issuer": { "kind": "college", "name": "Texas State" },
+      "plainSummary": "Texas State recommends 4 English (I-IV), 4 math (Algebra I and II, Geometry and advanced math), 4 science (biology, chemistry and two advanced sciences), 3 social studies and 2 credits of a language other than English. Assured admission also needs the Distinguished Level of Achievement.",
+      "strength": "recommended",
+      "strengthCite": "tx-txst-recommend",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "appliesWhen": { "colleges": [228459] },
+      "variants": [
+        {
+          "id": "txstate.recommended.all",
+          "cohort": {  },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "english",
+              "label": "4 credits of English (English I-IV)",
+              "kind": "credits",
+              "units": 16,
+              "select": [
+                { "types": ["ela.9", "ela.10", "ela.11", "ela.12"] },
+                { "types": ["ela.lang_comp", "ela.lit_comp"], "levels": ["ap"] }
+              ],
+              "cite": ["tx-txst-list"],
+              "area": "english"
+            },
+            {
+              "id": "math",
+              "label": "4 credits of math",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "math.alg1",
+                  "label": "Algebra I",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg1"] }],
+                  "cite": ["tx-txst-list"]
+                },
+                {
+                  "id": "math.alg2",
+                  "label": "Algebra II",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg2"] }],
+                  "cite": ["tx-txst-list"]
+                },
+                {
+                  "id": "math.geom",
+                  "label": "Geometry",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.geom"] }],
+                  "cite": ["tx-txst-list"]
+                },
+                {
+                  "id": "math.advanced",
+                  "label": "An advanced math class (such as precalculus, calculus or statistics)",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "capabilities": ["advanced_math_after_alg2"] }, { "types": ["math.stats"] }],
+                  "cite": ["tx-txst-list"]
+                }
+              ],
+              "area": "math"
+            },
+            {
+              "id": "science",
+              "label": "4 credits of science",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "science.bio",
+                  "label": "Biology",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.bio"] }],
+                  "cite": ["tx-txst-science"]
+                },
+                {
+                  "id": "science.chem",
+                  "label": "Chemistry",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.chem", "sci.chem2"] }],
+                  "cite": ["tx-txst-science"]
+                },
+                {
+                  "id": "science.four",
+                  "label": "4 science credits",
+                  "kind": "credits",
+                  "units": 16,
+                  "select": [{ "subjects": ["science"], "exclude": ["sci.ms"] }],
+                  "cite": ["tx-txst-science"]
+                }
+              ],
+              "area": "science"
+            },
+            {
+              "id": "social",
+              "label": "3 credits of social studies",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+              "cite": ["tx-txst-social-language"],
+              "area": "social_studies"
+            },
+            {
+              "id": "language",
+              "label": "2 credits of a language other than English",
+              "kind": "same_language",
+              "levels": 2,
+              "cite": ["tx-txst-language"],
+              "area": "world_language"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "uh.nsm",
+      "state": "TX",
+      "kind": "program_admission",
+      "title": "University of Houston natural sciences and mathematics coursework",
+      "issuer": { "kind": "program", "name": "UH Natural Sciences & Mathematics" },
+      "plainSummary": "For 2027 terms, automatic admission to UH's College of Natural Sciences & Mathematics (which includes biology, chemistry, computer science, geology, math and physics) also needs 2 of biology, chemistry or physics, 4 English, 2 algebra, 1 geometry and 1 precalculus.",
+      "strength": "required",
+      "strengthCite": "tx-uh-must-complete",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "projectedBeyond": 2027,
+      "appliesWhen": {
+        "colleges": [225511],
+        "families": ["computer_data_science", "math_physical_sciences", "biological_sciences", "pre_health"]
+      },
+      "variants": [
+        {
+          "id": "uh.nsm.2027",
+          "cohort": { "from": 2027 },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "science",
+              "label": "Biology, chemistry or physics: 2 units",
+              "kind": "credits",
+              "units": 8,
+              "select": [{ "types": ["sci.bio", "sci.chem", "sci.phys", "sci.bio2", "sci.chem2", "sci.phys2"] }],
+              "cite": ["tx-uh-nsm-courses"],
+              "area": "science"
+            },
+            {
+              "id": "english",
+              "label": "English: 4 units",
+              "kind": "credits",
+              "units": 16,
+              "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+              "cite": ["tx-uh-nsm-courses"],
+              "area": "english"
+            },
+            {
+              "id": "algebra",
+              "label": "Algebra: 2 units (Algebra I and II)",
+              "kind": "credits",
+              "units": 8,
+              "select": [{ "types": ["math.alg1", "math.alg2"] }],
+              "cite": ["tx-uh-nsm-courses"],
+              "area": "math"
+            },
+            {
+              "id": "geometry",
+              "label": "Geometry: 1 unit",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["math.geom"] }],
+              "cite": ["tx-uh-nsm-courses"],
+              "area": "math"
+            },
+            {
+              "id": "precalc",
+              "label": "Pre-Calculus: 1 unit",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["math.precalc"] }],
+              "cite": ["tx-uh-nsm-courses"],
+              "area": "math"
+            }
+          ],
+          "unverified": [{ "id": "later-terms", "text": "These are the rules for 2027 admission terms; later terms may change." }]
+        }
+      ]
+    },
+    {
+      "id": "uh.nursing",
+      "state": "TX",
+      "kind": "program_admission",
+      "title": "University of Houston nursing coursework",
+      "issuer": { "kind": "program", "name": "UH College of Nursing" },
+      "plainSummary": "For 2027 terms, automatic admission to UH nursing (applying as pre-nursing) also needs 1 biology, 2 more sciences, 1 algebra, 1 geometry, 1 more math and 3 English.",
+      "strength": "required",
+      "strengthCite": "tx-uh-must-complete",
+      "confidence": "verified",
+      "cohortKey": "class_year",
+      "projectedBeyond": 2027,
+      "appliesWhen": { "colleges": [225511], "families": ["nursing"] },
+      "variants": [
+        {
+          "id": "uh.nursing.2027",
+          "cohort": { "from": 2027 },
+          "allocation": "independent",
+          "requirements": [
+            {
+              "id": "biology",
+              "label": "Biology: 1 unit",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["sci.bio"] }],
+              "cite": ["tx-uh-nursing-courses"],
+              "area": "science"
+            },
+            {
+              "id": "science",
+              "label": "Biology plus two more science courses (3 in all)",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["science"], "exclude": ["sci.ms"] }],
+              "cite": ["tx-uh-nursing-courses"],
+              "area": "science"
+            },
+            {
+              "id": "algebra",
+              "label": "Algebra: 1 unit",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["math.alg1"] }],
+              "cite": ["tx-uh-nursing-courses"],
+              "area": "math"
+            },
+            {
+              "id": "geometry",
+              "label": "Geometry: 1 unit",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["math.geom"] }],
+              "cite": ["tx-uh-nursing-courses"],
+              "area": "math"
+            },
+            {
+              "id": "math",
+              "label": "Algebra, geometry and one more math course (3 in all)",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "types": ["math.alg1", "math.int1", "math.ut_sec1", "math.geom", "math.int2", "math.ut_sec2"] }, { "capabilities": ["alg2_or_beyond"] }, { "types": ["math.stats"] }],
+              "cite": ["tx-uh-nursing-courses"],
+              "area": "math"
+            },
+            {
+              "id": "english",
+              "label": "English: 3 units",
+              "kind": "credits",
+              "units": 12,
+              "select": [{ "subjects": ["english"], "exclude": ["ela.ms"] }],
+              "cite": ["tx-uh-nursing-courses"],
+              "area": "english"
+            }
+          ],
+          "unverified": [{ "id": "later-terms", "text": "These are the rules for 2027 admission terms; later terms may change." }]
+        }
+      ]
+    }
+  ],
+  "infoCards": [
+    {
+      "id": "tx.card.automatic-admission",
+      "title": "Texas automatic admission (top 10%)",
+      "text": "Texas public universities must admit students in the top 10% of their class who complete the Distinguished Level of Achievement (the course route) or reach a test score the state sets (the test-score route). UT Austin admits a smaller top percentage. Your transcript should show you're on schedule for the DLA by the end of 11th grade.",
+      "confidence": "verified",
+      "cite": ["tx-tec-51-803-a", "tx-tec-51-803-a2a", "tx-tec-51-803-a2b", "tx-tec-51-803-d", "tx-ut-top-5"]
+    },
+    {
+      "id": "tx.card.ut-austin",
+      "title": "UT Austin",
+      "unitId": 228778,
+      "tests": "required",
+      "text": "UT Austin automatically admits the top 5% for 2026 and 2027 entry (a smaller share than other Texas universities). SAT or ACT scores are required. Some majors also need calculus readiness.",
+      "confidence": "verified",
+      "cite": ["tx-ut-top-5", "tx-ut-tests", "tx-ut-calc-majors"]
+    },
+    {
+      "id": "tx.card.tamu",
+      "title": "Texas A&M University",
+      "unitId": 228723,
+      "tests": "optional",
+      "text": "Texas A&M is test optional.",
+      "confidence": "verified",
+      "cite": ["tx-tamu-test-optional"]
+    },
+    {
+      "id": "tx.card.ttu",
+      "title": "Texas Tech University",
+      "unitId": 229115,
+      "tests": "optional",
+      "text": "Texas Tech has a test-optional admission policy and recommends the Distinguished Level of Achievement.",
+      "confidence": "verified",
+      "cite": ["tx-ttu-test-optional", "tx-ttu-recommends"]
+    },
+    {
+      "id": "tx.card.uh",
+      "title": "University of Houston",
+      "unitId": 225511,
+      "tests": "optional",
+      "text": "UH is test optional. Assured admission routes include a top-10% rank or a 3.5 core GPA. Some colleges, like Natural Sciences & Mathematics and Nursing, add course requirements.",
+      "confidence": "verified",
+      "cite": ["tx-uh-test-optional", "tx-uh-assured", "tx-uh-must-complete"]
+    },
+    {
+      "id": "tx.card.utd",
+      "title": "UT Dallas",
+      "unitId": 228787,
+      "text": "UT Dallas uses holistic review, which includes your preparation for your intended major. Top-10% students with the Distinguished Level of Achievement are admitted automatically.",
+      "confidence": "verified",
+      "cite": ["tx-utd-holistic", "tx-utd-preparation"]
+    },
+    {
+      "id": "tx.card.utsa",
+      "title": "UT San Antonio",
+      "unitId": 229027,
+      "tests": "optional",
+      "text": "UTSA is test optional and guarantees admission to students in the top 25% of their class; others get a full review.",
+      "confidence": "verified",
+      "cite": ["tx-utsa-test-optional", "tx-utsa-top-25"]
+    },
+    {
+      "id": "tx.card.unt",
+      "title": "University of North Texas",
+      "unitId": 227216,
+      "text": "UNT guarantees admission to students in the top 30% of their class, among other routes. Its requirements vary by start term.",
+      "confidence": "verified",
+      "cite": ["tx-unt-top-30", "tx-unt-varies"]
+    },
+    {
+      "id": "tx.card.txstate",
+      "title": "Texas State University",
+      "unitId": 228459,
+      "text": "Texas State's assured admission needs the Distinguished Level of Achievement plus a class rank and, for some students, test scores. Tests aren't required for the top 75% of the class.",
+      "confidence": "verified",
+      "cite": ["tx-txst-assured", "tx-txst-tests"]
+    },
+    {
+      "id": "tx.card.uta",
+      "title": "UT Arlington",
+      "unitId": 228769,
+      "tests": "optional",
+      "text": "UT Arlington is test-score optional. Its guaranteed admission table mixes rank, GPA and advanced credits in a way we couldn't read clearly. Ask your counselor or UTA.",
+      "confidence": "conflicting",
+      "cite": ["tx-uta-test-optional"]
+    }
+  ]
+}

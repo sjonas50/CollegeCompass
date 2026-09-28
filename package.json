@@ -18,9 +18,11 @@
     "check:matching": "tsx scripts/check-matching.ts",
     "matches:refill": "tsx scripts/refill-matches.ts",
     "check:reasons": "tsx scripts/check-reasons.ts",
+    "check:rules": "tsx scripts/check-rules.ts",
     "eval:counselor": "tsx scripts/eval-counselor.ts",
     "admin:create": "tsx scripts/create-admin.ts",
-    "access:grant": "tsx scripts/grant-access.ts"
+    "access:grant": "tsx scripts/grant-access.ts",
+    "beta:planner": "tsx scripts/beta-planner.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 1,
+  "id": "ut.generic-catalog",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "UT-S1": {
+      "title": "Utah Admin. Code R277-700, The Elementary and Secondary School General Core",
+      "url": "https://adminrules.utah.gov/api/public/getHTML/uac-html/0b04a299-cb20-4bf4-b882-dc9bf443d818.html",
+      "publisher": "Utah State Board of Education",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S3": {
+      "title": "Current Courses Meeting the Criteria for Graduation Requirements 2026-2027",
+      "url": "https://www.schools.utah.gov/curr/_curr_/_earlycollege_/CoursesMeetingGraduationRequirements2026-2027.pdf",
+      "publisher": "Utah State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "MP-USBE-CTE": {
+      "title": "Utah CTE Career Pathway Chart, 2025-2026",
+      "url": "https://schools.utah.gov/cte/_cte/pathways/AllCareerPathways2025.pdf",
+      "publisher": "Utah State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "UT-S4": {
+      "title": "Social Studies Graduation Requirement FAQ 2026-2027",
+      "url": "https://www.schools.utah.gov/curr/_curr_/_earlycollege_/SocialStudiesGraduationRequirementFAQ.pdf",
+      "publisher": "Utah State Board of Education",
+      "kind": "guidance",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    { "id": "ut-cte-pathway-graphic", "source": "MP-USBE-CTE", "quote": "Career Pathway: Graphic Design & Communication" },
+    { "id": "ut-cte-pathway-broadcasting", "source": "MP-USBE-CTE", "quote": "Career Pathway: Broadcasting & Digital Media" },
+    { "id": "ut-cte-pathway-teaching", "source": "MP-USBE-CTE", "quote": "Career Pathway: K-12: Teaching as a Profession" },
+    { "id": "ut-cte-pathway-pre-k", "source": "MP-USBE-CTE", "quote": "Career Pathway: Pre-K: Early Childhood Education" },
+    { "id": "ut-cte-pathway-protective", "source": "MP-USBE-CTE", "quote": "Career Pathway: Protective Services" },
+    { "id": "ut-cte-pathway-family", "source": "MP-USBE-CTE", "quote": "Career Pathway: Family & Human Services" },
+    { "id": "ut-cte-pathway-personal-care", "source": "MP-USBE-CTE", "quote": "Career Pathway: Personal Care Services" },
+    {
+      "id": "ut-r277-700-6-12-acgc",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(12)(a)(v)",
+      "quote": "(v) Beginning with incoming 10th graders in the 2026-2027 school year, the requirement in Subsection (iv) will be replaced by American Constitutional Government and Citizenship (1.0 units of credit);"
+    },
+    {
+      "id": "ut-r277-700-6-15",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(15)(a)",
+      "quote": "Physical Education (1.5 units of credit from each of the following): (i) Participation Skills (0.5 units of credit); (ii) Fitness for Life (0.5 units of credit); and (iii) Individualized Lifetime Activities (0.5 units of credit);"
+    },
+    {
+      "id": "ut-r277-700-6-6",
+      "source": "UT-S1",
+      "pinpoint": "R277-700-6(6)",
+      "quote": "Mathematics (3.0 units of credit) shall be met minimally through successful completion of a combination of the foundation or foundation extended courses, Secondary Mathematics I, Secondary Mathematics II, and Secondary Mathematics III."
+    },
+    {
+      "id": "ut-ssfaq-acgc-available",
+      "source": "UT-S4",
+      "pinpoint": "p. 1",
+      "quote": "American Constitutional Government and Citizenship will be available to students in the 2027-2028 school year."
+    },
+    {
+      "id": "ut-usbe-2627-digital",
+      "source": "UT-S3",
+      "pinpoint": "p. 6",
+      "quote": "The six approved courses that count towards the Digital Studies 0.5 required graduation credit are: Business Office Specialist Digital Business Apps Computer Programming 1 Exploring Computer Science Computer Science Principles Web Development 1"
+    },
+    {
+      "id": "ut-usbe-2627-gfl",
+      "source": "UT-S3",
+      "pinpoint": "p. 7",
+      "quote": "The 0.5 credit for General Financial Literacy can be met through the following courses: General Financial Literacy or Finance CE"
+    },
+    {
+      "id": "ut-usbe-2627-health",
+      "source": "UT-S3",
+      "pinpoint": "p. 6",
+      "quote": "Health Education 0.5 credits Health II"
+    },
+    {
+      "id": "ut-usbe-2627-la",
+      "source": "UT-S3",
+      "pinpoint": "p. 2",
+      "quote": "Three courses from the foundational courses plus one course from the Level 12 course options or the Applied and Advanced List"
+    },
+    {
+      "id": "ut-usbe-2627-la10",
+      "source": "UT-S3",
+      "pinpoint": "p. 2",
+      "quote": "Language Arts Level 10 (1.0 Credit) ELA 10 AP Seminar"
+    },
+    {
+      "id": "ut-usbe-2627-la11",
+      "source": "UT-S3",
+      "pinpoint": "p. 2",
+      "quote": "Language Arts Level 11 (1.0 Credit) English 11 English 11 Honors International Baccalaureate AP Literature & Composition AP Language & Composition"
+    },
+    {
+      "id": "ut-usbe-2627-la12",
+      "source": "UT-S3",
+      "pinpoint": "p. 2",
+      "quote": "Language Arts Level 12 (1.0 Credit) English 12 English Concurrent Enrollment* International Baccalaureate AP Literature & Composition AP Language & Composition"
+    },
+    {
+      "id": "ut-usbe-2627-math-applied",
+      "source": "UT-S3",
+      "pinpoint": "p. 3",
+      "quote": "Applied Courses (Secondary II Prerequisite) Alternative Selections for Secondary III must total 1.0 credit"
+    },
+    {
+      "id": "ut-usbe-2627-math-advanced",
+      "source": "UT-S3",
+      "pinpoint": "p. 3",
+      "quote": "Advanced Courses (Secondary III Pre-requisite) AP Calculus AB or BC AP Statistics AP Pre-Calculus College Prep Math Concurrent Enrollment* 1010, 1030, 1040, 1050, or 1060 International Baccalaureate Introductory Calculus"
+    },
+    {
+      "id": "ut-usbe-2627-sci",
+      "source": "UT-S3",
+      "pinpoint": "p. 4",
+      "quote": "A total of two courses from two of the five areas of science on the Foundational Courses list plus one credit from the Foundation Courses list or Applied and Advanced Courses list."
+    },
+    {
+      "id": "ut-ssfaq-usgov-retired",
+      "source": "UT-S4",
+      "pinpoint": "p. 1",
+      "quote": "The U.S. Government and Citizenship course will be retired in the 2027-2028 school year, and a new 1.0 American Constitutional Government and Citizenship course will take its place."
+    },
+    {
+      "id": "ut-usbe-2627-usgov",
+      "source": "UT-S3",
+      "pinpoint": "p. 5",
+      "quote": "Applies only to 11th & 12th grade cohorts of 2026-27."
+    },
+    {
+      "id": "ut-usbe-2627-ss",
+      "source": "UT-S3",
+      "pinpoint": "p. 5",
+      "quote": "Social Studies – 3.0 Credits applies to 11th & 12th graders of 2026-2027 (3.5 credits required for 9th & 10th grade cohorts of 2026-2027 and all cohorts afterward)"
+    }
+  ],
+  "state": "UT",
+  "title": "Classes most Utah high schools offer",
+  "classesPerYear": 7,
+  "courses": [
+    {
+      "typeId": "ela.9",
+      "levels": ["regular", "honors"],
+      "cite": ["ut-usbe-2627-la", "ut-usbe-2627-la10", "ut-usbe-2627-la11", "ut-usbe-2627-la12"]
+    },
+    {
+      "typeId": "ela.10",
+      "levels": ["regular", "honors"],
+      "cite": ["ut-usbe-2627-la", "ut-usbe-2627-la10", "ut-usbe-2627-la11", "ut-usbe-2627-la12"]
+    },
+    {
+      "typeId": "ela.seminar",
+      "levels": ["ap"],
+      "cite": ["ut-usbe-2627-la", "ut-usbe-2627-la10", "ut-usbe-2627-la11", "ut-usbe-2627-la12"]
+    },
+    {
+      "typeId": "ela.11",
+      "levels": ["regular", "honors"],
+      "cite": ["ut-usbe-2627-la", "ut-usbe-2627-la10", "ut-usbe-2627-la11", "ut-usbe-2627-la12"]
+    },
+    {
+      "typeId": "ela.12",
+      "levels": ["regular", "dual_enrollment"],
+      "cite": ["ut-usbe-2627-la", "ut-usbe-2627-la10", "ut-usbe-2627-la11", "ut-usbe-2627-la12"]
+    },
+    {
+      "typeId": "ela.lang_comp",
+      "levels": ["ap"],
+      "cite": ["ut-usbe-2627-la", "ut-usbe-2627-la10", "ut-usbe-2627-la11", "ut-usbe-2627-la12"]
+    },
+    {
+      "typeId": "ela.lit_comp",
+      "levels": ["ap"],
+      "cite": ["ut-usbe-2627-la", "ut-usbe-2627-la10", "ut-usbe-2627-la11", "ut-usbe-2627-la12"]
+    },
+    { "typeId": "ela.creative_writing", "levels": ["regular"] },
+    { "typeId": "ela.journalism", "levels": ["regular"] },
+    { "typeId": "ela.debate", "levels": ["regular"] },
+    {
+      "typeId": "math.ut_sec1",
+      "levels": ["regular", "honors"],
+      "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"]
+    },
+    {
+      "typeId": "math.ut_sec2",
+      "levels": ["regular", "honors"],
+      "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"]
+    },
+    {
+      "typeId": "math.ut_sec3",
+      "levels": ["regular", "honors"],
+      "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"]
+    },
+    { "typeId": "math.precalc", "levels": ["ap"], "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"] },
+    {
+      "typeId": "math.college_alg",
+      "levels": ["dual_enrollment"],
+      "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"]
+    },
+    { "typeId": "math.trig", "levels": ["dual_enrollment"], "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"] },
+    {
+      "typeId": "math.adv_quant",
+      "levels": ["dual_enrollment"],
+      "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"]
+    },
+    { "typeId": "math.calc", "levels": ["regular", "ap"], "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"] },
+    {
+      "typeId": "math.stats",
+      "levels": ["regular", "ap"],
+      "prereqs": [["math.ut_sec2", "math.int2", "math.geom"]],
+      "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced", "ut-usbe-2627-math-applied"]
+    },
+    { "typeId": "math.college_prep", "levels": ["regular"], "cite": ["ut-r277-700-6-6", "ut-usbe-2627-math-advanced"] },
+    {
+      "typeId": "math.applied.finance",
+      "levels": ["regular"],
+      "prereqs": [["math.ut_sec2", "math.int2", "math.geom"]],
+      "cite": ["ut-usbe-2627-math-applied"]
+    },
+    { "typeId": "sci.earth", "levels": ["regular"], "cite": ["ut-usbe-2627-sci"] },
+    { "typeId": "sci.bio", "levels": ["regular", "ap", "dual_enrollment"], "cite": ["ut-usbe-2627-sci"] },
+    { "typeId": "sci.chem", "levels": ["regular"], "cite": ["ut-usbe-2627-sci"] },
+    { "typeId": "sci.chem2", "levels": ["ap", "dual_enrollment"], "cite": ["ut-usbe-2627-sci"] },
+    { "typeId": "sci.phys", "levels": ["regular", "ap", "dual_enrollment"], "cite": ["ut-usbe-2627-sci"] },
+    { "typeId": "sci.env", "levels": ["regular", "ap"], "cite": ["ut-usbe-2627-sci"] },
+    { "typeId": "sci.anat", "levels": ["regular"], "cite": ["ut-usbe-2627-sci"] },
+    { "typeId": "sci.biotech", "levels": ["regular"], "cite": ["ut-usbe-2627-sci"] },
+    { "typeId": "ss.world_geo", "levels": ["regular", "ap"], "units": 2, "cite": ["ut-usbe-2627-ss"] },
+    { "typeId": "ss.world_hist", "levels": ["regular", "ap"], "units": 2, "cite": ["ut-usbe-2627-ss"] },
+    { "typeId": "ss.us_hist", "levels": ["regular", "ap", "dual_enrollment"], "cite": ["ut-usbe-2627-ss"] },
+    {
+      "typeId": "ss.us_gov",
+      "levels": ["regular", "ap"],
+      "lastSchoolYear": 2026,
+      "cite": ["ut-ssfaq-usgov-retired", "ut-usbe-2627-usgov"]
+    },
+    {
+      "typeId": "ss.ut_acgc",
+      "levels": ["regular"],
+      "firstSchoolYear": 2027,
+      "cite": ["ut-r277-700-6-12-acgc", "ut-ssfaq-acgc-available"]
+    },
+    { "typeId": "ss.econ", "levels": ["regular", "ap"], "cite": ["ut-usbe-2627-ss"] },
+    { "typeId": "ss.psych", "levels": ["regular", "ap"], "cite": ["ut-usbe-2627-ss"] },
+    { "typeId": "ss.pfl", "levels": ["regular"], "cite": ["ut-usbe-2627-gfl"] },
+    { "typeId": "arts.visual", "levels": ["regular", "ap"] },
+    { "typeId": "arts.ensemble", "levels": ["regular"] },
+    { "typeId": "arts.theatre", "levels": ["regular"] },
+    { "typeId": "arts.dance", "levels": ["regular"] },
+    { "typeId": "arts.media", "levels": ["regular"] },
+    { "typeId": "health.health", "levels": ["regular"], "cite": ["ut-usbe-2627-health"] },
+    { "typeId": "pe.fitness", "levels": ["regular"], "cite": ["ut-r277-700-6-15"] },
+    { "typeId": "pe.skills", "levels": ["regular"], "cite": ["ut-r277-700-6-15"] },
+    { "typeId": "pe.lifetime", "levels": ["regular"], "cite": ["ut-r277-700-6-15"] },
+    { "typeId": "cs.intro", "levels": ["regular"], "cite": ["ut-usbe-2627-digital"] },
+    { "typeId": "cs.principles", "levels": ["regular", "ap"], "cite": ["ut-usbe-2627-digital"] },
+    { "typeId": "cs.prog1", "levels": ["regular"], "cite": ["ut-usbe-2627-digital"] },
+    { "typeId": "cs.prog2", "levels": ["regular", "ap"] },
+    { "typeId": "cs.web", "levels": ["regular"], "cite": ["ut-usbe-2627-digital"] },
+    { "typeId": "cte.business_office", "levels": ["regular"], "cite": ["ut-usbe-2627-digital"] },
+    { "typeId": "lang.es.1", "levels": ["regular"] },
+    { "typeId": "lang.es.2", "levels": ["regular"] },
+    { "typeId": "lang.es.3", "levels": ["regular", "honors"] },
+    { "typeId": "lang.es.4", "levels": ["regular", "ap"] },
+    { "typeId": "lang.fr.1", "levels": ["regular"] },
+    { "typeId": "lang.fr.2", "levels": ["regular"] },
+    { "typeId": "lang.fr.3", "levels": ["regular"] },
+    { "typeId": "lang.zh.1", "levels": ["regular"] },
+    { "typeId": "lang.zh.2", "levels": ["regular"] },
+    { "typeId": "lang.zh.3", "levels": ["regular"] },
+    { "typeId": "cte.health.1", "levels": ["regular"] },
+    { "typeId": "cte.health.2", "levels": ["regular", "dual_enrollment"] },
+    { "typeId": "cte.health.3", "levels": ["regular"] },
+    { "typeId": "cte.business.1", "levels": ["regular"] },
+    { "typeId": "cte.business.2", "levels": ["regular"] },
+    { "typeId": "cte.business.3", "levels": ["regular"] },
+    { "typeId": "cte.it.1", "levels": ["regular"] },
+    { "typeId": "cte.it.2", "levels": ["regular"] },
+    { "typeId": "cte.it.3", "levels": ["regular"] },
+    { "typeId": "cte.engineering.1", "levels": ["regular"] },
+    { "typeId": "cte.engineering.2", "levels": ["regular"] },
+    { "typeId": "cte.engineering.3", "levels": ["regular"] },
+    { "typeId": "cte.ag.1", "levels": ["regular"] },
+    { "typeId": "cte.ag.2", "levels": ["regular"] },
+    { "typeId": "cte.ag.3", "levels": ["regular"] },
+    { "typeId": "cte.hospitality.1", "levels": ["regular"] },
+    { "typeId": "cte.hospitality.2", "levels": ["regular"] },
+    { "typeId": "cte.hospitality.3", "levels": ["regular"] },
+    { "typeId": "cte.architecture_construction.1", "levels": ["regular"] },
+    { "typeId": "cte.architecture_construction.2", "levels": ["regular"] },
+    { "typeId": "cte.architecture_construction.3", "levels": ["regular"] },
+    { "typeId": "cte.manufacturing.1", "levels": ["regular"] },
+    { "typeId": "cte.manufacturing.2", "levels": ["regular"] },
+    { "typeId": "cte.manufacturing.3", "levels": ["regular"] },
+    { "typeId": "cte.transportation.1", "levels": ["regular"] },
+    { "typeId": "cte.transportation.2", "levels": ["regular"] },
+    { "typeId": "cte.transportation.3", "levels": ["regular"] },
+    { "typeId": "cte.arts_av.1", "levels": ["regular"], "cite": ["ut-cte-pathway-graphic", "ut-cte-pathway-broadcasting"] },
+    { "typeId": "cte.arts_av.2", "levels": ["regular"], "cite": ["ut-cte-pathway-graphic", "ut-cte-pathway-broadcasting"] },
+    { "typeId": "cte.arts_av.3", "levels": ["regular"], "cite": ["ut-cte-pathway-graphic", "ut-cte-pathway-broadcasting"] },
+    { "typeId": "cte.education.1", "levels": ["regular"], "cite": ["ut-cte-pathway-teaching", "ut-cte-pathway-pre-k"] },
+    { "typeId": "cte.education.2", "levels": ["regular"], "cite": ["ut-cte-pathway-teaching", "ut-cte-pathway-pre-k"] },
+    { "typeId": "cte.education.3", "levels": ["regular"], "cite": ["ut-cte-pathway-teaching", "ut-cte-pathway-pre-k"] },
+    { "typeId": "cte.law.1", "levels": ["regular"], "cite": ["ut-cte-pathway-protective"] },
+    { "typeId": "cte.law.2", "levels": ["regular"], "cite": ["ut-cte-pathway-protective"] },
+    { "typeId": "cte.law.3", "levels": ["regular"], "cite": ["ut-cte-pathway-protective"] },
+    { "typeId": "cte.human_services.1", "levels": ["regular"], "cite": ["ut-cte-pathway-family", "ut-cte-pathway-personal-care"] },
+    { "typeId": "cte.human_services.2", "levels": ["regular"], "cite": ["ut-cte-pathway-family", "ut-cte-pathway-personal-care"] },
+    { "typeId": "cte.human_services.3", "levels": ["regular"], "cite": ["ut-cte-pathway-family", "ut-cte-pathway-personal-care"] },
+    { "typeId": "other.driver_ed", "levels": ["regular"] }
+  ]
+}

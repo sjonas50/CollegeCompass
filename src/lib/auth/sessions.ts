@@ -30,6 +30,11 @@ export type SessionUser = Pick<
 > & {
   /** Current grade (advanced each August); above 12 means graduated. Null for adults. */
   grade: number | null;
+  /**
+   * A student's state (see users.home_state), for in-state colleges and state aid. Always set by
+   * validateSession (null when there's none); optional so hand-built users in tests can leave it out.
+   */
+  homeState?: string | null;
 };
 
 export async function createSession(db: Db, userId: string, now = new Date()) {
@@ -56,6 +61,7 @@ export async function validateSession(db: Db, token: string, now = new Date()) {
         gradeSchoolYear: users.gradeSchoolYear,
         householdId: users.householdId,
         parentManaged: users.parentManaged,
+        homeState: users.homeState,
       },
     })
     .from(sessions)

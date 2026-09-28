@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as z from "zod";
+import { NOT_SURE } from "./kinds";
 import { CourseInputSchema, courseFormInput } from "./validation";
 
 const valid = { name: "Biology", subject: "science", level: "honors", gradeLevel: 10, term: "full_year", credits: 1, status: "planned" };
@@ -100,5 +101,31 @@ describe("courseFormInput", () => {
 
   it("reports a missing name instead of throwing", () => {
     expect(errorsFor(courseFormInput(form({ subject: "math", gradeLevel: "9" }))).name).toBeDefined();
+  });
+
+  it("reads what kind of class it is", () => {
+    expect(CourseInputSchema.parse(courseFormInput(form({ name: "Chem", subject: "science", gradeLevel: "10", courseTypeId: "sci.chem" }))).courseTypeId).toBe(
+      "sci.chem",
+    );
+  });
+});
+
+describe("what kind of class it is", () => {
+  it("takes a course type from the planner's vocabulary, or none", () => {
+    expect(CourseInputSchema.parse({ ...valid, courseTypeId: "sci.bio" }).courseTypeId).toBe("sci.bio");
+    // Empty means "let the planner guess from the name".
+    expect(CourseInputSchema.parse({ ...valid, courseTypeId: "" }).courseTypeId).toBeNull();
+    expect(CourseInputSchema.parse(valid).courseTypeId ?? null).toBeNull();
+    // The forms' "Not sure": kept for the service to store as no kind, source "unsure".
+    expect(CourseInputSchema.parse({ ...valid, courseTypeId: NOT_SURE }).courseTypeId).toBe(NOT_SURE);
+    expect(errorsFor({ ...valid, courseTypeId: "sci.unobtainium" }).courseTypeId).toEqual(["Choose a kind of class from the list."]);
+  });
+
+  it("must fit the subject, including subjects students often file it under", () => {
+    expect(errorsFor({ ...valid, courseTypeId: "math.alg2" }).courseTypeId).toEqual([
+      "That kind of class doesn't match the subject. Choose another, or leave it for us to guess.",
+    ]);
+    // Anatomy and physiology is often a career and technical class.
+    expect(CourseInputSchema.parse({ ...valid, subject: "career_technical", courseTypeId: "sci.anat" }).courseTypeId).toBe("sci.anat");
   });
 });

@@ -33,6 +33,8 @@ import { endPlanWithoutParent } from "./billing/checkout";
 import { runOrQueueCleanup } from "./billing/cleanup";
 import { type Stripe, getStripe } from "./billing/stripe";
 import { consumeRateLimit } from "./rate-limit";
+import { exportPlanPrefs } from "./planner/prefs";
+import { exportSchoolData } from "./schools/student";
 
 /**
  * AI features whose usage records show when a student talked with the AI counselor (each message
@@ -69,6 +71,7 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
       birthDate: users.birthDate,
       grade: users.grade,
       gradeSchoolYear: users.gradeSchoolYear,
+      homeState: users.homeState,
       remindersEnabled: users.remindersEnabled,
       parentManaged: users.parentManaged,
       createdAt: users.createdAt,
@@ -152,6 +155,9 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
     .from(collegeList)
     .where(eq(collegeList.userId, studentId))
     .orderBy(asc(collegeList.createdAt), asc(collegeList.id));
+  // Where they go to school: the school's name and place from the directory, or the family's own
+  // words for a school that isn't listed (the state is in the profile).
+  const { schools } = await exportSchoolData(db, studentId);
 
   const shared = {
     profile,
@@ -165,6 +171,7 @@ export async function exportStudentData(db: Db, requesterId: string, studentId: 
     })),
     careerMatches: runs.map((r) => ({ ...r, matches: matches.filter((m) => m.runId === r.id) })),
     northStars: goals,
+    schools,
     ...planning,
     collegeList: listRows.map(({ userId: _userId, ...entry }) => entry),
     householdAccess,
@@ -343,6 +350,9 @@ async function exportPlanningData(db: Db, studentId: string) {
   ]);
   return {
     courses: courses.map(({ userId: _userId, ...c }) => c),
+    // "Your path": what they plan toward, their choices and limits, and suggestions set aside.
+    // Plans themselves are computed, never stored.
+    planChoices: await exportPlanPrefs(db, studentId),
     roadmapProgress: milestones,
     weeklySteps: steps.map(({ userId: _userId, ...s }) => s),
     reminderEmails: reminders,

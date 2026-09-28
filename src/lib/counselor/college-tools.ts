@@ -104,7 +104,9 @@ export function collegeTools(db: Db): BetaRunnableTool[] {
       return JSON.stringify({
         total: found.total,
         major,
-        moreResults: collegeSearchHref(filters),
+        // "Any state" on purpose when the search had none, so the page doesn't narrow it to the
+        // student's own state.
+        moreResults: collegeSearchHref(filters, { anyState: !filters.state }),
         notes: [
           "Net prices are averages. For a personal estimate, tell the student to open the college's page (page), which links that college's own net price calculator.",
           COMPLETION_NOTE,

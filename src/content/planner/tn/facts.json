@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "id": "tn.facts",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "TN-S1": {
+      "title": "High School Policy 2.103 (revised 02/21/2025)",
+      "url": "https://www.tn.gov/content/dam/tn/stateboardofeducation/documents/2025-sbe-meetings/february-21%2c-2025-sbe-meeting/2-21-25%20VII%20E%20High%20School%20Policy%202.103%20Attachment.pdf",
+      "publisher": "Tennessee State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S3": {
+      "title": "Graduation Permissions and Substitutions Policy 3.103 (revised 02/27/2026)",
+      "url": "https://www.tn.gov/content/dam/tn/stateboardofeducation/documents/2026-sbe-meetings/february-27%2c-2026-sbe-meeting/02-27-26%20VI%20F%20Graduation%20Permissions%20and%20Substitutions%20Policy%203.103%20Clean.pdf",
+      "publisher": "Tennessee State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S36": {
+      "title": "Dual Enrollment Grant",
+      "url": "https://www.collegefortn.org/dualenrollment/",
+      "publisher": "Tennessee Student Assistance Corporation (CollegeforTN)",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S37": {
+      "title": "Dual Enrollment Grant 2026-27 handout",
+      "url": "https://www.collegefortn.org/wp-content/uploads/2026/07/DEG-2026-2027-Handout.pdf",
+      "publisher": "Tennessee Student Assistance Corporation (CollegeforTN)",
+      "kind": "agency_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S4": {
+      "title": "Uniform Grading Policy 3.301 (revised 05/19/2026)",
+      "url": "https://www.tn.gov/content/dam/tn/stateboardofeducation/documents/2026-sbe-meetings/may-19%2c-2026-sbe-meeting/05-19-26%20VII%20D%20Uniform%20Grading%20Policy%203.301%20Attachment.pdf",
+      "publisher": "Tennessee State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "tn-2103-i-10-three-years",
+      "source": "TN-S1",
+      "pinpoint": "I(10)",
+      "quote": "Students who complete any of the required math credits prior to the ninth (9th) grade may receive graduation credit for that coursework; however, those students are still required to enroll in a mathematics course in at least three (3) years of high school."
+    },
+    {
+      "id": "tn-2103-i-19",
+      "source": "TN-S1",
+      "pinpoint": "I(19)",
+      "quote": "Local high schools shall accept postsecondary credits as a substitution for an aligned graduation requirement course, including general education and elective focus courses for those students who take and pass dual enrollment courses at a postsecondary institution for credit."
+    },
+    {
+      "id": "tn-2103-i-20",
+      "source": "TN-S1",
+      "pinpoint": "I(20)",
+      "quote": "A course schedule that presents students with the option of taking course work for the first time (i.e., first-attempt courses) during the summer should be reserved for students on an advanced or accelerated learning path."
+    },
+    {
+      "id": "tn-2103-vi-1",
+      "source": "TN-S1",
+      "pinpoint": "VI(1)",
+      "quote": "Credit recovery is a course-specific, standards-based extended learning opportunity for students who have previously been unsuccessful in mastering the standards required to receive course credit or earn promotion."
+    },
+    {
+      "id": "tn-2103-vi-3a1",
+      "source": "TN-S1",
+      "pinpoint": "VI(3)(a)1",
+      "quote": "The student’s parent or legal guardian gives written consent for the student to enroll in the proposed credit recovery course."
+    },
+    {
+      "id": "tn-2103-vi-3a1-accept",
+      "source": "TN-S1",
+      "pinpoint": "VI(3)(a)1",
+      "quote": "Parents/guardians should be informed that not all postsecondary institutions will accept credit recovery courses for credit and that the NCAA Clearinghouse will not accept credit recovery courses for credit."
+    },
+    {
+      "id": "tn-2103-i-20-eoc",
+      "source": "TN-S1",
+      "pinpoint": "I(20)",
+      "quote": "Credit may not be given in a summer course with an associated End-of-Course examination (that is a first attempt at the credit) until the student takes the examination."
+    },
+    {
+      "id": "tn-2103-v-8",
+      "source": "TN-S1",
+      "pinpoint": "V(8)",
+      "quote": "a high school student may earn up to four (4) graduation credits by obtaining a qualifying score on a credit exam created by an LEA or public charter school for an eligible course approved by the State Board, in which the student is not enrolled, but is offered by the student’s high school."
+    },
+    {
+      "id": "tn-2103-v-8a",
+      "source": "TN-S1",
+      "pinpoint": "V(8)(a)",
+      "quote": "1. English Language Arts Courses (i) English IV 2. Math Courses (i) Pre-Calculus 3. Science Courses (i) Anatomy & Physiology (ii) Ecology 4. Social Studies Courses (i) World History and Geography (ii) Economics"
+    },
+    {
+      "id": "tn-2103-v-8a-other",
+      "source": "TN-S1",
+      "pinpoint": "V(8)(a)5",
+      "quote": "5. Other Courses (i) Personal Finance (ii) Latin I (iii) French I (iv) German I (v) Spanish I (vi) Russian I (vii) Japanese I (viii) Chinese I (ix) American Sign Language I (x) Other Languages I"
+    },
+    {
+      "id": "tn-3103-i-3",
+      "source": "TN-S3",
+      "pinpoint": "I(3)",
+      "quote": "Students who successfully complete any State Board-required high school credits before grade nine (9) shall receive graduation credit for that coursework."
+    },
+    {
+      "id": "tn-3301-dual-enrollment",
+      "source": "TN-S4",
+      "pinpoint": "III(8)",
+      "quote": "A dual enrollment course is taught by postsecondary faculty for postsecondary and high school credit."
+    },
+    {
+      "id": "tn-3301-local-dual-credit",
+      "source": "TN-S4",
+      "pinpoint": "III(7)",
+      "quote": "A local dual credit course is a high school course that incorporates postsecondary learning objectives and is aligned with a challenge exam that is approved by a local postsecondary institution through an articulation agreement with an LEA."
+    },
+    {
+      "id": "tn-deg-junior-senior",
+      "source": "TN-S36",
+      "pinpoint": "Eligibility",
+      "quote": "Meet the admission requirements of the institution the student plans to attend and apply for the grant as a high school junior or senior if enrolled at a two-year or four-year institution OR;"
+    },
+    {
+      "id": "tn-deg-tcat",
+      "source": "TN-S36",
+      "pinpoint": "Eligibility",
+      "quote": "be at least a high school freshman if enrolled at a Tennessee College of Applied Technology (TCAT)"
+    },
+    {
+      "id": "tn-deg-ten-courses",
+      "source": "TN-S36",
+      "pinpoint": "Eligibility",
+      "quote": "continue receiving the Dual Enrollment Grant for up to 10 courses"
+    },
+    { "id": "tn-deg-tentative", "source": "TN-S37", "quote": "Amounts are tentative and subject to change." }
+  ],
+  "state": "TN",
+  "minUnitsPerYear": 20,
+  "options": [
+    {
+      "kind": "summer",
+      "firstAttemptAccelerated": true,
+      "note": "A first-time class in summer is meant for students on an accelerated path. If it has an end-of-course exam, the credit waits until you take the exam in the fall.",
+      "cite": ["tn-2103-i-20", "tn-2103-i-20-eoc"]
+    },
+    {
+      "kind": "credit_recovery",
+      "note": "For a class you took and didn't pass. It needs your parent's written consent, and not every college (or the NCAA) accepts credit recovery credit.",
+      "cite": ["tn-2103-vi-1", "tn-2103-vi-3a1", "tn-2103-vi-3a1-accept"]
+    },
+    {
+      "kind": "credit_by_exam",
+      "programName": "Credit exam",
+      "types": ["ela.12", "math.precalc", "sci.anat", "sci.env", "ss.world_hist", "ss.econ", "ss.pfl", "lang.la.1", "lang.fr.1", "lang.de.1", "lang.es.1", "lang.ru.1", "lang.ja.1", "lang.zh.1", "lang.asl.1", "lang.other.1"],
+      "note": "Up to 4 credits by passing your district's credit exam for a listed class your school offers. The score counts in your GPA.",
+      "cite": ["tn-2103-v-8", "tn-2103-v-8a", "tn-2103-v-8a-other"]
+    },
+    {
+      "kind": "college_credit",
+      "programName": "Dual Enrollment Grant",
+      "grades": [11, 12],
+      "note": "Dual enrollment classes can be paid for by the state's Dual Enrollment Grant: juniors and seniors at 2- and 4-year colleges, and any high school student at a Tennessee College of Applied Technology. It covers up to 10 courses; amounts may change.",
+      "cite": ["tn-deg-junior-senior", "tn-deg-tcat", "tn-deg-ten-courses", "tn-deg-tentative", "tn-2103-i-19"]
+    }
+  ],
+  "middleSchoolMath": [
+    {
+      "text": "High school math credit earned in middle school counts toward graduation, but you still need to take math in at least 3 years of high school.",
+      "cite": ["tn-3103-i-3", "tn-2103-i-10-three-years"]
+    }
+  ],
+  "terms": [
+    {
+      "id": "tn.term.dual-enrollment",
+      "term": "Dual enrollment",
+      "meaning": "A college class taught by college faculty for both college and high school credit.",
+      "cite": ["tn-3301-dual-enrollment"]
+    },
+    {
+      "id": "tn.term.dual-credit",
+      "term": "Dual credit",
+      "meaning": "A high school class that earns college credit if you pass the college's challenge exam.",
+      "cite": ["tn-3301-local-dual-credit"]
+    }
+  ]
+}

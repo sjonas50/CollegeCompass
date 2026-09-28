@@ -1,0 +1,1210 @@
+{
+  "schemaVersion": 1,
+  "id": "tn.graduation",
+  "updated": "2026-09-25",
+  "verifiedForSchoolYear": 2026,
+  "review": { "status": "draft" },
+  "sources": {
+    "TN-S1": {
+      "title": "High School Policy 2.103 (revised 02/21/2025)",
+      "url": "https://www.tn.gov/content/dam/tn/stateboardofeducation/documents/2025-sbe-meetings/february-21%2c-2025-sbe-meeting/2-21-25%20VII%20E%20High%20School%20Policy%202.103%20Attachment.pdf",
+      "publisher": "Tennessee State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S13": {
+      "title": "Freshman Requirements",
+      "url": "https://www.utc.edu/enrollment-management-and-student-affairs/admissions/freshman-requirements",
+      "publisher": "University of Tennessee at Chattanooga",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S15": {
+      "title": "First-Year Admission",
+      "url": "https://www.utm.edu/admissions-and-aid/first-year.php",
+      "publisher": "University of Tennessee at Martin",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S2": {
+      "title": "Rule 0520-01-03, Academic Programs (December 2025 revision)",
+      "url": "https://publications.tnsosfiles.com/rules/0520/0520-01/0520-01-03.20251224.pdf",
+      "publisher": "Tennessee State Board of Education",
+      "kind": "rule",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S3": {
+      "title": "Graduation Permissions and Substitutions Policy 3.103 (revised 02/27/2026)",
+      "url": "https://www.tn.gov/content/dam/tn/stateboardofeducation/documents/2026-sbe-meetings/february-27%2c-2026-sbe-meeting/02-27-26%20VI%20F%20Graduation%20Permissions%20and%20Substitutions%20Policy%203.103%20Clean.pdf",
+      "publisher": "Tennessee State Board of Education",
+      "kind": "agency_policy",
+      "checkedOn": "2026-09-25"
+    },
+    "TN-S8": {
+      "title": "First-Year Student Admission Requirements",
+      "url": "https://admissions.utk.edu/undergraduate-application/first-year-student/",
+      "publisher": "University of Tennessee, Knoxville",
+      "kind": "institution_page",
+      "checkedOn": "2026-09-25"
+    }
+  },
+  "citations": [
+    {
+      "id": "tn-0520-01-03-06-waiver",
+      "source": "TN-S2",
+      "pinpoint": "0520-01-03-.06",
+      "quote": "Prior to waiver of the requirement for fine arts or world language, the student’s parent or guardian must agree to the waiver in writing."
+    },
+    {
+      "id": "tn-2103-i-10",
+      "source": "TN-S1",
+      "pinpoint": "I(10)",
+      "quote": "Students shall complete four (4) credits of mathematics including Algebra I and II, Geometry or the equivalent Integrated Math I, II, and III, and another mathematics course beyond Algebra I or Integrated Math I"
+    },
+    {
+      "id": "tn-2103-i-10-three-years",
+      "source": "TN-S1",
+      "pinpoint": "I(10)",
+      "quote": "Students who complete any of the required math credits prior to the ninth (9th) grade may receive graduation credit for that coursework; however, those students are still required to enroll in a mathematics course in at least three (3) years of high school."
+    },
+    {
+      "id": "tn-2103-i-11",
+      "source": "TN-S1",
+      "pinpoint": "I(11)",
+      "quote": "Students shall complete three (3) credits of Science. Students shall complete Biology, Chemistry or Physics, and a third (3rd) lab science which may include, but is not limited to, Computer Science as set forth in Paragraph (4)(b) of this Policy."
+    },
+    {
+      "id": "tn-2103-i-12",
+      "source": "TN-S1",
+      "pinpoint": "I(12)",
+      "quote": "Students shall complete three (3) credits of Social Studies."
+    },
+    {
+      "id": "tn-2103-i-12-civics",
+      "source": "TN-S1",
+      "pinpoint": "I(12)",
+      "quote": "In order to meet the Social Studies course credit requirements to earn a full diploma upon graduation from high school, each student must take and pass the civics test developed by the local education agency (LEA)"
+    },
+    {
+      "id": "tn-2103-i-12-courses",
+      "source": "TN-S1",
+      "pinpoint": "I(12)",
+      "quote": "Required courses include United States History and Geography, World History and Geography, Economics, and United States Government and Civics."
+    },
+    {
+      "id": "tn-2103-i-13",
+      "source": "TN-S1",
+      "pinpoint": "I(13)",
+      "quote": "Students shall complete one-half (½) credit in Personal Finance. Three (3) years of JROTC may be substituted for one-half (½) credit of Personal Finance if the JROTC instructor attends the Personal Finance training."
+    },
+    {
+      "id": "tn-2103-i-14",
+      "source": "TN-S1",
+      "pinpoint": "I(14)",
+      "quote": "Students shall complete one (1) credit in wellness."
+    },
+    {
+      "id": "tn-2103-i-14-no-sub",
+      "source": "TN-S1",
+      "pinpoint": "I(14)",
+      "quote": "Participation in marching band and interscholastic athletics may not be substituted for this aspect of the graduation requirements."
+    },
+    {
+      "id": "tn-2103-i-15",
+      "source": "TN-S1",
+      "pinpoint": "I(15)",
+      "quote": "Students shall complete one-half (½) credit in Physical Education. This requirement may be met by substituting a documented and equivalent time of physical activity in marching band, JROTC, cheerleading, interscholastic athletics, school sponsored intramural athletics,"
+    },
+    {
+      "id": "tn-2103-i-16",
+      "source": "TN-S1",
+      "pinpoint": "I(16)",
+      "quote": "Students shall complete two (2) credits of the same world language. The credit requirement for world language may be waived by the local school district for students, under certain circumstances, to expand and enhance the elective focus."
+    },
+    {
+      "id": "tn-2103-i-17",
+      "source": "TN-S1",
+      "pinpoint": "I(17)",
+      "quote": "Students shall complete one (1) credit in Fine Arts. The credit requirement for fine arts may be waived by the local school district for students, under certain circumstances, to expand and enhance the elective focus."
+    },
+    {
+      "id": "tn-2103-i-18",
+      "source": "TN-S1",
+      "pinpoint": "I(18)",
+      "quote": "Students shall complete three (3) credits in an elective focus."
+    },
+    {
+      "id": "tn-2103-i-18a",
+      "source": "TN-S1",
+      "pinpoint": "I(18)(a)",
+      "quote": "The elective focus may be CTE, science and math, humanities, fine arts, AP/IB, Cambridge, computer science or other areas approved by the local board of education."
+    },
+    {
+      "id": "tn-2103-i-18b",
+      "source": "TN-S1",
+      "pinpoint": "I(18)(b)",
+      "quote": "The director of schools may waive the third (3rd) credit requirement of the elective focus during a student’s twelfth (12th) grade year if the completion of the third (3rd) elective focus credit would prevent or delay graduation."
+    },
+    {
+      "id": "tn-2103-i-19",
+      "source": "TN-S1",
+      "pinpoint": "I(19)",
+      "quote": "Local high schools shall accept postsecondary credits as a substitution for an aligned graduation requirement course, including general education and elective focus courses for those students who take and pass dual enrollment courses at a postsecondary institution for credit."
+    },
+    {
+      "id": "tn-2103-i-20",
+      "source": "TN-S1",
+      "pinpoint": "I(20)",
+      "quote": "A course schedule that presents students with the option of taking course work for the first time (i.e., first-attempt courses) during the summer should be reserved for students on an advanced or accelerated learning path."
+    },
+    {
+      "id": "tn-2103-i-20-eoc",
+      "source": "TN-S1",
+      "pinpoint": "I(20)",
+      "quote": "Credit may not be given in a summer course with an associated End-of-Course examination (that is a first attempt at the credit) until the student takes the examination."
+    },
+    {
+      "id": "tn-2103-i-3",
+      "source": "TN-S1",
+      "pinpoint": "I(3)",
+      "quote": "English 4 credits Mathematics 4 credits Science 3 credits Social Studies 3 credits Personal Finance 0.5 credit Wellness 1 credit Physical Education 0.5 credit World Language 2 credits Fine Arts 1 credits Elective Focus 3 credits"
+    },
+    {
+      "id": "tn-2103-i-4a",
+      "source": "TN-S1",
+      "pinpoint": "I(4)(a)",
+      "quote": "To earn a traditional high school diploma, students shall: (a) Earn the prescribed twenty-two (22) credit minimum;"
+    },
+    {
+      "id": "tn-2103-i-4b",
+      "source": "TN-S1",
+      "pinpoint": "I(4)(b)",
+      "quote": "Beginning with students who enroll in ninth (9th) grade in the 2024-25 school year or any subsequent school year, earn at least one (1) credit of computer science in high school;"
+    },
+    {
+      "id": "tn-2103-i-4b1",
+      "source": "TN-S1",
+      "pinpoint": "I(4)(b)1",
+      "quote": "Students may fulfill this requirement by substituting computer science for the student’s fourth credit of mathematics, third credit of science, or an elective focus credit."
+    },
+    {
+      "id": "tn-2103-i-4b1-only",
+      "source": "TN-S1",
+      "pinpoint": "I(4)(b)1",
+      "quote": "Students may only use computer science as a substitution to fulfill one (1) credit in mathematics, or one (1) credit in science, or one (1) or more elective focus credits required for a traditional high school diploma."
+    },
+    {
+      "id": "tn-2103-i-4b2",
+      "source": "TN-S1",
+      "pinpoint": "I(4)(b)2",
+      "quote": "Students who transfer from another state or country, or from a non-public school to a Tennessee high school during their 12th grade year are exempt from this requirement."
+    },
+    {
+      "id": "tn-2103-i-4c",
+      "source": "TN-S1",
+      "pinpoint": "I(4)(c)",
+      "quote": "Participate in the ACT or SAT, or other eleventh (11th) grade postsecondary assessment as determined by the Commissioner of Education unless the student qualifies for a medical exemption as defined by the Department;"
+    },
+    {
+      "id": "tn-2103-i-4d",
+      "source": "TN-S1",
+      "pinpoint": "I(4)(d)",
+      "quote": "Have a satisfactory record of attendance and discipline."
+    },
+    {
+      "id": "tn-2103-i-9",
+      "source": "TN-S1",
+      "pinpoint": "I(9)",
+      "quote": "Students shall complete four (4) credits of English, including English I, English II, English III, and English IV."
+    },
+    {
+      "id": "tn-2103-iii-hsbp-focus",
+      "source": "TN-S1",
+      "pinpoint": "III(d)",
+      "quote": "Select an elective focus and plan courses accordingly by the end of grade ten (10);"
+    },
+    {
+      "id": "tn-2103-v-5b",
+      "source": "TN-S1",
+      "pinpoint": "V(5)(b)",
+      "quote": "A student shall pass the test if the student correctly answers at least seventy percent (70%) of the questions."
+    },
+    {
+      "id": "tn-3103-i-4",
+      "source": "TN-S3",
+      "pinpoint": "I(4)",
+      "quote": "Any course listed in this policy as approved to substitute for more than one (1) graduation requirement can only be used by a student to substitute for one (1) graduation requirement course, with the following exceptions: (a) One (1) full-credit course may substitute for two (2) half-credit courses."
+    },
+    {
+      "id": "tn-3103-i-4b",
+      "source": "TN-S3",
+      "pinpoint": "I(4)(b)",
+      "quote": "A course used to substitute for a graduation requirement course may also fulfill the requirements toward the student’s elective focus"
+    },
+    {
+      "id": "tn-3103-ii-1",
+      "source": "TN-S3",
+      "pinpoint": "II(1)",
+      "quote": "The fourth (4th) credit shall be in another mathematics course that extends the student’s knowledge in mathematics."
+    },
+    {
+      "id": "tn-3103-ii-1-cs",
+      "source": "TN-S3",
+      "pinpoint": "II(1)",
+      "quote": "Computer Science AP Computer Science Principles AP Computer Science A Computer Science Foundations Coding I Coding II Coding Practicum Cybersecurity I Cybersecurity II Cybersecurity Practicum Data Science I Data Science II Mobile App Development"
+    },
+    {
+      "id": "tn-3103-ii-1-math",
+      "source": "TN-S3",
+      "pinpoint": "II(1)",
+      "quote": "Math Calculus Mathematical Reasoning for Decision Making Precalculus Statistic"
+    },
+    {
+      "id": "tn-3103-ii-1-programs",
+      "source": "TN-S3",
+      "pinpoint": "II(1)",
+      "quote": "International Baccalaureate Mathematics Program Cambridge Mathematics Program Advanced Placement Mathematics Program Statewide Programs Dual Enrollment Mathematics Program"
+    },
+    {
+      "id": "tn-3103-ii-1-science",
+      "source": "TN-S3",
+      "pinpoint": "II(1)",
+      "quote": "Science Physics AP Physics C: Electricity & Magnetism AP Physics C: Mechanics AP Physics I: Algebra-Based AP Physics II: Algebra-Based AP Computer Science Principles AP Computer Science A"
+    },
+    {
+      "id": "tn-3103-ii-2",
+      "source": "TN-S3",
+      "pinpoint": "II(2)",
+      "quote": "The third (3rd) science credit must be a lab science."
+    },
+    {
+      "id": "tn-3103-ii-2-cs",
+      "source": "TN-S3",
+      "pinpoint": "II(2)",
+      "quote": "Computer Science AP Computer Science Principles AP Computer Science A Computer Science Foundations Coding I Coding II Coding Practicum Cybersecurity I Cybersecurity II Cybersecurity Practicum Mobile App Development"
+    },
+    {
+      "id": "tn-3103-ii-2-cte",
+      "source": "TN-S3",
+      "pinpoint": "II(2)",
+      "quote": "CTE Course Substitutions Advanced Food Science Agriscience Applied Environmental Science BioSTEM I BioSTEM II BioSTEM III Engineering Design I Engineering Design II"
+    },
+    {
+      "id": "tn-3103-ii-2-programs",
+      "source": "TN-S3",
+      "pinpoint": "II(2)",
+      "quote": "International Baccalaureate Science Program Cambridge Science Program Advanced Placement Science Program Statewide Programs Dual Enrollment Science Program"
+    },
+    {
+      "id": "tn-3103-ii-2-science",
+      "source": "TN-S3",
+      "pinpoint": "II(2)",
+      "quote": "Biology II Chemistry I Chemistry II Earth and Space Science Ecology Environmental Science Geology Human Anatomy and Physiology Physical Science Physical World Concepts Physics I Physics II Scientific Research"
+    },
+    {
+      "id": "tn-3103-iii-1",
+      "source": "TN-S3",
+      "pinpoint": "III(1)",
+      "quote": "Programs of Study AP Microeconomics AP Macroeconomics Statewide Programs Dual Enrollment Business Program Dual Enrollment Economics Program"
+    },
+    {
+      "id": "tn-3103-iii-2",
+      "source": "TN-S3",
+      "pinpoint": "III(2)",
+      "quote": "AP English Language & Composition AP English Literature & Composition AP Research AP Seminar Cambridge International English Program International Baccalaureate English Program Statewide Programs Dual Enrollment English Program"
+    },
+    {
+      "id": "tn-3103-iii-2-esl",
+      "source": "TN-S3",
+      "pinpoint": "III(2) note 6",
+      "quote": "for students who are English learners, two (2) high school English as a Second Language (ESL) courses must be counted toward the four (4) required English credits required for graduation."
+    },
+    {
+      "id": "tn-3103-iii-3",
+      "source": "TN-S3",
+      "pinpoint": "III(3)",
+      "quote": "CTE Course Substitutions Digital Arts & Design I Floral Design and Operations Foundations of Fashion Design Foundations of Interior Design Landscaping & Turf Science Web Design Foundations"
+    },
+    {
+      "id": "tn-3103-iii-7",
+      "source": "TN-S3",
+      "pinpoint": "III(7)",
+      "quote": "AP United States Government and Politics AP United States History Statewide Programs Dual Enrollment U.S. or American History Program"
+    },
+    {
+      "id": "tn-3103-iii-jrotc",
+      "source": "TN-S3",
+      "pinpoint": "III note 8",
+      "quote": "JROTC III may substitute for one-half (½) credit of U.S. Government and Civics and one-half (½) credit of Personal Finance if the JROTC instructor attends the Personal Finance training"
+    },
+    {
+      "id": "tn-3103-iii-jrotc-10",
+      "source": "TN-S3",
+      "pinpoint": "III note 10",
+      "quote": "Students who complete JROTC III may substitute that course for one-half (½) credit of Personal Finance and one-half (½) credit of U.S. Government and Civics."
+    },
+    {
+      "id": "tn-3103-iii-4",
+      "source": "TN-S3",
+      "pinpoint": "III(4)",
+      "quote": "The following list includes allowable course substitutions for the Lifetime Wellness course. JROTC I"
+    },
+    {
+      "id": "tn-3103-iii-6",
+      "source": "TN-S3",
+      "pinpoint": "III(6)",
+      "quote": "The following list includes allowable course substitutions for the Physical Education course. JROTC II"
+    },
+    {
+      "id": "tn-utc-units-1",
+      "source": "TN-S13",
+      "quote": "4 units of English 4 units of math (algebra I and II, geometry and 1 additional unit) 3 units of lab science 1 unit of European history, world history, or world geography"
+    },
+    {
+      "id": "tn-utc-units-2",
+      "source": "TN-S13",
+      "quote": "2 units of the same foreign language (Sign Language courses included) 1 unit of visual or performing art 1 unit of American history"
+    },
+    {
+      "id": "tn-utk-core-list",
+      "source": "TN-S8",
+      "pinpoint": "Core Academic Subjects",
+      "quote": "4 English 4 Math (algebra, geometry, trigonometry, calculus, statistics, or other advanced math) 3 Science (biology, chemistry, physics, or other science) 1 American history 1 European history, world history, or world geography 2 Single foreign language (or ASL) 1 Visual or performing arts"
+    },
+    {
+      "id": "tn-utm-units-2",
+      "source": "TN-S15",
+      "quote": "Science: 3 units, including biology, chemistry or physics, and a third lab course Foreign Language: 2 units in the same language Visual/Performing Arts: 1 unit of theater arts, visual arts, music theory, music history, vocal music, instrumental music or art history"
+    }
+  ],
+  "state": "TN",
+  "kind": "graduation",
+  "ruleSets": [
+    {
+      "id": "tn.grad",
+      "state": "TN",
+      "kind": "state_graduation",
+      "title": "Tennessee high school graduation requirements",
+      "issuer": { "kind": "state", "name": "Tennessee" },
+      "plainSummary": "Tennessee requires at least 22 credits in set subjects, including a 3-credit elective focus you choose by the end of 10th grade. Students who started 9th grade in 2024-25 or later also need a computer science credit. You also take the ACT or SAT and pass a civics test.",
+      "strength": "required",
+      "strengthCite": "tn-2103-i-4a",
+      "confidence": "verified",
+      "cohortKey": "grade9_entry_year",
+      "projectedBeyond": 2026,
+      "appliesWhen": {  },
+      "variants": [
+        {
+          "id": "tn.grad.2023",
+          "cohort": { "to": 2023 },
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "ela",
+              "label": "English",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "ela.1",
+                  "label": "English I",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.9", "ela.esol"] }],
+                  "cite": ["tn-2103-i-9", "tn-3103-iii-2-esl"]
+                },
+                {
+                  "id": "ela.2",
+                  "label": "English II",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.10", "ela.esol"] }],
+                  "cite": ["tn-2103-i-9", "tn-3103-iii-2-esl"]
+                },
+                {
+                  "id": "ela.3",
+                  "label": "English III",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "types": ["ela.11"] },
+                    {
+                      "types": ["ela.lang_comp", "ela.lit_comp", "ela.research", "ela.seminar"],
+                      "levels": ["ap", "cambridge"]
+                    },
+                    {
+                      "subjects": ["english"],
+                      "levels": ["ib", "cambridge", "dual_enrollment"],
+                      "exclude": ["ela.ms", "ela.9", "ela.10", "ela.esol"]
+                    }
+                  ],
+                  "cite": ["tn-2103-i-9", "tn-3103-iii-2"]
+                },
+                {
+                  "id": "ela.4",
+                  "label": "English IV",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "types": ["ela.12"] },
+                    {
+                      "types": ["ela.lang_comp", "ela.lit_comp", "ela.research", "ela.seminar"],
+                      "levels": ["ap", "cambridge"]
+                    },
+                    {
+                      "subjects": ["english"],
+                      "levels": ["ib", "cambridge", "dual_enrollment"],
+                      "exclude": ["ela.ms", "ela.9", "ela.10", "ela.esol"]
+                    }
+                  ],
+                  "cite": ["tn-2103-i-9", "tn-3103-iii-2"]
+                }
+              ],
+              "area": "english",
+              "note": "AP English, AP Research, AP Seminar, IB, Cambridge and dual enrollment English can stand in for English III or IV."
+            },
+            {
+              "id": "math",
+              "label": "Math",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "math.alg1",
+                  "label": "Algebra I (or Integrated Math I)",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg1", "math.int1"] }],
+                  "cite": ["tn-2103-i-10"]
+                },
+                {
+                  "id": "math.geom",
+                  "label": "Geometry (or Integrated Math II)",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.geom", "math.int2"] }],
+                  "cite": ["tn-2103-i-10"]
+                },
+                {
+                  "id": "math.alg2",
+                  "label": "Algebra II (or Integrated Math III)",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg2", "math.int3"] }],
+                  "cite": ["tn-2103-i-10"]
+                },
+                {
+                  "id": "math.fourth",
+                  "label": "A 4th math credit",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    {
+                      "types": ["math.precalc", "math.calc", "math.calc2", "math.stats", "math.applied.decision", "math.trig", "math.college_alg", "math.adv_quant", "math.discrete"]
+                    },
+                    {
+                      "subjects": ["math"],
+                      "levels": ["ap", "ib", "cambridge", "dual_enrollment"],
+                      "exclude": ["math.ms", "math.alg1", "math.geom", "math.alg2", "math.int1", "math.int2", "math.int3"]
+                    },
+                    { "types": ["sci.phys", "sci.phys2"], "substitute": true },
+                    { "types": ["cs.intro", "cs.principles", "cs.prog1", "cs.prog2", "cs.cyber", "cs.data_science"], "substitute": true }
+                  ],
+                  "cite": ["tn-2103-i-10", "tn-3103-ii-1", "tn-3103-ii-1-programs", "tn-3103-ii-1-math", "tn-3103-ii-1-science", "tn-3103-ii-1-cs"],
+                  "note": "Physics and computer science classes can count as your 4th math for the diploma, but some universities may not count them for admission."
+                }
+              ],
+              "area": "math"
+            },
+            {
+              "id": "sci",
+              "label": "Science",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "sci.bio",
+                  "label": "Biology",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.bio"] }],
+                  "cite": ["tn-2103-i-11"]
+                },
+                {
+                  "id": "sci.chem_or_phys",
+                  "label": "Chemistry or Physics",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "types": ["sci.chem", "sci.phys"] },
+                    { "types": ["sci.chem2", "sci.phys2"], "levels": ["ap", "ib", "cambridge"] }
+                  ],
+                  "cite": ["tn-2103-i-11"]
+                },
+                {
+                  "id": "sci.third",
+                  "label": "A 3rd lab science",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    {
+                      "types": ["sci.bio2", "sci.chem", "sci.chem2", "sci.earth", "sci.env", "sci.anat", "sci.ipc", "sci.phys", "sci.phys2", "sci.research"]
+                    },
+                    {
+                      "subjects": ["science"],
+                      "levels": ["ap", "ib", "cambridge", "dual_enrollment"],
+                      "exclude": ["sci.ms"]
+                    },
+                    { "types": ["cte.agriscience", "sci.biotech", "cte.engineering_design", "cte.animal_science"], "substitute": true },
+                    { "types": ["cs.intro", "cs.principles", "cs.prog1", "cs.prog2", "cs.cyber"], "substitute": true }
+                  ],
+                  "cite": ["tn-2103-i-11", "tn-3103-ii-2", "tn-3103-ii-2-programs", "tn-3103-ii-2-science", "tn-3103-ii-2-cte", "tn-3103-ii-2-cs"],
+                  "note": "Some career and technical classes and computer science can be your 3rd lab science for the diploma, but some universities may not count them for admission."
+                }
+              ],
+              "area": "science"
+            },
+            {
+              "id": "ss",
+              "label": "Social studies",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "ss.us_hist",
+                  "label": "U.S. History and Geography",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.us_hist"] }],
+                  "cite": ["tn-2103-i-12-courses"]
+                },
+                {
+                  "id": "ss.world_hist",
+                  "label": "World History and Geography",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.world_hist"] }],
+                  "cite": ["tn-2103-i-12-courses"]
+                },
+                {
+                  "id": "ss.econ",
+                  "label": "Economics",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.econ"] }],
+                  "cite": ["tn-2103-i-12-courses", "tn-3103-iii-1"]
+                },
+                {
+                  "id": "ss.gov",
+                  "label": "U.S. Government and Civics",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.us_gov"] }],
+                  "cite": ["tn-2103-i-12-courses", "tn-3103-iii-7"],
+                  "ask": {
+                    "select": [{ "types": ["other.jrotc"] }],
+                    "question": "Does my JROTC III count for U.S. Government and Civics?",
+                    "cite": ["tn-3103-iii-jrotc", "tn-3103-iii-jrotc-10"],
+                    "decides": { "classes": 3, "text": "Your JROTC III may count for this. Ask your counselor." }
+                  }
+                },
+                {
+                  "id": "ss.rest",
+                  "label": "The rest of your 3 social studies credits",
+                  "kind": "credits",
+                  "units": 4,
+                  "allowSplit": true,
+                  "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+                  "cite": ["tn-2103-i-12"]
+                }
+              ],
+              "area": "social_studies",
+              "note": "AP U.S. Government, AP U.S. History and dual enrollment American history can stand in for U.S. Government and Civics, and AP or dual enrollment economics for Economics. Ask your counselor how your school records them."
+            },
+            {
+              "id": "pf",
+              "label": "Personal Finance",
+              "kind": "credits",
+              "units": 2,
+              "select": [{ "types": ["ss.pfl"] }],
+              "cite": ["tn-2103-i-13", "tn-3103-iii-jrotc"],
+              "area": "financial_literacy",
+              "ask": {
+                "select": [{ "types": ["other.jrotc"] }],
+                "question": "Does my JROTC III count for Personal Finance? It can when my JROTC instructor took the Personal Finance training.",
+                "cite": ["tn-2103-i-13", "tn-3103-iii-jrotc", "tn-3103-iii-jrotc-10"],
+                "decides": { "classes": 3, "text": "Your JROTC III may count for this if your JROTC instructor took the Personal Finance training. Ask your counselor." }
+              }
+            },
+            {
+              "id": "wellness",
+              "label": "Lifetime Wellness",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["health.wellness"] }, { "types": ["other.jrotc"], "substitute": true }],
+              "cite": ["tn-2103-i-14", "tn-2103-i-14-no-sub", "tn-3103-iii-4"],
+              "area": "health_pe",
+              "note": "JROTC I can stand in for Wellness. Marching band and school sports can't."
+            },
+            {
+              "id": "pe",
+              "label": "Physical education",
+              "kind": "credits",
+              "units": 2,
+              "select": [
+                { "types": ["pe.general", "pe.fitness", "pe.skills", "pe.lifetime", "pe.athletics", "pe.other"] },
+                { "types": ["other.jrotc", "arts.marching"], "substitute": true }
+              ],
+              "cite": ["tn-2103-i-15", "tn-3103-iii-6"],
+              "area": "health_pe",
+              "note": "JROTC II can stand in for PE, and your school may count time in marching band, JROTC, cheerleading, school sports or intramurals instead."
+            },
+            {
+              "id": "wl",
+              "label": "World language",
+              "kind": "option",
+              "pref": "tnWorldLanguageWaiver",
+              "on": {
+                "id": "wl.waived",
+                "label": "2 more credits that expand your elective focus (world language waived; ask your counselor which classes count)",
+                "kind": "remaining_electives",
+                "units": 8,
+                "expands": "focus",
+                "cite": ["tn-2103-i-16", "tn-0520-01-03-06-waiver"]
+              },
+              "off": {
+                "id": "wl.same",
+                "label": "Two credits of the same world language",
+                "kind": "same_language",
+                "levels": 2,
+                "cite": ["tn-2103-i-16"]
+              },
+              "cite": ["tn-2103-i-16", "tn-0520-01-03-06-waiver"],
+              "area": "world_language"
+            },
+            {
+              "id": "arts",
+              "label": "Fine arts",
+              "kind": "option",
+              "pref": "tnFineArtsWaiver",
+              "on": {
+                "id": "arts.waived",
+                "label": "1 more credit that expands your elective focus (fine arts waived; ask your counselor which classes count)",
+                "kind": "remaining_electives",
+                "units": 4,
+                "expands": "focus",
+                "cite": ["tn-2103-i-17", "tn-0520-01-03-06-waiver"]
+              },
+              "off": {
+                "id": "arts.credit",
+                "label": "One fine arts credit",
+                "kind": "credits",
+                "units": 4,
+                "select": [
+                  { "subjects": ["arts"], "exclude": ["arts.ms"] },
+                  { "types": ["cte.digital_arts_design", "cte.floral_design", "cte.landscape_design", "cte.design_foundations", "cs.web"] }
+                ],
+                "cite": ["tn-2103-i-17", "tn-3103-iii-3"],
+                "note": "Some career and technical classes (such as Floral Design) can count for the diploma, but some universities may not count them for admission."
+              },
+              "cite": ["tn-2103-i-17", "tn-0520-01-03-06-waiver"],
+              "area": "arts"
+            },
+            {
+              "id": "total",
+              "label": "Total credits",
+              "kind": "total_credits",
+              "units": 88,
+              "source": "state",
+              "cite": ["tn-2103-i-4a", "tn-2103-i-3"],
+              "note": "22 includes your 3 elective focus credits. Your district may require more."
+            }
+          ],
+          "checks": [
+            {
+              "id": "tn.grad.math-3-years",
+              "kind": "enrolled_years",
+              "subject": "math",
+              "years": 3,
+              "cite": ["tn-2103-i-10-three-years"]
+            }
+          ],
+          "conditions": [
+            {
+              "id": "act-sat",
+              "label": "Take the ACT or SAT (or the state's other 11th-grade test)",
+              "kind": "test_participation",
+              "cite": ["tn-2103-i-4c"]
+            },
+            {
+              "id": "civics",
+              "label": "Pass your district's U.S. civics test (70% or better; you can retake it)",
+              "kind": "civics_test",
+              "cite": ["tn-2103-i-12-civics", "tn-2103-v-5b"]
+            },
+            {
+              "id": "attendance",
+              "label": "A satisfactory record of attendance and discipline",
+              "kind": "attendance_discipline",
+              "cite": ["tn-2103-i-4d"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "tn.grad.focus-by-10",
+              "text": "Choose your elective focus (3 credits) by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus", "tn-2103-i-18", "tn-2103-i-18a"]
+            },
+            {
+              "id": "tn.grad.waivers-admission",
+              "text": "A world language or fine arts waiver needs your parent's written agreement. UT Chattanooga and UT Martin require two years of one world language and a fine arts credit for admission, so a waiver can close doors.",
+              "cite": ["tn-0520-01-03-06-waiver", "tn-utc-units-1", "tn-utc-units-2", "tn-utm-units-2"]
+            },
+            {
+              "id": "tn.grad.substitutes-admission",
+              "text": "Physics or computer science as your 4th math, or computer science or a career class as your 3rd lab science, counts for the diploma but may not count for university admission. Ask your counselor.",
+              "cite": ["tn-3103-ii-1-science", "tn-3103-ii-1-cs", "tn-3103-ii-2-cs", "tn-3103-ii-2-cte", "tn-utk-core-list"]
+            },
+            {
+              "id": "tn.grad.one-requirement",
+              "text": "A class can stand in for only one requirement, except that one full-credit class can cover two half-credit requirements.",
+              "cite": ["tn-3103-i-4", "tn-3103-i-4b"]
+            },
+            {
+              "id": "tn.grad.dual-enrollment",
+              "text": "Your high school must accept passed dual enrollment classes for matching graduation requirements.",
+              "cite": ["tn-2103-i-19"]
+            },
+            {
+              "id": "tn.grad.summer",
+              "text": "Taking a class for the first time in summer is meant for students on an accelerated path. If it has an end-of-course exam, you get the credit after you take the exam.",
+              "cite": ["tn-2103-i-20", "tn-2103-i-20-eoc"]
+            },
+            {
+              "id": "tn.grad.focus-waiver",
+              "text": "If the 3rd elective focus credit would delay graduation, the director of schools can waive it in 12th grade.",
+              "cite": ["tn-2103-i-18b"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "tn.grad.ss-split",
+              "text": "Tennessee lists four required social studies classes for 3 credits but doesn't say how the credits split among them (U.S. Government and Civics is a half credit). Ask your counselor how many credits each class earns at your school."
+            }
+          ]
+        },
+        {
+          "id": "tn.grad.2024",
+          "cohort": { "from": 2024 },
+          "allocation": "exclusive",
+          "requirements": [
+            {
+              "id": "ela",
+              "label": "English",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "ela.1",
+                  "label": "English I",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.9", "ela.esol"] }],
+                  "cite": ["tn-2103-i-9", "tn-3103-iii-2-esl"]
+                },
+                {
+                  "id": "ela.2",
+                  "label": "English II",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["ela.10", "ela.esol"] }],
+                  "cite": ["tn-2103-i-9", "tn-3103-iii-2-esl"]
+                },
+                {
+                  "id": "ela.3",
+                  "label": "English III",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "types": ["ela.11"] },
+                    {
+                      "types": ["ela.lang_comp", "ela.lit_comp", "ela.research", "ela.seminar"],
+                      "levels": ["ap", "cambridge"]
+                    },
+                    {
+                      "subjects": ["english"],
+                      "levels": ["ib", "cambridge", "dual_enrollment"],
+                      "exclude": ["ela.ms", "ela.9", "ela.10", "ela.esol"]
+                    }
+                  ],
+                  "cite": ["tn-2103-i-9", "tn-3103-iii-2"]
+                },
+                {
+                  "id": "ela.4",
+                  "label": "English IV",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "types": ["ela.12"] },
+                    {
+                      "types": ["ela.lang_comp", "ela.lit_comp", "ela.research", "ela.seminar"],
+                      "levels": ["ap", "cambridge"]
+                    },
+                    {
+                      "subjects": ["english"],
+                      "levels": ["ib", "cambridge", "dual_enrollment"],
+                      "exclude": ["ela.ms", "ela.9", "ela.10", "ela.esol"]
+                    }
+                  ],
+                  "cite": ["tn-2103-i-9", "tn-3103-iii-2"]
+                }
+              ],
+              "area": "english",
+              "note": "AP English, AP Research, AP Seminar, IB, Cambridge and dual enrollment English can stand in for English III or IV."
+            },
+            {
+              "id": "math",
+              "label": "Math",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "math.alg1",
+                  "label": "Algebra I (or Integrated Math I)",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg1", "math.int1"] }],
+                  "cite": ["tn-2103-i-10"]
+                },
+                {
+                  "id": "math.geom",
+                  "label": "Geometry (or Integrated Math II)",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.geom", "math.int2"] }],
+                  "cite": ["tn-2103-i-10"]
+                },
+                {
+                  "id": "math.alg2",
+                  "label": "Algebra II (or Integrated Math III)",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["math.alg2", "math.int3"] }],
+                  "cite": ["tn-2103-i-10"]
+                },
+                {
+                  "id": "math.fourth",
+                  "label": "A 4th math credit",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    {
+                      "types": ["math.precalc", "math.calc", "math.calc2", "math.stats", "math.applied.decision", "math.trig", "math.college_alg", "math.adv_quant", "math.discrete"]
+                    },
+                    {
+                      "subjects": ["math"],
+                      "levels": ["ap", "ib", "cambridge", "dual_enrollment"],
+                      "exclude": ["math.ms", "math.alg1", "math.geom", "math.alg2", "math.int1", "math.int2", "math.int3"]
+                    },
+                    { "types": ["sci.phys", "sci.phys2"], "substitute": true },
+                    { "types": ["cs.intro", "cs.principles", "cs.prog1", "cs.prog2", "cs.cyber", "cs.data_science"], "substitute": true }
+                  ],
+                  "cite": ["tn-2103-i-10", "tn-3103-ii-1", "tn-3103-ii-1-programs", "tn-3103-ii-1-math", "tn-3103-ii-1-science", "tn-3103-ii-1-cs"],
+                  "note": "Physics and computer science classes can count as your 4th math for the diploma, but some universities may not count them for admission."
+                }
+              ],
+              "area": "math"
+            },
+            {
+              "id": "sci",
+              "label": "Science",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "sci.bio",
+                  "label": "Biology",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [{ "types": ["sci.bio"] }],
+                  "cite": ["tn-2103-i-11"]
+                },
+                {
+                  "id": "sci.chem_or_phys",
+                  "label": "Chemistry or Physics",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    { "types": ["sci.chem", "sci.phys"] },
+                    { "types": ["sci.chem2", "sci.phys2"], "levels": ["ap", "ib", "cambridge"] }
+                  ],
+                  "cite": ["tn-2103-i-11"]
+                },
+                {
+                  "id": "sci.third",
+                  "label": "A 3rd lab science",
+                  "kind": "credits",
+                  "units": 4,
+                  "select": [
+                    {
+                      "types": ["sci.bio2", "sci.chem", "sci.chem2", "sci.earth", "sci.env", "sci.anat", "sci.ipc", "sci.phys", "sci.phys2", "sci.research"]
+                    },
+                    {
+                      "subjects": ["science"],
+                      "levels": ["ap", "ib", "cambridge", "dual_enrollment"],
+                      "exclude": ["sci.ms"]
+                    },
+                    { "types": ["cte.agriscience", "sci.biotech", "cte.engineering_design", "cte.animal_science"], "substitute": true },
+                    { "types": ["cs.intro", "cs.principles", "cs.prog1", "cs.prog2", "cs.cyber"], "substitute": true }
+                  ],
+                  "cite": ["tn-2103-i-11", "tn-3103-ii-2", "tn-3103-ii-2-programs", "tn-3103-ii-2-science", "tn-3103-ii-2-cte", "tn-3103-ii-2-cs"],
+                  "note": "Some career and technical classes and computer science can be your 3rd lab science for the diploma, but some universities may not count them for admission."
+                }
+              ],
+              "area": "science"
+            },
+            {
+              "id": "ss",
+              "label": "Social studies",
+              "kind": "all",
+              "of": [
+                {
+                  "id": "ss.us_hist",
+                  "label": "U.S. History and Geography",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.us_hist"] }],
+                  "cite": ["tn-2103-i-12-courses"]
+                },
+                {
+                  "id": "ss.world_hist",
+                  "label": "World History and Geography",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.world_hist"] }],
+                  "cite": ["tn-2103-i-12-courses"]
+                },
+                {
+                  "id": "ss.econ",
+                  "label": "Economics",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.econ"] }],
+                  "cite": ["tn-2103-i-12-courses", "tn-3103-iii-1"]
+                },
+                {
+                  "id": "ss.gov",
+                  "label": "U.S. Government and Civics",
+                  "kind": "credits",
+                  "units": 2,
+                  "allowSplit": true,
+                  "select": [{ "types": ["ss.us_gov"] }],
+                  "cite": ["tn-2103-i-12-courses", "tn-3103-iii-7"],
+                  "ask": {
+                    "select": [{ "types": ["other.jrotc"] }],
+                    "question": "Does my JROTC III count for U.S. Government and Civics?",
+                    "cite": ["tn-3103-iii-jrotc", "tn-3103-iii-jrotc-10"],
+                    "decides": { "classes": 3, "text": "Your JROTC III may count for this. Ask your counselor." }
+                  }
+                },
+                {
+                  "id": "ss.rest",
+                  "label": "The rest of your 3 social studies credits",
+                  "kind": "credits",
+                  "units": 4,
+                  "allowSplit": true,
+                  "select": [{ "subjects": ["social_studies"], "exclude": ["ss.ms"] }],
+                  "cite": ["tn-2103-i-12"]
+                }
+              ],
+              "area": "social_studies",
+              "note": "AP U.S. Government, AP U.S. History and dual enrollment American history can stand in for U.S. Government and Civics, and AP or dual enrollment economics for Economics. Ask your counselor how your school records them."
+            },
+            {
+              "id": "pf",
+              "label": "Personal Finance",
+              "kind": "credits",
+              "units": 2,
+              "select": [{ "types": ["ss.pfl"] }],
+              "cite": ["tn-2103-i-13", "tn-3103-iii-jrotc"],
+              "area": "financial_literacy",
+              "ask": {
+                "select": [{ "types": ["other.jrotc"] }],
+                "question": "Does my JROTC III count for Personal Finance? It can when my JROTC instructor took the Personal Finance training.",
+                "cite": ["tn-2103-i-13", "tn-3103-iii-jrotc", "tn-3103-iii-jrotc-10"],
+                "decides": { "classes": 3, "text": "Your JROTC III may count for this if your JROTC instructor took the Personal Finance training. Ask your counselor." }
+              }
+            },
+            {
+              "id": "wellness",
+              "label": "Lifetime Wellness",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "types": ["health.wellness"] }, { "types": ["other.jrotc"], "substitute": true }],
+              "cite": ["tn-2103-i-14", "tn-2103-i-14-no-sub", "tn-3103-iii-4"],
+              "area": "health_pe",
+              "note": "JROTC I can stand in for Wellness. Marching band and school sports can't."
+            },
+            {
+              "id": "pe",
+              "label": "Physical education",
+              "kind": "credits",
+              "units": 2,
+              "select": [
+                { "types": ["pe.general", "pe.fitness", "pe.skills", "pe.lifetime", "pe.athletics", "pe.other"] },
+                { "types": ["other.jrotc", "arts.marching"], "substitute": true }
+              ],
+              "cite": ["tn-2103-i-15", "tn-3103-iii-6"],
+              "area": "health_pe",
+              "note": "JROTC II can stand in for PE, and your school may count time in marching band, JROTC, cheerleading, school sports or intramurals instead."
+            },
+            {
+              "id": "wl",
+              "label": "World language",
+              "kind": "option",
+              "pref": "tnWorldLanguageWaiver",
+              "on": {
+                "id": "wl.waived",
+                "label": "2 more credits that expand your elective focus (world language waived; ask your counselor which classes count)",
+                "kind": "remaining_electives",
+                "units": 8,
+                "expands": "focus",
+                "cite": ["tn-2103-i-16", "tn-0520-01-03-06-waiver"]
+              },
+              "off": {
+                "id": "wl.same",
+                "label": "Two credits of the same world language",
+                "kind": "same_language",
+                "levels": 2,
+                "cite": ["tn-2103-i-16"]
+              },
+              "cite": ["tn-2103-i-16", "tn-0520-01-03-06-waiver"],
+              "area": "world_language"
+            },
+            {
+              "id": "arts",
+              "label": "Fine arts",
+              "kind": "option",
+              "pref": "tnFineArtsWaiver",
+              "on": {
+                "id": "arts.waived",
+                "label": "1 more credit that expands your elective focus (fine arts waived; ask your counselor which classes count)",
+                "kind": "remaining_electives",
+                "units": 4,
+                "expands": "focus",
+                "cite": ["tn-2103-i-17", "tn-0520-01-03-06-waiver"]
+              },
+              "off": {
+                "id": "arts.credit",
+                "label": "One fine arts credit",
+                "kind": "credits",
+                "units": 4,
+                "select": [
+                  { "subjects": ["arts"], "exclude": ["arts.ms"] },
+                  { "types": ["cte.digital_arts_design", "cte.floral_design", "cte.landscape_design", "cte.design_foundations", "cs.web"] }
+                ],
+                "cite": ["tn-2103-i-17", "tn-3103-iii-3"],
+                "note": "Some career and technical classes (such as Floral Design) can count for the diploma, but some universities may not count them for admission."
+              },
+              "cite": ["tn-2103-i-17", "tn-0520-01-03-06-waiver"],
+              "area": "arts"
+            },
+            {
+              "id": "cs",
+              "label": "Computer science",
+              "kind": "credits",
+              "units": 4,
+              "select": [{ "subjects": ["computer_science"], "exclude": ["cs.ms"] }],
+              "cite": ["tn-2103-i-4b", "tn-2103-i-4b1", "tn-2103-i-4b1-only", "tn-2103-i-4b2"],
+              "area": "computer_science",
+              "substitutesForOneOf": ["math.fourth", "sci.third"],
+              "substituteOnce": true,
+              "note": "It can also be your 4th math or your 3rd science (one of them), or part of your elective focus. Students who move to Tennessee in 12th grade are exempt."
+            },
+            {
+              "id": "total",
+              "label": "Total credits",
+              "kind": "total_credits",
+              "units": 88,
+              "source": "state",
+              "cite": ["tn-2103-i-4a", "tn-2103-i-3"],
+              "note": "22 includes your 3 elective focus credits. Your district may require more."
+            }
+          ],
+          "checks": [
+            {
+              "id": "tn.grad.math-3-years",
+              "kind": "enrolled_years",
+              "subject": "math",
+              "years": 3,
+              "cite": ["tn-2103-i-10-three-years"]
+            }
+          ],
+          "conditions": [
+            {
+              "id": "act-sat",
+              "label": "Take the ACT or SAT (or the state's other 11th-grade test)",
+              "kind": "test_participation",
+              "cite": ["tn-2103-i-4c"]
+            },
+            {
+              "id": "civics",
+              "label": "Pass your district's U.S. civics test (70% or better; you can retake it)",
+              "kind": "civics_test",
+              "cite": ["tn-2103-i-12-civics", "tn-2103-v-5b"]
+            },
+            {
+              "id": "attendance",
+              "label": "A satisfactory record of attendance and discipline",
+              "kind": "attendance_discipline",
+              "cite": ["tn-2103-i-4d"]
+            }
+          ],
+          "warnings": [
+            {
+              "id": "tn.grad.focus-by-10",
+              "text": "Choose your elective focus (3 credits) by the end of 10th grade.",
+              "cite": ["tn-2103-iii-hsbp-focus", "tn-2103-i-18", "tn-2103-i-18a"]
+            },
+            {
+              "id": "tn.grad.waivers-admission",
+              "text": "A world language or fine arts waiver needs your parent's written agreement. UT Chattanooga and UT Martin require two years of one world language and a fine arts credit for admission, so a waiver can close doors.",
+              "cite": ["tn-0520-01-03-06-waiver", "tn-utc-units-1", "tn-utc-units-2", "tn-utm-units-2"]
+            },
+            {
+              "id": "tn.grad.substitutes-admission",
+              "text": "Physics or computer science as your 4th math, or computer science or a career class as your 3rd lab science, counts for the diploma but may not count for university admission. Ask your counselor.",
+              "cite": ["tn-3103-ii-1-science", "tn-3103-ii-1-cs", "tn-3103-ii-2-cs", "tn-3103-ii-2-cte", "tn-utk-core-list"]
+            },
+            {
+              "id": "tn.grad.one-requirement",
+              "text": "A class can stand in for only one requirement, except that one full-credit class can cover two half-credit requirements.",
+              "cite": ["tn-3103-i-4", "tn-3103-i-4b"]
+            },
+            {
+              "id": "tn.grad.dual-enrollment",
+              "text": "Your high school must accept passed dual enrollment classes for matching graduation requirements.",
+              "cite": ["tn-2103-i-19"]
+            },
+            {
+              "id": "tn.grad.summer",
+              "text": "Taking a class for the first time in summer is meant for students on an accelerated path. If it has an end-of-course exam, you get the credit after you take the exam.",
+              "cite": ["tn-2103-i-20", "tn-2103-i-20-eoc"]
+            },
+            {
+              "id": "tn.grad.focus-waiver",
+              "text": "If the 3rd elective focus credit would delay graduation, the director of schools can waive it in 12th grade.",
+              "cite": ["tn-2103-i-18b"]
+            }
+          ],
+          "unverified": [
+            {
+              "id": "tn.grad.ss-split",
+              "text": "Tennessee lists four required social studies classes for 3 credits but doesn't say how the credits split among them (U.S. Government and Civics is a half credit). Ask your counselor how many credits each class earns at your school."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
